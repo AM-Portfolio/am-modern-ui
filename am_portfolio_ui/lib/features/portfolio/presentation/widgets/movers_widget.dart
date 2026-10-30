@@ -6,14 +6,14 @@ import 'intelligence/intelligence_glass_card.dart';
 import 'movers_tabs.dart';
 import 'movers_tile.dart';
 
-/// Top movers panel — compact arrow tiles; Today / P&L / Cost grouped views.
+/// Top movers panel — Value | Percentage on totals; Gainers / Losers by
+/// portfolio day contribution.
 class MoversWidget extends StatefulWidget {
   const MoversWidget({
     super.key,
     this.movers,
     this.isLoading = false,
     this.error,
-    this.onViewAll,
     this.compact = false,
     this.fillHeight = false,
     this.onRetry,
@@ -22,13 +22,12 @@ class MoversWidget extends StatefulWidget {
   final Movers? movers;
   final bool isLoading;
   final String? error;
-  final ValueChanged<Movers>? onViewAll;
-  /// When true, use Gainers|Losers tabs and denser padding (Overview intel).
+  /// When true, denser padding (Overview intel).
   final bool compact;
   /// Stretch to peer row height on Overview bottom band.
   final bool fillHeight;
   final VoidCallback? onRetry;
-  /// Overview shows 5; See Top 10 shows 10.
+  /// Overview shows 5 rows.
   final int maxRows;
 
   @override
@@ -36,42 +35,28 @@ class MoversWidget extends StatefulWidget {
 }
 
 class _MoversWidgetState extends State<MoversWidget> {
+  bool _showGainers = true;
+  MoversDisplayMode _mode = MoversDisplayMode.value;
+
   @override
   Widget build(BuildContext context) {
-    final showSeeAll = widget.onViewAll != null &&
-        widget.movers != null &&
-        (widget.movers!.topGainers.isNotEmpty ||
-            widget.movers!.topLosers.isNotEmpty);
+    final trailing = widget.movers == null
+        ? null
+        : MoversDisplayModeToggle(
+            selected: _mode,
+            onSelect: (m) => setState(() => _mode = m),
+          );
 
     return IntelligenceGlassCard(
       title: 'Top Movers',
+      subtitle: null,
       icon: Icons.auto_graph_rounded,
       padding: EdgeInsets.all(widget.compact ? 14 : 20),
       fillHeight: widget.fillHeight,
-      scrollable: widget.fillHeight,
-      trailing: showSeeAll
-          ? TextButton(
-              onPressed: () => widget.onViewAll!(widget.movers!),
-              style: TextButton.styleFrom(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                minimumSize: Size.zero,
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                backgroundColor: ModuleColors.portfolio.withValues(alpha: 0.1),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
-                ),
-              ),
-              child: Text(
-                'See Top 10',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: ModuleColors.portfolio,
-                ),
-              ),
-            )
-          : null,
+      // Peer band needs a bounded column; scrolling here would give unbounded
+      // height and break Expanded.
+      scrollable: false,
+      trailing: trailing,
       child: _buildContent(context),
     );
   }
@@ -144,74 +129,162 @@ class _MoversWidgetState extends State<MoversWidget> {
       movers: widget.movers!,
       compact: widget.compact,
       maxRows: widget.maxRows,
+      fillHeight: widget.fillHeight,
+      showGainers: _showGainers,
+      onShowGainersChanged: (v) => setState(() => _showGainers = v),
+      mode: _mode,
+      onModeChanged: (m) => setState(() => _mode = m),
     );
   }
 }
 
-/// Gainers/Losers + metric chips + tiles. Shared by Overview and See Top 10.
+/// Gainers/Losers tabs + Value/% total column. Shared by Overview.
 class MoversPanelContent extends StatefulWidget {
   const MoversPanelContent({
     super.key,
     required this.movers,
     this.compact = false,
     this.maxRows = 5,
-    this.forceTabs = false,
+    this.fillHeight = false,
+    this.showGainers,
+    this.onShowGainersChanged,
+    this.mode,
+    this.onModeChanged,
   });
 
   final Movers movers;
   final bool compact;
   final int maxRows;
-  /// Modal always uses tabs even on a wide dialog.
-  final bool forceTabs;
+  final bool fillHeight;
+  final bool? showGainers;
+  final ValueChanged<bool>? onShowGainersChanged;
+  final MoversDisplayMode? mode;
+  final ValueChanged<MoversDisplayMode>? onModeChanged;
 
   @override
   State<MoversPanelContent> createState() => _MoversPanelContentState();
 }
 
 class _MoversPanelContentState extends State<MoversPanelContent> {
-  bool _showGainers = true;
-  MoverMetric _metric = MoverMetric.today;
+  bool _localShowGainers = true;
+  MoversDisplayMode _localMode = MoversDisplayMode.value;
+
+  bool get _showGainers => widget.showGainers ?? _localShowGainers;
+  MoversDisplayMode get _mode => widget.mode ?? _localMode;
+
+  void _setShowGainers(bool value) {
+    widget.onShowGainersChanged?.call(value);
+    if (widget.showGainers == null) {
+      setState(() => _localShowGainers = value);
+    }
+  }
+
+  void _setMode(MoversDisplayMode mode) {
+    widget.onModeChanged?.call(mode);
+    if (widget.mode == null) {
+      setState(() => _localMode = mode);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final useTabs = widget.forceTabs ||
-        widget.compact ||
-        MediaQuery.of(context).size.width < 600;
     final movers = widget.movers;
     final list = _showGainers ? movers.topGainers : movers.topLosers;
 
-    final chips = MoversMetricChips(
-      selected: _metric,
-      onSelect: (m) => setState(() => _metric = m),
+    final header = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Toggle lives in card trailing when hosted by [MoversWidget]; when
+        // used standalone (tests/modal), show it here if mode is uncontrolled
+        // with no parent trailing — only when parent did not pass [mode].
+        if (widget.mode == null) ...[
+          Align(
+            alignment: Alignment.centerRight,
+            child: MoversDisplayModeToggle(
+              selected: _mode,
+              onSelect: _setMode,
+            ),
+          ),
+          SizedBox(height: widget.compact ? 6 : 10),
+        ],
+        MoversGainersLosersTabs(
+          showGainers: _showGainers,
+          onSelectGainers: () => _setShowGainers(true),
+          onSelectLosers: () => _setShowGainers(false),
+        ),
+        SizedBox(height: widget.compact ? 8 : 16),
+      ],
     );
 
-    if (useTabs) {
+    final listBody = AnimatedSwitcher(
+      duration: const Duration(milliseconds: 250),
+      child: KeyedSubtree(
+        key: ValueKey('${_showGainers}_$_mode'),
+        child: _buildColumn(context, list, _showGainers),
+      ),
+    );
+
+    if (!widget.fillHeight) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
-        children: [
-          MoversGainersLosersTabs(
-            showGainers: _showGainers,
-            gainersCount: movers.topGainers.length,
-            losersCount: movers.topLosers.length,
-            onSelectGainers: () => setState(() => _showGainers = true),
-            onSelectLosers: () => setState(() => _showGainers = false),
-          ),
-          SizedBox(height: widget.compact ? 6 : 12),
-          chips,
-          SizedBox(height: widget.compact ? 8 : 16),
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 250),
-            child: KeyedSubtree(
-              key: ValueKey(_showGainers),
-              child: _buildColumn(
-                context,
-                _showGainers ? 'Gainers' : 'Losers',
-                list,
-                _showGainers,
-              ),
+        children: [header, listBody],
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        header,
+        Expanded(child: listBody),
+      ],
+    );
+  }
+
+  Widget _buildColumn(
+    BuildContext context,
+    List<Stock> stocks,
+    bool isGainers,
+  ) {
+    final shown = stocks.take(widget.maxRows).toList();
+    if (stocks.isEmpty) {
+      return Padding(
+        padding: EdgeInsets.symmetric(vertical: widget.compact ? 12.0 : 20.0),
+        child: Center(
+          child: Text(
+            'No ${isGainers ? 'gainers' : 'losers'} today',
+            style: TextStyle(
+              color: Theme.of(context)
+                  .colorScheme
+                  .onSurfaceVariant
+                  .withValues(alpha: 0.6),
+              fontSize: 13,
             ),
           ),
+        ),
+      );
+    }
+
+    if (widget.fillHeight) {
+      // Always [maxRows] equal slots so five rows fill the card with no
+      // stretched gaps between tiles and no empty pocket under the list.
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (var i = 0; i < widget.maxRows; i++)
+            Expanded(
+              child: i < shown.length
+                  ? MoverTile(
+                      stock: shown[i],
+                      isGainer: isGainers,
+                      mode: _mode,
+                      compact: widget.compact,
+                      isLast: i == shown.length - 1,
+                      fillSlot: true,
+                    )
+                  : const SizedBox.expand(),
+            ),
         ],
       );
     }
@@ -220,108 +293,14 @@ class _MoversPanelContentState extends State<MoversPanelContent> {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        chips,
-        const SizedBox(height: 16),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: _buildColumn(
-                context,
-                'Gainers',
-                movers.topGainers,
-                true,
-              ),
-            ),
-            const SizedBox(width: 20),
-            Expanded(
-              child: _buildColumn(
-                context,
-                'Losers',
-                movers.topLosers,
-                false,
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildColumn(
-    BuildContext context,
-    String title,
-    List<Stock> stocks,
-    bool isGainers,
-  ) {
-    final color = isGainers
-        ? ModuleColors.portfolio
-        : context.colors.marketNegativeIndicator;
-    final hideTitle = widget.compact || widget.forceTabs;
-    final shown = stocks.take(widget.maxRows).toList();
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        if (!hideTitle)
-          Row(
-            children: [
-              Icon(
-                isGainers
-                    ? Icons.trending_up_rounded
-                    : Icons.trending_down_rounded,
-                color: color,
-                size: 15,
-              ),
-              const SizedBox(width: 5),
-              Text(
-                '$title (${stocks.length})',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 13,
-                      color: color,
-                    ),
-              ),
-            ],
+        for (var i = 0; i < shown.length; i++)
+          MoverTile(
+            stock: shown[i],
+            isGainer: isGainers,
+            mode: _mode,
+            compact: widget.compact,
+            isLast: i == shown.length - 1,
           ),
-        if (!hideTitle) const SizedBox(height: 12),
-        if (stocks.isEmpty)
-          Padding(
-            padding:
-                EdgeInsets.symmetric(vertical: widget.compact ? 12.0 : 20.0),
-            child: Center(
-              child: Text(
-                'No ${isGainers ? 'gainers' : 'losers'} today',
-                style: TextStyle(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onSurfaceVariant
-                      .withValues(alpha: 0.6),
-                  fontSize: 13,
-                ),
-              ),
-            ),
-          )
-        else ...[
-          ...shown.asMap().entries.map(
-            (e) => MoverTile(
-              stock: e.value,
-              isGainer: isGainers,
-              metric: _metric,
-              isLast: e.key == shown.length - 1,
-            ),
-          ),
-          if (widget.compact && stocks.length < widget.maxRows)
-            Padding(
-              padding: const EdgeInsets.only(top: 4),
-              child: Text(
-                'Only ${stocks.length} holding${stocks.length == 1 ? '' : 's'} moved today',
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: Theme.of(context).hintColor,
-                    ),
-              ),
-            ),
-        ],
       ],
     );
   }

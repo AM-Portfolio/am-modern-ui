@@ -116,7 +116,8 @@ class AdvancedHoldingsTable extends StatelessWidget {
         decoration: BoxDecoration(
           color: index.isEven
               ? theme.colorScheme.surface
-              : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+              : theme.colorScheme.surfaceContainerHighest
+                  .withValues(alpha: 0.3),
           border: Border(
             bottom: BorderSide(
               color: theme.dividerColor.withValues(alpha: 0.5),
@@ -284,8 +285,7 @@ class AdvancedHoldingsTable extends StatelessWidget {
           Icon(
             isPositive ? Icons.trending_up : Icons.trending_down,
             size: 14,
-            color:
-                isPositive ? context.marketPositive : context.marketNegative,
+            color: isPositive ? context.marketPositive : context.marketNegative,
           ),
           const SizedBox(width: 4),
           Flexible(
@@ -305,8 +305,7 @@ class AdvancedHoldingsTable extends StatelessWidget {
       );
 
   Widget _pnlPctCell(BuildContext context, String value, bool isPositive) {
-    final color =
-        isPositive ? context.marketPositive : context.marketNegative;
+    final color = isPositive ? context.marketPositive : context.marketNegative;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(

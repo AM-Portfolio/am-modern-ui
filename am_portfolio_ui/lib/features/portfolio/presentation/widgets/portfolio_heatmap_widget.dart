@@ -63,14 +63,14 @@ class PortfolioHeatmapUiConfig {
     return 8.0 + reserve * navFactor.clamp(0.0, 1.0);
   }
 
-  /// Web configuration
+  /// Web configuration — tight padding so the treemap uses the page width/height.
   static const web = PortfolioHeatmapUiConfig(
     defaultLayout: HeatmapLayoutType.treemap,
     compactMode: false,
     showSelectors: true,
     templateType: UniversalTemplateType.full,
     showSubCards: true,
-    padding: EdgeInsets.all(16.0),
+    padding: EdgeInsets.fromLTRB(8, 4, 8, 8),
     title: 'Heatmap Overview',
     subtitle: '',
     logTag: 'PortfolioHeatmap.Web',
@@ -104,7 +104,15 @@ class _PortfolioHeatmapWidgetState
   MarketCapType? _selectedMarketCap;
   late HeatmapLayoutType _selectedLayout;
   HeatmapTileData? _drillDownTile;
+  final ValueNotifier<HeatmapTileData?> _inspectedTile =
+      ValueNotifier<HeatmapTileData?>(null);
   int _heatmapLoadGeneration = 0;
+  /// Full nested tiles before compact budget — used for sector drill-down.
+  List<HeatmapTileData> _fullOverviewTiles = const [];
+
+  late final ValueChanged<HeatmapTileData?> _onTileHover;
+  late final ValueChanged<HeatmapTileData> _onTileSelect;
+  late final ValueChanged<HeatmapTileData> _onSectorDrill;
 
   @override
   void initState() {
@@ -113,6 +121,9 @@ class _PortfolioHeatmapWidgetState
     // Initialize with config defaults
     _selectedMetric = MetricType.changePercent;
     _selectedLayout = widget.config.defaultLayout;
+    _onTileHover = _handleTileHover;
+    _onTileSelect = _handleTileSelect;
+    _onSectorDrill = _handleSectorDrill;
 
     CommonLogger.info(
       'PortfolioHeatmapWidget initialized',
@@ -125,6 +136,50 @@ class _PortfolioHeatmapWidgetState
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _loadHeatmapData();
     });
+  }
+
+  @override
+  void dispose() {
+    _inspectedTile.dispose();
+    super.dispose();
+  }
+
+  void _handleTileHover(HeatmapTileData? tile) {
+    if (!mounted) return;
+    if (tile == null) {
+      if (_inspectedTile.value != null) _inspectedTile.value = null;
+      return;
+    }
+    if (tile.metadata?['type'] != 'stock') return;
+    _inspectedTile.value = tile;
+  }
+
+  void _handleTileSelect(HeatmapTileData tile) {
+    if (!mounted) return;
+    if (tile.metadata?['type'] != 'stock') return;
+    _inspectedTile.value = tile;
+  }
+
+  void _handleSectorDrill(HeatmapTileData tile) {
+    if (!mounted) return;
+    final full = _lookupFullSectorTile(tile);
+    final hasChildren = full.children != null && full.children!.isNotEmpty;
+    if (!hasChildren) return;
+    CommonLogger.userAction(
+      'Heatmap sector drill: ${full.name}',
+      tag: '${widget.config.logTag}.Action',
+    );
+    setState(() {
+      _drillDownTile = full;
+      _inspectedTile.value = null;
+    });
+  }
+
+  HeatmapTileData _lookupFullSectorTile(HeatmapTileData tile) {
+    for (final t in _fullOverviewTiles) {
+      if (t.id == tile.id || t.name == tile.name) return t;
+    }
+    return tile;
   }
 
   @override
@@ -215,29 +270,20 @@ class _PortfolioHeatmapWidgetState
     });
     ref.watch(appTimeFrameProvider);
 
-    // Wrap in LayoutBuilder so _buildLoadedWidget always receives a bounded
-    // height constraint — without this, Expanded inside the Column gets 0.
+    // Compact + wide: fill the tab viewport (no double-height scroll slab).
     return LayoutBuilder(
       builder: (context, constraints) {
-        final content = Padding(
-          padding: widget.config.padding,
-          child: _buildHeatmapContent(),
+        final viewportH = constraints.maxHeight.isFinite
+            ? constraints.maxHeight
+            : MediaQuery.sizeOf(context).height;
+        return SizedBox(
+          width: constraints.maxWidth,
+          height: viewportH,
+          child: Padding(
+            padding: widget.config.padding,
+            child: _buildHeatmapContent(),
+          ),
         );
-        return widget.config.compactMode
-            ? SizedBox(
-                width: constraints.maxWidth,
-                height: constraints.maxHeight.isFinite
-                    ? constraints.maxHeight
-                    : MediaQuery.sizeOf(context).height,
-                child: content,
-              )
-            : SizedBox(
-                width: constraints.maxWidth,
-                height: constraints.maxHeight.isFinite
-                    ? constraints.maxHeight
-                    : double.infinity,
-                child: content,
-              );
       },
     );
   }
@@ -284,7 +330,7 @@ class _PortfolioHeatmapWidgetState
       tag: '${widget.config.logTag}.UI',
     );
 
-    return const Center(child: CircularProgressIndicator());
+    return const HeatmapSkeletonLoader();
   }
 
   /// Builds error state UI
@@ -341,13 +387,26 @@ class _PortfolioHeatmapWidgetState
         const SelectorConfig();
     final baseLayout = convertedHeatmapData.configuration.layout ??
         const LayoutConfig();
+    final useNested =
+        _drillDownTile == null && _selectedLayout == HeatmapLayoutType.treemap;
+    final baseInteractions = convertedHeatmapData.configuration.interactions ??
+        const InteractionConfig();
     final customConfig = convertedHeatmapData.configuration.copyWith(
-      display: convertedHeatmapData.configuration.display?.copyWith(
-        showPerformance: false, // Hides old default legend
+      display: (convertedHeatmapData.configuration.display ??
+              const DisplayConfig())
+          .copyWith(
+        showPerformance: true,
+        showLegend: true,
       ),
       layout: baseLayout.copyWith(
         layoutType: _selectedLayout,
         showLayoutSelector: widget.config.compactMode ? true : null,
+        nestedSectors: useNested,
+        // Compact: solid fills (cheap paint). Wide web: glass / liquid tiles.
+        solidFills: widget.config.compactMode,
+      ),
+      interactions: baseInteractions.copyWith(
+        enableHoverEffects: !widget.config.compactMode,
       ),
       selectors: baseSelectors.copyWith(
         selectorLayout:
@@ -359,18 +418,19 @@ class _PortfolioHeatmapWidgetState
       ),
     );
 
-    // Drill-down filtering + treemap small-weight merge + per-tile tap
+    // Drill-down: flat children. Wide nested: full bands. Compact nested: budget.
     var workingTiles = convertedHeatmapData.tiles
         .map((t) => t is HeatmapTileData ? t : HeatmapTileData.fromEntity(t))
         .toList();
+    _fullOverviewTiles = workingTiles;
 
     if (_drillDownTile != null && _drillDownTile!.children != null) {
       workingTiles = _drillDownTile!.children!
           .map((t) => t is HeatmapTileData ? t : HeatmapTileData.fromEntity(t))
           .toList();
-    } else if (_selectedLayout == HeatmapLayoutType.treemap) {
+    } else if (useNested && widget.config.compactMode) {
       workingTiles =
-          SectorHeatmapConverter.mergeSmallWeightTilesForTreemap(workingTiles);
+          SectorHeatmapConverter.applyCompactTreemapBudget(workingTiles);
     }
 
     workingTiles = workingTiles.map((tile) {
@@ -393,141 +453,277 @@ class _PortfolioHeatmapWidgetState
             'Heatmap drill-down: ${tile.name}',
             tag: '${widget.config.logTag}.Action',
           );
-          setState(() => _drillDownTile = tile);
+          final full = _lookupFullSectorTile(tile);
+          setState(() {
+            _drillDownTile = full;
+            _inspectedTile.value = null;
+          });
         },
         customWidgets: tile.customWidgets,
       );
     }).toList();
 
-    final displayData = convertedHeatmapData.copyWith(tiles: workingTiles);
+    final displayData = convertedHeatmapData.copyWith(
+      tiles: workingTiles,
+      configuration: customConfig,
+    );
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // ── SUMMARY CARDS ROW ──
-        _buildSummaryCardsRow(),
-        const SizedBox(height: 16),
-
-        // ── EQUITY DISTRIBUTION HEADER (web/desktop only) ──
-        if (!widget.config.compactMode) ...[
-          _buildEquityDistributionHeader(context),
-          const SizedBox(height: 12),
-        ],
-
-        // ── DRILLDOWN BREADCRUMB ──
-        if (_drillDownTile != null)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 8.0),
-            child: InkWell(
-              onTap: () => setState(() => _drillDownTile = null),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.arrow_back, size: 16, color: ModuleColors.portfolio),
-                  const SizedBox(width: 4),
-                  Text(
-                    'Portfolio > ${_drillDownTile!.displayName}',
-                    style: TextStyle(
-                      color: ModuleColors.portfolio,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
+    Widget heatmapBody({required bool showSelectors}) => HeatmapInteractionScope(
+          onTileHover: _onTileHover,
+          onTileSelect: _onTileSelect,
+          onSectorDrill: _onSectorDrill,
+          child: Stack(
+            clipBehavior: Clip.hardEdge,
+            children: [
+              Positioned.fill(
+                child: UniversalHeatmapWidget(
+                  investmentType: InvestmentType.portfolio,
+                  heatmapData: displayData,
+                  title: widget.config.compactMode
+                      ? 'Heatmap'
+                      : widget.config.title,
+                  subtitle: widget.config.compactMode
+                      ? null
+                      : widget.config.subtitle,
+                  customHeader: _drillDownTile != null
+                      ? _buildDrillInCardHeader(context)
+                      : null,
+                  config: _mapToWidgetConfig(customConfig),
+                  showSelectors: showSelectors,
+                  compactMode: widget.config.compactMode,
+                  selectedTimeFrame: selectedTimeFrame,
+                  selectedMetric: _selectedMetric,
+                  selectedSector: _selectedSector,
+                  selectedMarketCap: _selectedMarketCap,
+                  selectedLayout: _selectedLayout,
+                  onTilePressed: () {
+                    CommonLogger.userAction(
+                      'Heatmap stock tile pressed',
+                      tag: '${widget.config.logTag}.Action',
+                    );
+                  },
+                  onFiltersChanged: ({
+                    timeFrame,
+                    metric,
+                    sector,
+                    marketCap,
+                    layout,
+                  }) {
+                    _onFiltersChanged(
+                      timeFrame: timeFrame,
+                      metric: metric,
+                      sector: sector,
+                      marketCap: marketCap,
+                      layout: layout,
+                    );
+                  },
+                  templateType: widget.config.templateType,
+                ),
               ),
-            ),
+              Positioned(
+                left: 12,
+                right: 12,
+                bottom: widget.config.compactMode ? 8 : 12,
+                child: Align(
+                  alignment: Alignment.bottomCenter,
+                  child: ValueListenableBuilder<HeatmapTileData?>(
+                    valueListenable: _inspectedTile,
+                    builder: (context, tile, _) {
+                      if (tile == null) return const SizedBox.shrink();
+                      return ConstrainedBox(
+                        constraints: const BoxConstraints(
+                          maxWidth: 460,
+                          maxHeight: 44,
+                        ),
+                        child: HeatmapTileInspector(tile: tile),
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ],
           ),
+        );
 
-        // ── MAIN HEATMAP (fills remaining tab height on mobile) ──
-        if (widget.config.compactMode)
+    // Compact: KPIs + Expanded mosaic (fills remaining viewport once).
+    if (widget.config.compactMode) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildSummaryCardsRow(),
+          const SizedBox(height: 8),
           Expanded(
             child: _padAboveBottomNav(
               context,
-              child: UniversalHeatmapWidget(
-                investmentType: InvestmentType.portfolio,
-                heatmapData: displayData,
-                title: 'Heatmap',
-                subtitle: null,
-                config: _mapToWidgetConfig(customConfig),
-                showSelectors: true,
-                compactMode: widget.config.compactMode,
-                selectedTimeFrame: selectedTimeFrame,
-                selectedMetric: _selectedMetric,
-                selectedSector: _selectedSector,
-                selectedMarketCap: _selectedMarketCap,
-                selectedLayout: _selectedLayout,
-                onTilePressed: () {
-                  CommonLogger.userAction(
-                    'Heatmap stock tile pressed',
-                    tag: '${widget.config.logTag}.Action',
-                  );
-                },
-                onFiltersChanged: ({
-                  timeFrame,
-                  metric,
-                  sector,
-                  marketCap,
-                  layout,
-                }) {
-                  _onFiltersChanged(
-                    timeFrame: timeFrame,
-                    metric: metric,
-                    sector: sector,
-                    marketCap: marketCap,
-                    layout: layout,
-                  );
-                },
-                templateType: widget.config.templateType,
-              ),
-            ),
-          )
-        else
-          // Web: fill all remaining vertical space dynamically to keep it single-page.
-          Expanded(
-            child: LayoutBuilder(
-              builder: (context, heatmapConstraints) {
-                final heatmapContent = SizedBox(
-                  width: double.infinity,
-                  height: heatmapConstraints.maxHeight,
-                  child: UniversalHeatmapWidget(
-                    investmentType: InvestmentType.portfolio,
-                    heatmapData: displayData,
-                    title: widget.config.title,
-                    subtitle: widget.config.subtitle,
-                    config: _mapToWidgetConfig(customConfig),
-                    showSelectors: false,
-                    compactMode: widget.config.compactMode,
-                    selectedTimeFrame: selectedTimeFrame,
-                    selectedMetric: _selectedMetric,
-                    selectedSector: _selectedSector,
-                    selectedMarketCap: _selectedMarketCap,
-                    selectedLayout: _selectedLayout,
-                    onTilePressed: () {
-                      CommonLogger.userAction(
-                        'Heatmap stock tile pressed',
-                        tag: '${widget.config.logTag}.Action',
-                      );
-                    },
-                    onFiltersChanged: ({timeFrame, metric, sector, marketCap, layout}) {
-                      _onFiltersChanged(
-                        timeFrame: timeFrame,
-                        metric: metric,
-                        sector: sector,
-                        marketCap: marketCap,
-                        layout: layout,
-                      );
-                    },
-                    templateType: widget.config.templateType,
-                  ),
-                );
-                
-                return heatmapContent;
-              },
+              child: heatmapBody(showSelectors: true),
             ),
           ),
+        ],
+      );
+    }
 
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _buildSummaryCardsRow(),
+        const SizedBox(height: 8),
+        _buildEquityDistributionHeader(context),
+        const SizedBox(height: 6),
+        Expanded(
+          child: LayoutBuilder(
+            builder: (context, heatmapConstraints) => SizedBox(
+              width: double.infinity,
+              height: heatmapConstraints.maxHeight,
+              child: heatmapBody(showSelectors: false),
+            ),
+          ),
+        ),
       ],
     );
   }
+
+  /// Drill chrome inside the Heatmap Overview card (back + sector + stats).
+  Widget _buildDrillInCardHeader(BuildContext context) {
+    final tile = _drillDownTile!;
+    final sectorLabel =
+        tile.name.trim().isNotEmpty ? tile.name : tile.displayName;
+    final meta = tile.metadata ?? const <String, dynamic>{};
+    final holdings = meta['holdingsCount'] ?? meta['stockCount'];
+    final compact = widget.config.compactMode;
+    final scheme = Theme.of(context).colorScheme;
+
+    // Compact meta so the drill header stays short.
+    final metaBits = <String>[];
+    if (tile.value != null && tile.value! > 0) {
+      metaBits.add(StringUtils.formatCurrency(tile.value!));
+    }
+    if (holdings is num && holdings > 0) {
+      metaBits.add('${holdings.toInt()} hld');
+    }
+    final pct = tile.performance;
+    final pctColor = pct > 0
+        ? context.marketPositive
+        : (pct < 0 ? context.marketNegative : scheme.onSurfaceVariant);
+    final metaStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
+          color: scheme.onSurfaceVariant,
+          fontSize: compact ? 11 : 12,
+          fontWeight: FontWeight.w500,
+        );
+
+    final titleBlock = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          sectorLabel,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: (compact
+                  ? Theme.of(context).textTheme.titleMedium
+                  : Theme.of(context).textTheme.titleLarge)
+              ?.copyWith(fontWeight: FontWeight.w700, fontSize: compact ? 15 : 17),
+        ),
+        if (metaBits.isNotEmpty || pct != 0) ...[
+          const SizedBox(height: 2),
+          Text.rich(
+            TextSpan(
+              style: metaStyle,
+              children: [
+                if (metaBits.isNotEmpty)
+                  TextSpan(text: metaBits.join(' · ')),
+                if (metaBits.isNotEmpty)
+                  TextSpan(text: ' · ', style: metaStyle),
+                TextSpan(
+                  text: StringUtils.formatSignedPercent(pct),
+                  style: metaStyle?.copyWith(
+                    color: pctColor,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ],
+    );
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        InkWell(
+          onTap: () => setState(() {
+            _drillDownTile = null;
+            _inspectedTile.value = null;
+          }),
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(0, 4, 6, 4),
+            child: Icon(
+              Icons.arrow_back_ios_new_rounded,
+              size: compact ? 16 : 18,
+              color: ModuleColors.portfolio,
+            ),
+          ),
+        ),
+        Expanded(child: titleBlock),
+        if (!compact) ...[
+          const SizedBox(width: 8),
+          Flexible(
+            fit: FlexFit.loose,
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerRight,
+                child: _buildDrillPerformanceLegend(context),
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildDrillPerformanceLegend(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text('Performance: ', style: Theme.of(context).textTheme.bodySmall),
+        _drillLegendSwatch(context, 'Loss', context.marketNegative),
+        const SizedBox(width: 16),
+        _drillLegendSwatch(
+          context,
+          'Neutral',
+          context.colors.statusNeutral,
+        ),
+        const SizedBox(width: 16),
+        _drillLegendSwatch(context, 'Gain', context.marketPositive),
+      ],
+    );
+  }
+
+  Widget _drillLegendSwatch(
+    BuildContext context,
+    String label,
+    Color color,
+  ) =>
+      Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 12,
+            height: 12,
+            decoration: BoxDecoration(
+              color: color,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(width: 4),
+          Text(label, style: Theme.of(context).textTheme.bodySmall),
+        ],
+      );
 
   /// Builds the 4 summary stat cards row
   Widget _buildSummaryCardsRow() {
@@ -896,29 +1092,19 @@ class _PortfolioHeatmapWidgetState
       tag: '${widget.config.logTag}.Filter',
     );
 
-    // Update local state
+    // Update local state; clear drill/inspector so mosaic stays consistent.
+    setState(() {
+      _drillDownTile = null;
+      _inspectedTile.value = null;
+      if (metric != null) _selectedMetric = metric;
+      if (sector != null) _selectedSector = sector;
+      if (marketCap != null) _selectedMarketCap = marketCap;
+      if (layout != null) _selectedLayout = layout;
+    });
     if (timeFrame != null) {
       ref.read(appTimeFrameProvider.notifier).setTimeFrame(timeFrame);
     }
-    if (metric != null) {
-      setState(() {
-        _selectedMetric = metric;
-      });
-    }
-    if (sector != null) {
-      setState(() {
-        _selectedSector = sector;
-      });
-    }
-    if (marketCap != null) {
-      setState(() {
-        _selectedMarketCap = marketCap;
-      });
-    }
     if (layout != null) {
-      setState(() {
-        _selectedLayout = layout;
-      });
       CommonLogger.info(
         'Layout changed to: ${layout.name}',
         tag: '${widget.config.logTag}.Layout',

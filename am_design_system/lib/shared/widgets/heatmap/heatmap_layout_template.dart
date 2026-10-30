@@ -49,15 +49,17 @@ class HeatmapLayoutTemplate extends StatelessWidget {
       tag: 'Heatmap.Layout',
     );
 
+    // Keep chrome thin so the treemap owns the page (esp. web portfolio).
     final cardPadding = compactHeader
-        ? const EdgeInsets.fromLTRB(8, 8, 8, 8)
-        : const EdgeInsets.all(16);
+        ? const EdgeInsets.fromLTRB(6, 6, 6, 6)
+        : const EdgeInsets.fromLTRB(10, 8, 10, 8);
 
     return Container(
       color: backgroundColor,
-      padding: padding ?? const EdgeInsets.all(8),
+      width: double.infinity,
+      padding: padding ?? const EdgeInsets.fromLTRB(4, 4, 4, 4),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // Selectors section — uses intrinsic height only, never steals from heatmap.
           if (showSelectors && selectorWidget != null) ...[
@@ -65,28 +67,29 @@ class HeatmapLayoutTemplate extends StatelessWidget {
               width: double.infinity,
               child: selectorWidget!,
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
           ],
 
-          // Main heatmap card — takes all remaining vertical space.
+          // Main heatmap card — takes all remaining vertical + horizontal space.
           Expanded(
-            child: Card(
-              elevation: compactHeader ? 2 : 4,
-              margin: EdgeInsets.zero,
-              child: Padding(
-                padding: cardPadding,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Header section
-                    if (showHeader) ...[
-                      customHeader ?? _buildHeader(context),
-                      SizedBox(height: compactHeader ? 8 : 12),
+            child: SizedBox(
+              width: double.infinity,
+              child: Card(
+                elevation: compactHeader ? 2 : 4,
+                margin: EdgeInsets.zero,
+                clipBehavior: Clip.hardEdge,
+                child: Padding(
+                  padding: cardPadding,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (showHeader) ...[
+                        customHeader ?? _buildHeader(context),
+                        SizedBox(height: compactHeader ? 6 : 8),
+                      ],
+                      Expanded(child: displayWidget),
                     ],
-
-                    // Main display content — fills remaining card space.
-                    Expanded(child: displayWidget),
-                  ],
+                  ),
                 ),
               ),
             ),
@@ -179,7 +182,16 @@ class HeatmapLayoutTemplate extends StatelessWidget {
         Text('Performance: ', style: Theme.of(context).textTheme.bodySmall),
         _buildLegendItem(context, 'Loss', context.marketNegative),
         const SizedBox(width: 16),
-        _buildLegendItem(context, 'Neutral', context.colors.statusNeutral),
+        _buildLegendItem(
+          context,
+          'Neutral',
+          // Match tile flat tint (not statusNeutral orange).
+          Color.lerp(
+            context.colors.cardSurface,
+            context.colors.textTertiary,
+            Theme.of(context).brightness == Brightness.dark ? 0.38 : 0.28,
+          )!,
+        ),
         const SizedBox(width: 16),
         _buildLegendItem(context, 'Gain', context.marketPositive),
       ],

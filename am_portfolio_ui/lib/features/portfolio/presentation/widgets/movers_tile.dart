@@ -5,20 +5,26 @@ import '../../internal/domain/entities/portfolio_analytics.dart';
 import 'movers_join.dart';
 import 'movers_tabs.dart';
 
-/// Main-branch compact mover row. Metric tabs only swap the right-hand numbers.
+/// Compact mover row: symbol + shares | Today (fixed) | total (Value/%).
+/// [MoversDisplayMode] only swaps the right-hand total column.
 class MoverTile extends StatefulWidget {
   const MoverTile({
     super.key,
     required this.stock,
     required this.isGainer,
-    this.metric = MoverMetric.today,
+    this.mode = MoversDisplayMode.value,
     this.isLast = false,
+    this.compact = false,
+    this.fillSlot = false,
   });
 
   final Stock stock;
   final bool isGainer;
-  final MoverMetric metric;
+  final MoversDisplayMode mode;
   final bool isLast;
+  final bool compact;
+  /// Peer-band slot: no outer margin; content centered in equal-height row.
+  final bool fillSlot;
 
   @override
   State<MoverTile> createState() => _MoverTileState();
@@ -38,212 +44,222 @@ class _MoverTileState extends State<MoverTile> {
     final color = isPositive
         ? context.colors.marketPositiveIndicator
         : context.colors.marketNegativeIndicator;
+    final qty = stock.quantity;
+    final hasQty = qty != null && qty > 0;
+    final dayValue = moverDayValueChange(stock);
+    final valueText = stock.marketValue != null
+        ? formatMoverInrCompact(stock.marketValue!)
+        : null;
+    final investedText = stock.hasCostBasis &&
+            stock.investedAmount != null &&
+            stock.investedAmount! > 0
+        ? formatMoverInrCompact(stock.investedAmount!)
+        : null;
+    final dayPct = moverDayReturnPercent(stock);
+    final weight = stock.weight;
+    final scheme = Theme.of(context).colorScheme;
+    final dayColor = (dayPct ?? stock.changePercent) >= 0
+        ? context.colors.marketPositiveIndicator
+        : context.colors.marketNegativeIndicator;
+
+    final primaryStyle = Theme.of(context).textTheme.bodyMedium?.copyWith(
+          fontWeight: FontWeight.w700,
+          fontSize: widget.compact ? 12 : 13,
+          height: 1.15,
+        );
+    final mutedStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
+          fontWeight: FontWeight.w600,
+          fontSize: widget.compact ? 11 : 12,
+          color: scheme.onSurfaceVariant,
+        );
+    final secondaryStyle = TextStyle(
+      fontSize: widget.compact ? 9.5 : 10,
+      fontWeight: FontWeight.w500,
+      color: scheme.onSurfaceVariant.withValues(alpha: 0.75),
+    );
+
+    // Today column — never changes with Value / Percentage.
+    final centerPrimary = stock.formattedLastPrice;
+    final centerSecondary =
+        '${stock.formattedChangeAmount} (${stock.formattedChangePercent})';
+
+    late final String rightPrimary;
+    late final String? rightSecondary;
+    Widget? rightSecondaryWidget;
+    Color? rightPrimaryColor;
+
+    if (widget.mode == MoversDisplayMode.value) {
+      rightPrimary = valueText ?? '—';
+      rightPrimaryColor = null;
+      if (investedText != null || dayValue != null) {
+        rightSecondaryWidget = Text.rich(
+          TextSpan(
+            style: secondaryStyle,
+            children: [
+              if (investedText != null)
+                TextSpan(text: 'Inv $investedText'),
+              if (investedText != null && dayValue != null)
+                TextSpan(
+                  text: ' · ',
+                  style: secondaryStyle,
+                ),
+              if (dayValue != null)
+                TextSpan(
+                  text: formatSignedInrCompact(dayValue),
+                  style: secondaryStyle.copyWith(
+                    color: dayColor,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+            ],
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          textAlign: TextAlign.right,
+        );
+      }
+      rightSecondary = null;
+    } else {
+      // Today's return % (same sign as day move) + weight — never lifetime P&L %.
+      final pct = dayPct ?? stock.changePercent;
+      rightPrimary = formatSignedPct(pct);
+      rightPrimaryColor = dayColor;
+      if (weight != null && weight > 0) {
+        rightSecondary = '${weight.toStringAsFixed(1)}% of portfolio';
+      } else if (valueText != null) {
+        rightSecondary = valueText;
+      } else {
+        rightSecondary = null;
+      }
+    }
+
+    final vPad = widget.fillSlot
+        ? (widget.compact ? 2.0 : 4.0)
+        : (widget.compact ? 3.0 : 5.0);
+    final gap = widget.compact ? 2.0 : 3.0;
+
+    final row = AnimatedContainer(
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOutCubic,
+      margin: EdgeInsets.only(
+        bottom: widget.fillSlot || widget.isLast ? 0 : gap,
+      ),
+      padding: EdgeInsets.symmetric(horizontal: 8, vertical: vPad),
+      decoration: BoxDecoration(
+        color: _hovered
+            ? color.withValues(alpha: 0.08)
+            : Colors.transparent,
+        borderRadius: BorderRadius.circular(10),
+        border: Border(
+          bottom: widget.isLast
+              ? BorderSide.none
+              : BorderSide(
+                  color: scheme.onSurfaceVariant.withValues(alpha: 0.12),
+                ),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+            Expanded(
+              flex: 4,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    stock.symbol,
+                    style: primaryStyle,
+                    maxLines: 2,
+                    softWrap: true,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (hasQty) ...[
+                    const SizedBox(height: 3),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: scheme.onSurfaceVariant.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        '${formatMoverQty(qty)} shares',
+                        style: TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.w500,
+                          color: scheme.onSurfaceVariant.withValues(alpha: 0.85),
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            Expanded(
+              flex: 3,
+              child: _MoneyColumn(
+                primary: centerPrimary,
+                secondary: centerSecondary,
+                primaryStyle: mutedStyle,
+                secondaryStyle: secondaryStyle.copyWith(color: dayColor),
+              ),
+            ),
+            Container(
+              key: const ValueKey('mover-metric-split'),
+              width: 1,
+              height: 28,
+              margin: const EdgeInsets.symmetric(horizontal: 6),
+              color: scheme.onSurfaceVariant.withValues(alpha: 0.28),
+            ),
+            Expanded(
+              flex: 3,
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 200),
+                child: KeyedSubtree(
+                  key: ValueKey('right-${widget.mode}'),
+                  child: _MoneyColumn(
+                    primary: rightPrimary,
+                    secondary: rightSecondary,
+                    secondaryWidget: rightSecondaryWidget,
+                    primaryStyle: rightPrimaryColor != null
+                        ? mutedStyle?.copyWith(color: rightPrimaryColor)
+                        : mutedStyle,
+                    secondaryStyle: secondaryStyle,
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
 
     return MouseRegion(
       onEnter: (_) => setState(() => _hovered = true),
       onExit: (_) => setState(() => _hovered = false),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        curve: Curves.easeOutCubic,
-        margin: EdgeInsets.only(bottom: widget.isLast ? 0 : 8),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
-        transform: _hovered
-            ? (Matrix4.diagonal3Values(1.015, 1.015, 1.0))
-            : Matrix4.identity(),
-        decoration: BoxDecoration(
-          color: _hovered
-              ? color.withValues(alpha: 0.08)
-              : context.colors.surface.withValues(alpha: 0.04),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: _hovered
-                ? color.withValues(alpha: 0.35)
-                : color.withValues(alpha: 0.12),
-            width: 1,
-          ),
-          boxShadow: _hovered
-              ? [
-                  BoxShadow(
-                    color: color.withValues(alpha: 0.12),
-                    blurRadius: 12,
-                    spreadRadius: -2,
-                  ),
-                ]
-              : [],
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 28,
-              height: 28,
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(7),
-              ),
-              child: Icon(
-                isPositive
-                    ? Icons.arrow_upward_rounded
-                    : Icons.arrow_downward_rounded,
-                size: 14,
-                color: color,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                stock.symbol,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 13,
-                    ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            AnimatedSwitcher(
-              duration: const Duration(milliseconds: 200),
-              child: KeyedSubtree(
-                key: ValueKey(widget.metric),
-                child: _MetricNumbers(
-                  stock: stock,
-                  metric: widget.metric,
-                  color: color,
-                ),
-              ),
-            ),
-            if (widget.metric == MoverMetric.today) ...[
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: color.withValues(alpha: 0.35),
-                    width: 1,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: color.withValues(alpha: 0.2),
-                      blurRadius: 6,
-                      spreadRadius: -1,
-                    ),
-                  ],
-                ),
-                child: Text(
-                  stock.changePercent.abs() < 0.005
-                      ? '0.00%'
-                      : '${stock.changePercent >= 0 ? '+' : ''}${stock.changePercent.toStringAsFixed(2)}%',
-                  style: TextStyle(
-                    color: color,
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 0.2,
-                  ),
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
+      child: widget.fillSlot
+          ? SizedBox.expand(
+              child: Align(alignment: Alignment.center, child: row),
+            )
+          : row,
     );
   }
 }
 
-class _MetricNumbers extends StatelessWidget {
-  const _MetricNumbers({
-    required this.stock,
-    required this.metric,
-    required this.color,
-  });
-
-  final Stock stock;
-  final MoverMetric metric;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    final muted = Theme.of(context).textTheme.bodySmall?.copyWith(
-          fontWeight: FontWeight.w600,
-          fontSize: 12,
-          color: Theme.of(context).colorScheme.onSurfaceVariant,
-        );
-    final secondary = TextStyle(
-      fontSize: 10,
-      fontWeight: FontWeight.w500,
-      color: Theme.of(context)
-          .colorScheme
-          .onSurfaceVariant
-          .withValues(alpha: 0.75),
-    );
-    final pos = context.colors.marketPositiveIndicator;
-    final neg = context.colors.marketNegativeIndicator;
-
-    switch (metric) {
-      case MoverMetric.today:
-        return _StackedPair(
-          primary: _Line('₹${stock.lastPrice.toStringAsFixed(2)}'),
-          secondary: _Line(stock.formattedChangeAmount, color: color),
-          muted: muted,
-          caption: secondary,
-        );
-      case MoverMetric.pnl:
-        final pnl = moverDisplayPnl(stock);
-        Color? pnlColor;
-        if (pnl != null && pnl > 0) pnlColor = pos;
-        if (pnl != null && pnl < 0) pnlColor = neg;
-        return _SplitPair(
-          mid: _Line(pnl == null ? '—' : formatSignedInr(pnl), color: pnlColor),
-          right: _Line(
-            stock.marketValue == null
-                ? '—'
-                : formatMoverInr(stock.marketValue!),
-          ),
-          muted: muted,
-          caption: secondary,
-        );
-      case MoverMetric.cost:
-        final qty = stock.quantity;
-        final hasQty = qty != null && qty > 0;
-        final invested = stock.investedAmount;
-        final avg = stock.avgPrice;
-        final investedText = stock.hasCostBasis &&
-                invested != null &&
-                invested > 0
-            ? formatMoverInr(invested)
-            : '—';
-        return _SplitPair(
-          mid: _Line(hasQty ? formatMoverQty(qty) : '—'),
-          midCaption: hasQty ? 'shares' : null,
-          right: _Line(investedText),
-          rightCaption: stock.hasCostBasis && avg != null && avg > 0
-              ? 'avg ₹${avg.toStringAsFixed(2)}'
-              : null,
-          muted: muted,
-          caption: secondary,
-        );
-    }
-  }
-}
-
-class _Line {
-  const _Line(this.text, {this.color});
-  final String text;
-  final Color? color;
-}
-
-class _StackedPair extends StatelessWidget {
-  const _StackedPair({
+class _MoneyColumn extends StatelessWidget {
+  const _MoneyColumn({
     required this.primary,
-    required this.secondary,
-    required this.muted,
-    required this.caption,
+    required this.primaryStyle,
+    required this.secondaryStyle,
+    this.secondary,
+    this.secondaryWidget,
   });
 
-  final _Line primary;
-  final _Line secondary;
-  final TextStyle? muted;
-  final TextStyle caption;
+  final String primary;
+  final String? secondary;
+  final Widget? secondaryWidget;
+  final TextStyle? primaryStyle;
+  final TextStyle secondaryStyle;
 
   @override
   Widget build(BuildContext context) {
@@ -251,73 +267,31 @@ class _StackedPair extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.end,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text(
-          primary.text,
-          style: primary.color != null
-              ? muted?.copyWith(color: primary.color)
-              : muted,
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.centerRight,
+          child: Text(
+            primary,
+            maxLines: 1,
+            style: primaryStyle,
+          ),
         ),
-        Text(
-          secondary.text,
-          style: caption.copyWith(color: secondary.color ?? caption.color),
-        ),
-      ],
-    );
-  }
-}
-
-/// Qty / P&L on the left of a rule, invested / value on the right.
-class _SplitPair extends StatelessWidget {
-  const _SplitPair({
-    required this.mid,
-    this.midCaption,
-    required this.right,
-    this.rightCaption,
-    required this.muted,
-    required this.caption,
-  });
-
-  final _Line mid;
-  final String? midCaption;
-  final _Line right;
-  final String? rightCaption;
-  final TextStyle? muted;
-  final TextStyle caption;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        _captioned(mid, midCaption),
-        Container(
-          key: const ValueKey('mover-metric-split'),
-          width: 1,
-          height: 22,
-          margin: const EdgeInsets.symmetric(horizontal: 8),
-          color: Theme.of(context)
-              .colorScheme
-              .onSurfaceVariant
-              .withValues(alpha: 0.28),
-        ),
-        _captioned(right, rightCaption),
-      ],
-    );
-  }
-
-  Widget _captioned(_Line primary, String? sub) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.end,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          primary.text,
-          style: primary.color != null
-              ? muted?.copyWith(color: primary.color)
-              : muted,
-        ),
-        if (sub != null) Text(sub, style: caption),
+        if (secondaryWidget != null)
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerRight,
+            child: secondaryWidget!,
+          )
+        else if (secondary != null)
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerRight,
+            child: Text(
+              secondary!,
+              maxLines: 1,
+              style: secondaryStyle,
+            ),
+          ),
       ],
     );
   }

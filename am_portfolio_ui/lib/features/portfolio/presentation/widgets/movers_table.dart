@@ -1,5 +1,5 @@
 // Unused backup of the six-column table experiment.
-// Overview uses compact MoverTile + metric chips instead. Do not delete.
+// Overview uses compact MoverTile + Value/Percentage toggle instead. Do not delete.
 import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 

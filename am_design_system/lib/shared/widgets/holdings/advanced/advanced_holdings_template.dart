@@ -2,10 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
 import '../../../../core/module/module_config.dart';
+import '../../../../core/theme/app_radii.dart';
+import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/theme/app_type_scale.dart';
 import '../../../../core/theme/color_extensions.dart';
+import '../../inputs/custom_dropdown.dart';
 import 'advanced_holding_row.dart';
 import 'advanced_holdings_cards.dart';
 import 'advanced_holdings_table.dart';
+
+part '_advanced_holdings_header.dart';
 
 /// Shared advanced holdings table/card UI (visual twin of Trade’s advanced
 /// holdings layout). Domain-neutral — callers supply [AdvancedHoldingRow]s.
@@ -23,6 +29,7 @@ class AdvancedHoldingsTemplate extends StatefulWidget {
     this.priceFreshnessLabel,
     this.viewOnly = true,
     this.initialSearchQuery = '',
+    this.initialSector,
   });
 
   final List<AdvancedHoldingRow> holdings;
@@ -41,6 +48,9 @@ class AdvancedHoldingsTemplate extends StatefulWidget {
   /// Seed the symbol/company filter (Global Search `?q=`).
   final String initialSearchQuery;
 
+  /// Pre-select a sector filter (e.g. deep-link from Heatmap drill).
+  final String? initialSector;
+
   @override
   State<AdvancedHoldingsTemplate> createState() =>
       _AdvancedHoldingsTemplateState();
@@ -57,6 +67,8 @@ class _AdvancedHoldingsTemplateState extends State<AdvancedHoldingsTemplate>
   String _filterStatus = 'all';
   late final TextEditingController _searchController;
   String _searchQuery = '';
+  String _selectedSector = 'All';
+  String _selectedIndustry = 'All';
 
   Color get _accent => widget.accentColor ?? ModuleColors.portfolio;
 
@@ -70,6 +82,7 @@ class _AdvancedHoldingsTemplateState extends State<AdvancedHoldingsTemplate>
       duration: const Duration(milliseconds: 1500),
       vsync: this,
     );
+    _applyInitialSector(widget.initialSector);
   }
 
   @override
@@ -87,6 +100,7 @@ class _AdvancedHoldingsTemplateState extends State<AdvancedHoldingsTemplate>
       if (_sortColumnIndex != null) {
         _applySort(_sortColumnIndex!, _sortAscending);
       }
+      _reconcileSectorIndustrySelection();
     }
     if (widget.initialSearchQuery != oldWidget.initialSearchQuery) {
       _searchQuery = widget.initialSearchQuery;
@@ -94,6 +108,61 @@ class _AdvancedHoldingsTemplateState extends State<AdvancedHoldingsTemplate>
         _searchController.text = _searchQuery;
       }
       _currentPage = 0;
+    }
+    if (widget.initialSector != oldWidget.initialSector) {
+      _applyInitialSector(widget.initialSector);
+    }
+  }
+
+  void _applyInitialSector(String? sector) {
+    final trimmed = sector?.trim();
+    if (trimmed == null || trimmed.isEmpty) return;
+    _selectedSector = trimmed;
+    _selectedIndustry = 'All';
+    _currentPage = 0;
+  }
+
+  /// Unique sectors from the book — powers the Sector global dropdown.
+  List<String> get _availableSectors {
+    final set = <String>{};
+    for (final h in _sortedHoldings) {
+      final s = h.displaySector;
+      if (s.isNotEmpty && s != '—') set.add(s);
+    }
+    final list = set.toList()..sort();
+    return ['All', ...list];
+  }
+
+  /// Industries cascade from the selected sector (or all when Sector = All).
+  List<String> get _availableIndustries {
+    final set = <String>{};
+    for (final h in _sortedHoldings) {
+      if (_selectedSector != 'All' && h.displaySector != _selectedSector) {
+        continue;
+      }
+      final industry = _industryOf(h);
+      if (industry.isNotEmpty && industry != '—') set.add(industry);
+    }
+    final list = set.toList()..sort();
+    return ['All', ...list];
+  }
+
+  String _industryOf(AdvancedHoldingRow h) {
+    final i = h.industry?.trim();
+    if (i != null && i.isNotEmpty) return i;
+    return '—';
+  }
+
+  void _reconcileSectorIndustrySelection() {
+    if (_selectedSector != 'All' &&
+        !_availableSectors.contains(_selectedSector)) {
+      _selectedSector = 'All';
+      _selectedIndustry = 'All';
+      return;
+    }
+    if (_selectedIndustry != 'All' &&
+        !_availableIndustries.contains(_selectedIndustry)) {
+      _selectedIndustry = 'All';
     }
   }
 
@@ -106,6 +175,14 @@ class _AdvancedHoldingsTemplateState extends State<AdvancedHoldingsTemplate>
       _sortedHoldings.where((holding) {
         if (_filterStatus == 'profit' && !holding.isProfit) return false;
         if (_filterStatus == 'loss' && holding.isProfit) return false;
+        if (_selectedSector != 'All' &&
+            holding.displaySector != _selectedSector) {
+          return false;
+        }
+        if (_selectedIndustry != 'All' &&
+            _industryOf(holding) != _selectedIndustry) {
+          return false;
+        }
         if (_searchQuery.isNotEmpty) {
           final query = _searchQuery.toLowerCase();
           if (!holding.displaySymbol.toLowerCase().contains(query) &&
@@ -159,8 +236,7 @@ class _AdvancedHoldingsTemplateState extends State<AdvancedHoldingsTemplate>
               a.totalGainLossPercentage.compareTo(b.totalGainLossPercentage);
           break;
         case 9:
-          result =
-              a.todayChangePercentage.compareTo(b.todayChangePercentage);
+          result = a.todayChangePercentage.compareTo(b.todayChangePercentage);
           break;
         case 10:
           result = a.portfolioWeight.compareTo(b.portfolioWeight);
@@ -179,6 +255,53 @@ class _AdvancedHoldingsTemplateState extends State<AdvancedHoldingsTemplate>
   void _goToPage(int page) {
     setState(() {
       _currentPage = page.clamp(0, (_totalPages - 1).clamp(0, _totalPages));
+    });
+  }
+
+  void _onFilterStatusChanged(String value) {
+    setState(() {
+      _filterStatus = value;
+      _currentPage = 0;
+    });
+  }
+
+  void _onViewModeChanged(String mode) {
+    setState(() => _viewMode = mode);
+  }
+
+  void _onSectorChanged(String sector) {
+    setState(() {
+      _selectedSector = sector;
+      if (_selectedIndustry != 'All' &&
+          !_availableIndustries.contains(_selectedIndustry)) {
+        _selectedIndustry = 'All';
+      }
+      _currentPage = 0;
+    });
+  }
+
+  void _onIndustryChanged(String industry) {
+    setState(() {
+      _selectedIndustry = industry;
+      _currentPage = 0;
+    });
+  }
+
+  void _onSearchChanged(String value) {
+    setState(() {
+      _searchQuery = value;
+      _currentPage = 0;
+    });
+  }
+
+  void _resetFilters() {
+    setState(() {
+      _filterStatus = 'all';
+      _selectedSector = 'All';
+      _selectedIndustry = 'All';
+      _searchQuery = '';
+      _searchController.clear();
+      _currentPage = 0;
     });
   }
 
@@ -284,193 +407,6 @@ class _AdvancedHoldingsTemplateState extends State<AdvancedHoldingsTemplate>
           ],
         ),
       );
-
-  Widget _buildControlsHeader() => Container(
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
-          border: Border(bottom: BorderSide(color: context.borderColor)),
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: Row(
-          children: [
-            Wrap(
-              spacing: 8,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: [
-                _buildFilterPill('all', 'All', _accent),
-                _buildFilterPill('profit', 'Profit', context.marketPositive),
-                _buildFilterPill('loss', 'Loss', context.marketNegative),
-                const SizedBox(width: 4),
-                Container(
-                  decoration: BoxDecoration(
-                    color: _isDarkChrome
-                        ? context.glassOverlay(0.06)
-                        : _accent.withValues(alpha: 0.06),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: _accent.withValues(alpha: 0.2)),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      _buildViewModeButton('table', Icons.table_chart, 'Table'),
-                      _buildViewModeButton('card', Icons.dashboard, 'Card'),
-                    ],
-                  ),
-                ),
-                if (widget.priceFreshnessLabel != null &&
-                    widget.priceFreshnessLabel!.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(left: 4),
-                    child: Text(
-                      widget.priceFreshnessLabel!,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        color: context.textSecondary,
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-            const Spacer(),
-            SizedBox(
-              width: 240,
-              height: 36,
-              child: TextField(
-                controller: _searchController,
-                onChanged: (value) => setState(() {
-                  _searchQuery = value;
-                  _currentPage = 0;
-                }),
-                decoration: InputDecoration(
-                  hintText: 'Search symbol or company...',
-                  hintStyle: TextStyle(
-                    fontSize: 13,
-                    color: context.textTertiary,
-                  ),
-                  prefixIcon: Icon(
-                    Icons.search,
-                    size: 16,
-                    color: context.textTertiary,
-                  ),
-                  contentPadding:
-                      const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
-                  filled: true,
-                  fillColor: context.surfaceColor,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(color: context.borderColor),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(color: context.borderColor),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(color: _accent, width: 1.5),
-                  ),
-                ),
-                style: const TextStyle(fontSize: 13),
-              ),
-            ),
-            const SizedBox(width: 12),
-            IconButton(
-              onPressed: () {
-                _refreshController.forward(from: 0);
-                widget.onRefresh?.call();
-              },
-              icon: RotationTransition(
-                turns: _refreshController,
-                child: const Icon(Icons.refresh),
-              ),
-              tooltip: 'Refresh',
-            ),
-          ],
-        ),
-      );
-
-  Widget _buildViewModeButton(String mode, IconData icon, String label) {
-    final selected = _viewMode == mode;
-    final isDark = _isDarkChrome;
-    return InkWell(
-      onTap: () => setState(() => _viewMode = mode),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: selected
-              ? _accent.withValues(alpha: isDark ? 0.28 : 0.15)
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(6),
-          border: selected
-              ? Border.all(color: _accent.withValues(alpha: 0.55))
-              : null,
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              size: 16,
-              color: selected
-                  ? _accent
-                  : context.textSecondary,
-            ),
-            const SizedBox(width: 4),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-                color: selected ? _accent : context.textSecondary,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildFilterPill(String value, String label, Color? color) {
-    final selected = _filterStatus == value;
-    final accent = color ?? _accent;
-    final isDark = _isDarkChrome;
-    return InkWell(
-      onTap: () => setState(() {
-        _filterStatus = value;
-        _currentPage = 0;
-      }),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: selected
-              ? accent.withValues(alpha: isDark ? 0.22 : 0.15)
-              : (isDark
-                  ? context.glassOverlay(0.06)
-                  : _accent.withValues(alpha: 0.06)),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: selected
-                ? accent
-                : (isDark
-                    ? context.glassOverlay(0.14)
-                    : _accent.withValues(alpha: 0.25)),
-            width: selected ? 1.5 : 1,
-          ),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
-            color: selected
-                ? accent
-                : context.textSecondary,
-          ),
-        ),
-      ),
-    );
-  }
 
   Widget _buildFooter() {
     final total = _filteredHoldings.length;

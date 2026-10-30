@@ -2,16 +2,17 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:am_design_system/am_design_system.dart' as ds;
 import '../../internal/domain/entities/portfolio_analytics.dart';
+import 'movers_tabs.dart';
 import 'movers_widget.dart';
 
 class MoversDetailModal extends StatelessWidget {
   final Movers movers;
-  
+
   const MoversDetailModal({super.key, required this.movers});
 
   static Future<void> show(BuildContext context, Movers movers) async {
     final isMobile = MediaQuery.of(context).size.width < 600;
-    
+
     if (isMobile) {
       await showModalBottomSheet(
         context: context,
@@ -48,19 +49,30 @@ class MoversDetailModal extends StatelessWidget {
   }
 }
 
-class _ModalContainer extends StatelessWidget {
+class _ModalContainer extends StatefulWidget {
   final Movers movers;
   final ScrollController? scrollController;
 
   const _ModalContainer({required this.movers, this.scrollController});
 
   @override
+  State<_ModalContainer> createState() => _ModalContainerState();
+}
+
+class _ModalContainerState extends State<_ModalContainer> {
+  MoversDisplayMode _mode = MoversDisplayMode.value;
+  bool _showGainers = true;
+
+  @override
   Widget build(BuildContext context) {
+    final movers = widget.movers;
+    final scrollController = widget.scrollController;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final isMobile = MediaQuery.of(context).size.width < 600;
-    
+
     return ClipRRect(
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(24), bottom: Radius.circular(24)),
+      borderRadius: const BorderRadius.vertical(
+          top: Radius.circular(24), bottom: Radius.circular(24)),
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
         child: Container(
@@ -79,7 +91,8 @@ class _ModalContainer extends StatelessWidget {
                     ],
             ),
             border: Border.all(
-              color: context.colors.actionPrimaryFg.withValues(alpha: isDark ? 0.07 : 0.4),
+              color: context.colors.actionPrimaryFg
+                  .withValues(alpha: isDark ? 0.07 : 0.4),
               width: 1,
             ),
             borderRadius: BorderRadius.circular(24),
@@ -88,7 +101,6 @@ class _ModalContainer extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // ── Header ──
               Padding(
                 padding: const EdgeInsets.all(24.0),
                 child: Row(
@@ -96,7 +108,8 @@ class _ModalContainer extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: ds.ModuleColors.portfolio.withValues(alpha: 0.12),
+                        color:
+                            ds.ModuleColors.portfolio.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Icon(
@@ -112,26 +125,43 @@ class _ModalContainer extends StatelessWidget {
                         children: [
                           Text(
                             'All Top Movers',
-                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleLarge
+                                ?.copyWith(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 20,
                                   letterSpacing: -0.3,
                                 ),
                           ),
                           Text(
-                            'Day change — highest gainers and losers',
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
-                                ),
+                            _showGainers
+                                ? 'Biggest gainers from your portfolio'
+                                : 'Biggest losers from your portfolio',
+                            style:
+                                Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurface
+                                          .withValues(alpha: 0.6),
+                                    ),
                           ),
                         ],
                       ),
                     ),
+                    MoversDisplayModeToggle(
+                      selected: _mode,
+                      onSelect: (m) => setState(() => _mode = m),
+                    ),
+                    const SizedBox(width: 8),
                     IconButton(
                       icon: const Icon(Icons.close),
                       onPressed: () => Navigator.of(context).pop(),
                       style: IconButton.styleFrom(
-                        backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                        backgroundColor: Theme.of(context)
+                            .colorScheme
+                            .surfaceContainerHighest
+                            .withValues(alpha: 0.5),
                       ),
                     ),
                   ],
@@ -146,7 +176,11 @@ class _ModalContainer extends StatelessWidget {
                     movers: movers,
                     compact: isMobile,
                     maxRows: 10,
-                    forceTabs: true,
+                    showGainers: _showGainers,
+                    onShowGainersChanged: (v) =>
+                        setState(() => _showGainers = v),
+                    mode: _mode,
+                    onModeChanged: (m) => setState(() => _mode = m),
                   ),
                 ),
               ),

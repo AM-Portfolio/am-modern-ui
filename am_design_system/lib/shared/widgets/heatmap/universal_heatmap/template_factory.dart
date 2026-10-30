@@ -130,6 +130,7 @@ class UniversalHeatmapTemplateFactory {
     Widget? selectorWidget,
     String? customTitle,
     String? customSubtitle,
+    Widget? customHeader,
   }) {
     CommonLogger.methodEntry(
       'createLayoutTemplate',
@@ -166,6 +167,7 @@ class UniversalHeatmapTemplateFactory {
           showLegend: false,
           showSelectors: false,
           icon: icon,
+          customHeader: customHeader,
         );
         break;
 
@@ -185,6 +187,7 @@ class UniversalHeatmapTemplateFactory {
           icon: icon,
           padding: const EdgeInsets.fromLTRB(4, 4, 4, 4),
           compactHeader: true,
+          customHeader: customHeader,
         );
         break;
 
@@ -202,7 +205,9 @@ class UniversalHeatmapTemplateFactory {
           showSelectors: selectorWidget != null,
           icon: icon,
           headerActions: _getHeaderActions(context),
-          padding: const EdgeInsets.all(16),
+          // Outer page already pads — keep template chrome minimal for mosaic size.
+          padding: EdgeInsets.zero,
+          customHeader: customHeader,
         );
         break;
 
@@ -220,7 +225,8 @@ class UniversalHeatmapTemplateFactory {
           showLegend: false,
           showSelectors: selectorWidget != null,
           icon: icon,
-          padding: const EdgeInsets.all(8),
+          padding: const EdgeInsets.fromLTRB(4, 4, 4, 4),
+          customHeader: customHeader,
         );
         break;
 
@@ -252,6 +258,7 @@ class UniversalHeatmapTemplateFactory {
                 icon: icon,
                 compactHeader: true,
                 padding: const EdgeInsets.fromLTRB(4, 4, 4, 4),
+                customHeader: customHeader,
               );
             } else if (constraints.maxWidth < 1024) {
               CommonLogger.debug(
@@ -267,6 +274,7 @@ class UniversalHeatmapTemplateFactory {
                 showSelectors: selectorWidget != null,
                 icon: icon,
                 padding: const EdgeInsets.all(12),
+                customHeader: customHeader,
               );
             } else {
               CommonLogger.debug(
@@ -282,7 +290,8 @@ class UniversalHeatmapTemplateFactory {
                 showSelectors: selectorWidget != null,
                 icon: icon,
                 headerActions: _getHeaderActions(context),
-                padding: const EdgeInsets.all(16),
+                padding: EdgeInsets.zero,
+                customHeader: customHeader,
               );
             }
           },

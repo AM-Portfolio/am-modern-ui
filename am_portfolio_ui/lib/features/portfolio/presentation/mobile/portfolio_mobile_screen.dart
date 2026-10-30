@@ -128,7 +128,7 @@ class _PortfolioMobileScreenState extends ConsumerState<PortfolioMobileScreen> {
 }
 
 /// Internal mobile portfolio view with tab-based navigation and portfolio selection
-class PortfolioMobileView extends StatefulWidget {
+class PortfolioMobileView extends ConsumerStatefulWidget {
   const PortfolioMobileView({
     super.key,
     this.selectedPortfolioId,
@@ -158,10 +158,11 @@ class PortfolioMobileView extends StatefulWidget {
   final ValueChanged<GlobalAddActionKind>? onQuickAdd;
 
   @override
-  State<PortfolioMobileView> createState() => _PortfolioMobileViewState();
+  ConsumerState<PortfolioMobileView> createState() =>
+      _PortfolioMobileViewState();
 }
 
-class _PortfolioMobileViewState extends State<PortfolioMobileView>
+class _PortfolioMobileViewState extends ConsumerState<PortfolioMobileView>
     with TickerProviderStateMixin {
   late TabController _tabController;
   String? _currentPortfolioId;
@@ -231,6 +232,13 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
         setState(() {});
         if (!_isAddAssetClassRoute) {
           final slug = _tabSlugFromIndex(_tabController.index);
+          // Collapse holdings filters when leaving the Holdings tab.
+          if (slug != 'holdings' &&
+              ref.read(mobileHoldingsFiltersExpandedProvider)) {
+            ref
+                .read(mobileHoldingsFiltersExpandedProvider.notifier)
+                .set(false);
+          }
           if (_wasOnBasketsTab && !_isBasketsTab(slug)) {
             _loadPortfolioDetailIfNeeded(context.read<PortfolioCubit>());
           }
@@ -661,10 +669,57 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
                     const SizedBox(width: 4),
                     _buildPortfolioManageDropdown(context),
                   ],
+                  // Holdings only: filter toggle sits to the right of settings.
+                  if (_tabController.index == 1) ...[
+                    const SizedBox(width: 4),
+                    _buildHoldingsFilterToggle(context),
+                  ],
                 ],
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  /// Opens/closes Sector+Industry strip under this sticky row (Holdings tab).
+  Widget _buildHoldingsFilterToggle(BuildContext context) {
+    final accent = ModuleColors.portfolio;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final expanded = ref.watch(mobileHoldingsFiltersExpandedProvider);
+    final hasActive = ref.watch(mobileHoldingsHasActiveFiltersProvider);
+    final lit = expanded || hasActive;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          ref.read(mobileHoldingsFiltersExpandedProvider.notifier).toggle();
+        },
+        borderRadius: BorderRadius.circular(10),
+        child: Container(
+          width: 40,
+          height: 36,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: lit
+                ? accent.withValues(alpha: isDark ? 0.18 : 0.12)
+                : (isDark ? context.glassOverlay(0.06) : null),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: lit
+                  ? accent.withValues(alpha: 0.55)
+                  : (isDark
+                      ? context.glassOverlay(0.1)
+                      : context.borderColor),
+            ),
+          ),
+          child: Icon(
+            expanded ? Icons.filter_alt : Icons.filter_alt_outlined,
+            size: 18,
+            color: lit ? accent : context.textSecondary,
+          ),
         ),
       ),
     );

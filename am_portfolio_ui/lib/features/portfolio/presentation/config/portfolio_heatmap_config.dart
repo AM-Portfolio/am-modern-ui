@@ -161,9 +161,14 @@ class PortfolioHeatmapConfig {
     display:
         baseConfig.display?.copyWith(
           showRefreshButton: false,
-          showLegend: false,
+          showLegend: true,
+          showPerformance: true,
         ) ??
-        const DisplayConfig(showRefreshButton: false, showLegend: false),
+        const DisplayConfig(
+          showRefreshButton: false,
+          showLegend: true,
+          showPerformance: true,
+        ),
     interactions:
         baseConfig.interactions?.copyWith(
           showLoadingStates: false,

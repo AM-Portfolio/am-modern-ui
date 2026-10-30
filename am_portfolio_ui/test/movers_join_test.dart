@@ -10,6 +10,8 @@ PortfolioHolding _holding({
   double investedAmount = 0,
   double currentPrice = 0,
   double currentValue = 0,
+  double todayChange = 0,
+  double todayChangePercentage = 0,
   String sector = 'IT',
   String companyName = '',
 }) {
@@ -25,8 +27,8 @@ PortfolioHolding _holding({
     currentPrice: currentPrice,
     investedAmount: investedAmount,
     currentValue: currentValue,
-    todayChange: 0,
-    todayChangePercentage: 0,
+    todayChange: todayChange,
+    todayChangePercentage: todayChangePercentage,
     totalGainLoss: 0,
     totalGainLossPercentage: 0,
     portfolioWeight: 0,
@@ -47,6 +49,47 @@ void main() {
     expect(normalizeMoverSymbol('NSE_EQ:TCS'), 'TCS');
     expect(normalizeMoverSymbol('NSE_EQ|TCS'), 'TCS');
     expect(normalizeMoverSymbol(' tcs '), 'TCS');
+  });
+
+  test('formatMoverInrCompact uses K/L while exact keeps full precision', () {
+    expect(formatMoverInrCompact(1000), '₹1.0K');
+    expect(formatMoverInrCompact(33966), '₹34.0K');
+    expect(formatMoverInrCompact(493.93), '₹493.93');
+    expect(formatSignedInrCompact(1406), '+₹1.4K');
+    expect(formatMoverInr(3413.5), contains('3,413.50'));
+  });
+
+  test('moverDayReturnPercent uses day move not lifetime total return', () {
+    final gainer = Stock(
+      symbol: 'UP',
+      companyName: 'UP',
+      lastPrice: 100,
+      changeAmount: 5,
+      changePercent: 5,
+      sector: 'IT',
+      quantity: 10,
+      investedAmount: 800,
+      marketValue: 1000,
+      totalReturn: 200, // +25% lifetime
+    );
+    expect(moverDisplayPnlPercent(gainer), closeTo(25, 0.01));
+    expect(moverDayReturnPercent(gainer), closeTo(50 / 800 * 100, 0.01));
+
+    final loser = Stock(
+      symbol: 'DOWN',
+      companyName: 'DOWN',
+      lastPrice: 950,
+      changeAmount: -39,
+      changePercent: -3.94,
+      sector: 'IT',
+      quantity: 16,
+      investedAmount: 5030,
+      marketValue: 15200,
+      totalReturn: 10170, // ~+202% lifetime
+    );
+    expect(moverDisplayPnlPercent(loser)!, greaterThan(200));
+    expect(moverDayReturnPercent(loser)!, lessThan(0));
+    expect(formatSignedPct(moverDayReturnPercent(loser)!), startsWith('-'));
   });
 
   test('Dhan zero-cost holding does not invent invested or P&L', () {
@@ -170,5 +213,61 @@ void main() {
     expect(movers.topGainers[1].investedAmount, isNull);
     expect(movers.topGainers[1].totalReturn, isNull);
     expect(movers.topGainers[1].marketValue, closeTo(80, 0.01));
+  });
+
+  test('moverDayValueChange is qty × day change; null without qty', () {
+    final withQty = Stock(
+      symbol: 'PARACABLES',
+      companyName: 'PARACABLES',
+      lastPrice: 59.64,
+      changeAmount: 1.98,
+      changePercent: 3.43,
+      sector: 'IT',
+      quantity: 29,
+      marketValue: 1729.56,
+    );
+    expect(moverDayValueChange(withQty), closeTo(57.42, 0.01));
+
+    final noQty = Stock(
+      symbol: 'X',
+      companyName: 'X',
+      lastPrice: 10,
+      changeAmount: 1,
+      changePercent: 10,
+      sector: 'IT',
+    );
+    expect(moverDayValueChange(noQty), isNull);
+  });
+
+  test('buildPortfolioMovers ranks by day ₹ impact not market %', () {
+    final movers = buildPortfolioMovers([
+      _holding(
+        symbol: 'SMALL_PCT_BIG',
+        quantity: 100,
+        currentPrice: 100,
+        currentValue: 10000,
+        todayChange: 500,
+        todayChangePercentage: 5,
+      ),
+      _holding(
+        symbol: 'BIG_PCT_SMALL',
+        quantity: 1,
+        currentPrice: 10,
+        currentValue: 10,
+        todayChange: 2,
+        todayChangePercentage: 20,
+      ),
+      _holding(
+        symbol: 'LOSER',
+        quantity: 50,
+        currentPrice: 20,
+        currentValue: 1000,
+        todayChange: -80,
+        todayChangePercentage: -8,
+      ),
+    ]);
+    expect(movers.topGainers.first.symbol, 'SMALL_PCT_BIG');
+    expect(movers.topGainers[1].symbol, 'BIG_PCT_SMALL');
+    expect(movers.topLosers.single.symbol, 'LOSER');
   });
 }
