@@ -55,12 +55,12 @@ class PortfolioHeatmapUiConfig {
   );
 
   /// Space so the treemap sits above the floating global bottom nav.
-  static double mobileBottomInset(
-    BuildContext context, {
-    double navFactor = 1,
-  }) {
-    final reserve = PlatformConstants.globalBottomNavReserve(context);
-    return 8.0 + reserve * navFactor.clamp(0.0, 1.0);
+  ///
+  /// Always reserves the full nav height on compact — tying inset to
+  /// [GlobalBottomNavVisibility.factor] collapsed padding when the nav hid on
+  /// scroll, so sector tiles painted under the bar when it returned.
+  static double mobileBottomInset(BuildContext context) {
+    return 8.0 + PlatformConstants.globalBottomNavReserve(context);
   }
 
   /// Web configuration — tight padding so the treemap uses the page width/height.
@@ -109,8 +109,6 @@ class _PortfolioHeatmapWidgetState
   int _heatmapLoadGeneration = 0;
   /// Full nested tiles before compact budget — used for sector drill-down.
   List<HeatmapTileData> _fullOverviewTiles = const [];
-  /// Tab viewport height — compact heatmap block matches one full screen.
-  double _mobileViewportH = 0;
 
   late final ValueChanged<HeatmapTileData?> _onTileHover;
   late final ValueChanged<HeatmapTileData> _onTileSelect;
@@ -272,33 +270,20 @@ class _PortfolioHeatmapWidgetState
     });
     ref.watch(appTimeFrameProvider);
 
-    // Web: fill the tab. Compact: scroll page; heatmap block = one screen tall.
+    // One viewport: KPIs + mosaic share the tab. Do not stack a second
+    // full-screen mosaic under the KPIs (that caused the "stuck/stacked" page).
     return LayoutBuilder(
       builder: (context, constraints) {
         final viewportH = constraints.maxHeight.isFinite
             ? constraints.maxHeight
             : MediaQuery.sizeOf(context).height;
-        if (widget.config.compactMode) {
-          _mobileViewportH = viewportH;
-        }
-        final content = Padding(
-          padding: widget.config.padding,
-          child: _buildHeatmapContent(),
-        );
-        if (widget.config.compactMode) {
-          return SizedBox(
-            width: constraints.maxWidth,
-            height: viewportH,
-            child: SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              child: content,
-            ),
-          );
-        }
         return SizedBox(
           width: constraints.maxWidth,
           height: viewportH,
-          child: content,
+          child: Padding(
+            padding: widget.config.padding,
+            child: _buildHeatmapContent(),
+          ),
         );
       },
     );
@@ -418,11 +403,13 @@ class _PortfolioHeatmapWidgetState
         layoutType: _selectedLayout,
         showLayoutSelector: widget.config.compactMode ? true : null,
         nestedSectors: useNested,
-        // Compact: solid fills (cheap paint). Wide web: glass / liquid tiles.
-        solidFills: widget.config.compactMode,
+        // Nested overview always uses solid fills — glass/blur per leaf freezes
+        // Flutter Web on large books. Drill-down / flat layouts can stay richer.
+        solidFills: widget.config.compactMode || useNested,
       ),
       interactions: baseInteractions.copyWith(
-        enableHoverEffects: !widget.config.compactMode,
+        // Hover on every nested leaf is expensive; keep for flat/drill only.
+        enableHoverEffects: !widget.config.compactMode && !useNested,
       ),
       selectors: baseSelectors.copyWith(
         selectorLayout:
@@ -434,7 +421,8 @@ class _PortfolioHeatmapWidgetState
       ),
     );
 
-    // Drill-down: flat children. Wide nested: full bands. Compact nested: budget.
+    // Drill-down: flat children (full sector). Nested overview: always budget —
+    // uncapped web books paint hundreds of leaves and lock the page.
     var workingTiles = convertedHeatmapData.tiles
         .map((t) => t is HeatmapTileData ? t : HeatmapTileData.fromEntity(t))
         .toList();
@@ -444,9 +432,13 @@ class _PortfolioHeatmapWidgetState
       workingTiles = _drillDownTile!.children!
           .map((t) => t is HeatmapTileData ? t : HeatmapTileData.fromEntity(t))
           .toList();
-    } else if (useNested && widget.config.compactMode) {
-      workingTiles =
-          SectorHeatmapConverter.applyCompactTreemapBudget(workingTiles);
+    } else if (useNested) {
+      workingTiles = SectorHeatmapConverter.applyCompactTreemapBudget(
+        workingTiles,
+        maxStocksPerSector: widget.config.compactMode
+            ? SectorHeatmapConverter.compactMaxStocksPerSector
+            : SectorHeatmapConverter.webMaxStocksPerSector,
+      );
     }
 
     workingTiles = workingTiles.map((tile) {
@@ -561,20 +553,15 @@ class _PortfolioHeatmapWidgetState
           ),
         );
 
-    // Compact: scroll past KPIs; heatmap block height = one full tab screen.
-    // Lag fixes kept: solid fills, no hover, tile budget, isolated inspector.
+    // Compact: KPIs take intrinsic height; mosaic fills the rest of the tab
+    // (above a stable bottom-nav reserve). No second full-screen scroll slab.
     if (widget.config.compactMode) {
-      final mapH = _mobileViewportH > 0
-          ? _mobileViewportH
-          : MediaQuery.sizeOf(context).height;
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _buildSummaryCardsRow(),
           const SizedBox(height: 8),
-          SizedBox(
-            height: mapH,
-            width: double.infinity,
+          Expanded(
             child: _padAboveBottomNav(
               context,
               child: heatmapBody(showSelectors: true),
@@ -1085,19 +1072,11 @@ class _PortfolioHeatmapWidgetState
   }
 
   Widget _padAboveBottomNav(BuildContext context, {required Widget child}) {
-    return ValueListenableBuilder<double>(
-      valueListenable: GlobalBottomNavVisibility.factor,
-      builder: (context, navFactor, _) {
-        return Padding(
-          padding: EdgeInsets.only(
-            bottom: PortfolioHeatmapUiConfig.mobileBottomInset(
-              context,
-              navFactor: navFactor,
-            ),
-          ),
-          child: child,
-        );
-      },
+    return Padding(
+      padding: EdgeInsets.only(
+        bottom: PortfolioHeatmapUiConfig.mobileBottomInset(context),
+      ),
+      child: child,
     );
   }
 
