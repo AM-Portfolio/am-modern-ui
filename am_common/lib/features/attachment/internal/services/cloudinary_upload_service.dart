@@ -137,7 +137,11 @@ class CloudinaryUploadService implements FileUploadService {
         tag: 'CloudinaryUpload',
       );
       if (e is FileUploadException) rethrow;
-      throw FileUploadException('Failed to upload file', originalError: e);
+      final detail = e.toString().trim();
+      throw FileUploadException(
+        detail.isEmpty ? 'Failed to upload file' : 'Failed to upload file: $detail',
+        originalError: e,
+      );
     }
   }
 

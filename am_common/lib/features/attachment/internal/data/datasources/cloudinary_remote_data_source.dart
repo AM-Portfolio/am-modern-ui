@@ -5,8 +5,8 @@ import '../dtos/cloudinary_dto.dart';
 
 /// Remote data source for Cloudinary operations via backend API.
 ///
-/// Uses authenticated [ApiClient] against the cloudinary-manager base URL
-/// (typically `https://{host}/cloudinary`).
+/// Uses authenticated [ApiClient] against the API host root.
+/// Ingress path is `/v1/cloudinary` (e.g. `https://{host}/v1/cloudinary/upload`).
 class CloudinaryRemoteDataSource {
   CloudinaryRemoteDataSource({required ApiClient apiClient})
       : _apiClient = apiClient;

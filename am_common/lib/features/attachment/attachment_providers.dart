@@ -7,7 +7,7 @@ import 'internal/data/repositories/cloudinary_repository_impl.dart';
 import 'internal/services/cloudinary_upload_service.dart';
 import 'internal/services/file_upload_service.dart';
 
-/// Authenticated API client scoped to the cloudinary-manager gateway path.
+/// Authenticated API client for cloudinary-manager (host root; paths under /v1/cloudinary).
 final cloudinaryApiClientProvider = FutureProvider<ApiClient>((ref) async {
   final config = await ref.watch(appConfigProvider.future);
   final cloudinary = config.api.cloudinary;

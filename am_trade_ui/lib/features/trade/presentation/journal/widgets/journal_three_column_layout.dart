@@ -332,13 +332,12 @@ class _JournalThreeColumnLayoutState extends State<JournalThreeColumnLayout> {
     _notifyComposerOpen();
     widget.onSelectedSymbolChanged?.call(entry.symbol);
 
-    // Refresh full entity so list stubs don't leave the detail empty.
-    if (JournalFolderFilter.shouldOpenTradeWorkflow(entry)) {
-      final fresh = await widget.journalCubit.loadEntryDetail(entry.id);
-      if (!mounted || fresh == null) return;
-      if (_selectedEntryId != entry.id) return;
-      setState(() => _hydratedEntry = fresh);
-    }
+    // Always hydrate full entity — list rows often omit/ lag attachments,
+    // so Log Day view/edit would show empty Supporting Evidence otherwise.
+    final fresh = await widget.journalCubit.loadEntryDetail(entry.id);
+    if (!mounted || fresh == null) return;
+    if (_selectedEntryId != entry.id) return;
+    setState(() => _hydratedEntry = fresh);
   }
 
   Future<void> _confirmAndDelete(JournalEntry entry) async {
@@ -400,6 +399,18 @@ class _JournalThreeColumnLayoutState extends State<JournalThreeColumnLayout> {
     );
   }
 
+  /// Leave enough width for Notes + right meta column inside the detail pane.
+  /// Trade module sidebar already ate outer chrome — this rail must give way.
+  static double _entriesRailWidth(double workspaceWidth) {
+    const minDetail = 640.0;
+    final forRail = workspaceWidth - minDetail;
+    if (forRail < 168) return 168;
+    if (forRail < 220) return 200;
+    if (forRail < 280) return 240;
+    if (forRail < 320) return 280;
+    return 300;
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
@@ -408,71 +419,81 @@ class _JournalThreeColumnLayoutState extends State<JournalThreeColumnLayout> {
 
     return ColoredBox(
       color: colors.surface,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 320),
-            curve: Curves.easeOutCubic,
-            width: focusFullPage ? 0 : 320,
-            child: focusFullPage
-                ? const SizedBox.shrink()
-                : ClipRect(
-                    child: JournalEntryListView(
-                      entries: widget.entries,
-                      selectedEntryId: _selectedEntryId,
-                      showListTitle: false,
-                      width: 320,
-                      createMode: _createModeHighlight(selectedEntry),
-                      filterSlot: widget.listFilterSlot,
-                      emptyMessage: JournalFolderFilter.emptyMessage(
-                        widget.selectedFolder,
-                      ).split('\n').first,
-                      emptySubtitle:
-                          'Start documenting your trades to unlock powerful insights.',
-                      onEntrySelected: _onEntrySelected,
-                      onDeleteEntry: _confirmAndDelete,
-                      onLogDayPressed: () => _startNewEntry(
-                            tradeWorkflow: false,
-                            clearTemplate: true,
-                          ),
-                      onNewTradeJournalPressed: () => _startNewEntry(
-                            tradeWorkflow: true,
-                            clearTemplate: true,
-                          ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final railWidth =
+              focusFullPage ? 0.0 : _entriesRailWidth(constraints.maxWidth);
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 280),
+                curve: Curves.easeOutCubic,
+                width: railWidth,
+                // ClipRect — AnimatedContainer forbids clipBehavior without decoration.
+                child: railWidth <= 0
+                    ? const SizedBox.shrink()
+                    : ClipRect(
+                        child: JournalEntryListView(
+                          entries: widget.entries,
+                          selectedEntryId: _selectedEntryId,
+                          showListTitle: false,
+                          // Parent AnimatedContainer owns width — fill it.
+                          width: double.infinity,
+                          createMode: _createModeHighlight(selectedEntry),
+                          filterSlot: widget.listFilterSlot,
+                          emptyMessage: JournalFolderFilter.emptyMessage(
+                            widget.selectedFolder,
+                          ).split('\n').first,
+                          emptySubtitle:
+                              'Start documenting your trades to unlock powerful insights.',
+                          onEntrySelected: _onEntrySelected,
+                          onDeleteEntry: _confirmAndDelete,
+                          onLogDayPressed: () => _startNewEntry(
+                                tradeWorkflow: false,
+                                clearTemplate: true,
+                              ),
+                          onNewTradeJournalPressed: () => _startNewEntry(
+                                tradeWorkflow: true,
+                                clearTemplate: true,
+                              ),
+                        ),
+                      ),
+              ),
+              Expanded(
+                child: ClipRect(
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 340),
+                    switchInCurve: Curves.easeOutCubic,
+                    switchOutCurve: Curves.easeInCubic,
+                    transitionBuilder: (child, animation) {
+                      final slide = Tween<Offset>(
+                        begin: const Offset(0.04, 0),
+                        end: Offset.zero,
+                      ).animate(animation);
+                      return FadeTransition(
+                        opacity: animation,
+                        child: SlideTransition(position: slide, child: child),
+                      );
+                    },
+                    child: KeyedSubtree(
+                      // Do not key on _isEditingEntry — remounting on Edit forces a
+                      // second click before the form actually enters edit mode.
+                      key: ValueKey(
+                        _isCreatingNew
+                            ? 'composer-${_useTradeWorkflow ? 'trade' : 'day'}'
+                            : _forceTradeEdit
+                                ? 'trade-edit-${selectedEntry?.id ?? 'none'}'
+                                : (selectedEntry?.id ?? 'empty-detail'),
+                      ),
+                      child: _buildRightPane(colors, selectedEntry),
                     ),
                   ),
-          ),
-          Expanded(
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 340),
-              switchInCurve: Curves.easeOutCubic,
-              switchOutCurve: Curves.easeInCubic,
-              transitionBuilder: (child, animation) {
-                final slide = Tween<Offset>(
-                  begin: const Offset(0.04, 0),
-                  end: Offset.zero,
-                ).animate(animation);
-                return FadeTransition(
-                  opacity: animation,
-                  child: SlideTransition(position: slide, child: child),
-                );
-              },
-              child: KeyedSubtree(
-                // Do not key on _isEditingEntry — remounting on Edit forces a
-                // second click before the form actually enters edit mode.
-                key: ValueKey(
-                  _isCreatingNew
-                      ? 'composer-${_useTradeWorkflow ? 'trade' : 'day'}'
-                      : _forceTradeEdit
-                          ? 'trade-edit-${selectedEntry?.id ?? 'none'}'
-                          : (selectedEntry?.id ?? 'empty-detail'),
                 ),
-                child: _buildRightPane(colors, selectedEntry),
               ),
-            ),
-          ),
-        ],
+            ],
+          );
+        },
       ),
     );
   }

@@ -359,7 +359,10 @@ class ConfigService {
     final analysisUrl = _services['analysis'] ?? '$api/analysis';
     final newsUrl = _services['news'] ?? '$api/news';
     final gmailUrl = _services['gmail'] ?? '$api/gmail';
-    final cloudinaryUrl = _services['cloudinary'] ?? '$api/cloudinary';
+    // Ingress is `/v1/cloudinary` on the API host (no `/cloudinary` strip-prefix).
+    // Remote paths already include `v1/cloudinary/...`, so base is the host root —
+    // same pattern as OMS (`$api` + `/v1/...`). `$api/cloudinary` hits the SPA.
+    final cloudinaryUrl = _services['cloudinary'] ?? api;
     final marketWsUrl =
         _services['marketWs'] ?? '$ws/market/ws/market-data-stream';
 
