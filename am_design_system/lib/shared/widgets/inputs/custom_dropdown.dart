@@ -23,6 +23,7 @@ class CustomDropdown<T> extends StatefulWidget {
     this.borderRadius = 12,
     this.contentPadding = const EdgeInsets.symmetric(horizontal: 12),
     this.backgroundColor,
+    this.menuBackgroundColor,
     this.borderColor,
     this.textColor,
     this.enabled = true,
@@ -73,8 +74,11 @@ class CustomDropdown<T> extends StatefulWidget {
   /// Padding inside the container
   final EdgeInsets contentPadding;
 
-  /// Background color override
+  /// Background color override (closed trigger)
   final Color? backgroundColor;
+
+  /// Open menu panel color. Defaults to [backgroundColor] or theme surface.
+  final Color? menuBackgroundColor;
 
   /// Border color override
   final Color? borderColor;
@@ -196,7 +200,8 @@ class _CustomDropdownState<T> extends State<CustomDropdown<T>> {
                               BorderRadius.circular(widget.borderRadius),
                         )
                       : BoxDecoration(
-                          color: widget.backgroundColor ??
+                          color: widget.menuBackgroundColor ??
+                              widget.backgroundColor ??
                               theme.colorScheme.surface,
                           borderRadius:
                               BorderRadius.circular(widget.borderRadius),
