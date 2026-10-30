@@ -28,6 +28,7 @@ class AdvancedHoldingsTemplate extends StatefulWidget {
     this.accentColor,
     this.priceFreshnessLabel,
     this.viewOnly = true,
+    this.showCostColumns = true,
     this.initialSearchQuery = '',
     this.initialSector,
   });
@@ -44,6 +45,10 @@ class AdvancedHoldingsTemplate extends StatefulWidget {
 
   /// When true (default), no edit affordances — portfolio embed mode.
   final bool viewOnly;
+
+  /// When false (all-zero-cost mail books), hide Avg / P&L columns and
+  /// Profit/Loss status pills.
+  final bool showCostColumns;
 
   /// Seed the symbol/company filter (Global Search `?q=`).
   final String initialSearchQuery;
@@ -173,8 +178,10 @@ class _AdvancedHoldingsTemplateState extends State<AdvancedHoldingsTemplate>
 
   List<AdvancedHoldingRow> get _filteredHoldings =>
       _sortedHoldings.where((holding) {
-        if (_filterStatus == 'profit' && !holding.isProfit) return false;
-        if (_filterStatus == 'loss' && holding.isProfit) return false;
+        if (widget.showCostColumns) {
+          if (_filterStatus == 'profit' && !holding.isProfit) return false;
+          if (_filterStatus == 'loss' && holding.isProfit) return false;
+        }
         if (_selectedSector != 'All' &&
             holding.displaySector != _selectedSector) {
           return false;
@@ -338,11 +345,13 @@ class _AdvancedHoldingsTemplateState extends State<AdvancedHoldingsTemplate>
                   onSort: _sort,
                   onRowTap: widget.onRowTap,
                   onSymbolTap: widget.onSymbolTap,
+                  showCostColumns: widget.showCostColumns,
                 )
               : AdvancedHoldingsCards(
                   holdings: _paginatedHoldings,
                   isDarkChrome: _isDarkChrome,
                   onRowTap: widget.onRowTap,
+                  showCostColumns: widget.showCostColumns,
                 ),
         ),
         _buildFooter(),
