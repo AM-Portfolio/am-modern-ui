@@ -9,6 +9,7 @@ class TemplateCard extends StatefulWidget {
     required this.onTap,
     required this.onFavoriteToggle,
     this.isListView = false,
+    this.isMobileFullWidth = false,
     super.key,
   });
 
@@ -16,6 +17,9 @@ class TemplateCard extends StatefulWidget {
   final VoidCallback onTap;
   final VoidCallback onFavoriteToggle;
   final bool isListView;
+
+  /// Full-width intrinsic-height card for mobile Playbooks (one per row).
+  final bool isMobileFullWidth;
 
   @override
   State<TemplateCard> createState() => _TemplateCardState();
@@ -26,7 +30,112 @@ class _TemplateCardState extends State<TemplateCard> {
 
   @override
   Widget build(BuildContext context) {
+    if (widget.isMobileFullWidth) return _buildMobileFullWidthCard(context);
     return widget.isListView ? _buildListCard(context) : _buildGridCard(context);
+  }
+
+  Widget _buildMobileFullWidthCard(BuildContext context) {
+    final colors = context.colors;
+    final t = widget.template;
+    return GestureDetector(
+      onTap: widget.onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          color: colors.cardSurface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: colors.border.withValues(alpha: 0.28)),
+        ),
+        padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Wrap(
+                    spacing: 6,
+                    runSpacing: 4,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      _buildCategoryChip(context),
+                      if (t.isSystemTemplate)
+                        _smallBadge(
+                          context,
+                          label: 'System',
+                          color: colors.statusWarning,
+                          icon: Icons.settings,
+                        ),
+                      if (t.isRecommended)
+                        _smallBadge(
+                          context,
+                          label: 'Recommended',
+                          color: ModuleColors.trade,
+                          icon: Icons.star,
+                        ),
+                    ],
+                  ),
+                ),
+                Text(
+                  '${t.usageCount} uses',
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: colors.textSecondary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                ),
+                const SizedBox(width: 4),
+                _buildFavoriteButton(context),
+              ],
+            ),
+            const SizedBox(height: 8),
+            _buildTitle(context),
+            const SizedBox(height: 4),
+            _buildDescription(context, maxLines: 2),
+            if (t.fields.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.fromLTRB(10, 8, 10, 6),
+                decoration: BoxDecoration(
+                  color: ModuleColors.trade.withValues(alpha: 0.06),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: _buildFieldSummary(context, maxItems: 3),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _smallBadge(
+    BuildContext context, {
+    required String label,
+    required Color color,
+    required IconData icon,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: color),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: color,
+                  fontWeight: FontWeight.w600,
+                ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildGridCard(BuildContext context) {
@@ -49,7 +158,7 @@ class _TemplateCardState extends State<TemplateCard> {
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: _isHovered ? 0.07 : 0.035),
+                color: colors.textPrimary.withValues(alpha: _isHovered ? 0.07 : 0.035),
                 blurRadius: _isHovered ? 12 : 6,
                 offset: const Offset(0, 2),
               ),

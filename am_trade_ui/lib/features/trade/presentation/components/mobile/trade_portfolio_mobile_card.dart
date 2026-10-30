@@ -51,15 +51,23 @@ class TradePortfolioMobileCard extends StatelessWidget {
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                         colors: isPositive
-                            ? [Colors.green.withOpacity(0.15), Colors.green.withOpacity(0.05)]
-                            : [Colors.red.withOpacity(0.15), Colors.red.withOpacity(0.05)],
+                            ? [
+                                context.marketPositive.withValues(alpha: 0.15),
+                                context.marketPositive.withValues(alpha: 0.05),
+                              ]
+                            : [
+                                context.marketNegative.withValues(alpha: 0.15),
+                                context.marketNegative.withValues(alpha: 0.05),
+                              ],
                       ),
                       borderRadius: BorderRadius.circular(6),
                       border: Border.all(
-                        color: isPositive ? Colors.green.withOpacity(0.3) : Colors.red.withOpacity(0.3),
+                        color: isPositive
+                            ? context.marketPositive.withValues(alpha: 0.3)
+                            : context.marketNegative.withValues(alpha: 0.3),
                       ),
                     ),
-                    child: Icon(Icons.assessment, color: isPositive ? Colors.green : Colors.red, size: 16),
+                    child: Icon(Icons.assessment, color: isPositive ? context.marketPositive : context.marketNegative, size: 16),
                   ),
                   const SizedBox(width: AppSpacing.sm),
                   Expanded(
@@ -71,7 +79,7 @@ class TradePortfolioMobileCard extends StatelessWidget {
                             Flexible(
                               child: Text(
                                 portfolio.displayName,
-                                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
@@ -113,7 +121,7 @@ class TradePortfolioMobileCard extends StatelessWidget {
                         ),
                         Text(
                           '${portfolio.displayHoldingsCount} • $formattedDate',
-                          style: TextStyle(fontSize: 9, color: Colors.grey[600]),
+                          style: TextStyle(fontSize: 9, color: context.textSecondary),
                         ),
                       ],
                     ),
@@ -122,7 +130,9 @@ class TradePortfolioMobileCard extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                     decoration: BoxDecoration(
-                      color: isPositive ? Colors.green.withOpacity(0.1) : Colors.red.withOpacity(0.1),
+                      color: isPositive
+                          ? context.marketPositive.withValues(alpha: 0.1)
+                          : context.marketNegative.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Row(
@@ -131,7 +141,7 @@ class TradePortfolioMobileCard extends StatelessWidget {
                         Icon(
                           isPositive ? Icons.arrow_upward : Icons.arrow_downward,
                           size: 10,
-                          color: isPositive ? Colors.green : Colors.red,
+                          color: isPositive ? context.marketPositive : context.marketNegative,
                         ),
                         const SizedBox(width: 2),
                         Text(
@@ -139,7 +149,7 @@ class TradePortfolioMobileCard extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.bold,
-                            color: isPositive ? Colors.green : Colors.red,
+                            color: isPositive ? context.marketPositive : context.marketNegative,
                           ),
                         ),
                       ],
@@ -154,7 +164,7 @@ class TradePortfolioMobileCard extends StatelessWidget {
                   portfolio.description!,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(color: Colors.grey[700], fontSize: 11),
+                  style: TextStyle(color: context.textSecondary, fontSize: 11),
                 ),
               ],
 
@@ -169,21 +179,21 @@ class TradePortfolioMobileCard extends StatelessWidget {
                       'Realized',
                       portfolio.displayNetProfitLoss,
                       portfolio.isTradeProfit ? Icons.trending_up : Icons.trending_down,
-                      portfolio.isTradeProfit ? Colors.green : Colors.red,
+                      portfolio.isTradeProfit ? context.marketPositive : context.marketNegative,
                     ),
                     _buildMetric(
                       context,
                       'Live P&L',
                       portfolio.displayGainLoss,
                       portfolio.isProfit ? Icons.show_chart : Icons.trending_down,
-                      portfolio.isProfit ? Colors.green : Colors.red,
+                      portfolio.isProfit ? context.marketPositive : context.marketNegative,
                     ),
                     _buildMetric(
                       context,
                       'Win %',
                       portfolio.displayWinRate,
                       Icons.pie_chart,
-                      (portfolio.winRate ?? 0) >= 50 ? Colors.green : Colors.orange,
+                      (portfolio.winRate ?? 0) >= 50 ? context.marketPositive : context.statusWarning,
                     ),
                   ],
                 ),
@@ -200,10 +210,10 @@ class TradePortfolioMobileCard extends StatelessWidget {
                     children: [
                       Text(
                         'Portfolio Value',
-                        style: TextStyle(fontSize: 10, color: Colors.grey[600], fontWeight: FontWeight.w500),
+                        style: TextStyle(fontSize: 10, color: context.textSecondary, fontWeight: FontWeight.w500),
                       ),
                       const SizedBox(height: 2),
-                      Text(portfolio.displayValue, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                      Text(portfolio.displayValue, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                     ],
                   ),
                   Text(
@@ -211,7 +221,7 @@ class TradePortfolioMobileCard extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
-                      color: isPositive ? Colors.green : Colors.red,
+                      color: isPositive ? context.marketPositive : context.marketNegative,
                     ),
                   ),
                 ],
@@ -252,7 +262,7 @@ class TradePortfolioMobileCard extends StatelessWidget {
                 ListTile(
                   contentPadding: const EdgeInsets.symmetric(horizontal: 24),
                   leading: Icon(Icons.edit, color: Theme.of(context).colorScheme.onSurface),
-                  title: const Text('Edit Portfolio', style: TextStyle(fontSize: 16)),
+                  title: Text('Edit Portfolio', style: TextStyle(fontSize: 16)),
                   onTap: () {
                     Navigator.pop(context);
                     onEdit?.call();
@@ -261,8 +271,8 @@ class TradePortfolioMobileCard extends StatelessWidget {
               if (onDelete != null)
                 ListTile(
                   contentPadding: const EdgeInsets.symmetric(horizontal: 24),
-                  leading: const Icon(Icons.delete, color: Colors.red),
-                  title: const Text('Delete Portfolio', style: TextStyle(fontSize: 16, color: Colors.red)),
+                  leading: Icon(Icons.delete, color: context.statusError),
+                  title: Text('Delete Portfolio', style: TextStyle(fontSize: 16, color: context.statusError)),
                   onTap: () {
                     Navigator.pop(context);
                     onDelete?.call();
@@ -288,7 +298,7 @@ class TradePortfolioMobileCard extends StatelessWidget {
             Flexible(
               child: Text(
                 label,
-                style: TextStyle(fontSize: 8, color: Colors.grey[600], fontWeight: FontWeight.w500),
+                style: TextStyle(fontSize: 8, color: context.textSecondary, fontWeight: FontWeight.w500),
                 overflow: TextOverflow.ellipsis,
               ),
             ),

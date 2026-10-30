@@ -19,11 +19,15 @@ class _DraftField {
   void dispose() => labelController.dispose();
 }
 
-/// Dialog for creating custom templates with a simple field builder.
+/// Dialog / page for creating custom templates with a simple field builder.
 class CreateTemplateDialog extends ConsumerStatefulWidget {
   const CreateTemplateDialog({
+    this.asPage = false,
     super.key,
   });
+
+  /// When true, render full-bleed content (mobile Scaffold body) without Dialog chrome.
+  final bool asPage;
 
   @override
   ConsumerState<CreateTemplateDialog> createState() =>
@@ -57,6 +61,34 @@ class _CreateTemplateDialogState extends ConsumerState<CreateTemplateDialog> {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
+    final body = Column(
+      children: [
+        if (!widget.asPage) _buildHeader(context),
+        Expanded(
+          child: Form(
+            key: _formKey,
+            child: ListView(
+              padding: EdgeInsets.all(widget.asPage ? 16 : 24),
+              children: [
+                _buildNameField(context),
+                const SizedBox(height: 20),
+                _buildDescriptionField(context),
+                const SizedBox(height: 20),
+                _buildCategoryDropdown(context),
+                const SizedBox(height: 24),
+                _buildFieldsSection(context),
+              ],
+            ),
+          ),
+        ),
+        _buildActions(context),
+      ],
+    );
+
+    if (widget.asPage) {
+      return ColoredBox(color: colors.surface, child: body);
+    }
+
     return Dialog(
       backgroundColor: Colors.transparent,
       child: Container(
@@ -81,29 +113,7 @@ class _CreateTemplateDialogState extends ConsumerState<CreateTemplateDialog> {
                   width: 1.5,
                 ),
               ),
-              child: Column(
-                children: [
-                  _buildHeader(context),
-                  Expanded(
-                    child: Form(
-                      key: _formKey,
-                      child: ListView(
-                        padding: const EdgeInsets.all(24),
-                        children: [
-                          _buildNameField(context),
-                          const SizedBox(height: 20),
-                          _buildDescriptionField(context),
-                          const SizedBox(height: 20),
-                          _buildCategoryDropdown(context),
-                          const SizedBox(height: 24),
-                          _buildFieldsSection(context),
-                        ],
-                      ),
-                    ),
-                  ),
-                  _buildActions(context),
-                ],
-              ),
+              child: body,
             ),
           ),
         ),

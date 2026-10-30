@@ -427,73 +427,81 @@ class _TradeMobileScreenState extends ConsumerState<TradeMobileScreen> {
                 bool deleteTrades = false;
                 final confirm = await showDialog<bool>(
                   context: context,
-                  builder: (ctx) => StatefulBuilder(
-                    builder: (ctx, setDialogState) => AlertDialog(
-                      title: Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: Colors.red.withValues(alpha: 0.1),
-                              shape: BoxShape.circle,
+                  builder: (dialogContext) {
+                    final colors = dialogContext.colors;
+                    final textTheme = Theme.of(dialogContext).textTheme;
+                    return StatefulBuilder(
+                      builder: (ctx, setDialogState) => AlertDialog(
+                        title: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: colors.statusError.withValues(alpha: 0.1),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(Icons.delete_outline_rounded,
+                                  color: colors.statusError, size: 20),
                             ),
-                            child: const Icon(Icons.delete_outline_rounded,
-                                color: Colors.red, size: 20),
+                            const SizedBox(width: 12),
+                            const Text('Delete Portfolio'),
+                          ],
+                        ),
+                        content: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Are you sure you want to delete "${portfolio.name}"?',
+                              style: textTheme.titleSmall?.copyWith(
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'This action cannot be undone.',
+                              style: textTheme.bodySmall?.copyWith(
+                                color: colors.textSecondary,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            CheckboxListTile(
+                              value: deleteTrades,
+                              onChanged: (v) =>
+                                  setDialogState(() => deleteTrades = v ?? false),
+                              title: Text(
+                                'Also delete all associated trades',
+                                style: textTheme.bodyMedium,
+                              ),
+                              subtitle: Text(
+                                'If unchecked, trades remain in the database but will be unassigned.',
+                                style: textTheme.bodySmall,
+                              ),
+                              controlAffinity: ListTileControlAffinity.leading,
+                              activeColor: colors.statusError,
+                              contentPadding: EdgeInsets.zero,
+                              visualDensity: VisualDensity.compact,
+                            ),
+                          ],
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.of(ctx).pop(false),
+                            child: const Text('Cancel'),
                           ),
-                          const SizedBox(width: 12),
-                          const Text('Delete Portfolio'),
+                          FilledButton.icon(
+                            onPressed: () => Navigator.of(ctx).pop(true),
+                            icon: const Icon(Icons.delete_rounded, size: 18),
+                            label: const Text('Delete'),
+                            style: FilledButton.styleFrom(
+                              backgroundColor: colors.statusError,
+                              foregroundColor: colors.actionPrimaryFg,
+                            ),
+                          ),
                         ],
                       ),
-                      content: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Are you sure you want to delete "${portfolio.name}"?',
-                            style: const TextStyle(fontWeight: FontWeight.w500),
-                          ),
-                          const SizedBox(height: 8),
-                          const Text(
-                            'This action cannot be undone.',
-                            style: TextStyle(color: Colors.grey, fontSize: 13),
-                          ),
-                          const SizedBox(height: 16),
-                          CheckboxListTile(
-                            value: deleteTrades,
-                            onChanged: (v) =>
-                                setDialogState(() => deleteTrades = v ?? false),
-                            title: const Text(
-                              'Also delete all associated trades',
-                              style: TextStyle(fontSize: 14),
-                            ),
-                            subtitle: const Text(
-                              'If unchecked, trades remain in the database but will be unassigned.',
-                              style: TextStyle(fontSize: 12),
-                            ),
-                            controlAffinity: ListTileControlAffinity.leading,
-                            activeColor: Colors.red,
-                            contentPadding: EdgeInsets.zero,
-                            visualDensity: VisualDensity.compact,
-                          ),
-                        ],
-                      ),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.of(ctx).pop(false),
-                          child: const Text('Cancel'),
-                        ),
-                        FilledButton.icon(
-                          onPressed: () => Navigator.of(ctx).pop(true),
-                          icon: const Icon(Icons.delete_rounded, size: 18),
-                          label: const Text('Delete'),
-                          style: FilledButton.styleFrom(
-                            backgroundColor: Colors.red,
-                            foregroundColor: Colors.white,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                    );
+                  },
                 );
                 if (confirm == true && mounted) {
                   final service = ref.read(portfolioServiceProvider).value;
@@ -523,7 +531,7 @@ class _TradeMobileScreenState extends ConsumerState<TradeMobileScreen> {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text('Failed to delete portfolio: $e'),
-                          backgroundColor: Colors.red,
+                          backgroundColor: context.colors.statusError,
                         ),
                       );
                     }
