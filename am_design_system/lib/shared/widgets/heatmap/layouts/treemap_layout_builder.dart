@@ -131,8 +131,16 @@ class TreemapLayoutBuilder extends HeatmapLayoutBuilder {
     final nested = data.configuration.effectiveLayout.nestedSectors;
     final widgets = <Widget>[];
     for (var i = 0; i < rects.length && i < normalised.length; i++) {
-      final r = rects[i].withGap(gap).fitInside(width, height);
+      // Round shared edges (no hairline cracks), then clamp so we never
+      // expand past the canvas (no bottom-right overflow stripes).
+      final r = rects[i]
+          .withGap(gap)
+          .pixelSnapped()
+          .clamped(width, height);
       if (r.width < 1 || r.height < 1) continue;
+      if (r.left + r.width > width + 0.01 || r.top + r.height > height + 0.01) {
+        continue;
+      }
 
       final tile = normalised[i].tile;
       final hasChildren =

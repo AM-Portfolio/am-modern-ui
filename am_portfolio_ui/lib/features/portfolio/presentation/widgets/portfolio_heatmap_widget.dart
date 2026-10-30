@@ -109,6 +109,8 @@ class _PortfolioHeatmapWidgetState
   int _heatmapLoadGeneration = 0;
   /// Full nested tiles before compact budget — used for sector drill-down.
   List<HeatmapTileData> _fullOverviewTiles = const [];
+  /// Tab viewport height — compact heatmap block matches one full screen.
+  double _mobileViewportH = 0;
 
   late final ValueChanged<HeatmapTileData?> _onTileHover;
   late final ValueChanged<HeatmapTileData> _onTileSelect;
@@ -270,19 +272,33 @@ class _PortfolioHeatmapWidgetState
     });
     ref.watch(appTimeFrameProvider);
 
-    // Compact + wide: fill the tab viewport (no double-height scroll slab).
+    // Web: fill the tab. Compact: scroll page; heatmap block = one screen tall.
     return LayoutBuilder(
       builder: (context, constraints) {
         final viewportH = constraints.maxHeight.isFinite
             ? constraints.maxHeight
             : MediaQuery.sizeOf(context).height;
+        if (widget.config.compactMode) {
+          _mobileViewportH = viewportH;
+        }
+        final content = Padding(
+          padding: widget.config.padding,
+          child: _buildHeatmapContent(),
+        );
+        if (widget.config.compactMode) {
+          return SizedBox(
+            width: constraints.maxWidth,
+            height: viewportH,
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              child: content,
+            ),
+          );
+        }
         return SizedBox(
           width: constraints.maxWidth,
           height: viewportH,
-          child: Padding(
-            padding: widget.config.padding,
-            child: _buildHeatmapContent(),
-          ),
+          child: content,
         );
       },
     );
@@ -545,14 +561,20 @@ class _PortfolioHeatmapWidgetState
           ),
         );
 
-    // Compact: KPIs + Expanded mosaic (fills remaining viewport once).
+    // Compact: scroll past KPIs; heatmap block height = one full tab screen.
+    // Lag fixes kept: solid fills, no hover, tile budget, isolated inspector.
     if (widget.config.compactMode) {
+      final mapH = _mobileViewportH > 0
+          ? _mobileViewportH
+          : MediaQuery.sizeOf(context).height;
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _buildSummaryCardsRow(),
           const SizedBox(height: 8),
-          Expanded(
+          SizedBox(
+            height: mapH,
+            width: double.infinity,
             child: _padAboveBottomNav(
               context,
               child: heatmapBody(showSelectors: true),
