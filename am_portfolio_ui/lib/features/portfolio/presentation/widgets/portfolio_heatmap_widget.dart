@@ -109,9 +109,8 @@ class _PortfolioHeatmapWidgetState
   int _heatmapLoadGeneration = 0;
   /// Full nested tiles before compact budget — used for sector drill-down.
   List<HeatmapTileData> _fullOverviewTiles = const [];
-  /// Mobile tab viewport — heatmap slab height after KPIs scroll away.
-  double _mobileViewportH = 0;
 
+  /// Height of the pinned Sector / Market Cap / Layout row on mobile.
   static const double _mobilePinnedFiltersH = 52;
 
   late final ValueChanged<HeatmapTileData?> _onTileHover;
@@ -274,22 +273,19 @@ class _PortfolioHeatmapWidgetState
     });
     ref.watch(appTimeFrameProvider);
 
-    // Mobile: scroll KPIs away; pinned filters + screen-tall mosaic.
+    // Mobile: scroll KPIs away; pinned filters + mosaic fill one tab.
     // Web: fill the tab (unchanged).
     return LayoutBuilder(
       builder: (context, constraints) {
         final viewportH = constraints.maxHeight.isFinite
             ? constraints.maxHeight
             : MediaQuery.sizeOf(context).height;
-        if (widget.config.compactMode) {
-          _mobileViewportH = viewportH;
-        }
         return SizedBox(
           width: constraints.maxWidth,
           height: viewportH,
           child: Padding(
             padding: widget.config.padding,
-            child: _buildHeatmapContent(),
+            child: _buildHeatmapContent(mobileViewportH: viewportH),
           ),
         );
       },
@@ -298,7 +294,7 @@ class _PortfolioHeatmapWidgetState
 
   /// Main heatmap content with state handling using dual cubit approach.
   /// Live summary ticks update KPI strip via PortfolioCubit; do not full-reload tiles.
-  Widget _buildHeatmapContent() =>
+  Widget _buildHeatmapContent({required double mobileViewportH}) =>
       BlocBuilder<PortfolioHeatmapCubit, PortfolioHeatmapState>(
         builder: (context, state) {
           CommonLogger.debug(
@@ -306,12 +302,15 @@ class _PortfolioHeatmapWidgetState
             tag: '${widget.config.logTag}.State',
           );
 
-          return _buildStateWidget(state);
+          return _buildStateWidget(state, mobileViewportH: mobileViewportH);
         },
       );
 
   /// Routes to appropriate widget based on current state
-  Widget _buildStateWidget(PortfolioHeatmapState state) {
+  Widget _buildStateWidget(
+    PortfolioHeatmapState state, {
+    required double mobileViewportH,
+  }) {
     if (state is PortfolioHeatmapLoading) {
       return _buildLoadingWidget(state);
     }
@@ -321,7 +320,7 @@ class _PortfolioHeatmapWidgetState
     }
 
     if (state is PortfolioHeatmapLoaded) {
-      return _buildLoadedWidget(state);
+      return _buildLoadedWidget(state, mobileViewportH: mobileViewportH);
     }
 
     if (state is PortfolioHeatmapEmpty) {
@@ -381,7 +380,10 @@ class _PortfolioHeatmapWidgetState
   }
 
   /// Builds loaded state UI with heatmap
-  Widget _buildLoadedWidget(PortfolioHeatmapLoaded state) {
+  Widget _buildLoadedWidget(
+    PortfolioHeatmapLoaded state, {
+    required double mobileViewportH,
+  }) {
     final selectedTimeFrame = ref.watch(appTimeFrameProvider);
     CommonLogger.info(
       'Showing heatmap: ${state.heatmapData.tiles.length} tiles',
@@ -560,13 +562,15 @@ class _PortfolioHeatmapWidgetState
           ),
         );
 
-    // Mobile only: scroll past KPIs → filters pin → heatmap = full screen.
-    // Taps inside the mosaic must not reveal the floating bottom nav.
+    // Mobile only: scroll past KPIs → filters pin → mosaic fills the rest of
+    // the tab (exactly one screen — not a second full-viewport stack).
+    // Taps inside filters/mosaic must not reveal the floating bottom nav.
     if (widget.config.compactMode) {
-      final viewportH = _mobileViewportH > 0
-          ? _mobileViewportH
-          : MediaQuery.sizeOf(context).height;
       final scheme = Theme.of(context).colorScheme;
+      // Pinned filters + mosaic == one tab. Using full viewportH here used to
+      // stack a second screen under the filters after KPIs scrolled away.
+      final mapH =
+          (mobileViewportH - _mobilePinnedFiltersH).clamp(240.0, 4000.0);
       return CustomScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         slivers: [
@@ -593,7 +597,7 @@ class _PortfolioHeatmapWidgetState
           ),
           SliverToBoxAdapter(
             child: SizedBox(
-              height: viewportH,
+              height: mapH,
               width: double.infinity,
               child: Listener(
                 behavior: HitTestBehavior.opaque,
