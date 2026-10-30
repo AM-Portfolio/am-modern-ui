@@ -18,6 +18,9 @@ class JournalAttachmentSection extends StatelessWidget {
     this.userId = '',
     this.label,
     this.maxAttachments = 10,
+    /// When the parent supplies a floating border title (e.g.
+    /// [JournalBorderLabeledPanel]), pass '' so the picker only shows counts.
+    this.omitSectionTitle = false,
   });
 
   final List<String> imageUrls;
@@ -27,16 +30,19 @@ class JournalAttachmentSection extends StatelessWidget {
   final String userId;
   final String? label;
   final int maxAttachments;
+  final bool omitSectionTitle;
 
   @override
   Widget build(BuildContext context) => SharedAttachmentSection(
-    // Cloudinary folder metadata — never block upload on empty userId (new drafts).
-    userId: userId.isNotEmpty ? userId : 'journal',
-    imageUrls: imageUrls,
-    onAttachmentsChanged: onAttachmentsChanged,
-    featureName: featureName,
-    isEditMode: isEditMode,
-    label: label ?? 'Supporting Evidence',
-    maxAttachments: maxAttachments,
-  );
+        // Cloudinary folder metadata — never block upload on empty userId (new drafts).
+        userId: userId.isNotEmpty ? userId : 'journal',
+        imageUrls: imageUrls,
+        onAttachmentsChanged: onAttachmentsChanged,
+        featureName: featureName,
+        isEditMode: isEditMode,
+        label: omitSectionTitle ? '' : (label ?? 'Supporting Evidence'),
+        maxAttachments: maxAttachments,
+        // Journal evidence: charts/screenshots and PDFs.
+        allowedType: AttachmentType.any,
+      );
 }

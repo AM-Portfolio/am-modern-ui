@@ -1,10 +1,14 @@
+import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 
+import '../utils/journal_field_decoration.dart';
 import 'mood_selector.dart';
 import 'sentiment_selector.dart';
 import 'tags_selector.dart';
 
-/// Widget for tracking behavior, mood, and sentiment for a specific trading phase
+/// Widget for tracking behavior, mood, and sentiment for a specific trading phase.
+///
+/// Theme-only chrome: [context.colors], [AppRadii], [AppSpacing], Trade accent.
 class PhaseTrackingWidget extends StatelessWidget {
   const PhaseTrackingWidget({
     required this.label,
@@ -29,9 +33,13 @@ class PhaseTrackingWidget extends StatelessWidget {
   final Function(String?) onSentimentChanged;
   final bool isEditMode;
 
+  Color _accent(BuildContext context) =>
+      ModuleColorProvider.maybeOf(context) ?? ModuleColors.trade;
+
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final colors = context.colors;
+    final accent = _accent(context);
     final hasBehavior = behaviorController.text.trim().isNotEmpty;
     final hasMood = mood != null;
     final hasSentiment = sentiment != null;
@@ -43,71 +51,54 @@ class PhaseTrackingWidget extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        border: Border.all(color: theme.dividerColor.withOpacity(0.4)),
-        borderRadius: BorderRadius.circular(10),
-        color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
+        border: Border.all(color: colors.border.withValues(alpha: 0.4)),
+        borderRadius: AppRadii.input,
+        color: colors.surface.withValues(alpha: 0.45),
       ),
-      padding: const EdgeInsets.all(10),
+      padding: const EdgeInsets.all(AppSpacing.sm + AppSpacing.xxs),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Phase header with icon and label
           Row(
             children: [
-              Icon(icon, size: 14, color: theme.colorScheme.primary),
-              const SizedBox(width: 6),
+              Icon(icon, size: AppSpacing.md, color: accent),
+              const SizedBox(width: AppSpacing.sm - AppSpacing.xxs),
               Text(
                 label,
-                style: theme.textTheme.labelMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: theme.colorScheme.primary,
-                ),
+                style: context.text.label(compact: true).copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: accent,
+                    ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
-
-          // Behavior notes
+          const SizedBox(height: AppSpacing.sm),
           if (isEditMode || hasBehavior)
-            Container(
-              decoration: BoxDecoration(
-                border: Border.all(
-                  color: hasBehavior ? theme.colorScheme.primary.withOpacity(0.3) : theme.dividerColor.withOpacity(0.2),
-                ),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: TextFormField(
-                controller: behaviorController,
-                enabled: isEditMode,
-                maxLines: 2,
-                minLines: 1,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  fontSize: 12,
-                  color: isEditMode ? null : theme.colorScheme.onSurface.withOpacity(0.85),
-                ),
-                decoration: InputDecoration(
-                  hintText: hint,
-                  hintStyle: theme.textTheme.bodySmall?.copyWith(
-                    fontSize: 11,
-                    color: theme.colorScheme.onSurfaceVariant.withOpacity(0.4),
+            TextFormField(
+              controller: behaviorController,
+              enabled: isEditMode,
+              maxLines: 2,
+              minLines: 1,
+              style: context.text.body(compact: true).copyWith(
+                    color: isEditMode
+                        ? colors.textPrimary
+                        : colors.textPrimary.withValues(alpha: 0.85),
                   ),
-                  border: InputBorder.none,
-                  enabledBorder: InputBorder.none,
-                  focusedBorder: InputBorder.none,
-                  disabledBorder: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                  isDense: true,
+              decoration: JournalFieldDecoration.outlined(
+                context,
+                hintText: hint,
+                dense: true,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.sm + AppSpacing.xxs,
+                  vertical: AppSpacing.sm,
                 ),
               ),
             ),
-
-          if (isEditMode || hasBehavior) const SizedBox(height: 8),
-
-          // Mood and Sentiment in a row
+          if (isEditMode || hasBehavior)
+            const SizedBox(height: AppSpacing.sm),
           if (isEditMode || hasMood || hasSentiment)
             Row(
               children: [
-                // Mood selector
                 if (isEditMode || hasMood)
                   Expanded(
                     child: Column(
@@ -115,23 +106,24 @@ class PhaseTrackingWidget extends StatelessWidget {
                       children: [
                         Text(
                           'Mood',
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            fontSize: 10,
-                            color: theme.colorScheme.onSurfaceVariant.withOpacity(0.6),
-                          ),
+                          style: context.text.caption(compact: true).copyWith(
+                                color: colors.textSecondary,
+                                fontWeight: FontWeight.w600,
+                              ),
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: AppSpacing.xs),
                         IgnorePointer(
                           ignoring: !isEditMode,
-                          child: MoodSelector(selectedMood: mood, onMoodSelected: onMoodChanged),
+                          child: MoodSelector(
+                            selectedMood: mood,
+                            onMoodSelected: onMoodChanged,
+                          ),
                         ),
                       ],
                     ),
                   ),
-
-                if ((isEditMode || hasMood) && (isEditMode || hasSentiment)) const SizedBox(width: 10),
-
-                // Sentiment selector
+                if ((isEditMode || hasMood) && (isEditMode || hasSentiment))
+                  const SizedBox(width: AppSpacing.sm + AppSpacing.xxs),
                 if (isEditMode || hasSentiment)
                   Expanded(
                     child: Column(
@@ -139,12 +131,12 @@ class PhaseTrackingWidget extends StatelessWidget {
                       children: [
                         Text(
                           'Sentiment',
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            fontSize: 10,
-                            color: theme.colorScheme.onSurfaceVariant.withOpacity(0.6),
-                          ),
+                          style: context.text.caption(compact: true).copyWith(
+                                color: colors.textSecondary,
+                                fontWeight: FontWeight.w600,
+                              ),
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: AppSpacing.xs),
                         IgnorePointer(
                           ignoring: !isEditMode,
                           child: SentimentSelector(
@@ -167,16 +159,36 @@ class PhaseTrackingWidget extends StatelessWidget {
     required String? mood,
     required Function(String?) onMoodChanged,
     required bool isEditMode,
-  }) => MoodSelector(selectedMood: mood, onMoodSelected: onMoodChanged);
+    bool compact = false,
+  }) =>
+      MoodSelector(
+        selectedMood: mood,
+        onMoodSelected: onMoodChanged,
+        compact: compact,
+      );
 
   /// Static helper to build sentiment selector for use in tab views
   static Widget buildSentimentSelector({
     required String? sentiment,
     required Function(String?) onSentimentChanged,
     required bool isEditMode,
-  }) => SentimentSelector(selectedSentiment: sentiment, onSentimentSelected: onSentimentChanged);
+    bool compact = false,
+  }) =>
+      SentimentSelector(
+        selectedSentiment: sentiment,
+        onSentimentSelected: onSentimentChanged,
+        compact: compact,
+      );
 
   /// Static helper to build tags selector for use in tab views
-  static Widget buildTagsSelector({required Set<String> selectedTags, required Function(String) onTagToggled}) =>
-      TagsSelector(selectedTags: selectedTags, onTagToggled: onTagToggled);
+  static Widget buildTagsSelector({
+    required Set<String> selectedTags,
+    required Function(String) onTagToggled,
+    bool compact = false,
+  }) =>
+      TagsSelector(
+        selectedTags: selectedTags,
+        onTagToggled: onTagToggled,
+        compact: compact,
+      );
 }

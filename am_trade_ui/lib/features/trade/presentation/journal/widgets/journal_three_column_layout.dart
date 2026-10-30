@@ -77,6 +77,10 @@ class _JournalThreeColumnLayoutState extends State<JournalThreeColumnLayout> {
   /// Fresh entity from getById — preferred over list row until list catches up.
   JournalEntry? _hydratedEntry;
 
+  /// Single-flight hydrate: ignore stale responses; skip parallel getById for same id.
+  int _hydrateRequestId = 0;
+  String? _hydrateInFlightId;
+
   GlobalKey<JournalEntryFormState> _newFormKey =
       GlobalKey<JournalEntryFormState>();
   final GlobalKey<TradeJournalWorkflowPageState> _newTradeWorkflowKey =
@@ -120,7 +124,10 @@ class _JournalThreeColumnLayoutState extends State<JournalThreeColumnLayout> {
     if (widget.entries.isNotEmpty) {
       _selectedEntryId = widget.entries.first.id;
     }
-    WidgetsBinding.instance.addPostFrameCallback((_) => _notifySelectedSymbol());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _notifySelectedSymbol();
+      _hydrateSelectedEntry();
+    });
   }
 
   @override
@@ -164,6 +171,7 @@ class _JournalThreeColumnLayoutState extends State<JournalThreeColumnLayout> {
         _setCreating(false);
         _notifyComposerOpen();
         _notifySelectedSymbol();
+        await _hydrateSelectedEntry();
       });
       return;
     }
@@ -172,6 +180,7 @@ class _JournalThreeColumnLayoutState extends State<JournalThreeColumnLayout> {
       _applyFocusEntry(focusId);
     }
     if (_isCreatingNew) return;
+    var needsHydrate = false;
     final stillVisible = widget.entries.any((e) => e.id == _selectedEntryId);
     if (!stillVisible) {
       setState(() {
@@ -181,6 +190,7 @@ class _JournalThreeColumnLayoutState extends State<JournalThreeColumnLayout> {
         _forceTradeEditStep = null;
         _hydratedEntry = null;
       });
+      needsHydrate = _selectedEntryId != null;
     } else if (_hydratedEntry != null &&
         _hydratedEntry!.id == _selectedEntryId) {
       final listRow =
@@ -188,9 +198,16 @@ class _JournalThreeColumnLayoutState extends State<JournalThreeColumnLayout> {
       if (listRow != null &&
           !listRow.updatedAt.isBefore(_hydratedEntry!.updatedAt)) {
         _hydratedEntry = null;
+        needsHydrate = true;
       }
+    } else if (_selectedEntryId != null &&
+        (_hydratedEntry == null || _hydratedEntry!.id != _selectedEntryId)) {
+      needsHydrate = true;
     }
-    WidgetsBinding.instance.addPostFrameCallback((_) => _notifySelectedSymbol());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _notifySelectedSymbol();
+      if (needsHydrate) _hydrateSelectedEntry();
+    });
   }
 
   JournalEntry? get _selectedEntry {
@@ -204,14 +221,34 @@ class _JournalThreeColumnLayoutState extends State<JournalThreeColumnLayout> {
     widget.onSelectedSymbolChanged?.call(_selectedEntry?.symbol);
   }
 
+  /// Full getById for the current selection (list rows often omit attachments).
+  Future<void> _hydrateSelectedEntry() async {
+    final id = _selectedEntryId;
+    if (!mounted || id == null || _isCreatingNew) return;
+    // Avoid stampede on fast list refreshes / re-taps while one load is in flight.
+    if (_hydrateInFlightId == id) return;
+    final requestId = ++_hydrateRequestId;
+    _hydrateInFlightId = id;
+    try {
+      final fresh = await widget.journalCubit.loadEntryDetail(id);
+      if (!mounted || requestId != _hydrateRequestId) return;
+      if (_selectedEntryId != id || fresh == null) return;
+      setState(() => _hydratedEntry = fresh);
+    } finally {
+      if (_hydrateInFlightId == id) _hydrateInFlightId = null;
+    }
+  }
+
   /// Select [entryId], exit any open composer, show the entries rail again.
   Future<void> _applyFocusEntry(String entryId) async {
     if (!mounted) return;
     final already =
         _selectedEntryId == entryId && !_isCreatingNew && !_useTradeWorkflow;
+    final alreadyHydrated = _hydratedEntry?.id == entryId;
     if (already && !_forceTradeEdit) {
       WidgetsBinding.instance
           .addPostFrameCallback((_) => _notifySelectedSymbol());
+      if (!alreadyHydrated) await _hydrateSelectedEntry();
       return;
     }
     if (!await _guardUnsavedLeave()) return;
@@ -229,6 +266,7 @@ class _JournalThreeColumnLayoutState extends State<JournalThreeColumnLayout> {
     _notifyComposerOpen();
     WidgetsBinding.instance
         .addPostFrameCallback((_) => _notifySelectedSymbol());
+    await _hydrateSelectedEntry();
   }
 
   /// Always keep the entries rail (same as Log Day). Trade Pre/Execute/Post
@@ -312,33 +350,31 @@ class _JournalThreeColumnLayoutState extends State<JournalThreeColumnLayout> {
           (widget.entries.isNotEmpty ? widget.entries.first.id : null);
     });
     _setCreating(false);
+    await _hydrateSelectedEntry();
   }
 
   Future<void> _onEntrySelected(JournalEntry entry) async {
-    if (_selectedEntryId == entry.id && !_isCreatingNew && !_forceTradeEdit) {
-      return;
+    final sameSelected =
+        _selectedEntryId == entry.id && !_isCreatingNew && !_forceTradeEdit;
+    final alreadyHydrated = _hydratedEntry?.id == entry.id;
+    // Re-tap of the selected row: still hydrate if we only have the list row.
+    if (sameSelected && alreadyHydrated) return;
+    if (!sameSelected) {
+      if (!await _guardUnsavedLeave()) return;
+      if (!mounted) return;
+      setState(() {
+        _selectedEntryId = entry.id;
+        _useTradeWorkflow = false;
+        _forceTradeEdit = false;
+        _forceTradeEditStep = null;
+        _hydratedEntry = null;
+        _isEditingEntry = false;
+      });
+      _setCreating(false);
+      _notifyComposerOpen();
+      widget.onSelectedSymbolChanged?.call(entry.symbol);
     }
-    if (!await _guardUnsavedLeave()) return;
-    if (!mounted) return;
-    setState(() {
-      _selectedEntryId = entry.id;
-      _useTradeWorkflow = false;
-      _forceTradeEdit = false;
-      _forceTradeEditStep = null;
-      _hydratedEntry = null;
-      _isEditingEntry = false;
-    });
-    _setCreating(false);
-    _notifyComposerOpen();
-    widget.onSelectedSymbolChanged?.call(entry.symbol);
-
-    // Refresh full entity so list stubs don't leave the detail empty.
-    if (JournalFolderFilter.shouldOpenTradeWorkflow(entry)) {
-      final fresh = await widget.journalCubit.loadEntryDetail(entry.id);
-      if (!mounted || fresh == null) return;
-      if (_selectedEntryId != entry.id) return;
-      setState(() => _hydratedEntry = fresh);
-    }
+    await _hydrateSelectedEntry();
   }
 
   Future<void> _confirmAndDelete(JournalEntry entry) async {
@@ -400,6 +436,18 @@ class _JournalThreeColumnLayoutState extends State<JournalThreeColumnLayout> {
     );
   }
 
+  /// Leave enough width for Notes + right meta column inside the detail pane.
+  /// Trade module sidebar already ate outer chrome — this rail must give way.
+  static double _entriesRailWidth(double workspaceWidth) {
+    const minDetail = 640.0;
+    final forRail = workspaceWidth - minDetail;
+    if (forRail < 168) return 168;
+    if (forRail < 220) return 200;
+    if (forRail < 280) return 240;
+    if (forRail < 320) return 280;
+    return 300;
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
@@ -408,71 +456,81 @@ class _JournalThreeColumnLayoutState extends State<JournalThreeColumnLayout> {
 
     return ColoredBox(
       color: colors.surface,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 320),
-            curve: Curves.easeOutCubic,
-            width: focusFullPage ? 0 : 320,
-            child: focusFullPage
-                ? const SizedBox.shrink()
-                : ClipRect(
-                    child: JournalEntryListView(
-                      entries: widget.entries,
-                      selectedEntryId: _selectedEntryId,
-                      showListTitle: false,
-                      width: 320,
-                      createMode: _createModeHighlight(selectedEntry),
-                      filterSlot: widget.listFilterSlot,
-                      emptyMessage: JournalFolderFilter.emptyMessage(
-                        widget.selectedFolder,
-                      ).split('\n').first,
-                      emptySubtitle:
-                          'Start documenting your trades to unlock powerful insights.',
-                      onEntrySelected: _onEntrySelected,
-                      onDeleteEntry: _confirmAndDelete,
-                      onLogDayPressed: () => _startNewEntry(
-                            tradeWorkflow: false,
-                            clearTemplate: true,
-                          ),
-                      onNewTradeJournalPressed: () => _startNewEntry(
-                            tradeWorkflow: true,
-                            clearTemplate: true,
-                          ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final railWidth =
+              focusFullPage ? 0.0 : _entriesRailWidth(constraints.maxWidth);
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 280),
+                curve: Curves.easeOutCubic,
+                width: railWidth,
+                // ClipRect — AnimatedContainer forbids clipBehavior without decoration.
+                child: railWidth <= 0
+                    ? const SizedBox.shrink()
+                    : ClipRect(
+                        child: JournalEntryListView(
+                          entries: widget.entries,
+                          selectedEntryId: _selectedEntryId,
+                          showListTitle: false,
+                          // Parent AnimatedContainer owns width — fill it.
+                          width: double.infinity,
+                          createMode: _createModeHighlight(selectedEntry),
+                          filterSlot: widget.listFilterSlot,
+                          emptyMessage: JournalFolderFilter.emptyMessage(
+                            widget.selectedFolder,
+                          ).split('\n').first,
+                          emptySubtitle:
+                              'Start documenting your trades to unlock powerful insights.',
+                          onEntrySelected: _onEntrySelected,
+                          onDeleteEntry: _confirmAndDelete,
+                          onLogDayPressed: () => _startNewEntry(
+                                tradeWorkflow: false,
+                                clearTemplate: true,
+                              ),
+                          onNewTradeJournalPressed: () => _startNewEntry(
+                                tradeWorkflow: true,
+                                clearTemplate: true,
+                              ),
+                        ),
+                      ),
+              ),
+              Expanded(
+                child: ClipRect(
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 340),
+                    switchInCurve: Curves.easeOutCubic,
+                    switchOutCurve: Curves.easeInCubic,
+                    transitionBuilder: (child, animation) {
+                      final slide = Tween<Offset>(
+                        begin: const Offset(0.04, 0),
+                        end: Offset.zero,
+                      ).animate(animation);
+                      return FadeTransition(
+                        opacity: animation,
+                        child: SlideTransition(position: slide, child: child),
+                      );
+                    },
+                    child: KeyedSubtree(
+                      // Do not key on _isEditingEntry — remounting on Edit forces a
+                      // second click before the form actually enters edit mode.
+                      key: ValueKey(
+                        _isCreatingNew
+                            ? 'composer-${_useTradeWorkflow ? 'trade' : 'day'}'
+                            : _forceTradeEdit
+                                ? 'trade-edit-${selectedEntry?.id ?? 'none'}'
+                                : (selectedEntry?.id ?? 'empty-detail'),
+                      ),
+                      child: _buildRightPane(colors, selectedEntry),
                     ),
                   ),
-          ),
-          Expanded(
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 340),
-              switchInCurve: Curves.easeOutCubic,
-              switchOutCurve: Curves.easeInCubic,
-              transitionBuilder: (child, animation) {
-                final slide = Tween<Offset>(
-                  begin: const Offset(0.04, 0),
-                  end: Offset.zero,
-                ).animate(animation);
-                return FadeTransition(
-                  opacity: animation,
-                  child: SlideTransition(position: slide, child: child),
-                );
-              },
-              child: KeyedSubtree(
-                // Do not key on _isEditingEntry — remounting on Edit forces a
-                // second click before the form actually enters edit mode.
-                key: ValueKey(
-                  _isCreatingNew
-                      ? 'composer-${_useTradeWorkflow ? 'trade' : 'day'}'
-                      : _forceTradeEdit
-                          ? 'trade-edit-${selectedEntry?.id ?? 'none'}'
-                          : (selectedEntry?.id ?? 'empty-detail'),
                 ),
-                child: _buildRightPane(colors, selectedEntry),
               ),
-            ),
-          ),
-        ],
+            ],
+          );
+        },
       ),
     );
   }
