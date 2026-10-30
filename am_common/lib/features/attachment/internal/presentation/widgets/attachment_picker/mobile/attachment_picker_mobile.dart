@@ -107,21 +107,22 @@ class _AttachmentPickerMobileState
         if (!widget.readOnly || _attachments.isNotEmpty)
           Row(
             children: [
-              if (widget.label != null)
-                Text(
-                  widget.label!,
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                )
-              else
+              if (widget.label == null)
                 Text(
                   'Attachments',
                   style: theme.textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.w600,
                   ),
+                )
+              else if (widget.label!.isNotEmpty)
+                Text(
+                  widget.label!,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
-              const SizedBox(width: 8),
+              if (widget.label == null || widget.label!.isNotEmpty)
+                const SizedBox(width: 8),
               Text(
                 widget.readOnly
                     ? '(${_attachments.length})'

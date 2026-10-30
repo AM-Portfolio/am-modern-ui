@@ -16,13 +16,14 @@ import 'components/journal_form_actions.dart';
 import 'components/journal_trade_section.dart';
 import 'sections/behavior_tracking_section.dart';
 import 'sections/optional_fields_section.dart';
+import 'utils/journal_border_labeled_panel.dart';
+import 'utils/journal_field_decoration.dart';
 import 'utils/journal_form_helpers.dart';
 import 'utils/journal_helpers.dart';
 import 'widgets/rich_text_editor.dart';
 import 'widgets/trade_overview_selector.dart';
 import 'widgets/trade_preview_dialog.dart';
 import '../../../journal/pages/trade_journal_workflow_page.dart';
-import '../../../journal/widgets/journal_form_surface.dart';
 import '../../../journal/widgets/journal_structured_review_section.dart';
 import '../../../journal/widgets/simple_template_dialog.dart';
 
@@ -40,6 +41,7 @@ class JournalEntryForm extends ConsumerStatefulWidget {
     this.onBrowseTemplates,
     this.onCancelCreate,
     this.onEditModeChanged,
+    this.compact = false,
   });
 
   final JournalCubit cubit;
@@ -59,6 +61,8 @@ class JournalEntryForm extends ConsumerStatefulWidget {
   final VoidCallback? onCancelCreate;
   /// Notifies the detail chrome when view ↔ edit toggles (header Edit button).
   final ValueChanged<bool>? onEditModeChanged;
+  /// When true, enables mobile-optimized compact selectors and actions.
+  final bool compact;
 
   @override
   ConsumerState<JournalEntryForm> createState() => JournalEntryFormState();
@@ -104,7 +108,6 @@ class JournalEntryFormState extends ConsumerState<JournalEntryForm> {
   /// Template checklist / prompts live outside Quill so users don't clear placeholders.
   List<String> _checklistItems = [];
   final Set<String> _completedChecklistItems = {};
-  List<String> _notePrompts = [];
   final Map<String, TextEditingController> _promptControllers = {};
   List<String> _templateFields = [];
   final Map<String, TextEditingController> _fieldControllers = {};
@@ -191,7 +194,30 @@ class JournalEntryFormState extends ConsumerState<JournalEntryForm> {
         }
       });
       setState(() {});
+      return;
     }
+    // Same entry hydrated from getById (list row → full) — pull attachments
+    // without resetting edit mode / draft state.
+    if (widget.entry != null && !_isEditMode) {
+      final nextUrls = widget.entry!.attachments.isNotEmpty
+          ? widget.entry!.attachments.map((a) => a.fileUrl).toList()
+          : List<String>.from(widget.entry!.imageUrls);
+      if (!_listEquals(_imageUrls, nextUrls)) {
+        setState(() {
+          _imageUrls = nextUrls;
+          _syncedAttachmentUrls = nextUrls.toSet();
+        });
+      }
+    }
+  }
+
+  bool _listEquals(List<String> a, List<String> b) {
+    if (identical(a, b)) return true;
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
   }
 
   /// Quill JSON when possible; plain text fallback (Weekly Review historically
@@ -288,29 +314,18 @@ class JournalEntryFormState extends ConsumerState<JournalEntryForm> {
       ...?plan?.confirmedChecklistItems,
     };
 
-    final promptAnswers =
-        JournalFormHelpers.stringMapFromCustom(custom, 'notePromptAnswers');
     final fieldAnswers =
         JournalFormHelpers.stringMapFromCustom(custom, 'templateFieldAnswers');
-    final promptLabels =
-        JournalFormHelpers.stringListFromCustom(custom, 'notePromptLabels');
     final fieldLabels =
         JournalFormHelpers.stringListFromCustom(custom, 'templateFieldLabels');
 
     // Prefer stored label order; fall back to answer keys for older entries.
-    final prompts = promptLabels.isNotEmpty
-        ? promptLabels
-        : promptAnswers.keys.toList();
     final fields =
         fieldLabels.isNotEmpty ? fieldLabels : fieldAnswers.keys.toList();
 
     _replaceChecklist(checklist, completed: completed);
-    _notePrompts = prompts;
-    _replaceLabeledControllers(
-      _promptControllers,
-      prompts: prompts,
-      answers: promptAnswers,
-    );
+    // Prompts UI removed (web + mobile) — do not hydrate prompt fields.
+    _replaceLabeledControllers(_promptControllers, prompts: const []);
     _templateFields = fields;
     _replaceLabeledControllers(
       _fieldControllers,
@@ -359,7 +374,6 @@ class JournalEntryFormState extends ConsumerState<JournalEntryForm> {
   void _clearStructuredSections() {
     _replaceChecklist(const []);
     _replaceLabeledControllers(_promptControllers, prompts: const []);
-    _notePrompts = [];
     _replaceLabeledControllers(_fieldControllers, prompts: const []);
     _templateFields = [];
     _appliedTemplateName = null;
@@ -525,22 +539,19 @@ class JournalEntryFormState extends ConsumerState<JournalEntryForm> {
       }
 
       _titleController.text = selection.name;
-      // Checklist + prompts are form sections; Quill is free-form notes only.
+      // Checklist + custom fields are form sections; Quill is free-form notes.
+      // Prompts UI removed — ignore template notePrompts.
       _replaceChecklist(
         selection.effectiveChecklist,
         completed: selection.checkedItems,
       );
-      _notePrompts = List<String>.from(selection.notePrompts);
-      _replaceLabeledControllers(
-        _promptControllers,
-        prompts: _notePrompts,
-      );
+      _replaceLabeledControllers(_promptControllers, prompts: const []);
       _templateFields = List<String>.from(selection.fields);
       _replaceLabeledControllers(
         _fieldControllers,
         prompts: _templateFields,
       );
-      // Notes start empty — checklist/prompts are separate sections above.
+      // Notes stay a free-form Quill box; checklist sits above it inside Notes.
       _quillController.document = quill.Document();
       _quillController.updateSelection(
         const TextSelection.collapsed(offset: 0),
@@ -635,9 +646,6 @@ class JournalEntryFormState extends ConsumerState<JournalEntryForm> {
     (_selectedTags.toList()..sort()).join(','),
     _checklistItems.join(','),
     (_completedChecklistItems.toList()..sort()).join(','),
-    _answersFromControllers(_promptControllers).entries
-        .map((e) => '${e.key}=${e.value}')
-        .join('|'),
     _answersFromControllers(_fieldControllers).entries
         .map((e) => '${e.key}=${e.value}')
         .join('|'),
@@ -655,7 +663,6 @@ class JournalEntryFormState extends ConsumerState<JournalEntryForm> {
       _endMood != null ||
       _checklistItems.isNotEmpty ||
       _imageUrls.isNotEmpty ||
-      _answersFromControllers(_promptControllers).isNotEmpty ||
       _answersFromControllers(_fieldControllers).isNotEmpty;
 
   bool get _hasUnsavedChanges =>
@@ -726,10 +733,39 @@ class JournalEntryFormState extends ConsumerState<JournalEntryForm> {
     }
   }
 
-  /// Warn before discarding unsaved journal work.
+  /// Warn before discarding journal work.
   /// Returns true if the caller should proceed with leave/discard.
-  Future<bool> confirmLeaveIfUnsaved() async {
-    if (!_hasUnsavedChanges || _isSubmitting) return true;
+  ///
+  /// [force] — Cancel always warns; system back only when dirty.
+  Future<bool> confirmLeaveIfUnsaved({bool force = false}) async {
+    if (_isSubmitting) return true;
+    if (!force && !_hasUnsavedChanges) return true;
+
+    if (!_hasUnsavedChanges) {
+      final discard = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Leave journal?'),
+          content: const Text('Leave without saving this journal entry?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Keep editing'),
+            ),
+            FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: ModuleColorProvider.maybeOf(ctx) ??
+                    ModuleColors.trade,
+              ),
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Leave'),
+            ),
+          ],
+        ),
+      );
+      return discard == true;
+    }
+
     final action = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -753,7 +789,8 @@ class JournalEntryFormState extends ConsumerState<JournalEntryForm> {
           ),
           FilledButton(
             style: FilledButton.styleFrom(
-              backgroundColor: ModuleColors.trade,
+              backgroundColor: ModuleColorProvider.maybeOf(ctx) ??
+                  ModuleColors.trade,
             ),
             onPressed: () => Navigator.pop(ctx, 'complete'),
             child: const Text('Save completely'),
@@ -829,9 +866,9 @@ class JournalEntryFormState extends ConsumerState<JournalEntryForm> {
       endBehavior: _endBehaviorController.text,
       endMood: _endMood,
       endSentiment: _endSentiment,
-      promptAnswers: _answersFromControllers(_promptControllers),
+      promptAnswers: null,
       fieldAnswers: _answersFromControllers(_fieldControllers),
-      promptLabels: _notePrompts,
+      promptLabels: null,
       fieldLabels: _templateFields,
     );
     final postTradeReview = _buildPostTradeReviewForSave(existing);
@@ -1273,6 +1310,24 @@ class JournalEntryFormState extends ConsumerState<JournalEntryForm> {
     return summaries;
   }
 
+  /// Scroll end inset so sticky [JournalFormActions] never covers form fields.
+  /// Uses the same action height + attachment clearance constants as the bar.
+  static double _stickyActionsReserve({
+    required bool isCompact,
+    required double navOrKeyboardInset,
+    required bool showDraftLine,
+  }) {
+    final verticalPad = isCompact
+        ? (AppSpacing.xs + AppSpacing.xxs) * 2
+        : AppSpacing.sm + (AppSpacing.sm + AppSpacing.xs);
+    final draft = showDraftLine ? AppSpacing.lg : 0.0;
+    return JournalFormActions.actionRowHeight +
+        verticalPad +
+        draft +
+        navOrKeyboardInset +
+        JournalFormActions.attachmentScrollClearance;
+  }
+
   @override
   Widget build(BuildContext context) => PopScope(
     canPop: !_hasUnsavedChanges,
@@ -1287,55 +1342,212 @@ class JournalEntryFormState extends ConsumerState<JournalEntryForm> {
       key: _formKey,
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final isWide = constraints.maxWidth > 720;
-          return Column(
-            children: [
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(
-                    AppSpacing.lg,
-                    AppSpacing.md,
-                    AppSpacing.lg,
-                    AppSpacing.md,
+          // Desktop always Notes | meta (Entry Date / trades on the RIGHT).
+          // Only [compact] mobile stacks. Widths are explicit so sidebar
+          // changes cannot shove the right column off-screen.
+          final useTwoColumn = !widget.compact;
+          final isCompact = widget.compact;
+          final denseTwoCol = useTwoColumn && constraints.maxWidth < 1000;
+          final showSticky = _isEditMode || widget.entry == null;
+          final showDraftLine =
+              showSticky && widget.entry == null && _lastDraftSavedAt != null;
+          final hPad = isCompact ? AppSpacing.md : AppSpacing.md;
+          final vPad = isCompact ? AppSpacing.sm : AppSpacing.md;
+
+          Widget scrollBody(double bottomInset) {
+            // Use outer pane width — LayoutBuilder inside a vertical
+            // ScrollView can report infinite maxWidth on web.
+            final contentW = constraints.maxWidth.isFinite
+                ? (constraints.maxWidth - hPad * 2).clamp(0.0, double.infinity)
+                : 800.0;
+            final gap = AppSpacing.md;
+            final Widget columns;
+            if (!useTwoColumn || contentW < 520) {
+              columns = Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _buildLeftColumn(context, isCompact: true),
+                  const SizedBox(height: AppSpacing.xs + AppSpacing.xxs),
+                  _buildRightColumn(isCompact: true),
+                ],
+              );
+            } else {
+              // ~38% meta rail on the RIGHT; Notes take the rest.
+              final rightW = (contentW * 0.38).clamp(180.0, 360.0);
+              final leftW = contentW - rightW - gap;
+              columns = Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(
+                    width: leftW,
+                    child: _buildLeftColumn(
+                      context,
+                      isCompact: denseTwoCol,
+                    ),
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Same input template for view + edit; fields lock via _isEditMode.
-                      if (isWide)
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(flex: 5, child: _buildLeftColumn(context)),
-                            const SizedBox(width: AppSpacing.lg),
-                            Expanded(flex: 3, child: _buildRightColumn()),
-                          ],
-                        )
-                      else
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            _buildLeftColumn(context),
-                            const SizedBox(height: AppSpacing.lg),
-                            _buildRightColumn(),
-                          ],
-                        ),
-                    ],
+                  SizedBox(width: gap),
+                  SizedBox(
+                    width: rightW,
+                    child: _buildRightColumn(isCompact: denseTwoCol),
                   ),
+                ],
+              );
+            }
+
+            return SingleChildScrollView(
+              padding: EdgeInsets.fromLTRB(hPad, vPad, hPad, bottomInset),
+              child: SizedBox(width: contentW, child: columns),
+            );
+          }
+
+          // Column(Expanded + sticky) is correct when the parent height is
+          // tight. AnimatedSwitcher / some embeds pass loose height so the
+          // sticky paints over the last fields — Stack + scroll inset is the
+          // same contract used by template mobile composers.
+          if (!showSticky) {
+            return scrollBody(vPad);
+          }
+
+          Widget shell(double bottomInset) {
+            return Stack(
+              clipBehavior: Clip.hardEdge,
+              children: [
+                Positioned.fill(child: scrollBody(bottomInset)),
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  child: _buildStickyActions(context, isCompact: isCompact),
                 ),
+              ],
+            );
+          }
+
+          // Desktop sticky (also when dense two-col under 1000px).
+          if (!widget.compact) {
+            return shell(
+              _stickyActionsReserve(
+                isCompact: denseTwoCol,
+                navOrKeyboardInset: 0,
+                showDraftLine: showDraftLine,
               ),
-              // Sticky bar only while composing / editing — view mode uses header Edit.
-              if (_isEditMode || widget.entry == null)
-                _buildStickyActions(context),
-            ],
+            );
+          }
+
+          final navReserveFull =
+              PlatformConstants.globalBottomNavReserve(context);
+          final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
+
+          if (navReserveFull <= 0) {
+            return shell(
+              _stickyActionsReserve(
+                isCompact: true,
+                navOrKeyboardInset: keyboardInset,
+                showDraftLine: showDraftLine,
+              ),
+            );
+          }
+
+          return ValueListenableBuilder<double>(
+            valueListenable: GlobalBottomNavVisibility.factor,
+            builder: (context, navFactor, _) {
+              final t = navFactor.clamp(0.0, 1.0);
+              final inset = keyboardInset > 0
+                  ? keyboardInset
+                  : navReserveFull * t;
+              return shell(
+                _stickyActionsReserve(
+                  isCompact: true,
+                  navOrKeyboardInset: inset,
+                  showDraftLine: showDraftLine,
+                ),
+              );
+            },
           );
         },
       ),
     ),
   );
 
-  Widget _buildStickyActions(BuildContext context) {
+  Widget _buildStickyActions(BuildContext context, {bool isCompact = false}) {
     final colors = context.colors;
+    if (isCompact) {
+      final navReserveFull = PlatformConstants.globalBottomNavReserve(context);
+      final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
+
+      Widget buildContainer(double bottomPad) {
+        return Material(
+          color: colors.surface,
+          child: Container(
+            width: double.infinity,
+            padding: EdgeInsets.fromLTRB(
+              AppSpacing.md,
+              AppSpacing.xs + AppSpacing.xxs,
+              AppSpacing.md,
+              bottomPad,
+            ),
+            decoration: BoxDecoration(
+              border: Border(
+                top: BorderSide(color: colors.border.withValues(alpha: 0.3)),
+              ),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (widget.entry == null && _lastDraftSavedAt != null)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: AppSpacing.xxs),
+                    child: Text(
+                      'Draft saved ${TimeOfDay.fromDateTime(_lastDraftSavedAt!).format(context)}',
+                      textAlign: TextAlign.end,
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: colors.textSecondary,
+                      ),
+                    ),
+                  ),
+                JournalFormActions(
+                  isEditMode: _isEditMode,
+                  isSubmitting: _isSubmitting,
+                  isNewEntry: widget.entry == null,
+                  compact: isCompact,
+                  onSubmit: _submit,
+                  onToggleEditMode: () => _setEditMode(!_isEditMode),
+                  onBrowseTemplates: _isEditMode ? browseTemplates : null,
+                  onCancel: () async {
+                    final leave = await confirmLeaveIfUnsaved(force: true);
+                    if (!leave || !mounted) return;
+                    if (widget.entry == null) {
+                      widget.onCancelCreate?.call();
+                      return;
+                    }
+                    exitEditMode();
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      }
+
+      if (navReserveFull <= 0) {
+        return buildContainer(
+          AppSpacing.xs + AppSpacing.xxs + keyboardInset,
+        );
+      }
+
+      return ValueListenableBuilder<double>(
+        valueListenable: GlobalBottomNavVisibility.factor,
+        builder: (context, navFactor, _) {
+          final t = navFactor.clamp(0.0, 1.0);
+          final bottomPad = keyboardInset > 0
+              ? AppSpacing.xs + AppSpacing.xxs + keyboardInset
+              : (AppSpacing.xs + AppSpacing.xxs) + (navReserveFull * t);
+          return buildContainer(bottomPad);
+        },
+      );
+    }
+
     return Material(
       color: colors.cardSurface,
       child: Container(
@@ -1370,11 +1582,12 @@ class JournalEntryFormState extends ConsumerState<JournalEntryForm> {
               isEditMode: _isEditMode,
               isSubmitting: _isSubmitting,
               isNewEntry: widget.entry == null,
+              compact: widget.compact,
               onSubmit: _submit,
               onToggleEditMode: () => _setEditMode(!_isEditMode),
               onBrowseTemplates: _isEditMode ? browseTemplates : null,
               onCancel: () async {
-                final leave = await confirmLeaveIfUnsaved();
+                final leave = await confirmLeaveIfUnsaved(force: true);
                 if (!leave || !mounted) return;
                 if (widget.entry == null) {
                   widget.onCancelCreate?.call();
@@ -1389,164 +1602,182 @@ class JournalEntryFormState extends ConsumerState<JournalEntryForm> {
     );
   }
 
-  Widget _buildLeftColumn(BuildContext context) {
-    final theme = Theme.of(context);
+  Widget _buildLeftColumn(BuildContext context, {bool isCompact = false}) {
+    final sectionGap = isCompact ? AppSpacing.sm : AppSpacing.md;
+    // Same field chrome as Trade journal — border labels / surface tint (no white cards).
+    // Template banner + checklist + custom fields live inside Notes (not above it).
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        JournalFormSurface(
-          title: 'Title',
-          subtitle: 'Give this day a clear name',
-          leading: Icon(
-            Icons.title_rounded,
-            size: 18,
-            color: ModuleColors.trade,
-          ),
-          child: _buildTitleField(),
-        ),
-        if (_isEditMode && _appliedTemplateName != null) ...[
-          const SizedBox(height: AppSpacing.md),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.md,
-              vertical: AppSpacing.sm + AppSpacing.xs,
-            ),
-            decoration: BoxDecoration(
-              color: ModuleColors.trade.withValues(alpha: 0.1),
-              borderRadius: AppRadii.card,
-              border: Border.all(
-                color: ModuleColors.trade.withValues(alpha: 0.28),
-              ),
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(
-                  Icons.auto_awesome_outlined,
-                  size: 16,
-                  color: ModuleColors.trade,
-                ),
-                const SizedBox(width: AppSpacing.sm),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Template: $_appliedTemplateName',
-                        style: theme.textTheme.labelLarge?.copyWith(
-                          color: ModuleColors.trade,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      if (_templateFocusTip != null) ...[
-                        const SizedBox(height: 4),
-                        Text(
-                          _templateFocusTip!,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: ModuleColors.trade.withValues(alpha: 0.9),
-                            height: 1.35,
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-        if (_checklistItems.isNotEmpty) ...[
-          const SizedBox(height: AppSpacing.md),
-          JournalFormSurface(
-            title: 'Checklist',
-            subtitle: _completedChecklistItems.isEmpty
-                ? 'Tap items as you confirm them'
-                : '${_completedChecklistItems.length}/${_checklistItems.length} done',
-            leading: Icon(
-              Icons.checklist_rounded,
-              size: 18,
-              color: ModuleColors.trade,
-            ),
-            child: _buildChecklistEditor(enabled: _isEditMode),
-          ),
-        ],
-        if (_notePrompts.isNotEmpty) ...[
-          const SizedBox(height: AppSpacing.md),
-          JournalFormSurface(
-            title: 'Prompts',
-            subtitle: 'Answer each question — labels stay fixed',
-            leading: Icon(
-              Icons.lightbulb_outline_rounded,
-              size: 18,
-              color: ModuleColors.trade,
-            ),
-            child: _buildLabeledFieldsEditor(
-              labels: _notePrompts,
-              controllers: _promptControllers,
-              enabled: _isEditMode,
-              hint: 'Write your answer…',
-            ),
-          ),
-        ],
-        if (_templateFields.isNotEmpty) ...[
-          const SizedBox(height: AppSpacing.md),
-          JournalFormSurface(
-            title: 'Trade details',
-            subtitle: 'Fill in the blanks — field names stay fixed',
-            leading: Icon(
-              Icons.tune_rounded,
-              size: 18,
-              color: ModuleColors.trade,
-            ),
-            child: _buildLabeledFieldsEditor(
-              labels: _templateFields,
-              controllers: _fieldControllers,
-              enabled: _isEditMode,
-              hint: 'Add details…',
-            ),
-          ),
-        ],
-        const SizedBox(height: AppSpacing.md),
-        JournalFormSurface(
-          title: 'Notes',
-          subtitle: 'Free-form writing',
-          leading: Icon(
-            Icons.notes_rounded,
-            size: 18,
-            color: ModuleColors.trade,
-          ),
-          child: RichTextEditor(
-            controller: _quillController,
-            readOnly: !_isEditMode,
-            minHeight: 280,
-          ),
-        ),
-        const SizedBox(height: AppSpacing.md),
-        JournalFormSurface(
-          title: 'Behavior & mood',
-          subtitle: 'Planning, mid-session, and end-of-day',
-          leading: Icon(
-            Icons.psychology_alt_outlined,
-            size: 18,
-            color: ModuleColors.trade,
-          ),
-          child: _buildBehaviorTracking(),
+        _buildTitleField(floatingLabel: true),
+        SizedBox(height: sectionGap),
+        _buildNotesSection(context, isCompact: isCompact),
+        SizedBox(height: sectionGap),
+        _buildBorderLabeledBlock(
+          label: 'Behavior & mood',
+          child: _buildBehaviorTracking(isCompact: isCompact),
         ),
       ],
     );
   }
 
-  Widget _buildChecklistEditor({required bool enabled}) {
+  static const _noteTopicTags = [
+    'plan',
+    'setup',
+    'risk',
+    'execution',
+    'psychology',
+    'review',
+  ];
+
+  Widget _buildNotesSection(BuildContext context, {required bool isCompact}) {
     final theme = Theme.of(context);
+    final accent =
+        ModuleColorProvider.maybeOf(context) ?? ModuleColors.trade;
+    final hasTemplateChrome = _isEditMode && _appliedTemplateName != null;
+    final hasChecklist = _checklistItems.isNotEmpty;
+    final hasFields = _templateFields.isNotEmpty;
+    final hasHeader = hasTemplateChrome || hasFields;
+
+    Widget? header;
+    if (hasHeader) {
+      header = Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (hasTemplateChrome)
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Tooltip(
+                message: _templateFocusTip ?? 'Applied template',
+                child: Container(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: AppSpacing.sm + AppSpacing.xs,
+                    vertical: isCompact ? AppSpacing.xs : AppSpacing.sm,
+                  ),
+                  decoration: BoxDecoration(
+                    color: accent.withValues(alpha: 0.12),
+                    borderRadius: AppRadii.chip,
+                    border: Border.all(
+                      color: accent.withValues(alpha: 0.28),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.auto_awesome,
+                        size: AppSpacing.md,
+                        color: accent,
+                      ),
+                      const SizedBox(width: AppSpacing.xs),
+                      Flexible(
+                        child: Text(
+                          'Template: $_appliedTemplateName',
+                          style: theme.textTheme.labelMedium?.copyWith(
+                            color: accent,
+                            fontWeight: FontWeight.w700,
+                          ),
+                          maxLines: isCompact ? 1 : 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          if (hasTemplateChrome && hasFields)
+            SizedBox(height: isCompact ? AppSpacing.sm : AppSpacing.md),
+          if (hasFields)
+            _buildLabeledFieldsEditor(
+              labels: _templateFields,
+              controllers: _fieldControllers,
+              enabled: _isEditMode,
+              hint: 'Add details…',
+              floatingLabels: true,
+            ),
+        ],
+      );
+    }
+
+    // Web-only note-topic chips — mobile keeps tags in Behavior & mood (compact).
+    final Widget? footer = isCompact
+        ? null
+        : Wrap(
+            spacing: AppSpacing.sm,
+            runSpacing: AppSpacing.sm,
+            children: [
+              for (final tag in _noteTopicTags)
+                AmToggleChip(
+                  label: '#$tag',
+                  selected: _selectedTags.contains(tag),
+                  compact: true,
+                  accentColor: accent,
+                  onTap: _isEditMode ? () => _toggleTag(tag) : null,
+                ),
+            ],
+          );
+
+    return RichTextEditor(
+      controller: _quillController,
+      readOnly: !_isEditMode,
+      // Dedicated Quill box height (checklist is editorLeading above, not inside).
+      minHeight: isCompact
+          ? AppSpacing.xxl * 3 + AppSpacing.md
+          : AppSpacing.xxl * 5,
+      compact: isCompact,
+      label: 'Notes',
+      header: header,
+      editorLeading: hasChecklist
+          ? _buildChecklistEditor(enabled: _isEditMode)
+          : null,
+      footer: footer,
+    );
+  }
+
+  Widget _buildBorderLabeledBlock({
+    required String label,
+    required Widget child,
+  }) {
+    return InputDecorator(
+      decoration: JournalFieldDecoration.borderLabel(context, label: label),
+      child: child,
+    );
+  }
+
+  /// Same borderLabel contract as Notes ([JournalBorderLabeledPanel]) —
+  /// InputDecorator must not wrap the file picker on web.
+  Widget _buildAttachmentBlock() {
+    return JournalBorderLabeledPanel(
+      label: 'Supporting Evidence',
+      readOnly: !_isEditMode,
+      child: JournalAttachmentSection(
+        userId: widget.entry?.userId ?? '',
+        imageUrls: _imageUrls,
+        onAttachmentsChanged: (urls) {
+          setState(() => _imageUrls = urls);
+          _scheduleAutosave();
+        },
+        featureName: 'journal',
+        isEditMode: _isEditMode,
+        omitSectionTitle: true,
+      ),
+    );
+  }
+
+  Widget _buildChecklistEditor({required bool enabled}) {
     final colors = context.colors;
+    final accent =
+        ModuleColorProvider.maybeOf(context) ?? ModuleColors.trade;
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
         for (final item in _checklistItems)
           Material(
-            color: Colors.transparent,
+            color: colors.cardSurface.withValues(alpha: 0),
             child: CheckboxListTile(
               value: _completedChecklistItems.contains(item),
+              activeColor: accent,
               onChanged: !enabled
                   ? null
                   : (v) {
@@ -1562,16 +1793,13 @@ class JournalEntryFormState extends ConsumerState<JournalEntryForm> {
               controlAffinity: ListTileControlAffinity.leading,
               contentPadding: EdgeInsets.zero,
               dense: true,
+              visualDensity: VisualDensity.compact,
               title: Text(
                 item,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  decoration: _completedChecklistItems.contains(item)
-                      ? TextDecoration.lineThrough
-                      : null,
-                  color: _completedChecklistItems.contains(item)
-                      ? colors.textSecondary
-                      : null,
-                ),
+                // Tick only — no strikethrough / muted “cut” style when checked.
+                style: context.text.body(compact: true).copyWith(
+                      color: colors.textPrimary,
+                    ),
               ),
             ),
           ),
@@ -1584,60 +1812,37 @@ class JournalEntryFormState extends ConsumerState<JournalEntryForm> {
     required Map<String, TextEditingController> controllers,
     required bool enabled,
     required String hint,
+    bool floatingLabels = false,
   }) {
     final theme = Theme.of(context);
-    final colors = context.colors;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         for (var i = 0; i < labels.length; i++) ...[
-          if (i > 0) const SizedBox(height: AppSpacing.md),
-          Text(
-            labels[i],
-            style: theme.textTheme.labelLarge?.copyWith(
-              fontWeight: FontWeight.w600,
+          if (i > 0)
+            SizedBox(height: floatingLabels ? AppSpacing.sm : AppSpacing.md),
+          if (!floatingLabels) ...[
+            Text(
+              labels[i],
+              style: theme.textTheme.labelLarge?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: context.colors.textPrimary,
+              ),
             ),
-          ),
-          const SizedBox(height: AppSpacing.xs),
+            const SizedBox(height: AppSpacing.xs),
+          ],
           TextFormField(
             controller: controllers[labels[i]],
             enabled: enabled,
-            maxLines: 3,
-            minLines: 2,
+            maxLines: floatingLabels ? 2 : 3,
+            minLines: floatingLabels ? 1 : 2,
             style: theme.textTheme.bodyMedium,
-            decoration: InputDecoration(
+            decoration: JournalFieldDecoration.outlined(
+              context,
+              labelText: floatingLabels ? labels[i] : null,
               hintText: hint,
-              hintStyle: theme.textTheme.bodyMedium?.copyWith(
-                color: colors.textSecondary,
-                fontStyle: FontStyle.italic,
-              ),
-              filled: true,
-              fillColor: colors.surface.withValues(alpha: 0.45),
-              border: OutlineInputBorder(
-                borderRadius: AppRadii.card,
-                borderSide:
-                    BorderSide(color: colors.border.withValues(alpha: 0.35)),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: AppRadii.card,
-                borderSide:
-                    BorderSide(color: colors.border.withValues(alpha: 0.35)),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: AppRadii.card,
-                borderSide: BorderSide(
-                  color: ModuleColors.trade.withValues(alpha: 0.7),
-                ),
-              ),
-              disabledBorder: OutlineInputBorder(
-                borderRadius: AppRadii.card,
-                borderSide:
-                    BorderSide(color: colors.border.withValues(alpha: 0.2)),
-              ),
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.md,
-                vertical: AppSpacing.sm,
-              ),
+              floatingLabel: floatingLabels,
+              dense: floatingLabels,
             ),
           ),
         ],
@@ -1645,158 +1850,99 @@ class JournalEntryFormState extends ConsumerState<JournalEntryForm> {
     );
   }
 
-  Widget _buildTitleField() {
-    final theme = Theme.of(context);
+  Widget _buildTitleField({bool floatingLabel = false}) {
     final colors = context.colors;
     return TextFormField(
       controller: _titleController,
       enabled: _isEditMode,
-      style: theme.textTheme.titleMedium?.copyWith(
-        fontWeight: FontWeight.w600,
-        color: _isEditMode
-            ? null
-            : theme.colorScheme.onSurface.withValues(alpha: 0.9),
-      ),
-      decoration: InputDecoration(
-        hintText: 'e.g. Pre-market plan — Nifty bias',
-        hintStyle: theme.textTheme.bodyMedium?.copyWith(
-          color: colors.textSecondary,
-        ),
-        filled: true,
-        fillColor: colors.surface.withValues(alpha: 0.45),
-        border: OutlineInputBorder(
-          borderRadius: AppRadii.card,
-          borderSide: BorderSide(color: colors.border.withValues(alpha: 0.35)),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: AppRadii.card,
-          borderSide: BorderSide(color: colors.border.withValues(alpha: 0.35)),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: AppRadii.card,
-          borderSide: BorderSide(
-            color: ModuleColors.trade.withValues(alpha: 0.7),
+      style: context.text.sectionTitle(compact: true).copyWith(
+            fontWeight: FontWeight.w600,
+            color: _isEditMode
+                ? colors.textPrimary
+                : colors.textPrimary.withValues(alpha: 0.9),
           ),
-        ),
-        disabledBorder: OutlineInputBorder(
-          borderRadius: AppRadii.card,
-          borderSide: BorderSide(color: colors.border.withValues(alpha: 0.2)),
-        ),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.md,
-          vertical: AppSpacing.md,
-        ),
+      decoration: JournalFieldDecoration.outlined(
+        context,
+        labelText: floatingLabel ? 'Title' : null,
+        hintText: 'e.g. Pre-market plan — Nifty bias',
+        floatingLabel: floatingLabel,
+        dense: floatingLabel,
       ),
       validator: (value) => value?.isEmpty ?? true ? 'Required' : null,
     );
   }
 
-  Widget _buildRightColumn() => Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      JournalFormSurface(
-        title: 'Details',
-        subtitle: 'Date, links, and context',
-        leading: Icon(
-          Icons.info_outline_rounded,
-          size: 18,
-          color: ModuleColors.trade,
-        ),
-        child: _buildOptionalFields(),
-      ),
-      const SizedBox(height: AppSpacing.md),
-      JournalFormSurface(
-        title: "Today's trades",
-        subtitle: _availableTrades.isEmpty
-            ? 'No fills for this date — change date or period'
-            : '${_availableTrades.length} trade(s) · ${_relatedTradeIds.length} linked',
-        leading: Icon(
-          Icons.candlestick_chart_outlined,
-          size: 18,
-          color: ModuleColors.trade,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            if (_isEditMode && _availableTrades.isNotEmpty) ...[
-              Align(
-                alignment: Alignment.centerLeft,
-                child: TextButton.icon(
-                  onPressed: _attachAllAvailableTrades,
-                  icon: const Icon(Icons.link_rounded, size: 16),
-                  label: const Text('Attach all for this day'),
-                  style: TextButton.styleFrom(
-                    foregroundColor: ModuleColors.trade,
-                    padding: EdgeInsets.zero,
-                    visualDensity: VisualDensity.compact,
+  Widget _buildRightColumn({bool isCompact = false}) {
+    final accent =
+        ModuleColorProvider.maybeOf(context) ?? ModuleColors.trade;
+    final sectionGap = isCompact ? AppSpacing.sm : AppSpacing.md;
+    // Same chrome as Trade journal / left column — border labels, no white cards.
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildOptionalFields(),
+        SizedBox(height: sectionGap),
+        _buildBorderLabeledBlock(
+          label: "Today's trades",
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (_isEditMode && _availableTrades.isNotEmpty) ...[
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton.icon(
+                    onPressed: _attachAllAvailableTrades,
+                    icon: const Icon(Icons.link_rounded, size: 16),
+                    label: const Text('Attach all for this day'),
+                    style: TextButton.styleFrom(
+                      foregroundColor: accent,
+                      padding: EdgeInsets.zero,
+                      visualDensity: VisualDensity.compact,
+                    ),
                   ),
                 ),
+                const SizedBox(height: AppSpacing.xs),
+              ],
+              JournalTradeSection(
+                selectedDate: _tradeOverviewDate,
+                selectedPeriod: _tradePeriod,
+                selectedTradeIds: _relatedTradeIds,
+                availableTrades: _availableTrades,
+                isEditMode: _isEditMode,
+                onDateChanged: (date) {
+                  setState(() {
+                    _tradeOverviewDate = date;
+                    _entryDate = date;
+                    _resetLinksForNewDay();
+                  });
+                  _loadTradesForPeriod(date, _tradePeriod);
+                },
+                onPeriodChanged: (period) {
+                  setState(() => _tradePeriod = period);
+                  _loadTradesForPeriod(_tradeOverviewDate, period);
+                },
+                onTradesSelected: _setRelatedTradeIds,
+                onViewTrades: _showTradePreview,
               ),
-              const SizedBox(height: AppSpacing.xs),
             ],
-            JournalTradeSection(
-              selectedDate: _tradeOverviewDate,
-              selectedPeriod: _tradePeriod,
-              selectedTradeIds: _relatedTradeIds,
-              availableTrades: _availableTrades,
+          ),
+        ),
+        if (_linkedReviewRows.isNotEmpty) ...[
+          SizedBox(height: sectionGap),
+          _buildBorderLabeledBlock(
+            label: 'Trade review',
+            child: JournalStructuredReviewSection(
+              rows: _linkedReviewRows,
               isEditMode: _isEditMode,
-              onDateChanged: (date) {
-                setState(() {
-                  _tradeOverviewDate = date;
-                  _entryDate = date;
-                  _resetLinksForNewDay();
-                });
-                _loadTradesForPeriod(date, _tradePeriod);
-              },
-              onPeriodChanged: (period) {
-                setState(() => _tradePeriod = period);
-                _loadTradesForPeriod(_tradeOverviewDate, period);
-              },
-              onTradesSelected: _setRelatedTradeIds,
-              onViewTrades: _showTradePreview,
+              onChanged: () => setState(() {}),
             ),
-          ],
-        ),
-      ),
-      if (_linkedReviewRows.isNotEmpty) ...[
-        const SizedBox(height: AppSpacing.md),
-        JournalFormSurface(
-          title: 'Trade review',
-          subtitle: 'Outcome + mistake → Insights',
-          leading: Icon(
-            Icons.rate_review_outlined,
-            size: 18,
-            color: ModuleColors.trade,
           ),
-          child: JournalStructuredReviewSection(
-            rows: _linkedReviewRows,
-            isEditMode: _isEditMode,
-            onChanged: () => setState(() {}),
-          ),
-        ),
+        ],
+        SizedBox(height: sectionGap),
+        _buildAttachmentBlock(),
       ],
-      const SizedBox(height: AppSpacing.md),
-      JournalFormSurface(
-        title: 'Attachments',
-        subtitle: 'Charts and screenshots',
-        leading: Icon(
-          Icons.attach_file_rounded,
-          size: 18,
-          color: ModuleColors.trade,
-        ),
-        child: JournalAttachmentSection(
-          userId: widget.entry?.userId ?? '',
-          imageUrls: _imageUrls,
-          onAttachmentsChanged: (urls) {
-            setState(() => _imageUrls = urls);
-            _scheduleAutosave();
-          },
-          featureName: 'journal',
-          isEditMode: _isEditMode,
-        ),
-      ),
-    ],
-  );
+    );
+  }
 
   Widget _buildOptionalFields() => OptionalFieldsSection(
     entryDate: _entryDate,
@@ -1827,7 +1973,7 @@ class JournalEntryFormState extends ConsumerState<JournalEntryForm> {
     },
   );
 
-  Widget _buildBehaviorTracking() => BehaviorTrackingSection(
+  Widget _buildBehaviorTracking({bool isCompact = false}) => BehaviorTrackingSection(
     planningBehaviorController: _planningBehaviorController,
     planningMood: _planningMood,
     planningSentiment: _planningSentiment,
@@ -1864,6 +2010,7 @@ class JournalEntryFormState extends ConsumerState<JournalEntryForm> {
     selectedTags: _selectedTags,
     onTagToggled: _toggleTag,
     isEditMode: _isEditMode,
+    compact: isCompact,
   );
 
   void _toggleTag(String tag) {
