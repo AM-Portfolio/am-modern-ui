@@ -1,7 +1,9 @@
 {
   "_comment": "Copy to config.local.json (gitignored). Put real Google / GrowthBook client values here for local runs — never commit config.local.json.",
   "domain": "am-dev.asrax.in",
-  "services": {},
+  "services": {
+    "wsStream": "ws://localhost:8091/v1/streams"
+  },
   "google": {
     "webClientId": "307768822337-ad7tee4d82cc0b4flgrfs157e5e6rc0g.apps.googleusercontent.com",
     "iosClientId": "307768822337-082220ndhdik3b6utgac7t8hun23dqns.apps.googleusercontent.com",

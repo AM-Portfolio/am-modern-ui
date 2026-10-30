@@ -30,8 +30,10 @@ class PriceService {
   Timer? _gatewayConnectDebounce;
   DateTime? _lastTopicResubscribe;
   bool _streamingAllowed = true;
+  final Map<String, DateTime> _lastQuoteTimes = {};
 
-  static const Duration _gatewayConnectDebounceDelay = Duration(milliseconds: 500);
+  static const Duration _gatewayConnectDebounceDelay =
+      Duration(milliseconds: 100);
   static const Duration _topicResubscribeCooldown = Duration(seconds: 3);
 
   final Map<String, QuoteChange> _priceCache = {};
@@ -258,7 +260,8 @@ class PriceService {
   }) {
     final client = _stompClient;
     if (client == null) {
-      AppLogger.warning('PriceService: Cannot send market subscribe — no AmStompClient.');
+      AppLogger.warning(
+          'PriceService: Cannot send market subscribe — no AmStompClient.');
       return;
     }
 
@@ -300,12 +303,14 @@ class PriceService {
   void _stompSubscribe(List<String> symbols, {bool forceResubscribe = false}) {
     final client = _stompClient;
     if (client == null) {
-      AppLogger.warning('PriceService: Cannot STOMP subscribe — no AmStompClient.');
+      AppLogger.warning(
+          'PriceService: Cannot STOMP subscribe — no AmStompClient.');
       return;
     }
 
     for (final symbol in symbols) {
-      client.subscribe(stockTopicDestination(symbol), forceResubscribe: forceResubscribe);
+      client.subscribe(stockTopicDestination(symbol),
+          forceResubscribe: forceResubscribe);
     }
   }
 
@@ -346,8 +351,32 @@ class PriceService {
 
     try {
       final json = jsonDecode(body) as Map<String, dynamic>;
-      final symbol = json['symbol'] as String?;
+      final symbol = json['symbol']?.toString().trim();
       if (symbol == null || symbol.isEmpty) return;
+
+      final destination = frame.headers['destination'];
+      if (destination != null && destination.startsWith('/topic/stock/')) {
+        final topicSymbol =
+            destination.substring('/topic/stock/'.length).trim();
+        if (topicSymbol != symbol) {
+          AppLogger.warning(
+            'PriceService: topic/payload symbol mismatch: topic=$topicSymbol payload=$symbol',
+          );
+        }
+      }
+
+      final quoteTime = _parseQuoteTime(json['time'] ?? json['timestamp']);
+      final previousTime = _lastQuoteTimes[symbol];
+      if (quoteTime != null &&
+          previousTime != null &&
+          quoteTime.isBefore(previousTime)) {
+        AppLogger.warning(
+          'PriceService: ignoring out-of-order quote for $symbol '
+          '(incoming=$quoteTime cached=$previousTime)',
+        );
+        return;
+      }
+      if (quoteTime != null) _lastQuoteTimes[symbol] = quoteTime;
 
       // #region agent log
       agentDebugLog(
@@ -388,6 +417,7 @@ class PriceService {
     detach();
     _pendingGatewaySymbols.clear();
     _upstreamSymbols.clear();
+    _lastQuoteTimes.clear();
 
     final client = _stompClient;
     for (final symbol in _subscribedSymbols.toList()) {
@@ -401,5 +431,17 @@ class PriceService {
     if (!_updatesSubject.isClosed) {
       _updatesSubject.close();
     }
+  }
+
+  DateTime? _parseQuoteTime(dynamic raw) {
+    if (raw is num) {
+      final value = raw.toInt();
+      return DateTime.fromMillisecondsSinceEpoch(
+        value < 100000000000 ? value * 1000 : value,
+        isUtc: true,
+      );
+    }
+    if (raw is String) return DateTime.tryParse(raw)?.toUtc();
+    return null;
   }
 }

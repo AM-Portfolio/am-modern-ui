@@ -2,6 +2,8 @@ import 'package:am_design_system/am_design_system.dart';
 import 'package:am_market_ui/features/ipo/ipo_layout.dart';
 import 'package:am_market_ui/features/ipo/models/ipo_models.dart';
 import 'package:am_market_ui/features/ipo/providers/ipo_providers.dart';
+import 'package:am_market_ui/features/ipo/providers/ipo_calendar_providers.dart';
+import 'package:am_market_ui/features/ipo/widgets/calendar/ipo_calendar_overlay.dart';
 import 'package:am_market_ui/features/ipo/widgets/ipo_filter_toolbar.dart';
 import 'package:am_market_ui/features/ipo/widgets/ipo_kpi_stats_bar.dart';
 import 'package:am_market_ui/features/ipo/widgets/ipo_summary_card.dart';
@@ -103,10 +105,8 @@ class _IpoLandingScreenState extends ConsumerState<IpoLandingScreen> {
                         ],
                       ),
                     ),
-                    if (!isCompactMobile) ...[
-                      const SizedBox(width: 8),
-                      _buildCalendarButton(context),
-                    ],
+                    const SizedBox(width: 8),
+                    _buildCalendarButton(context, compact: isCompactMobile),
                   ],
                 ),
               ),
@@ -193,16 +193,23 @@ class _IpoLandingScreenState extends ConsumerState<IpoLandingScreen> {
       ),
     );
 
+    final content = Stack(
+      children: [
+        body,
+        const IpoCalendarOverlay(),
+      ],
+    );
+
     if (widget.embedded) {
       return ColoredBox(
         color: context.backgroundColor,
-        child: body,
+        child: content,
       );
     }
 
     return Scaffold(
       backgroundColor: context.backgroundColor,
-      body: SafeArea(child: body),
+      body: SafeArea(child: content),
     );
   }
 
@@ -339,42 +346,54 @@ class _IpoLandingScreenState extends ConsumerState<IpoLandingScreen> {
     ];
   }
 
-  Widget _buildCalendarButton(BuildContext context) {
-    return Container(
-      height: 38,
-      padding: const EdgeInsets.symmetric(horizontal: 14),
-      decoration: BoxDecoration(
-        color: context.surfaceColor,
+  Widget _buildCalendarButton(BuildContext context, {bool compact = false}) {
+    return Semantics(
+      button: true,
+      label: 'Open IPO Calendar',
+      child: InkWell(
+        onTap: () {
+          ref.read(ipoCalendarUiProvider.notifier).toggle();
+        },
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: context.borderColor,
-          width: 1,
-        ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Icons.calendar_month_outlined,
-            size: 16,
-            color: context.textPrimary,
-          ),
-          const SizedBox(width: 8),
-          Text(
-            'IPO Calendar',
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: context.textPrimary,
+        child: Container(
+          height: 38,
+          padding: EdgeInsets.symmetric(horizontal: compact ? 10 : 14),
+          decoration: BoxDecoration(
+            color: context.surfaceColor,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: context.borderColor,
+              width: 1,
             ),
           ),
-          const SizedBox(width: 4),
-          Icon(
-            Icons.chevron_right_rounded,
-            size: 16,
-            color: context.textTertiary,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.calendar_month_outlined,
+                size: 16,
+                color: context.textPrimary,
+              ),
+              if (!compact) ...[
+                const SizedBox(width: 8),
+                Text(
+                  'IPO Calendar',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: context.textPrimary,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  size: 16,
+                  color: context.textTertiary,
+                ),
+              ],
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

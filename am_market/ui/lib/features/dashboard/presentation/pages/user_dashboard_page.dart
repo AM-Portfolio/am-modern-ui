@@ -20,7 +20,7 @@ import 'package:am_market_ui/features/market/widgets/all_indices_bottom_sheet.da
 import '../widgets/top_movers_widget_v2.dart';
 import '../widgets/dashboard_analysis_heatmap_panel.dart';
 import 'package:am_market_common/services/api_service.dart';
-import 'package:am_market_ui/features/market_analysis/presentation/widgets/historical_performance_section.dart';
+import 'package:am_market_ui/features/dashboard/presentation/widgets/selected_index_performance_matrix.dart';
 
 /// User Dashboard page with API-driven features
 class UserDashboardPage extends ConsumerStatefulWidget {
@@ -302,6 +302,7 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
     try {
       // Perform the priority fetch for the requested symbols
       await _loadBasePricesForTimeframe(symbols, tf);
+      if (!mounted) return;
 
       // If we fetched the main pinned symbols, mark this timeframe as loaded for them
       final pinnedSymbols = context
@@ -968,9 +969,11 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
                               expandedChartPath: marketChartPath,
                               priceLookup: (symbol) {
                                 for (final d in marketProvider.allIndicesData) {
-                                  if (d.indexSymbol.toUpperCase() == symbol.toUpperCase() ||
+                                  if (d.indexSymbol.toUpperCase() ==
+                                          symbol.toUpperCase() ||
                                       (d.indexName != null &&
-                                          d.indexName!.toUpperCase() == symbol.toUpperCase())) {
+                                          d.indexName!.toUpperCase() ==
+                                              symbol.toUpperCase())) {
                                     if (d.lastPrice > 0) return d.lastPrice;
                                   }
                                 }
@@ -978,9 +981,11 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
                               },
                               changePctLookup: (symbol) {
                                 for (final d in marketProvider.allIndicesData) {
-                                  if (d.indexSymbol.toUpperCase() == symbol.toUpperCase() ||
+                                  if (d.indexSymbol.toUpperCase() ==
+                                          symbol.toUpperCase() ||
                                       (d.indexName != null &&
-                                          d.indexName!.toUpperCase() == symbol.toUpperCase())) {
+                                          d.indexName!.toUpperCase() ==
+                                              symbol.toUpperCase())) {
                                     if (d.lastPrice > 0) return d.pChange;
                                   }
                                 }
@@ -1010,63 +1015,63 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
                         },
                       ),
                     ),
-                      right: SizedBox(
-                        height: moversRowHeight,
-                        child: TopMoversWidgetV2(
-                          gainers: topGainers,
-                          losers: topLosers,
-                          isLoading: isLoadingMovers,
-                          error: moversError,
-                          headerTrailing: GestureDetector(
-                            onTap: () {
-                              if (MediaQuery.sizeOf(context).width < 768) {
-                                _showMobileAllIndicesBottomSheet(
-                                  context,
-                                  marketProvider,
-                                );
-                              } else {
-                                _openDrawer();
-                              }
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 5,
-                              ),
-                              decoration: BoxDecoration(
+                    right: SizedBox(
+                      height: moversRowHeight,
+                      child: TopMoversWidgetV2(
+                        gainers: topGainers,
+                        losers: topLosers,
+                        isLoading: isLoadingMovers,
+                        error: moversError,
+                        headerTrailing: GestureDetector(
+                          onTap: () {
+                            if (MediaQuery.sizeOf(context).width < 768) {
+                              _showMobileAllIndicesBottomSheet(
+                                context,
+                                marketProvider,
+                              );
+                            } else {
+                              _openDrawer();
+                            }
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 5,
+                            ),
+                            decoration: BoxDecoration(
+                              color:
+                                  ModuleColors.market.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
                                 color:
-                                    ModuleColors.market.withValues(alpha: 0.15),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: ModuleColors.market
-                                      .withValues(alpha: 0.35),
+                                    ModuleColors.market.withValues(alpha: 0.35),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  selectedIndexForMovers,
+                                  style: TextStyle(
+                                    color: ModuleColors.market,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
-                                    selectedIndexForMovers,
-                                    style: TextStyle(
-                                      color: ModuleColors.market,
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Icon(
-                                    Icons.keyboard_arrow_down_rounded,
-                                    size: 16,
-                                    color: ModuleColors.market
-                                        .withValues(alpha: 0.9),
-                                  ),
-                                ],
-                              ),
+                                const SizedBox(width: 4),
+                                Icon(
+                                  Icons.keyboard_arrow_down_rounded,
+                                  size: 16,
+                                  color: ModuleColors.market
+                                      .withValues(alpha: 0.9),
+                                ),
+                              ],
                             ),
                           ),
                         ),
                       ),
                     ),
+                  ),
 
                   const SizedBox(height: 12),
 
@@ -1085,15 +1090,11 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
                   ),
                   // Shown on all widths — section has its own mobile drum-roll layout.
                   const SizedBox(height: 12),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: MarketColors.cardSurface(context),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                          color: MarketColors.borderDefault(context)),
-                    ),
-                    child: HistoricalPerformanceSection(
-                      focusSymbol: selectedIndexForMovers,
+                  GlassCard(
+                    padding: EdgeInsets.zero,
+                    borderRadius: 12,
+                    child: SelectedIndexPerformanceMatrix(
+                      symbol: selectedIndexForMovers,
                     ),
                   ),
                 ],
@@ -1227,9 +1228,8 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
                     child: Icon(
                       Icons.bar_chart,
                       size: isMobile ? 14 : 16,
-                      color: isBarChart
-                          ? accent
-                          : MarketColors.textMuted(context),
+                      color:
+                          isBarChart ? accent : MarketColors.textMuted(context),
                     ),
                   ),
                 ),
@@ -1284,8 +1284,7 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
                           color: Colors.transparent,
                           child: Container(
                             width: 280,
-                            constraints:
-                                const BoxConstraints(maxHeight: 400),
+                            constraints: const BoxConstraints(maxHeight: 400),
                             decoration: BoxDecoration(
                               color: MarketColors.cardSurface(context),
                               borderRadius: BorderRadius.circular(12),
@@ -1302,15 +1301,14 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
                             ),
                             child: StatefulBuilder(
                               builder: (context, setPopoverState) {
-                                final source = _compareRegion ==
-                                        IndicesRegion.global
-                                    ? marketProvider.globalIndicesData
-                                    : marketProvider.allIndicesData;
+                                final source =
+                                    _compareRegion == IndicesRegion.global
+                                        ? marketProvider.globalIndicesData
+                                        : marketProvider.allIndicesData;
                                 final filteredIndices = source
                                     .where((data) =>
-                                        data.indexSymbol
-                                            .toLowerCase()
-                                            .contains(_popoverSearchQuery
+                                        data.indexSymbol.toLowerCase().contains(
+                                            _popoverSearchQuery
                                                 .toLowerCase()) ||
                                         (data.indexName?.toLowerCase().contains(
                                                 _popoverSearchQuery
@@ -1347,10 +1345,9 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
                                             _compareRegion = region;
                                           });
                                           setState(() {});
-                                          if (region ==
-                                                  IndicesRegion.global &&
-                                              marketProvider.globalIndicesData
-                                                  .isEmpty) {
+                                          if (region == IndicesRegion.global &&
+                                              marketProvider
+                                                  .globalIndicesData.isEmpty) {
                                             marketProvider
                                                 .loadGlobalIndicesData();
                                           }
@@ -1371,8 +1368,8 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
                                           TextEditingValue(
                                             text: _popoverSearchQuery,
                                             selection: TextSelection.collapsed(
-                                                offset: _popoverSearchQuery
-                                                    .length),
+                                                offset:
+                                                    _popoverSearchQuery.length),
                                           ),
                                         ),
                                         style: TextStyle(
@@ -1418,8 +1415,8 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
                                               const EdgeInsets.symmetric(
                                                   horizontal: 8, vertical: 8),
                                           filled: true,
-                                          fillColor: MarketColors.cardSurface(
-                                              context),
+                                          fillColor:
+                                              MarketColors.cardSurface(context),
                                           border: OutlineInputBorder(
                                             borderRadius:
                                                 BorderRadius.circular(8),
@@ -1450,8 +1447,8 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
                                     Flexible(
                                       child: filteredIndices.isEmpty
                                           ? Padding(
-                                              padding: const EdgeInsets.all(
-                                                  24.0),
+                                              padding:
+                                                  const EdgeInsets.all(24.0),
                                               child: Text(
                                                 _compareRegion ==
                                                         IndicesRegion.global
@@ -1470,10 +1467,8 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
                                           : ListView.builder(
                                               shrinkWrap: true,
                                               padding: EdgeInsets.zero,
-                                              itemCount:
-                                                  filteredIndices.length,
-                                              itemBuilder:
-                                                  (context, index) {
+                                              itemCount: filteredIndices.length,
+                                              itemBuilder: (context, index) {
                                                 final data =
                                                     filteredIndices[index];
                                                 final isSelected =
@@ -1521,15 +1516,13 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
                                                           : null),
                                                   value: isSelected,
                                                   activeColor: accent,
-                                                  checkColor:
-                                                      Theme.of(context)
-                                                          .colorScheme
-                                                          .surface,
+                                                  checkColor: Theme.of(context)
+                                                      .colorScheme
+                                                      .surface,
                                                   dense: true,
                                                   visualDensity:
                                                       VisualDensity.compact,
-                                                  onChanged:
-                                                      (bool? value) {
+                                                  onChanged: (bool? value) {
                                                     setPopoverState(() {
                                                       if (value == true) {
                                                         if (selectedIndicesForChart
@@ -1632,7 +1625,6 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
       ],
     );
   }
-
 }
 
 class _ResponsiveRow extends StatelessWidget {
