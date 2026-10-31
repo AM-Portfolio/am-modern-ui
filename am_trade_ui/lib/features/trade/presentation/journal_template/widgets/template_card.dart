@@ -42,7 +42,7 @@ class _TemplateCardState extends State<TemplateCard> {
       child: Container(
         decoration: BoxDecoration(
           color: colors.cardSurface,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: AppRadii.input,
           border: Border.all(color: colors.border.withValues(alpha: 0.28)),
         ),
         padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
@@ -98,7 +98,7 @@ class _TemplateCardState extends State<TemplateCard> {
                 padding: const EdgeInsets.fromLTRB(10, 8, 10, 6),
                 decoration: BoxDecoration(
                   color: ModuleColors.trade.withValues(alpha: 0.06),
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: AppRadii.button,
                 ),
                 child: _buildFieldSummary(context, maxItems: 3),
               ),
@@ -119,7 +119,7 @@ class _TemplateCardState extends State<TemplateCard> {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: AppRadii.button,
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -150,7 +150,7 @@ class _TemplateCardState extends State<TemplateCard> {
           curve: Curves.easeOut,
           decoration: BoxDecoration(
             color: colors.cardSurface,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: AppRadii.input,
             border: Border.all(
               color: _isHovered
                   ? ModuleColors.trade.withValues(alpha: 0.35)
@@ -205,7 +205,7 @@ class _TemplateCardState extends State<TemplateCard> {
           constraints: const BoxConstraints(minHeight: 112),
           decoration: BoxDecoration(
             color: colors.cardSurface,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: AppRadii.input,
             border: Border.all(
               color: _isHovered
                   ? ModuleColors.trade.withValues(alpha: 0.35)

@@ -105,7 +105,7 @@ class JournalTemplateDetailMobilePage extends StatelessWidget {
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
                         color: colors.cardSurface,
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: AppRadii.button,
                         border: Border.all(
                           color: colors.border.withValues(alpha: 0.4),
                         ),
@@ -255,7 +255,7 @@ class _MetaChip extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: AppRadii.chip,
         border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Row(

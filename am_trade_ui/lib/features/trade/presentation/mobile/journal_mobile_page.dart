@@ -668,7 +668,7 @@ class _EmptyMobileEntries extends StatelessWidget {
             const SizedBox(height: AppSpacing.md),
             Text(
               'No journal entries yet',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              style: context.text.sectionTitle(compact: true).copyWith(
                     fontWeight: FontWeight.w700,
                     color: colors.textPrimary,
                   ),
@@ -677,7 +677,7 @@ class _EmptyMobileEntries extends StatelessWidget {
             Text(
               'Start with a Log day note, a Trade journal, or pick a template.',
               textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              style: context.text.body(compact: true).copyWith(
                     color: colors.textSecondary,
                   ),
             ),
