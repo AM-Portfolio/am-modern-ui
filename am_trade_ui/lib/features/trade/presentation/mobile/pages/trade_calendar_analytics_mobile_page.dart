@@ -199,7 +199,7 @@ class _TradeCalendarAnalyticsMobilePageState extends ConsumerState<TradeCalendar
 
   Widget _buildStatRow(BuildContext context, String label, String value, IconData icon, {Color? color}) => Row(
     children: [
-      Icon(icon, size: 20, color: color ?? Theme.of(context).colorScheme.primary),
+      Icon(icon, size: 20, color: color ?? (ModuleColorProvider.maybeOf(context) ?? ModuleColors.trade)),
       const SizedBox(width: 8),
       Text(label, style: Theme.of(context).textTheme.bodyMedium),
       const Spacer(),

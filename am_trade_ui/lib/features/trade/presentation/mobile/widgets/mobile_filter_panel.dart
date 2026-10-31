@@ -355,7 +355,11 @@ class _FilterBottomSheetContentState extends ConsumerState<_FilterBottomSheetCon
       decoration: BoxDecoration(color: ModuleColors.trade, borderRadius: BorderRadius.circular(12)),
       child: Text(
         '$_activeFilterCount',
-        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.bold,
+          color: context.colors.actionPrimaryFg,
+        ),
       ),
     ),
   );
@@ -593,9 +597,9 @@ class _FilterBottomSheetContentState extends ConsumerState<_FilterBottomSheetCon
     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
     child: Row(
       children: [
-        Icon(Icons.delete_outline, size: 18, color: Colors.red.shade400),
+        Icon(Icons.delete_outline, size: 18, color: context.statusError),
         const SizedBox(width: 10),
-        Text('Delete', style: TextStyle(fontSize: 14, color: Colors.red.shade400)),
+        Text('Delete', style: TextStyle(fontSize: 14, color: context.statusError)),
       ],
     ),
   );
@@ -657,7 +661,7 @@ class _FilterBottomSheetContentState extends ConsumerState<_FilterBottomSheetCon
                 ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('"${filter.name}" deleted')));
               }
             },
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            style: TextButton.styleFrom(foregroundColor: context.statusError),
             child: const Text('Delete'),
           ),
         ],
@@ -719,7 +723,7 @@ class _FilterBottomSheetContentState extends ConsumerState<_FilterBottomSheetCon
           tooltip: 'Set as default',
         ),
       IconButton(
-        icon: const Icon(Icons.delete_outline, color: Colors.red),
+        icon: Icon(Icons.delete_outline, color: context.statusError),
         onPressed: () {
           Navigator.of(context).pop();
           _confirmDelete(filter);

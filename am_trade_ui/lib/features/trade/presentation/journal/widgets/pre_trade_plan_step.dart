@@ -16,11 +16,14 @@ class PreTradePlanStep extends StatefulWidget {
     required this.entry,
     required this.onUpdate,
     this.applyDefaultChecklist = false,
+    /// Mobile only — stack Symbol above Long/Short. Web default keeps one row.
+    this.compactLayout = false,
   });
 
   final JournalEntry entry;
   final ValueChanged<JournalEntry> onUpdate;
   final bool applyDefaultChecklist;
+  final bool compactLayout;
 
   @override
   State<PreTradePlanStep> createState() => _PreTradePlanStepState();
@@ -239,7 +242,7 @@ class _PreTradePlanStepState extends State<PreTradePlanStep> {
         ),
         backgroundColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) return accent;
-          return colors.cardSurface;
+          return colors.surface.withValues(alpha: 0.45);
         }),
         foregroundColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
@@ -262,19 +265,24 @@ class _PreTradePlanStepState extends State<PreTradePlanStep> {
       onSelectionChanged: (s) => _updatePlan(plan, direction: s.first),
     );
 
+    final symbolField = JournalSymbolSuggestField(
+      controller: _symbol,
+      hintText: 'Symbol * — search stocks, ETFs…',
+      onChanged: (v) => _updatePlan(_plan, symbol: v),
+      onSelected: (hit) => _updatePlan(_plan, symbol: hit.symbol),
+    );
+
     return JournalFormSurface(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _row(
-            JournalSymbolSuggestField(
-              controller: _symbol,
-              hintText: 'Symbol * — search stocks, ETFs…',
-              onChanged: (v) => _updatePlan(_plan, symbol: v),
-              onSelected: (hit) => _updatePlan(_plan, symbol: hit.symbol),
-            ),
+          // Web: Symbol | Long/Short (deployed). Mobile compact: stacked.
+          if (widget.compactLayout) ...[
+            symbolField,
+            _gap(),
             directionBlock,
-          ),
+          ] else
+            _row(symbolField, directionBlock),
           _gap(),
           _row(
             JournalPresetOrCustomField(

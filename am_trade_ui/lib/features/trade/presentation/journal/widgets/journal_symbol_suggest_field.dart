@@ -324,33 +324,71 @@ class _JournalSymbolSuggestFieldState extends State<JournalSymbolSuggestField> {
   }
 
   Widget _buildOverlayMenu() {
-    final theme = Theme.of(context);
     final colors = context.colors;
+    final accent = ModuleColorProvider.maybeOf(context) ?? ModuleColors.trade;
     final box = context.findRenderObject() as RenderBox?;
     final width = box?.size.width ?? 280;
+    final fieldHeight = box?.size.height ?? 48;
+
+    var openAbove = false;
+    if (box != null && box.hasSize && mounted) {
+      try {
+        final origin = box.localToGlobal(Offset.zero);
+        final mq = MediaQuery.maybeOf(context);
+        if (mq != null) {
+          final spaceBelow = mq.size.height -
+              (origin.dy + fieldHeight) -
+              mq.viewInsets.bottom -
+              mq.viewPadding.bottom;
+          final spaceAbove = origin.dy - mq.viewPadding.top;
+          const preferred = 240.0;
+          openAbove = spaceBelow < preferred && spaceAbove > spaceBelow;
+        }
+      } catch (_) {}
+    }
 
     return CompositedTransformFollower(
       link: _layerLink,
       showWhenUnlinked: false,
-      offset: Offset(0, (box?.size.height ?? 48) + 4),
+      targetAnchor: openAbove ? Alignment.topLeft : Alignment.bottomLeft,
+      followerAnchor: openAbove ? Alignment.bottomLeft : Alignment.topLeft,
+      offset: Offset(0, openAbove ? -4 : 4),
       child: Align(
         alignment: Alignment.topLeft,
         child: Material(
           elevation: 8,
           color: colors.cardSurface,
-          borderRadius: BorderRadius.circular(AppRadii.md),
-          child: SizedBox(
+          borderRadius: AppRadii.input,
+          child: Container(
             width: width,
+            decoration: BoxDecoration(
+              color: colors.cardSurface,
+              borderRadius: AppRadii.input,
+              border: Border.all(
+                color: colors.border.withValues(alpha: 0.35),
+                width: 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.35),
+                  blurRadius: 12,
+                  offset: Offset(0, openAbove ? -4 : 4),
+                ),
+              ],
+            ),
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxHeight: 240),
               child: _loading && _hits.isEmpty
-                  ? const Padding(
-                      padding: EdgeInsets.all(16),
+                  ? Padding(
+                      padding: const EdgeInsets.all(AppSpacing.md),
                       child: Center(
                         child: SizedBox(
                           width: 18,
                           height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: accent,
+                          ),
                         ),
                       ),
                     )
@@ -382,13 +420,14 @@ class _JournalSymbolSuggestFieldState extends State<JournalSymbolSuggestField> {
                             leading: Icon(
                               Icons.show_chart,
                               size: 18,
-                              color: ModuleColors.trade,
+                              color: accent,
                             ),
                             title: Text(
                               hit.symbol,
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                fontWeight: FontWeight.w700,
-                              ),
+                              style: context.text.body(compact: true).copyWith(
+                                    fontWeight: FontWeight.w700,
+                                    color: colors.textPrimary,
+                                  ),
                             ),
                             subtitle: subtitle.isEmpty
                                 ? null
@@ -396,9 +435,11 @@ class _JournalSymbolSuggestFieldState extends State<JournalSymbolSuggestField> {
                                     subtitle,
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
-                                    style: theme.textTheme.labelSmall?.copyWith(
-                                      color: colors.textSecondary,
-                                    ),
+                                    style: context.text
+                                        .label(compact: true)
+                                        .copyWith(
+                                          color: colors.textSecondary,
+                                        ),
                                   ),
                           ),
                         );
@@ -413,7 +454,8 @@ class _JournalSymbolSuggestFieldState extends State<JournalSymbolSuggestField> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final colors = context.colors;
+    final accent = ModuleColorProvider.maybeOf(context) ?? ModuleColors.trade;
     final baseDecoration = widget.decoration ??
         journalWorkflowDecoration(
           context,
@@ -430,21 +472,26 @@ class _JournalSymbolSuggestFieldState extends State<JournalSymbolSuggestField> {
           focusNode: _focusNode,
           enabled: widget.enabled,
           textCapitalization: widget.textCapitalization,
-          style: theme.textTheme.bodyLarge,
+          style: context.text.body(compact: true).copyWith(
+                color: colors.textPrimary,
+              ),
           decoration: baseDecoration.copyWith(
             prefixIcon: baseDecoration.prefixIcon ??
                 Icon(
                   Icons.search_rounded,
                   size: 18,
-                  color: ModuleColors.trade,
+                  color: accent,
                 ),
             suffixIcon: _loading
-                ? const Padding(
-                    padding: EdgeInsets.all(12),
+                ? Padding(
+                    padding: const EdgeInsets.all(AppSpacing.md - AppSpacing.xxs),
                     child: SizedBox(
                       width: 16,
                       height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: accent,
+                      ),
                     ),
                   )
                 : baseDecoration.suffixIcon,
