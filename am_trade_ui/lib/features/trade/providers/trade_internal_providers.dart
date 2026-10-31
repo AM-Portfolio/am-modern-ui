@@ -13,6 +13,7 @@ import '../internal/domain/repositories/trade_repository.dart';
 import 'package:get_it/get_it.dart';
 import 'package:am_common/core/di/network_providers.dart';
 import 'package:am_library/am_library.dart';
+import '../internal/domain/usecases/get_calendar_latest_activity.dart';
 import '../internal/domain/usecases/get_trade_calendar.dart';
 import '../internal/domain/usecases/get_trade_calendar_by_date_range.dart';
 import '../internal/domain/usecases/get_trade_calendar_by_day.dart';
@@ -125,6 +126,13 @@ final getTradeCalendarByDateRangeProvider =
     FutureProvider<GetTradeCalendarByDateRange>((ref) async {
   final repository = await ref.watch(tradeRepositoryProvider.future);
   return GetTradeCalendarByDateRange(repository);
+});
+
+/// Provider for GetCalendarLatestActivity use case
+final getCalendarLatestActivityProvider =
+    FutureProvider<GetCalendarLatestActivity>((ref) async {
+  final repository = await ref.watch(tradeRepositoryProvider.future);
+  return GetCalendarLatestActivity(repository);
 });
 
 /// Invalidates trade data providers so the next watch triggers fresh API calls.

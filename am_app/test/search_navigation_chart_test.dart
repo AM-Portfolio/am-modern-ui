@@ -1,5 +1,7 @@
 import 'package:am_common/am_common.dart';
+import 'package:am_market_ui/features/equity_insider/providers/equity_insider_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
@@ -9,44 +11,9 @@ import 'package:am_app/features/search/search_navigation.dart';
 void main() {
   tearDown(ChartSearchBridge.unbind);
 
-  testWidgets('chart openSecurity prefers ChartSearchBridge when bound',
-      (tester) async {
-    String? selected;
-    ChartSearchBridge.bind(
-      recentSymbols: const ['NIFTY 50'],
-      selectSymbol: (sym) => selected = sym,
-    );
-
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Builder(
-          builder: (context) {
-            return Scaffold(
-              body: TextButton(
-                onPressed: () {
-                  SearchNavigationHandler(context).openSecurity(
-                    'reliance',
-                    SearchContext.chart,
-                  );
-                },
-                child: const Text('go'),
-              ),
-            );
-          },
-        ),
-      ),
-    );
-
-    await tester.tap(find.text('go'));
-    await tester.pump();
-
-    expect(selected, 'RELIANCE');
-  });
-
-  testWidgets('chart openSecurity falls back to chart workspace path',
-      (tester) async {
-    final router = GoRouter(
-      initialLocation: '/app/dashboard',
+  GoRouter chartRouter({String initial = '/app/dashboard'}) {
+    return GoRouter(
+      initialLocation: initial,
       routes: [
         GoRoute(
           path: '/app/dashboard',
@@ -55,12 +22,38 @@ void main() {
         GoRoute(
           path: '/app/market/:tab',
           builder: (_, state) => Scaffold(
-            body: Text('chart:${state.uri.queryParameters['symbol']}'),
+            body: Text(
+              '${state.pathParameters['tab']}:${state.uri.queryParameters['symbol']}',
+            ),
           ),
         ),
       ],
     );
+  }
 
+  testWidgets('chart openSecurity selects via bridge and syncs URL',
+      (tester) async {
+    String? selected;
+    ChartSearchBridge.bind(
+      recentSymbols: const ['NIFTY 50'],
+      selectSymbol: (sym) => selected = sym,
+    );
+
+    final router = chartRouter();
+    await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+    await tester.pumpAndSettle();
+
+    final ctx = tester.element(find.text('dash'));
+    SearchNavigationHandler(ctx).openSecurity('reliance', SearchContext.chart);
+    await tester.pumpAndSettle();
+
+    expect(selected, 'RELIANCE');
+    expect(find.text('chart:RELIANCE'), findsOneWidget);
+  });
+
+  testWidgets('chart openSecurity falls back to chart workspace path',
+      (tester) async {
+    final router = chartRouter();
     await tester.pumpWidget(MaterialApp.router(routerConfig: router));
     await tester.pumpAndSettle();
 
@@ -69,5 +62,84 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('chart:TCS'), findsOneWidget);
+  });
+
+  testWidgets('market/dashboard/other openSecurity opens chart workspace',
+      (tester) async {
+    for (final ctxKind in [
+      SearchContext.market,
+      SearchContext.dashboard,
+      SearchContext.other,
+    ]) {
+      final router = chartRouter();
+      await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+      await tester.pumpAndSettle();
+
+      final ctx = tester.element(find.text('dash'));
+      SearchNavigationHandler(ctx).openSecurity('INFY', ctxKind);
+      await tester.pumpAndSettle();
+
+      expect(find.text('chart:INFY'), findsOneWidget);
+    }
+  });
+
+  testWidgets('equity insider openSecurity sets active symbol on same route',
+      (tester) async {
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+    final router = chartRouter();
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp.router(routerConfig: router),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final ctx = tester.element(find.text('dash'));
+    SearchNavigationHandler(ctx, container: container)
+        .openSecurity('tcs', SearchContext.equityInsider);
+    await tester.pumpAndSettle();
+
+    expect(container.read(equityInsiderActiveSymbolProvider), 'TCS');
+    expect(find.textContaining('equity-insider'), findsOneWidget);
+  });
+
+  testWidgets('portfolio openSecurity stays on holdings filtered to symbol',
+      (tester) async {
+    final router = GoRouter(
+      initialLocation: '/app/portfolio/holdings',
+      routes: [
+        GoRoute(
+          path: '/app/portfolio/:id/:tab',
+          builder: (_, state) => Scaffold(
+            body: Text(
+              '${state.pathParameters['id']}/${state.pathParameters['tab']}:${state.uri.queryParameters['q']}',
+            ),
+          ),
+        ),
+        GoRoute(
+          path: '/app/portfolio/:tab',
+          builder: (_, state) => Scaffold(
+            body: Text('legacy/${state.pathParameters['tab']}'),
+          ),
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      PortfolioSelectionScope(
+        initialPortfolioId: 'p1',
+        child: MaterialApp.router(routerConfig: router),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final ctx = tester.element(find.text('legacy/holdings'));
+    SearchNavigationHandler(ctx).openSecurity('irfc', SearchContext.portfolio);
+    await tester.pumpAndSettle();
+
+    expect(find.text('p1/holdings:IRFC'), findsOneWidget);
+    expect(find.textContaining('chart:'), findsNothing);
   });
 }

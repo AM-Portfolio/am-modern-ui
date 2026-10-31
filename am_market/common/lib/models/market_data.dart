@@ -23,6 +23,8 @@ class StockIndicesMarketData {
       (segment?.toUpperCase() == 'GLOBAL') ||
       (indexSymbol.toUpperCase().startsWith('GLOBAL_'));
 
+  bool get hasValidPrice => lastPrice.isFinite && lastPrice > 0;
+
   static double _number(dynamic value) {
     if (value is num) return value.toDouble();
     if (value is String) return double.tryParse(value) ?? 0.0;
@@ -33,14 +35,19 @@ class StockIndicesMarketData {
     Map<String, dynamic> json,
     Map<String, dynamic> metadata,
   ) {
-    final direct = _number(json['lastPrice'] ?? json['last'] ?? metadata['last']);
+    final direct =
+        _number(json['lastPrice'] ?? json['last'] ?? metadata['last']);
     if (direct > 0) return direct;
 
-    final previousClose = _number(json['previousClose'] ?? metadata['previousClose']);
+    final previousClose =
+        _number(json['previousClose'] ?? metadata['previousClose']);
     final change = _number(json['change'] ?? metadata['change']);
     if (previousClose > 0 && change != 0) return previousClose + change;
 
-    final pChange = _number(json['pChange'] ?? json['percentChange'] ?? metadata['percChange'] ?? metadata['percentChange']);
+    final pChange = _number(json['pChange'] ??
+        json['percentChange'] ??
+        metadata['percChange'] ??
+        metadata['percentChange']);
     if (previousClose > 0 && pChange != 0) {
       return previousClose * (1 + (pChange / 100));
     }
@@ -52,17 +59,39 @@ class StockIndicesMarketData {
     // Handle differences in API response vs expected
     // market.html checks 'data' or 'stocks'
     var list = json['data'] as List? ?? json['stocks'] as List? ?? [];
-    List<StockData> stocksList = list.map((i) => StockData.fromJson(i)).toList();
+    List<StockData> stocksList =
+        list.map((i) => StockData.fromJson(i)).toList();
     final metadata = json['metadata'] is Map<String, dynamic>
         ? json['metadata'] as Map<String, dynamic>
         : const <String, dynamic>{};
 
+    final lastPrice = _resolveLastPrice(json, metadata);
+    final prevClose =
+        _number(json['previousClose'] ?? metadata['previousClose']);
+    var pChange = _number(json['pChange'] ??
+        json['percentChange'] ??
+        metadata['percChange'] ??
+        metadata['percentChange']);
+    var change = _number(json['change'] ?? metadata['change']);
+
+    if (change == 0.0 && lastPrice > 0) {
+      if (prevClose > 0) {
+        change = lastPrice - prevClose;
+      } else if (pChange != 0) {
+        change = lastPrice - (lastPrice / (1 + (pChange / 100)));
+      }
+    }
+    if (pChange == 0.0 && prevClose > 0 && change != 0) {
+      pChange = (change / prevClose) * 100;
+    }
+
     return StockIndicesMarketData(
       indexSymbol: json['indexSymbol'] ?? 'Unknown',
-      indexName: json['indexName'] as String? ?? metadata['indexName'] as String?,
-      lastPrice: _resolveLastPrice(json, metadata),
-      change: _number(json['change'] ?? metadata['change']),
-      pChange: _number(json['pChange'] ?? json['percentChange'] ?? metadata['percChange'] ?? metadata['percentChange']),
+      indexName:
+          json['indexName'] as String? ?? metadata['indexName'] as String?,
+      lastPrice: lastPrice,
+      change: change,
+      pChange: pChange,
       stocks: stocksList,
       suspended: json['suspended'] == true || metadata['suspended'] == true,
       segment: json['segment'] as String? ?? metadata['segment'] as String?,
@@ -113,13 +142,42 @@ class StockData {
     this.companyName,
   });
 
+  StockData copyWith({
+    String? symbol,
+    double? lastPrice,
+    double? change,
+    double? pChange,
+    double? open,
+    double? dayHigh,
+    double? dayLow,
+    String? companyName,
+  }) {
+    return StockData(
+      symbol: symbol ?? this.symbol,
+      companyName: companyName ?? this.companyName,
+      lastPrice: lastPrice ?? this.lastPrice,
+      change: change ?? this.change,
+      pChange: pChange ?? this.pChange,
+      open: open ?? this.open,
+      dayHigh: dayHigh ?? this.dayHigh,
+      dayLow: dayLow ?? this.dayLow,
+    );
+  }
+
   factory StockData.fromJson(Map<String, dynamic> json) {
     return StockData(
       symbol: json['symbol'] ?? '',
       companyName: json['companyName'] as String?,
-      lastPrice: StockIndicesMarketData._number(json['lastPrice'] ?? json['ltp'] ?? json['price'] ?? json['close'] ?? json['previousClose']),
+      lastPrice: StockIndicesMarketData._number(json['lastPrice'] ??
+          json['ltp'] ??
+          json['price'] ??
+          json['close'] ??
+          json['previousClose']),
       change: StockIndicesMarketData._number(json['change'] ?? json['chg']),
-      pChange: StockIndicesMarketData._number(json['pChange'] ?? json['chgPercent'] ?? json['percentChange'] ?? json['percChange']),
+      pChange: StockIndicesMarketData._number(json['pChange'] ??
+          json['chgPercent'] ??
+          json['percentChange'] ??
+          json['percChange']),
       open: StockIndicesMarketData._number(json['open']),
       dayHigh: StockIndicesMarketData._number(json['dayHigh'] ?? json['high']),
       dayLow: StockIndicesMarketData._number(json['dayLow'] ?? json['low']),

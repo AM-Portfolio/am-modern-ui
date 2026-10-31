@@ -204,7 +204,7 @@ class _JournalCardState extends State<JournalCard> with SingleTickerProviderStat
   );
 
   Widget _buildContent(ThemeData theme) => Text(
-    widget.limitToWords(widget.extractPlainText(widget.entry.content), 25),
+    widget.limitToWords(widget.extractPlainText(widget.entry.content ?? ''), 25),
     style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurface.withOpacity(0.7), height: 1.5),
     maxLines: 3,
     overflow: TextOverflow.ellipsis,

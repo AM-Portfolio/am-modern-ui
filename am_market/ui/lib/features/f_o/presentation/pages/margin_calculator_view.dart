@@ -2,8 +2,10 @@ import 'package:am_design_system/am_design_system.dart';
 import 'package:am_market_ui/core/styles/market_theme_extension.dart';
 import 'package:am_market_ui/features/f_o/providers/fo_provider.dart';
 import 'package:am_market_ui/features/f_o/providers/futures_provider.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 
 class MarginCalculatorView extends ConsumerStatefulWidget {
   const MarginCalculatorView({super.key});
@@ -14,6 +16,9 @@ class MarginCalculatorView extends ConsumerStatefulWidget {
 }
 
 class _MarginCalculatorViewState extends ConsumerState<MarginCalculatorView> {
+  static final NumberFormat _webCurrencyFormat =
+      NumberFormat('#,##,##0.00', 'en_IN');
+
   final TextEditingController _quantityController =
       TextEditingController(text: '50');
   final TextEditingController _priceController =
@@ -74,6 +79,21 @@ class _MarginCalculatorViewState extends ConsumerState<MarginCalculatorView> {
     final isMobile = width < AmBreakpoints.mobile;
     final isNarrowMobile = width < 400;
     final viewInsets = MediaQuery.viewInsetsOf(context);
+
+    if (kIsWeb && !isMobile) {
+      return _buildWebDashboard(
+        contractTitle: contractTitle,
+        selectedContract: selectedContract,
+        contracts: contracts,
+        activeSymbol: activeSymbol,
+        colors: colors,
+        marketTheme: marketTheme,
+        spanMargin: spanMargin,
+        exposureMargin: exposureMargin,
+        additionalMargin: additionalMargin,
+        totalMargin: totalMargin,
+      );
+    }
 
     return SingleChildScrollView(
       padding: EdgeInsets.fromLTRB(
@@ -330,6 +350,609 @@ class _MarginCalculatorViewState extends ConsumerState<MarginCalculatorView> {
     );
   }
 
+  Widget _buildWebDashboard({
+    required String contractTitle,
+    required dynamic selectedContract,
+    required List<dynamic> contracts,
+    required String activeSymbol,
+    required AppColorsTheme colors,
+    required MarketThemeExtension marketTheme,
+    required double spanMargin,
+    required double exposureMargin,
+    required double additionalMargin,
+    required double totalMargin,
+  }) {
+    return LayoutBuilder(
+      builder: (context, viewport) {
+        final isWide = viewport.maxWidth >= AmBreakpoints.tablet;
+        final positionPanel = _buildWebPositionPanel(
+          contractTitle: contractTitle,
+          contracts: contracts,
+          activeSymbol: activeSymbol,
+          selectedContract: selectedContract,
+          colors: colors,
+          marketTheme: marketTheme,
+          labelWidth: isWide ? 132 : 104,
+        );
+        final marginPanel = _buildWebMarginPanel(
+          spanMargin: spanMargin,
+          exposureMargin: exposureMargin,
+          additionalMargin: additionalMargin,
+          totalMargin: totalMargin,
+          colors: colors,
+          marketTheme: marketTheme,
+        );
+
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          child: Column(
+            children: [
+              if (isWide)
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(flex: 11, child: positionPanel),
+                    const SizedBox(width: AppSpacing.lg),
+                    Expanded(flex: 10, child: marginPanel),
+                  ],
+                )
+              else ...[
+                positionPanel,
+                const SizedBox(height: AppSpacing.md),
+                marginPanel,
+              ],
+              const SizedBox(height: AppSpacing.md),
+              _buildWebActionPanel(
+                colors: colors,
+                marketTheme: marketTheme,
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildWebPositionPanel({
+    required String contractTitle,
+    required List<dynamic> contracts,
+    required String activeSymbol,
+    required dynamic selectedContract,
+    required AppColorsTheme colors,
+    required MarketThemeExtension marketTheme,
+    required double labelWidth,
+  }) {
+    final rawLtp = selectedContract?['ltp'];
+    final ltp = rawLtp is num ? rawLtp.toDouble() : double.tryParse('$rawLtp');
+    final hasLtp = ltp != null && ltp > 0;
+
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        color: colors.cardSurface,
+        border: Border.all(color: colors.border),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        children: [
+          _buildWebLabeledRow(
+            'Contract',
+            InkWell(
+              onTap: () => _openContractSheet(contracts, activeSymbol),
+              borderRadius: BorderRadius.circular(8),
+              child: Container(
+                constraints: const BoxConstraints(minHeight: 54),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.md,
+                  vertical: AppSpacing.sm,
+                ),
+                decoration: BoxDecoration(
+                  color: colors.surface,
+                  border: Border.all(color: colors.border),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        contractTitle,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: colors.textPrimary,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    Icon(Icons.keyboard_arrow_down,
+                        color: colors.textSecondary),
+                  ],
+                ),
+              ),
+            ),
+            colors: colors,
+            labelWidth: labelWidth,
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          _buildWebLabeledRow(
+            'Quantity',
+            _buildWebQuantityField(colors),
+            colors: colors,
+            labelWidth: labelWidth,
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          _buildWebLabeledRow(
+            'Order Type',
+            Row(
+              children: [
+                Expanded(
+                  child: _buildSegment(
+                    'Buy',
+                    _selectedType == 'Buy',
+                    marketTheme.positive,
+                    () => setState(() => _selectedType = 'Buy'),
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: _buildSegment(
+                    'Sell',
+                    _selectedType == 'Sell',
+                    marketTheme.negative,
+                    () => setState(() => _selectedType = 'Sell'),
+                  ),
+                ),
+              ],
+            ),
+            colors: colors,
+            labelWidth: labelWidth,
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          _buildWebLabeledRow(
+            'Product Type',
+            Row(
+              children: [
+                Expanded(
+                  child: _buildSegment(
+                    'NRML',
+                    _selectedProduct == 'NRML',
+                    ModuleColors.market,
+                    () => setState(() => _selectedProduct = 'NRML'),
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: _buildSegment(
+                    'MIS',
+                    _selectedProduct == 'MIS',
+                    ModuleColors.market,
+                    () => setState(() => _selectedProduct = 'MIS'),
+                  ),
+                ),
+              ],
+            ),
+            colors: colors,
+            labelWidth: labelWidth,
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          _buildWebLabeledRow(
+            'Price (₹)',
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _priceController,
+                    style: TextStyle(
+                      color: colors.textPrimary,
+                      fontSize: 15,
+                    ),
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    decoration: _fieldDecoration(colors),
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                TextButton(
+                  onPressed: hasLtp
+                      ? () => _priceController.text = ltp.toStringAsFixed(2)
+                      : null,
+                  child: const Text('Use LTP'),
+                ),
+              ],
+            ),
+            colors: colors,
+            labelWidth: labelWidth,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWebLabeledRow(
+    String label,
+    Widget field, {
+    required AppColorsTheme colors,
+    required double labelWidth,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        SizedBox(
+          width: labelWidth,
+          child: Text(
+            label,
+            style: TextStyle(color: colors.textSecondary, fontSize: 15),
+          ),
+        ),
+        const SizedBox(width: AppSpacing.sm),
+        Expanded(child: field),
+      ],
+    );
+  }
+
+  Widget _buildWebQuantityField(AppColorsTheme colors) {
+    return Container(
+      constraints: const BoxConstraints(minHeight: 54),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        border: Border.all(color: colors.border),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          IconButton(
+            tooltip: 'Decrease quantity',
+            onPressed: () => _adjustQuantity(-1),
+            color: colors.textSecondary,
+            icon: const Icon(Icons.remove),
+          ),
+          Container(width: 1, height: 30, color: colors.divider),
+          Expanded(
+            child: TextField(
+              controller: _quantityController,
+              textAlign: TextAlign.center,
+              style: TextStyle(color: colors.textPrimary, fontSize: 15),
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                isDense: true,
+                border: InputBorder.none,
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: AppSpacing.sm,
+                  vertical: AppSpacing.sm,
+                ),
+              ),
+            ),
+          ),
+          Container(width: 1, height: 30, color: colors.divider),
+          IconButton(
+            tooltip: 'Increase quantity',
+            onPressed: () => _adjustQuantity(1),
+            color: colors.textSecondary,
+            icon: const Icon(Icons.add),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _adjustQuantity(int delta) {
+    final current = int.tryParse(_quantityController.text) ?? 0;
+    final next = (current + delta).clamp(0, 1 << 31).toInt();
+    _quantityController.text = '$next';
+  }
+
+  Widget _buildWebMarginPanel({
+    required double spanMargin,
+    required double exposureMargin,
+    required double additionalMargin,
+    required double totalMargin,
+    required AppColorsTheme colors,
+    required MarketThemeExtension marketTheme,
+  }) {
+    final spanRatio = totalMargin > 0 ? spanMargin / totalMargin : 0.0;
+    final exposureRatio = totalMargin > 0 ? exposureMargin / totalMargin : 0.0;
+    final additionalRatio =
+        totalMargin > 0 ? additionalMargin / totalMargin : 0.0;
+
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        color: colors.cardSurface,
+        border: Border.all(color: colors.border),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Margin Required',
+            style: TextStyle(
+              color: colors.textPrimary,
+              fontSize: 22,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              _formatWebCurrency(totalMargin),
+              style: TextStyle(
+                color: ModuleColors.market,
+                fontSize: 40,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md,
+              vertical: AppSpacing.sm,
+            ),
+            decoration: BoxDecoration(
+              color: colors.surface,
+              border: Border.all(color: colors.border),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              children: [
+                _buildWebMarginRow(
+                  label: 'SPAN Margin',
+                  amount: spanMargin,
+                  ratio: spanRatio,
+                  indicatorColor: marketTheme.chartBlue,
+                  colors: colors,
+                ),
+                _buildWebMarginRow(
+                  label: 'Exposure Margin',
+                  amount: exposureMargin,
+                  ratio: exposureRatio,
+                  indicatorColor: ModuleColors.market,
+                  colors: colors,
+                ),
+                _buildWebMarginRow(
+                  label: 'Additional Margin',
+                  amount: additionalMargin,
+                  ratio: additionalRatio,
+                  indicatorColor: colors.textTertiary,
+                  colors: colors,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md,
+              vertical: AppSpacing.sm,
+            ),
+            decoration: BoxDecoration(
+              color: ModuleColors.market.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Total Margin Required',
+                    style: TextStyle(
+                      color: ModuleColors.market,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                Text(
+                  _formatWebCurrency(totalMargin),
+                  style: TextStyle(
+                    color: ModuleColors.market,
+                    fontSize: 17,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWebMarginRow({
+    required String label,
+    required double amount,
+    required double ratio,
+    required Color indicatorColor,
+    required AppColorsTheme colors,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+      child: Row(
+        children: [
+          Container(
+            width: 10,
+            height: 10,
+            decoration: BoxDecoration(
+              color: indicatorColor,
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(color: colors.textSecondary, fontSize: 14),
+            ),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Text(
+            _formatWebCurrency(amount),
+            style: TextStyle(
+              color: colors.textPrimary,
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          SizedBox(
+            width: 76,
+            child: Text(
+              '${(ratio * 100).toStringAsFixed(1)}%',
+              textAlign: TextAlign.right,
+              style: TextStyle(color: colors.textSecondary, fontSize: 14),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWebActionPanel({
+    required AppColorsTheme colors,
+    required MarketThemeExtension marketTheme,
+  }) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final content = Row(
+          children: [
+            Icon(
+              Icons.calculate_outlined,
+              color: ModuleColors.market,
+              size: 32,
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Estimated margin for this position',
+                    style: TextStyle(
+                      color: colors.textPrimary,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    'Margin may vary with exchange or broker updates.',
+                    style: TextStyle(
+                      color: colors.textSecondary,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: AppSpacing.lg),
+            SizedBox(
+              width: constraints.maxWidth >= AmBreakpoints.tablet ? 320 : 240,
+              height: 56,
+              child: FilledButton(
+                style: FilledButton.styleFrom(
+                  backgroundColor: ModuleColors.market,
+                  foregroundColor: marketTheme.accentText,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  textStyle: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                onPressed: _calculateMargin,
+                child: const Text('Calculate Margin'),
+              ),
+            ),
+          ],
+        );
+        final stackedContent = Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.calculate_outlined,
+                  color: ModuleColors.market,
+                  size: 28,
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Estimated margin for this position',
+                        style: TextStyle(
+                          color: colors.textPrimary,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.xs),
+                      Text(
+                        'Margin may vary with exchange or broker updates.',
+                        style: TextStyle(
+                          color: colors.textSecondary,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.md),
+            SizedBox(
+              height: 52,
+              child: FilledButton(
+                style: FilledButton.styleFrom(
+                  backgroundColor: ModuleColors.market,
+                  foregroundColor: marketTheme.accentText,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  textStyle: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                onPressed: _calculateMargin,
+                child: const Text('Calculate Margin'),
+              ),
+            ),
+          ],
+        );
+
+        return Container(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          decoration: BoxDecoration(
+            color: colors.cardSurface,
+            border: Border.all(color: colors.border),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: constraints.maxWidth >= AmBreakpoints.tablet
+              ? content
+              : stackedContent,
+        );
+      },
+    );
+  }
+
+  void _calculateMargin() {
+    FocusScope.of(context).unfocus();
+    // The estimate is derived directly from the current controllers in build;
+    // this rebuild commits the latest field values without changing the math.
+    if (mounted) setState(() {});
+  }
+
+  String _formatWebCurrency(double amount) =>
+      '₹${_webCurrencyFormat.format(amount)}';
+
   Future<void> _openContractSheet(
     List<dynamic> contracts,
     String activeSymbol,
@@ -457,9 +1080,8 @@ class _MarginCalculatorViewState extends ConsumerState<MarginCalculatorView> {
               ? activeColor.withValues(alpha: 0.22)
               : Colors.transparent,
           border: Border.all(
-            color: isSelected
-                ? activeColor
-                : colors.border.withValues(alpha: 0.5),
+            color:
+                isSelected ? activeColor : colors.border.withValues(alpha: 0.5),
           ),
           borderRadius: BorderRadius.circular(8),
         ),
@@ -541,9 +1163,8 @@ class _MarginCalculatorViewState extends ConsumerState<MarginCalculatorView> {
               maxLines: 1,
               style: TextStyle(
                 color: isHighlight ? ModuleColors.market : colors.textPrimary,
-                fontSize: compact
-                    ? (isHighlight ? 16 : 14)
-                    : (isHighlight ? 18 : 16),
+                fontSize:
+                    compact ? (isHighlight ? 16 : 14) : (isHighlight ? 18 : 16),
                 fontWeight: FontWeight.bold,
               ),
             ),

@@ -1,12 +1,10 @@
-import 'package:am_dashboard_ui/presentation/layout/dashboard_customize_sheet.dart';
 import 'package:am_dashboard_ui/presentation/layout/dashboard_layout_provider.dart';
 import 'package:am_dashboard_ui/presentation/layout/dashboard_layout_renderer.dart';
-import 'package:am_dashboard_ui/presentation/layout/dashboard_layout_store.dart';
 import 'package:am_dashboard_ui/presentation/providers/dashboard_provider.dart';
 import 'package:am_dashboard_ui/presentation/providers/dashboard_portfolio_refresh_binder.dart';
 import 'package:am_dashboard_ui/presentation/providers/dashboard_timeframe_provider.dart';
 import 'package:am_dashboard_ui/presentation/providers/has_demo_portfolio_provider.dart';
-import 'package:am_dashboard_ui/presentation/widgets/paper_trading_nav_chip.dart';
+import 'package:am_dashboard_ui/presentation/widgets/dashboard_toolbar.dart';
 import 'package:am_common/am_common.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
@@ -153,27 +151,12 @@ class DashboardWebScreen extends ConsumerWidget {
                           const Expanded(child: DemoAccountInlineBanner()),
                         ] else
                           const Spacer(),
-                        if (kDashboardCustomizeEnabled)
-                          IconButton(
-                            tooltip: 'Customize dashboard',
-                            onPressed: () =>
-                                DashboardCustomizeSheet.show(context),
-                            icon: const Icon(Icons.tune),
-                          ),
-                        if (onOpenPaper != null) ...[
-                          PaperTradingNavChip(onTap: onOpenPaper!),
-                          const SizedBox(width: AppSpacing.sm),
-                        ],
-                        const GlobalTimeFrameBar(),
-                        if (onQuickAdd != null) ...[
-                          const SizedBox(width: AppSpacing.sm),
-                          SyncQuickActionsControl(
-                            accentColor: ModuleColors.dashboard,
-                            iconColor: onSurface,
-                            actions: buildGlobalAddMenuActions(onQuickAdd!),
-                            showSubtitles: false,
-                          ),
-                        ],
+                        DashboardToolbar(
+                          glass: false,
+                          onSurface: onSurface,
+                          onOpenPaper: onOpenPaper,
+                          onQuickAdd: onQuickAdd,
+                        ),
                       ],
                     ),
                     const SizedBox(height: AppSpacing.lg),

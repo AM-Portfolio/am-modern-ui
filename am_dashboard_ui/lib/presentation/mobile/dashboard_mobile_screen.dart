@@ -1,13 +1,10 @@
-import 'package:am_dashboard_ui/presentation/layout/dashboard_customize_sheet.dart';
 import 'package:am_dashboard_ui/presentation/layout/dashboard_layout_provider.dart';
 import 'package:am_dashboard_ui/presentation/layout/dashboard_layout_renderer.dart';
-import 'package:am_dashboard_ui/presentation/layout/dashboard_layout_store.dart';
 import 'package:am_dashboard_ui/presentation/providers/dashboard_provider.dart';
 import 'package:am_dashboard_ui/presentation/providers/dashboard_timeframe_provider.dart';
 import 'package:am_dashboard_ui/presentation/providers/has_demo_portfolio_provider.dart';
-import 'package:am_dashboard_ui/presentation/widgets/paper_trading_nav_chip.dart';
+import 'package:am_dashboard_ui/presentation/widgets/dashboard_toolbar.dart';
 import 'package:am_common/am_common.dart';
-import '../shared/widgets/glass_card.dart';
 import 'package:am_design_system/am_design_system.dart';
 
 import 'package:flutter/material.dart';
@@ -64,39 +61,6 @@ class _DashboardMobileScreenState
     ref.invalidate(dashboardStreamProvider(id));
   }
 
-  Widget _buildLoadingCard(double height, {String? label}) {
-    return AmGlassCard(
-      child: SizedBox(
-        height: height,
-        width: double.infinity,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Expanded(
-              child: ShimmerLoading(
-                child: SkeletonBox(
-                  width: double.infinity,
-                  height: double.infinity,
-                  borderRadius: BorderRadius.all(Radius.circular(8)),
-                ),
-              ),
-            ),
-            if (label != null) ...[
-              const SizedBox(height: 12),
-              Text(
-                label,
-                style: context.text.caption().copyWith(
-                      color: context.colors.textSecondary,
-                    ),
-              ),
-              const SizedBox(height: 8),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
   void _listenDashboardFirstData(WidgetRef ref, String tfCode) {
     void markIfReady(AsyncValue<dynamic> next) {
       if (!_dashboardDataMarkedMobile && next.hasValue) {
@@ -133,73 +97,16 @@ class _DashboardMobileScreenState
       );
     }
 
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final accent = ModuleColors.dashboard;
-    const trackHeight = 58.0;
-    const segmentHeight = 50.0;
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 6, 16, 8),
-      child: NavigationChrome.glass(
-        context: context,
-        isDark: isDark,
-        borderRadius: 24,
-        child: SizedBox(
-          height: trackHeight,
-          child: Padding(
-            padding: const EdgeInsets.all(4),
-            child: Row(
-              children: [
-                GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: () {
-                    if (MobileSearchScope.tryOpenGlobalSearch(context)) return;
-                    MobileSearchScope.setOpen(context, true);
-                    setState(() => _searchOpen = true);
-                  },
-                  child: SizedBox(
-                    width: 44,
-                    height: segmentHeight,
-                    child: Icon(
-                      Icons.search_rounded,
-                      color: accent,
-                      size: 22,
-                    ),
-                  ),
-                ),
-                if (showDemoBadge) ...[
-                  const SizedBox(width: 4),
-                  const DemoAccountBadge(),
-                ],
-                const Spacer(),
-                if (kDashboardCustomizeEnabled)
-                  IconButton(
-                    tooltip: 'Customize dashboard',
-                    onPressed: () => DashboardCustomizeSheet.show(context),
-                    icon: Icon(Icons.tune, color: onSurface, size: 22),
-                    padding: EdgeInsets.zero,
-                    constraints:
-                        const BoxConstraints(minWidth: 40, minHeight: 40),
-                  ),
-                if (widget.onOpenPaper != null) ...[
-                  PaperTradingNavChip(onTap: widget.onOpenPaper!),
-                  const SizedBox(width: 6),
-                ],
-                const GlobalTimeFrameBar(
-                  variant: GlobalTimeFrameVariant.dropdown,
-                ),
-                if (widget.onQuickAdd != null)
-                  SyncQuickActionsControl(
-                    accentColor: accent,
-                    iconColor: onSurface,
-                    actions: buildGlobalAddMenuActions(widget.onQuickAdd!),
-                    showSubtitles: false,
-                  ),
-              ],
-            ),
-          ),
-        ),
-      ),
+    return DashboardToolbar(
+      onSurface: onSurface,
+      showDemoBadge: showDemoBadge,
+      onOpenPaper: widget.onOpenPaper,
+      onQuickAdd: widget.onQuickAdd,
+      onSearch: () {
+        if (MobileSearchScope.tryOpenGlobalSearch(context)) return;
+        MobileSearchScope.setOpen(context, true);
+        setState(() => _searchOpen = true);
+      },
     );
   }
 

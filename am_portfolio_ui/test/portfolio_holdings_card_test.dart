@@ -1,0 +1,334 @@
+import 'dart:io';
+
+import 'package:am_design_system/am_design_system.dart';
+import 'package:am_portfolio_ui/features/portfolio/internal/domain/entities/portfolio_holding.dart';
+import 'package:am_portfolio_ui/features/portfolio/internal/domain/entities/portfolio_summary.dart';
+import 'package:am_portfolio_ui/features/portfolio/presentation/mobile/widgets/portfolio_holdings_widget.dart';
+import 'package:am_portfolio_ui/features/portfolio/providers/portfolio_providers.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+
+PortfolioHolding _holding({
+  required String symbol,
+  required double investedAmount,
+  required double avgPrice,
+  required double quantity,
+}) {
+  return PortfolioHolding(
+    id: symbol,
+    symbol: symbol,
+    name: symbol,
+    companyName: '$symbol Ltd',
+    sector: 'IT',
+    industry: 'Software',
+    quantity: quantity,
+    avgPrice: avgPrice,
+    currentPrice: 123.45,
+    investedAmount: investedAmount,
+    currentValue: 1234.56,
+    todayChange: 1.2,
+    todayChangePercentage: 0.1,
+    totalGainLoss: 0,
+    totalGainLossPercentage: 0,
+    portfolioWeight: 10,
+  );
+}
+
+Finder _cardFor(String symbol) => find.ancestor(
+      of: find.text(symbol),
+      matching: find.byType(InvestmentCard),
+    );
+
+Future<void> _pumpHoldings(
+  WidgetTester tester, {
+  required List<PortfolioHolding> holdings,
+  DateTime? asOf,
+  bool expandFilters = false,
+}) async {
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        portfolioHoldingsProvider('p1').overrideWith(
+          (ref) async => PortfolioHoldings(
+            holdings: holdings,
+            lastUpdated: DateTime(2026, 10, 21, 17, 38),
+            asOf: asOf ?? DateTime(2026, 10, 21, 17, 38),
+          ),
+        ),
+      ],
+      child: const MaterialApp(
+        home: Scaffold(
+          body: PortfolioHoldingsWidget(
+            portfolioId: 'p1',
+            showNewsSection: false,
+          ),
+        ),
+      ),
+    ),
+  );
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 50));
+  if (expandFilters) {
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(PortfolioHoldingsWidget)),
+    );
+    container
+        .read(mobileHoldingsFiltersExpandedProvider.notifier)
+        .set(true);
+    await tester.pumpAndSettle();
+  }
+}
+
+void main() {
+  test('PortfolioHolding.hasCostBasis is false only when both costs are zero',
+      () {
+    expect(
+      _holding(
+        symbol: 'MAIL',
+        investedAmount: 0,
+        avgPrice: 0,
+        quantity: 5,
+      ).hasCostBasis,
+      isFalse,
+    );
+    expect(
+      _holding(
+        symbol: 'TCS',
+        investedAmount: 1000,
+        avgPrice: 0,
+        quantity: 5,
+      ).hasCostBasis,
+      isTrue,
+    );
+    expect(
+      _holding(
+        symbol: 'INFY',
+        investedAmount: 0,
+        avgPrice: 12,
+        quantity: 5,
+      ).hasCostBasis,
+      isTrue,
+    );
+  });
+
+  test('holdingsHaveCostBasis is false only for Dhan-style books', () {
+    expect(holdingsHaveCostBasis(const []), isFalse);
+    expect(
+      holdingsHaveCostBasis([
+        _holding(symbol: 'MAIL', investedAmount: 0, avgPrice: 0, quantity: 5),
+      ]),
+      isFalse,
+    );
+    expect(
+      holdingsHaveCostBasis([
+        _holding(symbol: 'TCS', investedAmount: 1000, avgPrice: 10, quantity: 5),
+        _holding(symbol: 'MAIL', investedAmount: 0, avgPrice: 0, quantity: 5),
+      ]),
+      isTrue,
+    );
+  });
+
+  test('visibleHoldingsForCostPolicy drops zero-cost only in mixed books', () {
+    final mailOnly = [
+      _holding(symbol: 'MAIL', investedAmount: 0, avgPrice: 0, quantity: 5),
+      _holding(symbol: 'ZERO', investedAmount: 0, avgPrice: 0, quantity: 2),
+    ];
+    expect(showHoldingsCostColumns(mailOnly), isFalse);
+    expect(
+      visibleHoldingsForCostPolicy(mailOnly).map((h) => h.symbol).toList(),
+      ['MAIL', 'ZERO'],
+    );
+
+    final mixed = [
+      _holding(symbol: 'TCS', investedAmount: 1000, avgPrice: 10, quantity: 5),
+      _holding(symbol: 'MAIL', investedAmount: 0, avgPrice: 0, quantity: 5),
+    ];
+    expect(showHoldingsCostColumns(mixed), isTrue);
+    expect(
+      visibleHoldingsForCostPolicy(mixed).map((h) => h.symbol).toList(),
+      ['TCS'],
+    );
+  });
+
+  test('overviewShowsCostMetrics hides cost cards while zero-principal loads',
+      () {
+    expect(
+      overviewShowsCostMetrics(
+        investmentValue: 0,
+        totalInvested: 0,
+        holdings: const [],
+        isHoldingsLoading: true,
+      ),
+      isFalse,
+    );
+    expect(
+      overviewShowsCostMetrics(
+        investmentValue: 0,
+        totalInvested: 0,
+        holdings: const [],
+      ),
+      isFalse,
+    );
+    expect(
+      overviewShowsCostMetrics(
+        investmentValue: 863000,
+        totalInvested: 863000,
+        holdings: const [],
+        isHoldingsLoading: true,
+      ),
+      isTrue,
+    );
+    expect(
+      overviewShowsCostMetrics(
+        investmentValue: 0,
+        totalInvested: 0,
+        holdings: [
+          _holding(symbol: 'MAIL', investedAmount: 0, avgPrice: 0, quantity: 5),
+        ],
+      ),
+      isFalse,
+    );
+    expect(
+      overviewShowsCostMetrics(
+        investmentValue: 50000,
+        totalInvested: 50000,
+        holdings: [
+          _holding(symbol: 'TCS', investedAmount: 50000, avgPrice: 250, quantity: 4),
+        ],
+      ),
+      isTrue,
+    );
+  });
+
+  test('page-level holdings stamp still formats As of', () {
+    final holdings = PortfolioHoldings(
+      holdings: const [],
+      lastUpdated: DateTime(2026, 10, 21, 17, 38),
+      asOf: DateTime(2026, 10, 21, 17, 38),
+    );
+    expect(holdings.priceLabel, contains('As of'));
+    expect(holdings.priceLabel, contains('2026-10-21'));
+
+    final summary = PortfolioSummary.empty().copyWith(
+      lastUpdated: DateTime(2026, 10, 21, 17, 38),
+      asOf: DateTime(2026, 10, 21, 17, 38),
+    );
+    expect(summary.priceLabel, contains('As of 2026-10-21'));
+  });
+
+  test('mobile screen still renders the page-level stamp', () {
+    final source = File(
+      'lib/features/portfolio/presentation/mobile/portfolio_mobile_screen.dart',
+    ).readAsStringSync();
+    expect(source.contains('_buildStickyAsOfLabel'), isTrue);
+    expect(source.contains('summary.priceLabel'), isTrue);
+  });
+
+  testWidgets('holdings cards hide zero-cost rows in mixed books',
+      (tester) async {
+    await _pumpHoldings(
+      tester,
+      holdings: [
+        _holding(
+          symbol: 'MAIL',
+          investedAmount: 0,
+          avgPrice: 0,
+          quantity: 7,
+        ),
+        _holding(
+          symbol: 'TCS',
+          investedAmount: 2500,
+          avgPrice: 250,
+          quantity: 4,
+        ),
+      ],
+    );
+
+    expect(find.textContaining('As of'), findsNothing);
+    expect(find.text('MAIL'), findsNothing);
+
+    final tcsCard = _cardFor('TCS');
+    expect(
+      find.descendant(of: tcsCard, matching: find.textContaining('Inv.')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: tcsCard, matching: find.textContaining('Avg')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: tcsCard, matching: find.text('4')),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('all-zero-cost book keeps rows and hides avg labels',
+      (tester) async {
+    await _pumpHoldings(
+      tester,
+      holdings: [
+        _holding(
+          symbol: 'MAIL',
+          investedAmount: 0,
+          avgPrice: 0,
+          quantity: 7,
+        ),
+        _holding(
+          symbol: 'ZERO',
+          investedAmount: 0,
+          avgPrice: 0,
+          quantity: 3,
+        ),
+      ],
+    );
+
+    expect(find.text('MAIL'), findsOneWidget);
+    expect(find.text('ZERO'), findsOneWidget);
+    final mailCard = _cardFor('MAIL');
+    expect(
+      find.descendant(of: mailCard, matching: find.textContaining('Avg')),
+      findsNothing,
+    );
+    expect(
+      find.descendant(of: mailCard, matching: find.textContaining('Inv.')),
+      findsNothing,
+    );
+  });
+
+  testWidgets('mobile holdings shows Sector/Industry filters and filters list',
+      (tester) async {
+    // Wide enough for PortfolioDisplayController; filters still use the compact strip.
+    await tester.binding.setSurfaceSize(const Size(480, 844));
+    await _pumpHoldings(
+      tester,
+      expandFilters: true,
+      holdings: [
+        _holding(
+          symbol: 'TCS',
+          investedAmount: 1000,
+          avgPrice: 250,
+          quantity: 4,
+        ).copyWith(sector: 'IT', industry: 'Software'),
+        _holding(
+          symbol: 'TMCV',
+          investedAmount: 800,
+          avgPrice: 200,
+          quantity: 2,
+        ).copyWith(sector: 'Auto', industry: 'EV'),
+      ],
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Sector'), findsOneWidget);
+    expect(find.text('Industry'), findsOneWidget);
+
+    await tester.tap(find.text('Sector'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('IT').last);
+    await tester.pumpAndSettle();
+
+    expect(find.text('TCS'), findsWidgets);
+    expect(find.text('TMCV'), findsNothing);
+  });
+}

@@ -2,6 +2,7 @@ import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../chart_types/chart_type_id.dart';
 import '../drawings/chart_draw_models.dart';
 import '../drawings/interactive_chart_surface.dart';
 import '../providers/chart_models.dart';
@@ -18,6 +19,7 @@ class ChartPaneCard extends ConsumerStatefulWidget {
     this.showIdentityStrip = false,
     this.drawTool = ChartDrawTool.none,
     this.clearDrawingsEpoch = 0,
+    this.hasLeftExpandHandle = false,
     this.onDrawingsCountChanged,
   });
 
@@ -29,6 +31,7 @@ class ChartPaneCard extends ConsumerStatefulWidget {
   final bool showIdentityStrip;
   final ChartDrawTool drawTool;
   final int clearDrawingsEpoch;
+  final bool hasLeftExpandHandle;
   final ValueChanged<int>? onDrawingsCountChanged;
 
   @override
@@ -97,6 +100,8 @@ class _ChartPaneCardState extends ConsumerState<ChartPaneCard> {
                             style: const TextStyle(fontSize: 12),
                           ),
                         )
+                      : pane.hasComparisons
+                      ? _buildComparisonChart(context, pane, ctrl)
                       : InteractiveChartSurface(
                           bars: pane.bars,
                           chartType: pane.chartType,
@@ -125,14 +130,12 @@ class _ChartPaneCardState extends ConsumerState<ChartPaneCard> {
                           },
                           externalCrosshairTime: syncedTime,
                         ),
-                  if (!widget.showIdentityStrip &&
-                      !pane.loading &&
-                      pane.bars.isNotEmpty)
+                  if (!widget.showIdentityStrip && !pane.hasComparisons)
                     Positioned(
                       top: 10,
-                      left: 12,
+                      left: widget.hasLeftExpandHandle ? 34 : 12,
                       child: IgnorePointer(
-                        child: _ChartInGraphPriceBadge(
+                        child: _ChartInGraphOverlay(
                           pane: pane,
                           hoverBar: _hoverBar,
                         ),
@@ -143,6 +146,87 @@ class _ChartPaneCardState extends ConsumerState<ChartPaneCard> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildComparisonChart(
+    BuildContext context,
+    ChartPaneState pane,
+    ChartTerminalController ctrl,
+  ) {
+    final theme = Theme.of(context);
+    final isBarChart = pane.chartType == ChartTypeId.columns ||
+        pane.chartType == ChartTypeId.ohlcBar;
+
+    final seriesMap = <String, List<MultiSeriesPoint>>{};
+
+    if (pane.bars.isNotEmpty) {
+      seriesMap[pane.symbol] = [
+        for (final b in pane.bars)
+          MultiSeriesPoint(
+            time: b.time.toIso8601String(),
+            value: b.close,
+          ),
+      ];
+    }
+
+    for (final sym in pane.comparisonSymbols) {
+      final bars = pane.comparisonBars[sym];
+      if (bars != null && bars.isNotEmpty) {
+        seriesMap[sym] = [
+          for (final b in bars)
+            MultiSeriesPoint(
+              time: b.time.toIso8601String(),
+              value: b.close,
+            ),
+        ];
+      }
+    }
+
+    final multiData = MultiSeriesChartData(series: seriesMap);
+
+    return ComparisonChartView(
+      data: multiData,
+      config: MultiSeriesChartConfig(
+        embedMode: true,
+        isLoading: pane.loading || pane.loadingComparisons,
+        error: pane.error,
+        isBarChart: isBarChart,
+        timeFrameCode: pane.timeframe.code,
+        selectedSeries: [pane.symbol, ...pane.comparisonSymbols],
+        accentColor: theme.colorScheme.primary,
+        showExpandButton: false,
+        showEndValuePills: true,
+        legendTrailing: InkWell(
+          onTap: () => ctrl.clearComparisons(paneIndex: widget.paneIndex),
+          borderRadius: BorderRadius.circular(4),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.close, size: 14, color: theme.colorScheme.error),
+                const SizedBox(width: 4),
+                Text(
+                  'Exit Comparison',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: theme.colorScheme.error,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        onRemoveSeries: (symbol) {
+          if (symbol.toUpperCase() == pane.symbol.toUpperCase()) {
+            ctrl.clearComparisons(paneIndex: widget.paneIndex);
+          } else {
+            ctrl.removeComparison(symbol, paneIndex: widget.paneIndex);
+          }
+        },
       ),
     );
   }
@@ -330,8 +414,8 @@ class _IdentityStrip extends StatelessWidget {
   }
 }
 
-class _ChartInGraphPriceBadge extends StatelessWidget {
-  const _ChartInGraphPriceBadge({
+class _ChartInGraphOverlay extends StatelessWidget {
+  const _ChartInGraphOverlay({
     required this.pane,
     this.hoverBar,
   });
@@ -343,10 +427,14 @@ class _ChartInGraphPriceBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final isMobile = MediaQuery.sizeOf(context).width < 768;
 
     double price = 0;
     double change = 0;
     double changePct = 0;
+
+    final activeBar =
+        hoverBar ?? (pane.bars.isNotEmpty ? pane.bars.last : null);
 
     if (hoverBar != null) {
       price = hoverBar!.close;
@@ -371,24 +459,57 @@ class _ChartInGraphPriceBadge extends StatelessWidget {
       changePct = prev > 0 ? (change / prev) * 100 : 0;
     }
 
-    if (price <= 0) return const SizedBox.shrink();
-
+    final hasPrice = price > 0;
     final isPositive = change >= 0;
     final valueColor =
         isPositive ? context.marketPositive : context.marketNegative;
-    final isMobile = MediaQuery.sizeOf(context).width < 768;
+
+    String formatVol(double v) {
+      if (v >= 1e7) return '${(v / 1e7).toStringAsFixed(2)}Cr';
+      if (v >= 1e5) return '${(v / 1e5).toStringAsFixed(2)}L';
+      if (v >= 1e6) return '${(v / 1e6).toStringAsFixed(2)}M';
+      if (v >= 1e3) return '${(v / 1e3).toStringAsFixed(1)}K';
+      return v.toStringAsFixed(0);
+    }
+
+    Widget ohlcStat(String label, String value, {Color? valColor}) {
+      return Padding(
+        padding: const EdgeInsets.only(right: 6),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              '$label ',
+              style: TextStyle(
+                fontSize: isMobile ? 9.5 : 11,
+                fontWeight: FontWeight.w600,
+                color: theme.hintColor.withValues(alpha: 0.8),
+              ),
+            ),
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: isMobile ? 10 : 11.5,
+                fontWeight: FontWeight.w700,
+                color: valColor ?? theme.textTheme.bodyMedium?.color,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
 
     return Container(
       padding: EdgeInsets.symmetric(
         horizontal: isMobile ? 8 : 10,
-        vertical: isMobile ? 3 : 4.5,
+        vertical: isMobile ? 3.5 : 4.5,
       ),
       decoration: BoxDecoration(
         color: (isDark ? const Color(0xFF131722) : Colors.white)
             .withValues(alpha: 0.88),
         borderRadius: BorderRadius.circular(6),
         border: Border.all(
-          color: valueColor.withValues(alpha: 0.35),
+          color: theme.dividerColor.withValues(alpha: 0.35),
           width: 1,
         ),
         boxShadow: [
@@ -403,33 +524,103 @@ class _ChartInGraphPriceBadge extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Container(
-            width: 6,
-            height: 6,
-            decoration: BoxDecoration(
-              color: valueColor,
-              shape: BoxShape.circle,
-            ),
-          ),
-          const SizedBox(width: 6),
+          // Symbol Name
           Text(
-            '₹${price.toStringAsFixed(2)}',
+            pane.symbol.trim().toUpperCase(),
             style: TextStyle(
-              fontSize: isMobile ? 12.5 : 13.5,
-              fontWeight: FontWeight.w800,
-              color: valueColor,
+              fontSize: isMobile ? 12 : 13.5,
+              fontWeight: FontWeight.w900,
+              color: theme.colorScheme.onSurface,
               letterSpacing: -0.2,
             ),
           ),
-          const SizedBox(width: 6),
+          const SizedBox(width: 4),
           Text(
-            '${isPositive ? '+' : ''}${change.toStringAsFixed(2)} (${isPositive ? '+' : ''}${changePct.toStringAsFixed(2)}%)',
+            '· ${pane.exchange}',
             style: TextStyle(
-              fontSize: isMobile ? 10.5 : 11.5,
-              fontWeight: FontWeight.w700,
-              color: valueColor,
+              fontSize: isMobile ? 10 : 11,
+              fontWeight: FontWeight.w600,
+              color: theme.hintColor,
             ),
           ),
+          const SizedBox(width: 6),
+          // Timeframe badge
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primary.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(4),
+              border: Border.all(
+                color: theme.colorScheme.primary.withValues(alpha: 0.25),
+                width: 0.8,
+              ),
+            ),
+            child: Text(
+              pane.timeframe.label,
+              style: TextStyle(
+                fontSize: isMobile ? 9.5 : 10.5,
+                fontWeight: FontWeight.w800,
+                color: theme.colorScheme.primary,
+              ),
+            ),
+          ),
+          if (hasPrice) ...[
+            const SizedBox(width: 8),
+            Container(
+              height: 14,
+              width: 1,
+              color: theme.dividerColor.withValues(alpha: 0.4),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              width: 6,
+              height: 6,
+              decoration: BoxDecoration(
+                color: valueColor,
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(width: 5),
+            Text(
+              '₹${price.toStringAsFixed(2)}',
+              style: TextStyle(
+                fontSize: isMobile ? 12 : 13.5,
+                fontWeight: FontWeight.w800,
+                color: valueColor,
+                letterSpacing: -0.2,
+              ),
+            ),
+            const SizedBox(width: 5),
+            Text(
+              '${isPositive ? '+' : ''}${change.toStringAsFixed(2)} (${isPositive ? '+' : ''}${changePct.toStringAsFixed(2)}%)',
+              style: TextStyle(
+                fontSize: isMobile ? 10 : 11.5,
+                fontWeight: FontWeight.w700,
+                color: valueColor,
+              ),
+            ),
+          ],
+          if (activeBar != null && !isMobile) ...[
+            const SizedBox(width: 8),
+            Container(
+              height: 14,
+              width: 1,
+              color: theme.dividerColor.withValues(alpha: 0.4),
+            ),
+            const SizedBox(width: 8),
+            ohlcStat('O', activeBar.open.toStringAsFixed(2)),
+            ohlcStat('H', activeBar.high.toStringAsFixed(2)),
+            ohlcStat('L', activeBar.low.toStringAsFixed(2)),
+            ohlcStat(
+              'C',
+              activeBar.close.toStringAsFixed(2),
+              valColor: activeBar.close >= activeBar.open
+                  ? context.marketPositive
+                  : context.marketNegative,
+            ),
+            if (activeBar.volume > 0)
+              ohlcStat('Vol', formatVol(activeBar.volume)),
+          ],
         ],
       ),
     );

@@ -37,21 +37,45 @@ class SearchNavigationHandler {
         context.go(AppRoutes.marketPath('paper'));
         return;
       case SearchContext.chart:
-        final select = ChartSearchBridge.selectSymbol;
-        if (select != null) {
-          select(sym);
-          return;
-        }
+        // Keep the live chart pane in sync and always update the URL so the
+        // symbol is shareable / reacts to query changes on remount.
+        ChartSearchBridge.selectSymbol?.call(sym);
         context.go(AppRoutes.chartWorkspacePath(symbol: sym));
         return;
       case SearchContext.baskets:
-      case SearchContext.market:
+        // Baskets keep portfolio discover navigation (handled via ETF path).
+        context.go('/app/market/$sym');
+        return;
       case SearchContext.portfolio:
+        openHolding(sym);
+        return;
+      case SearchContext.market:
       case SearchContext.trade:
       case SearchContext.dashboard:
       case SearchContext.other:
-        context.go('/app/market/$sym');
+        // Global / default equity search opens Chart with full stock info.
+        ChartSearchBridge.selectSymbol?.call(sym);
+        context.go(AppRoutes.chartWorkspacePath(symbol: sym));
     }
+  }
+
+  /// Stay on Portfolio Holdings and show only [symbol].
+  void openHolding(String symbol) {
+    final sym = symbol.trim().toUpperCase();
+    if (sym.isEmpty) return;
+    String? location;
+    try {
+      location = GoRouterState.of(context).matchedLocation;
+    } catch (_) {}
+    final id = ShareUrlBuilder.portfolioIdFromLocation(location ?? '') ??
+        context.selectedPortfolioId ??
+        'all';
+    context.go(
+      Uri(
+        path: AppRoutes.portfolioPath(id, 'holdings'),
+        queryParameters: {'q': sym},
+      ).toString(),
+    );
   }
 
   void openEtfOrBasket(EtfSearchResult result) {

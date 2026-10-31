@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:am_common/am_common.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
@@ -29,6 +31,7 @@ class ChartWorkspacePage extends ConsumerStatefulWidget {
     this.sidebarWidth = 300,
     this.bottomPanelHeight = 320,
     this.showHeaderSearch = true,
+    this.accentColor,
   });
 
   final String? initialSymbol;
@@ -42,6 +45,9 @@ class ChartWorkspacePage extends ConsumerStatefulWidget {
 
   /// When true, shows a search icon that opens Global Omnisearch (no local symbol field).
   final bool showHeaderSearch;
+
+  /// Optional module accent color override (defaults to [ModuleColors.market]).
+  final Color? accentColor;
 
   @override
   ConsumerState<ChartWorkspacePage> createState() => _ChartWorkspacePageState();
@@ -76,40 +82,67 @@ class _ChartWorkspacePageState extends ConsumerState<ChartWorkspacePage> {
     });
   }
 
-  void _openMobileSidebar(Widget sidebar) {
+  @override
+  void didUpdateWidget(covariant ChartWorkspacePage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final nextSym = widget.initialSymbol?.trim();
+    final prevSym = oldWidget.initialSymbol?.trim();
+    final nextTf = widget.initialTimeframe?.trim();
+    final prevTf = oldWidget.initialTimeframe?.trim();
+    if (nextSym == null || nextSym.isEmpty) return;
+    if (nextSym == prevSym && nextTf == prevTf) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final ctrl = ref.read(chartTerminalProvider.notifier);
+      final current = ref.read(chartTerminalProvider).symbol.trim();
+      if (current.toUpperCase() != nextSym.toUpperCase()) {
+        unawaited(ctrl.selectSymbol(nextSym));
+      }
+      if (nextTf != null &&
+          nextTf.isNotEmpty &&
+          nextTf != prevTf) {
+        unawaited(ctrl.setTimeframe(ChartTimeframe.fromCode(nextTf)));
+      }
+    });
+  }
+
+  void _openMobileSidebar(Widget sidebar, ThemeData themedData) {
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (ctx) {
         final theme = Theme.of(ctx);
-        return Container(
-          height: MediaQuery.of(ctx).size.height * 0.78,
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surface,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-            boxShadow: [
-              BoxShadow(
-                color: context.shadow(0.35),
-                blurRadius: 16,
-                offset: const Offset(0, -4),
-              ),
-            ],
-          ),
-          clipBehavior: Clip.antiAlias,
-          child: Column(
-            children: [
-              Container(
-                margin: const EdgeInsets.only(top: 8, bottom: 4),
-                width: 36,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: theme.hintColor.withValues(alpha: 0.3),
-                  borderRadius: BorderRadius.circular(2),
+        return Theme(
+          data: themedData,
+          child: Container(
+            height: MediaQuery.of(ctx).size.height * 0.78,
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surface,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+              boxShadow: [
+                BoxShadow(
+                  color: context.shadow(0.35),
+                  blurRadius: 16,
+                  offset: const Offset(0, -4),
                 ),
-              ),
-              Expanded(child: sidebar),
-            ],
+              ],
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: Column(
+              children: [
+                Container(
+                  margin: const EdgeInsets.only(top: 8, bottom: 4),
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: theme.hintColor.withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                Expanded(child: sidebar),
+              ],
+            ),
           ),
         );
       },
@@ -123,6 +156,13 @@ class _ChartWorkspacePageState extends ConsumerState<ChartWorkspacePage> {
     final theme = Theme.of(context);
     final isMobile = MediaQuery.sizeOf(context).width < 768;
 
+    final effectiveAccent = widget.accentColor ?? ModuleColors.market;
+    final themedData = theme.copyWith(
+      colorScheme: theme.colorScheme.copyWith(
+        primary: effectiveAccent,
+      ),
+    );
+
     ref.listen(chartTerminalProvider.select((s) => s.activePaneIndex), (
       prev,
       next,
@@ -132,51 +172,68 @@ class _ChartWorkspacePageState extends ConsumerState<ChartWorkspacePage> {
       }
     });
 
-    final sidebar =
-        widget.sidebarBuilder?.call(context, state, ctrl) ??
-        const _MissingPane(label: 'Watchlist — host did not provide pane');
-    final bottom =
-        widget.bottomPanelBuilder?.call(context, state, ctrl) ??
-        const _MissingPane(
-          label: 'Fundamentals / F&O — host did not provide pane',
-        );
+    return Theme(
+      data: themedData,
+      child: Builder(
+        builder: (themedContext) {
+          final sidebar =
+              widget.sidebarBuilder?.call(themedContext, state, ctrl) ??
+              const _MissingPane(label: 'Watchlist — host did not provide pane');
+          final bottom =
+              widget.bottomPanelBuilder?.call(themedContext, state, ctrl) ??
+              const _MissingPane(
+                label: 'Fundamentals / F&O — host did not provide pane',
+              );
 
-    return Scaffold(
-      body: Column(
-        children: [
-          _SlimTopBar(
-            state: state,
-            ctrl: ctrl,
-            analysisFocus: _analysisFocus,
-            showHeaderSearch: widget.showHeaderSearch,
-            onToggleFocus: () =>
-                setState(() => _analysisFocus = !_analysisFocus),
-            onOpenMobileSidebar: () => _openMobileSidebar(sidebar),
-            onToggleDrawRail: () =>
-                setState(() => _showMobileDrawRail = !_showMobileDrawRail),
-            showDrawRail: _showMobileDrawRail,
-          ),
+          return Scaffold(
+            body: Column(
+              children: [
+                _SlimTopBar(
+                  state: state,
+                  ctrl: ctrl,
+                  analysisFocus: _analysisFocus,
+                  showHeaderSearch: widget.showHeaderSearch,
+                  onToggleFocus: () =>
+                      setState(() => _analysisFocus = !_analysisFocus),
+                  onOpenMobileSidebar: () =>
+                      _openMobileSidebar(sidebar, themedData),
+                  onToggleDrawRail: () => setState(
+                    () => _showMobileDrawRail = !_showMobileDrawRail,
+                  ),
+                  showDrawRail: _showMobileDrawRail,
+                ),
           Expanded(
             child: Row(
               children: [
                 Expanded(
-                  child: LayoutBuilder(
+                  child: ValueListenableBuilder<double>(
+                    valueListenable: GlobalBottomNavVisibility.factor,
+                    builder: (context, navFactor, _) {
+                      return LayoutBuilder(
                     builder: (context, constraints) {
                       final maxH = constraints.maxHeight;
+                      // Lift chart/dock above floating bottom nav when it shows.
+                      final navInset = isMobile
+                          ? PlatformConstants.globalBottomNavReserve(context) *
+                              navFactor.clamp(0.0, 1.0)
+                          : 0.0;
+                      final layoutH =
+                          (maxH - navInset).clamp(100.0, maxH);
                       final isBottomVisible =
                           !_analysisFocus && !state.bottomMinimized;
                       final isBottomDockVisible =
                           !_analysisFocus && state.bottomMinimized;
-                      final dockH = isBottomDockVisible ? (isMobile ? 26.0 : 28.0) : 0.0;
+                      final dockH =
+                          isBottomDockVisible ? (isMobile ? 26.0 : 28.0) : 0.0;
                       final handleH = isBottomVisible ? 24.0 : 0.0;
                       final bottomH = isBottomVisible
                           ? _bottomHeight.clamp(
                               160.0,
-                              isMobile ? maxH * 0.5 : maxH * 0.7,
+                              isMobile ? layoutH * 0.5 : layoutH * 0.7,
                             )
                           : 0.0;
-                      final chartH =
-                          (maxH - bottomH - handleH - dockH).clamp(100.0, maxH);
+                      final chartH = (layoutH - bottomH - handleH - dockH)
+                          .clamp(100.0, layoutH);
 
                       final showDrawRail = !isMobile || _showMobileDrawRail;
 
@@ -184,57 +241,76 @@ class _ChartWorkspacePageState extends ConsumerState<ChartWorkspacePage> {
                         children: [
                           SizedBox(
                             height: chartH,
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                            child: Stack(
                               children: [
-                                if (showDrawRail)
-                                  ChartDrawToolsRail(
-                                    expanded:
-                                        isMobile ? true : _drawRailExpanded,
-                                    activeTool: _drawTool,
-                                    drawingCount: _activeDrawingsCount,
-                                    onToggleExpanded: () {
-                                      if (isMobile) {
-                                        setState(() => _showMobileDrawRail =
-                                            !_showMobileDrawRail);
-                                      } else {
-                                        setState(() => _drawRailExpanded =
-                                            !_drawRailExpanded);
-                                      }
-                                    },
-                                  onSelectTool: (t) => setState(() {
-                                    _drawTool = t;
-                                  }),
-                                  onClearAll: () => setState(() {
-                                    _clearDrawingsEpoch++;
-                                    _activeDrawingsCount = 0;
-                                  }),
+                                Row(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    if (showDrawRail)
+                                      ChartDrawToolsRail(
+                                        expanded: isMobile
+                                            ? true
+                                            : _drawRailExpanded,
+                                        activeTool: _drawTool,
+                                        drawingCount: _activeDrawingsCount,
+                                        onToggleExpanded: () {
+                                          if (isMobile) {
+                                            setState(() => _showMobileDrawRail =
+                                                !_showMobileDrawRail);
+                                          } else {
+                                            setState(() => _drawRailExpanded =
+                                                !_drawRailExpanded);
+                                          }
+                                        },
+                                        onSelectTool: (t) => setState(() {
+                                          _drawTool = t;
+                                        }),
+                                        onClearAll: () => setState(() {
+                                          _clearDrawingsEpoch++;
+                                          _activeDrawingsCount = 0;
+                                        }),
+                                      ),
+                                    Expanded(
+                                      child: _ChartGrid(
+                                        state: state,
+                                        drawTool: _drawTool,
+                                        clearDrawingsEpoch: _clearDrawingsEpoch,
+                                        hasLeftExpandHandle:
+                                            isMobile && !showDrawRail,
+                                        onDrawingsCountChanged: (n) {
+                                          if (_activeDrawingsCount != n) {
+                                            setState(
+                                              () => _activeDrawingsCount = n,
+                                            );
+                                          }
+                                        },
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                                Expanded(
-                                  child: _ChartGrid(
-                                    state: state,
-                                    drawTool: _drawTool,
-                                    clearDrawingsEpoch: _clearDrawingsEpoch,
-                                    onDrawingsCountChanged: (n) {
-                                      if (_activeDrawingsCount != n) {
-                                        setState(
-                                          () => _activeDrawingsCount = n,
-                                        );
-                                      }
-                                    },
+                                if (isMobile && !_showMobileDrawRail)
+                                  Positioned(
+                                    left: 0,
+                                    top: 10,
+                                    child: _MobileDrawRailExpandButton(
+                                      onTap: () => setState(
+                                        () => _showMobileDrawRail = true,
+                                      ),
+                                    ),
                                   ),
-                                ),
                               ],
                             ),
                           ),
                           if (isBottomVisible) ...[
                             GestureDetector(
                               behavior: HitTestBehavior.opaque,
-                              onDoubleTap: () => ctrl.setBottomMinimized(true),
+                              onDoubleTap: () =>
+                                  ctrl.setBottomMinimized(true),
                               onVerticalDragUpdate: (d) {
                                 setState(() {
                                   _bottomHeight = (_bottomHeight - d.delta.dy)
-                                      .clamp(200.0, maxH * 0.7);
+                                      .clamp(200.0, layoutH * 0.7);
                                 });
                               },
                               child: MouseRegion(
@@ -259,74 +335,49 @@ class _ChartWorkspacePageState extends ConsumerState<ChartWorkspacePage> {
                                   padding: const EdgeInsets.symmetric(
                                     horizontal: 10,
                                   ),
-                                  child: Row(
+                                  child: Stack(
+                                    alignment: Alignment.center,
                                     children: [
-                                      Icon(
-                                        Icons.view_agenda_outlined,
-                                        size: 13,
-                                        color: theme.hintColor.withValues(
-                                          alpha: 0.7,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 5),
-                                      Text(
-                                        'PANEL',
-                                        style: TextStyle(
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.w700,
-                                          letterSpacing: 0.8,
-                                          color: theme.hintColor.withValues(
-                                            alpha: 0.8,
-                                          ),
-                                        ),
-                                      ),
-                                      Expanded(
-                                        child: Center(
-                                          child: Container(
-                                            width: 44,
-                                            height: 4,
-                                            decoration: BoxDecoration(
-                                              color: theme.hintColor.withValues(
-                                                alpha: 0.35,
+                                      Align(
+                                        alignment: Alignment.centerLeft,
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(
+                                              Icons.view_agenda_outlined,
+                                              size: 13,
+                                              color:
+                                                  theme.hintColor.withValues(
+                                                alpha: 0.7,
                                               ),
-                                              borderRadius:
-                                                  BorderRadius.circular(2),
                                             ),
-                                          ),
+                                            const SizedBox(width: 5),
+                                            Text(
+                                              'PANEL',
+                                              style: TextStyle(
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.w700,
+                                                letterSpacing: 0.8,
+                                                color:
+                                                    theme.hintColor.withValues(
+                                                  alpha: 0.8,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
                                         ),
                                       ),
-                                      Tooltip(
-                                        message:
-                                            'Minimize bottom panel (Double-click to toggle)',
-                                        child: InkWell(
-                                          onTap: () =>
-                                              ctrl.setBottomMinimized(true),
-                                          borderRadius:
-                                              BorderRadius.circular(4),
-                                          child: Padding(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 6,
-                                              vertical: 2,
+                                      Center(
+                                        child: Container(
+                                          width: 44,
+                                          height: 4,
+                                          decoration: BoxDecoration(
+                                            color:
+                                                theme.hintColor.withValues(
+                                              alpha: 0.35,
                                             ),
-                                            child: Row(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                Text(
-                                                  'Minimize',
-                                                  style: TextStyle(
-                                                    fontSize: 11,
-                                                    fontWeight: FontWeight.w600,
-                                                    color: theme.hintColor,
-                                                  ),
-                                                ),
-                                                const SizedBox(width: 2),
-                                                Icon(
-                                                  Icons.keyboard_arrow_down,
-                                                  size: 16,
-                                                  color: theme.hintColor,
-                                                ),
-                                              ],
-                                            ),
+                                            borderRadius:
+                                                BorderRadius.circular(2),
                                           ),
                                         ),
                                       ),
@@ -405,7 +456,9 @@ class _ChartWorkspacePageState extends ConsumerState<ChartWorkspacePage> {
                                             ),
                                             const SizedBox(width: 3),
                                             Text(
-                                              isMobile ? 'Open' : 'Restore Panel',
+                                              isMobile
+                                                  ? 'Open'
+                                                  : 'Restore Panel',
                                               style: TextStyle(
                                                 fontSize: isMobile ? 10 : 11,
                                                 fontWeight: FontWeight.w700,
@@ -421,7 +474,10 @@ class _ChartWorkspacePageState extends ConsumerState<ChartWorkspacePage> {
                                 ),
                               ),
                             ),
+                          if (navInset > 0) SizedBox(height: navInset),
                         ],
+                      );
+                    },
                       );
                     },
                   ),
@@ -582,6 +638,9 @@ class _ChartWorkspacePageState extends ConsumerState<ChartWorkspacePage> {
         ],
       ),
     );
+  },
+),
+);
   }
 }
 
@@ -590,11 +649,13 @@ class _ChartGrid extends StatelessWidget {
     required this.state,
     required this.drawTool,
     required this.clearDrawingsEpoch,
+    this.hasLeftExpandHandle = false,
     this.onDrawingsCountChanged,
   });
   final ChartTerminalState state;
   final ChartDrawTool drawTool;
   final int clearDrawingsEpoch;
+  final bool hasLeftExpandHandle;
   final ValueChanged<int>? onDrawingsCountChanged;
 
   @override
@@ -611,6 +672,7 @@ class _ChartGrid extends StatelessWidget {
       showIdentityStrip: multi,
       drawTool: drawTool,
       clearDrawingsEpoch: clearDrawingsEpoch,
+      hasLeftExpandHandle: hasLeftExpandHandle,
       onDrawingsCountChanged: onDrawingsCountChanged,
     );
 
@@ -692,110 +754,57 @@ class _SlimTopBarState extends ConsumerState<_SlimTopBar> {
     final theme = Theme.of(context);
     final state = widget.state;
     final ctrl = widget.ctrl;
-    final active = state.active;
 
     return Material(
       elevation: 1,
       color: theme.colorScheme.surface,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(8, 6, 8, 4),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    '${active.symbol} · ${active.exchange}',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w800,
-                      fontSize: 14.5,
-                      letterSpacing: -0.2,
+      child: Container(
+        height: 38,
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              if (widget.onOpenMobileSidebar != null) ...[
+                Tooltip(
+                  message: 'Watchlist & Indices',
+                  child: InkWell(
+                    onTap: widget.onOpenMobileSidebar,
+                    borderRadius: BorderRadius.circular(5),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 7,
+                        vertical: 3.5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: theme.cardColor.withValues(alpha: 0.6),
+                        borderRadius: BorderRadius.circular(5),
+                        border: Border.all(
+                          color: theme.dividerColor.withValues(alpha: 0.4),
+                        ),
+                      ),
+                      child: Icon(
+                        Icons.format_list_bulleted,
+                        size: 16,
+                        color: theme.colorScheme.primary,
+                      ),
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                IconButton(
-                  tooltip: 'Watchlist & Indices',
-                  iconSize: 19,
-                  padding: EdgeInsets.zero,
-                  constraints:
-                      const BoxConstraints(minWidth: 32, minHeight: 32),
-                  icon: Icon(
-                    Icons.format_list_bulleted,
-                    color: theme.colorScheme.primary,
-                  ),
-                  onPressed: widget.onOpenMobileSidebar,
-                ),
-                if (widget.onToggleDrawRail != null)
-                  IconButton(
-                    tooltip: 'Drawing tools',
-                    iconSize: 18,
-                    padding: EdgeInsets.zero,
-                    constraints:
-                        const BoxConstraints(minWidth: 32, minHeight: 32),
-                    icon: Icon(
-                      widget.showDrawRail ? Icons.draw : Icons.draw_outlined,
-                      color: widget.showDrawRail
-                          ? theme.colorScheme.primary
-                          : theme.hintColor,
-                    ),
-                    onPressed: widget.onToggleDrawRail,
-                  ),
-                IconButton(
-                  tooltip: state.bottomMinimized
-                      ? 'Restore panel'
-                      : 'Minimize panel',
-                  iconSize: 18,
-                  padding: EdgeInsets.zero,
-                  constraints:
-                      const BoxConstraints(minWidth: 32, minHeight: 32),
-                  onPressed: ctrl.toggleBottomMinimized,
-                  icon: Icon(
-                    state.bottomMinimized
-                        ? Icons.splitscreen_outlined
-                        : Icons.splitscreen,
-                    color: state.bottomMinimized
-                        ? theme.hintColor
-                        : theme.colorScheme.primary,
-                  ),
-                ),
+                const SizedBox(width: 6),
               ],
-            ),
+              _buildChartTypeSelector(context, state, ctrl),
+              const SizedBox(width: 6),
+              _buildMobileTimeframeDropdown(context, state, ctrl),
+              const SizedBox(width: 6),
+              _buildCompareButton(context, state, ctrl),
+              const SizedBox(width: 6),
+              _divider(theme),
+              const SizedBox(width: 6),
+              _buildIndicatorsButton(context),
+            ],
           ),
-          const Divider(height: 1),
-          Container(
-            height: 38,
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  _buildChartTypeSelector(context, state, ctrl),
-                  const SizedBox(width: 6),
-                  _buildMobileTimeframeDropdown(context, state, ctrl),
-                  const SizedBox(width: 6),
-                  _buildCompareButton(context, ctrl),
-                  const SizedBox(width: 6),
-                  _divider(theme),
-                  const SizedBox(width: 6),
-                  _buildIndicatorsButton(context),
-                  const SizedBox(width: 4),
-                  IconButton(
-                    tooltip: 'Fit chart',
-                    iconSize: 18,
-                    padding: EdgeInsets.zero,
-                    constraints:
-                        const BoxConstraints(minWidth: 30, minHeight: 30),
-                    onPressed: ctrl.requestFit,
-                    icon: const Icon(Icons.fit_screen),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -810,7 +819,6 @@ class _SlimTopBarState extends ConsumerState<_SlimTopBar> {
     final theme = Theme.of(context);
     final state = widget.state;
     final ctrl = widget.ctrl;
-    final active = state.active;
     final showSearch = widget.showHeaderSearch;
 
     return Material(
@@ -833,40 +841,13 @@ class _SlimTopBarState extends ConsumerState<_SlimTopBar> {
             const SizedBox(width: 8),
             _divider(theme),
             const SizedBox(width: 8),
-            ConstrainedBox(
-              constraints: const BoxConstraints(minWidth: 90, maxWidth: 220),
-              child: Text(
-                '${active.symbol} · ${active.exchange}',
-                style: const TextStyle(
-                  fontWeight: FontWeight.w800,
-                  fontSize: 15,
-                  letterSpacing: -0.2,
-                ),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            if (state.layout == ChartGridLayout.one) ...[
-              const SizedBox(width: 8),
-              _buildPriceBadge(context, active),
-            ],
-            const SizedBox(width: 8),
-            _divider(theme),
-            const SizedBox(width: 8),
 
-            // Center: scrollable strip with OHLCV, Timeframes, Chart Type, Indicators, Compare, Tools
+            // Center: graph chart controls (Timeframes, Chart Type, Indicators, Compare, Tools)
             Expanded(
               child: SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: Row(
                   children: [
-                    if (state.layout == ChartGridLayout.one) ...[
-                      _buildOhlcvStats(context, active),
-                      if (active.bars.isNotEmpty) ...[
-                        const SizedBox(width: 8),
-                        _divider(theme),
-                        const SizedBox(width: 8),
-                      ],
-                    ],
                     ..._buildTimeframePills(context, state, ctrl),
                     const SizedBox(width: 8),
                     _divider(theme),
@@ -875,7 +856,7 @@ class _SlimTopBarState extends ConsumerState<_SlimTopBar> {
                     const SizedBox(width: 6),
                     _buildIndicatorsButton(context),
                     const SizedBox(width: 6),
-                    _buildCompareButton(context, ctrl),
+                    _buildCompareButton(context, state, ctrl),
                     const SizedBox(width: 8),
                     _divider(theme),
                     const SizedBox(width: 6),
@@ -987,155 +968,6 @@ class _SlimTopBarState extends ConsumerState<_SlimTopBar> {
       height: 18,
       color: theme.dividerColor.withValues(alpha: 0.4),
     );
-  }
-
-  Widget _buildPriceBadge(BuildContext context, ChartPaneState active) {
-    double price = 0;
-    double change = 0;
-    double changePct = 0;
-
-    if (active.quote != null) {
-      price = active.quote!.last;
-      changePct = active.quote!.changePct;
-      if (active.bars.length > 1) {
-        final prev = active.bars[active.bars.length - 2].close;
-        change = price - prev;
-      }
-    } else if (active.bars.isNotEmpty) {
-      final last = active.bars.last;
-      price = last.close;
-      final prev = active.bars.length > 1
-          ? active.bars[active.bars.length - 2].close
-          : last.open;
-      change = price - prev;
-      changePct = prev > 0 ? (change / prev) * 100 : 0;
-    }
-
-    if (price == 0) return const SizedBox.shrink();
-
-    final isPositive = change >= 0;
-    final color =
-        isPositive ? context.marketPositive : context.marketNegative;
-
-    final isMobile = MediaQuery.sizeOf(context).width < 768;
-
-    return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: isMobile ? 6 : 7,
-        vertical: isMobile ? 2 : 3,
-      ),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            '₹${price.toStringAsFixed(2)}',
-            style: TextStyle(
-              fontSize: isMobile ? 12 : 13.5,
-              fontWeight: FontWeight.w800,
-              color: color,
-            ),
-          ),
-          const SizedBox(width: 4),
-          Text(
-            isMobile
-                ? '(${isPositive ? '+' : ''}${changePct.toStringAsFixed(1)}%)'
-                : '${isPositive ? '+' : ''}${change.toStringAsFixed(2)} (${isPositive ? '+' : ''}${changePct.toStringAsFixed(2)}%)',
-            style: TextStyle(
-              fontSize: isMobile ? 11 : 12,
-              fontWeight: FontWeight.w700,
-              color: color,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildOhlcvStats(BuildContext context, ChartPaneState active) {
-    if (active.bars.isEmpty) return const SizedBox.shrink();
-    final theme = Theme.of(context);
-    final lastBar = active.bars.last;
-    final isUp = lastBar.close >= lastBar.open;
-    final color = isUp ? context.marketPositive : context.marketNegative;
-    final change = lastBar.close - lastBar.open;
-    final changePct =
-        lastBar.open > 0 ? (change / lastBar.open) * 100 : 0.0;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
-        color: theme.cardColor.withValues(alpha: 0.4),
-        borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: theme.dividerColor.withValues(alpha: 0.3)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _ohlcItem('O', lastBar.open.toStringAsFixed(2), theme),
-          const SizedBox(width: 8),
-          _ohlcItem('H', lastBar.high.toStringAsFixed(2), theme),
-          const SizedBox(width: 8),
-          _ohlcItem('L', lastBar.low.toStringAsFixed(2), theme),
-          const SizedBox(width: 8),
-          _ohlcItem('C', lastBar.close.toStringAsFixed(2), theme,
-              valueColor: color),
-          const SizedBox(width: 8),
-          _ohlcItem(
-            'Chg',
-            '${change >= 0 ? '+' : ''}${change.toStringAsFixed(2)} (${changePct >= 0 ? '+' : ''}${changePct.toStringAsFixed(2)}%)',
-            theme,
-            valueColor: color,
-          ),
-          if (lastBar.volume > 0) ...[
-            const SizedBox(width: 8),
-            _ohlcItem('Vol', _formatVol(lastBar.volume), theme),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _ohlcItem(
-    String label,
-    String value,
-    ThemeData theme, {
-    Color? valueColor,
-  }) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 11.5,
-            fontWeight: FontWeight.w700,
-            color: theme.hintColor,
-          ),
-        ),
-        const SizedBox(width: 4),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 12.5,
-            fontWeight: FontWeight.w700,
-            color: valueColor ?? theme.textTheme.bodyMedium?.color,
-          ),
-        ),
-      ],
-    );
-  }
-
-  String _formatVol(double v) {
-    if (v >= 1e7) return '${(v / 1e7).toStringAsFixed(2)}Cr';
-    if (v >= 1e5) return '${(v / 1e5).toStringAsFixed(2)}L';
-    if (v >= 1e6) return '${(v / 1e6).toStringAsFixed(2)}M';
-    if (v >= 1e3) return '${(v / 1e3).toStringAsFixed(1)}K';
-    return v.toStringAsFixed(0);
   }
 
   Widget _buildMobileTimeframeDropdown(
@@ -1363,14 +1195,16 @@ class _SlimTopBarState extends ConsumerState<_SlimTopBar> {
               size: isMobile ? 15 : 16,
               color: theme.colorScheme.primary,
             ),
-            const SizedBox(width: 5),
-            Text(
-              active.chartType.label,
-              style: TextStyle(
-                fontSize: isMobile ? 12 : 13,
-                fontWeight: FontWeight.w700,
+            if (!isMobile) ...[
+              const SizedBox(width: 5),
+              Text(
+                active.chartType.label,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
-            ),
+            ],
             const SizedBox(width: 2),
             Icon(Icons.arrow_drop_down, size: isMobile ? 16 : 18, color: theme.hintColor),
           ],
@@ -1382,50 +1216,55 @@ class _SlimTopBarState extends ConsumerState<_SlimTopBar> {
   Widget _buildIndicatorsButton(BuildContext context) {
     final theme = Theme.of(context);
     final isMobile = MediaQuery.sizeOf(context).width < 768;
-    return InkWell(
-      onTap: () => _showIndicatorsModal(context),
-      borderRadius: BorderRadius.circular(4),
-      child: Container(
-        padding: EdgeInsets.symmetric(
-          horizontal: isMobile ? 7 : 10,
-          vertical: isMobile ? 3.5 : 5,
-        ),
-        decoration: BoxDecoration(
-          color: theme.cardColor.withValues(alpha: 0.6),
-          borderRadius: BorderRadius.circular(5),
-          border: Border.all(color: theme.dividerColor.withValues(alpha: 0.4)),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding: EdgeInsets.symmetric(
-                horizontal: isMobile ? 4 : 5,
-                vertical: 1.5,
-              ),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.primary.withValues(alpha: 0.18),
-                borderRadius: BorderRadius.circular(3),
-              ),
-              child: Text(
-                'fx',
-                style: TextStyle(
-                  fontSize: isMobile ? 11 : 12,
-                  fontWeight: FontWeight.w800,
-                  fontStyle: FontStyle.italic,
-                  color: theme.colorScheme.primary,
+    return Tooltip(
+      message: 'Indicators & Studies',
+      child: InkWell(
+        onTap: () => _showIndicatorsModal(context),
+        borderRadius: BorderRadius.circular(4),
+        child: Container(
+          padding: EdgeInsets.symmetric(
+            horizontal: isMobile ? 7 : 10,
+            vertical: isMobile ? 3.5 : 5,
+          ),
+          decoration: BoxDecoration(
+            color: theme.cardColor.withValues(alpha: 0.6),
+            borderRadius: BorderRadius.circular(5),
+            border: Border.all(color: theme.dividerColor.withValues(alpha: 0.4)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: EdgeInsets.symmetric(
+                  horizontal: isMobile ? 4 : 5,
+                  vertical: 1.5,
+                ),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primary.withValues(alpha: 0.18),
+                  borderRadius: BorderRadius.circular(3),
+                ),
+                child: Text(
+                  'fx',
+                  style: TextStyle(
+                    fontSize: isMobile ? 11 : 12,
+                    fontWeight: FontWeight.w800,
+                    fontStyle: FontStyle.italic,
+                    color: theme.colorScheme.primary,
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(width: 5),
-            Text(
-              'Indicators',
-              style: TextStyle(
-                fontSize: isMobile ? 12 : 13,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ],
+              if (!isMobile) ...[
+                const SizedBox(width: 5),
+                Text(
+                  'Indicators',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ],
+          ),
         ),
       ),
     );
@@ -1552,38 +1391,113 @@ class _SlimTopBarState extends ConsumerState<_SlimTopBar> {
 
   Widget _buildCompareButton(
     BuildContext context,
+    ChartTerminalState state,
     ChartTerminalController ctrl,
   ) {
     final theme = Theme.of(context);
     final isMobile = MediaQuery.sizeOf(context).width < 768;
+    final activePane = state.active;
+    final compared = activePane.comparisonSymbols;
+    final hasComparisons = activePane.hasComparisons;
+    final currentSymbol = activePane.symbol.toUpperCase();
+
+    const benchmarks = <String, String>{
+      'NIFTY 50': 'NIFTY 50',
+      'BANKNIFTY': 'NIFTY BANK',
+      'SENSEX': 'BSE SENSEX',
+      'NIFTY IT': 'NIFTY IT',
+      'FINNIFTY': 'NIFTY FIN SERVICE',
+      'MIDCPNIFTY': 'NIFTY MIDCAP',
+    };
+
     return PopupMenuButton<String>(
-      tooltip: 'Compare with Benchmark',
-      onSelected: (sym) => ctrl.selectSymbol(sym),
+      tooltip: 'Compare with Benchmark / Overlay Symbol',
+      onSelected: (val) {
+        if (val == '__CLEAR__') {
+          ctrl.clearComparisons();
+        } else if (val == '__SEARCH__') {
+          _showAddComparisonDialog(context, ctrl, state);
+        } else {
+          ctrl.toggleComparison(val);
+        }
+      },
       itemBuilder: (context) => [
-        const PopupMenuItem(
+        const PopupMenuItem<String>(
           enabled: false,
           height: 26,
           child: Text(
-            'Benchmarks',
+            'Benchmarks & Overlay',
             style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700),
           ),
         ),
-        const PopupMenuItem(
-          value: 'NIFTY 50',
-          child: Text('NIFTY 50', style: TextStyle(fontSize: 12)),
+        for (final entry in benchmarks.entries) ...[
+          () {
+            final key = entry.key;
+            final label = entry.value;
+            final isCurrent = key.toUpperCase() == currentSymbol;
+            final isCompared =
+                compared.any((s) => s.toUpperCase() == key.toUpperCase());
+            return PopupMenuItem<String>(
+              value: key,
+              enabled: !isCurrent,
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      isCurrent ? '$label (Current)' : label,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight:
+                            isCompared ? FontWeight.w700 : FontWeight.w400,
+                        color: isCompared ? theme.colorScheme.primary : null,
+                      ),
+                    ),
+                  ),
+                  if (isCompared)
+                    Icon(
+                      Icons.check,
+                      size: 16,
+                      color: theme.colorScheme.primary,
+                    ),
+                ],
+              ),
+            );
+          }(),
+        ],
+        const PopupMenuDivider(),
+        const PopupMenuItem<String>(
+          value: '__SEARCH__',
+          child: Row(
+            children: [
+              Icon(Icons.search, size: 16),
+              SizedBox(width: 8),
+              Text(
+                'Search symbol to compare...',
+                style: TextStyle(fontSize: 12),
+              ),
+            ],
+          ),
         ),
-        const PopupMenuItem(
-          value: 'BANKNIFTY',
-          child: Text('NIFTY BANK', style: TextStyle(fontSize: 12)),
-        ),
-        const PopupMenuItem(
-          value: 'SENSEX',
-          child: Text('BSE SENSEX', style: TextStyle(fontSize: 12)),
-        ),
-        const PopupMenuItem(
-          value: 'NIFTY IT',
-          child: Text('NIFTY IT', style: TextStyle(fontSize: 12)),
-        ),
+        if (hasComparisons) ...[
+          const PopupMenuDivider(),
+          PopupMenuItem<String>(
+            value: '__CLEAR__',
+            child: Row(
+              children: [
+                Icon(Icons.close, size: 16, color: theme.colorScheme.error),
+                const SizedBox(width: 8),
+                Text(
+                  'Exit Comparison',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: theme.colorScheme.error,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ],
       child: Container(
         padding: EdgeInsets.symmetric(
@@ -1591,25 +1505,154 @@ class _SlimTopBarState extends ConsumerState<_SlimTopBar> {
           vertical: isMobile ? 3.5 : 5,
         ),
         decoration: BoxDecoration(
-          color: theme.cardColor.withValues(alpha: 0.6),
+          color: hasComparisons
+              ? theme.colorScheme.primary.withValues(alpha: 0.14)
+              : theme.cardColor.withValues(alpha: 0.6),
           borderRadius: BorderRadius.circular(5),
-          border: Border.all(color: theme.dividerColor.withValues(alpha: 0.4)),
+          border: Border.all(
+            color: hasComparisons
+                ? theme.colorScheme.primary
+                : theme.dividerColor.withValues(alpha: 0.4),
+          ),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.add, size: isMobile ? 15 : 16, color: theme.colorScheme.primary),
-            const SizedBox(width: 4),
-            Text(
-              'Compare',
-              style: TextStyle(
-                fontSize: isMobile ? 12 : 13,
-                fontWeight: FontWeight.w700,
-              ),
+            Icon(
+              hasComparisons ? Icons.stacked_line_chart : Icons.add,
+              size: isMobile ? 15 : 16,
+              color: theme.colorScheme.primary,
             ),
+            if (!isMobile) ...[
+              const SizedBox(width: 4),
+              Text(
+                hasComparisons ? 'Compare (${compared.length})' : 'Compare',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: hasComparisons ? theme.colorScheme.primary : null,
+                ),
+              ),
+            ] else if (hasComparisons) ...[
+              const SizedBox(width: 3),
+              Text(
+                '${compared.length}',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                  color: theme.colorScheme.primary,
+                ),
+              ),
+            ],
           ],
         ),
       ),
+    );
+  }
+
+  void _showAddComparisonDialog(
+    BuildContext context,
+    ChartTerminalController ctrl,
+    ChartTerminalState state,
+  ) {
+    final textCtrl = TextEditingController();
+    showDialog<void>(
+      context: context,
+      builder: (dialogCtx) {
+        final theme = Theme.of(dialogCtx);
+        return AlertDialog(
+          title: const Text(
+            'Compare Symbol',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              TextField(
+                controller: textCtrl,
+                autofocus: true,
+                textCapitalization: TextCapitalization.characters,
+                decoration: InputDecoration(
+                  hintText: 'Enter symbol (e.g. RELIANCE, TCS, INFY)',
+                  prefixIcon: const Icon(Icons.search, size: 20),
+                  isDense: true,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                onSubmitted: (val) {
+                  final sym = val.trim().toUpperCase();
+                  if (sym.isNotEmpty) {
+                    ctrl.addComparison(sym);
+                    Navigator.of(dialogCtx).pop();
+                  }
+                },
+              ),
+              if (state.recentSearches.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                const Text(
+                  'Recent Symbols',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: [
+                    for (final sym in state.recentSearches.take(6))
+                      InkWell(
+                        onTap: () {
+                          ctrl.addComparison(sym);
+                          Navigator.of(dialogCtx).pop();
+                        },
+                        borderRadius: BorderRadius.circular(4),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: theme.cardColor,
+                            borderRadius: BorderRadius.circular(4),
+                            border: Border.all(color: theme.dividerColor),
+                          ),
+                          child: Text(
+                            sym,
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ],
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogCtx).pop(),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () {
+                final sym = textCtrl.text.trim().toUpperCase();
+                if (sym.isNotEmpty) {
+                  ctrl.addComparison(sym);
+                  Navigator.of(dialogCtx).pop();
+                }
+              },
+              child: const Text('Add to Compare'),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -1701,3 +1744,61 @@ class _MissingPane extends StatelessWidget {
     );
   }
 }
+
+class _MobileDrawRailExpandButton extends StatelessWidget {
+  const _MobileDrawRailExpandButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final bg = theme.colorScheme.surfaceContainerHighest;
+    final primary = theme.colorScheme.primary;
+    final edge = theme.dividerColor.withValues(alpha: 0.55);
+
+    return Tooltip(
+      message: 'Expand drawing tools',
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: const BorderRadius.only(
+            topRight: Radius.circular(8),
+            bottomRight: Radius.circular(8),
+          ),
+          child: Container(
+            width: 26,
+            height: 34,
+            decoration: BoxDecoration(
+              color: bg.withValues(alpha: 0.95),
+              borderRadius: const BorderRadius.only(
+                topRight: Radius.circular(8),
+                bottomRight: Radius.circular(8),
+              ),
+              border: Border(
+                top: BorderSide(color: edge),
+                right: BorderSide(color: edge),
+                bottom: BorderSide(color: edge),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.25),
+                  blurRadius: 4,
+                  offset: const Offset(1, 1),
+                ),
+              ],
+            ),
+            alignment: Alignment.center,
+            child: Icon(
+              Icons.chevron_right,
+              size: 20,
+              color: primary,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+

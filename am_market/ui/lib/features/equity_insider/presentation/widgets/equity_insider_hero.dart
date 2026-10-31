@@ -155,9 +155,6 @@ class EquityInsiderHeroBar extends ConsumerWidget {
               );
             }
 
-            final exchangeBadgeColor = activeExchange == 'BSE'
-                ? context.colors.statusWarning
-                : context.marketTheme.chartBlue;
             final absChange = data.dayChange != null
                 ? data.dayChange!.abs().toStringAsFixed(2)
                 : '0.00';
@@ -182,6 +179,7 @@ class EquityInsiderHeroBar extends ConsumerWidget {
                         children: [
                           Text(
                             data.symbol ?? symbol,
+                            key: const Key('ei-header-ticker'),
                             style: TextStyle(
                               fontSize: 22,
                               fontWeight: FontWeight.w700,
@@ -189,20 +187,7 @@ class EquityInsiderHeroBar extends ConsumerWidget {
                               letterSpacing: -0.5,
                             ),
                           ),
-                          _buildBadge(
-                            context,
-                            activeExchange,
-                            customColor: exchangeBadgeColor,
-                          ),
-                          if (data.sector != null && data.sector!.isNotEmpty)
-                            _buildBadge(context, data.sector!, isNeutral: true),
-                          if (data.industry != null && data.industry!.isNotEmpty)
-                            _buildBadge(
-                              context,
-                              data.industry!,
-                              isNeutral: true,
-                            ),
-                          _buildExchangeToggle(context, ref),
+                          _buildCompactExchangeChips(context, ref),
                         ],
                       ),
                       const SizedBox(height: 3),
@@ -276,7 +261,7 @@ class EquityInsiderHeroBar extends ConsumerWidget {
           context,
           label: 'NSE',
           selected: activeExchange == 'NSE',
-          color: context.marketTheme.chartBlue,
+          color: ModuleColors.market,
           onTap: () =>
               ref.read(selectedExchangeProvider.notifier).setExchange('NSE'),
         ),
@@ -384,77 +369,6 @@ class EquityInsiderHeroBar extends ConsumerWidget {
     );
   }
 
-  Widget _buildExchangeToggle(BuildContext context, WidgetRef ref) {
-    final activeExchange = ref.watch(selectedExchangeProvider);
-    final isBse = activeExchange == 'BSE';
-
-    return Container(
-      height: 26,
-      padding: const EdgeInsets.all(2),
-      decoration: BoxDecoration(
-        color: context.cardColor,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: isBse
-              ? context.colors.statusWarning.withValues(alpha: 0.5)
-              : context.marketTheme.chartBlue.withValues(alpha: 0.5),
-          width: 1,
-        ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _buildToggleSegment(
-            context,
-            ref,
-            label: 'NSE',
-            isSelected: !isBse,
-            activeColor: context.marketTheme.chartBlue,
-          ),
-          _buildToggleSegment(
-            context,
-            ref,
-            label: 'BSE',
-            isSelected: isBse,
-            activeColor: context.colors.statusWarning,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildToggleSegment(
-    BuildContext context,
-    WidgetRef ref, {
-    required String label,
-    required bool isSelected,
-    required Color activeColor,
-  }) {
-    return GestureDetector(
-      onTap: () {
-        if (!isSelected) {
-          ref.read(selectedExchangeProvider.notifier).setExchange(label);
-        }
-      },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
-        decoration: BoxDecoration(
-          color: isSelected ? activeColor.withValues(alpha: 0.2) : Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 11,
-            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-            color: isSelected ? activeColor : context.textTertiary,
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _buildLogo(BuildContext context, String name, {double size = 44}) {
     final initials = name.trim().isNotEmpty
         ? name
@@ -494,48 +408,6 @@ class EquityInsiderHeroBar extends ConsumerWidget {
     final formatter = NumberFormat('#,##,##0.00', 'en_IN');
     return formatter.format(val);
   }
-
-  Widget _buildBadge(
-    BuildContext context,
-    String text, {
-    bool isPos = false,
-    bool isNeg = false,
-    bool isNeutral = false,
-    Color? customColor,
-  }) {
-    Color bg;
-    Color fg;
-    if (customColor != null) {
-      fg = customColor;
-      bg = fg.withValues(alpha: 0.15);
-    } else if (isPos) {
-      fg = context.marketTheme.positive;
-      bg = fg.withValues(alpha: 0.10);
-    } else if (isNeg) {
-      fg = context.marketTheme.negative;
-      bg = fg.withValues(alpha: 0.10);
-    } else {
-      fg = context.marketTheme.textMuted;
-      bg = fg.withValues(alpha: 0.15);
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: fg.withValues(alpha: 0.3)),
-      ),
-      child: Text(
-        text,
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
-          color: fg,
-        ),
-      ),
-    );
-  }
 }
 
 /// Watchlist CTA shared by desktop sticky bar and mobile scroll block.
@@ -547,98 +419,98 @@ Widget _buildWatchlistButton(
 }) {
   final statusAsync = ref.watch(watchlistCheckStatusProvider(symbol));
 
+  Widget addCta() {
+    return SizedBox(
+      height: 28,
+      child: OutlinedButton.icon(
+        onPressed: () {
+          AddToWatchlistPopup.show(context, symbol);
+        },
+        icon: Icon(Icons.add, size: 14, color: ModuleColors.market),
+        label: Text(
+          compact ? 'Watchlist' : 'Add to Watchlist',
+          style: TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.w600,
+            color: ModuleColors.market,
+          ),
+        ),
+        style: OutlinedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
+          visualDensity: VisualDensity.compact,
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          side: BorderSide(
+            color: ModuleColors.market.withValues(alpha: 0.4),
+            width: 1,
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(6),
+          ),
+        ),
+      ),
+    );
+  }
+
   return statusAsync.when(
     data: (statuses) {
       final isAdded = statuses.any((s) => s.containsSymbol);
       final addedToWatchlistName =
           isAdded ? statuses.firstWhere((s) => s.containsSymbol).name : '';
 
-        if (isAdded) {
-          final onPrimary = context.colors.actionPrimaryFg;
-          return SizedBox(
-            height: 28,
-            child: FilledButton.icon(
-              onPressed: () async {
-                final confirm = await ConfirmationDialog.show(
-                  context: context,
-                  title: 'Remove Stock',
-                  subtitle: 'Watchlist Management',
-                  message:
-                      'Are you sure you want to remove $symbol from $addedToWatchlistName?',
-                  icon: Icons.bookmark_remove_rounded,
-                  confirmText: 'Remove',
-                  isDestructive: true,
-                );
-                if (confirm) {
-                  final wid =
-                      statuses.firstWhere((s) => s.containsSymbol).watchlistId;
-                  ref.read(watchlistsProvider.notifier).removeStock(wid, symbol);
-                  ref.invalidate(watchlistCheckStatusProvider(symbol));
-                }
-              },
-              icon: Icon(
-                Icons.bookmark_added_rounded,
-                size: 14,
+      if (isAdded) {
+        final onPrimary = context.colors.actionPrimaryFg;
+        return SizedBox(
+          height: 28,
+          child: FilledButton.icon(
+            onPressed: () async {
+              final confirm = await ConfirmationDialog.show(
+                context: context,
+                title: 'Remove Stock',
+                subtitle: 'Watchlist Management',
+                message:
+                    'Are you sure you want to remove $symbol from $addedToWatchlistName?',
+                icon: Icons.bookmark_remove_rounded,
+                confirmText: 'Remove',
+                isDestructive: true,
+              );
+              if (confirm) {
+                final wid =
+                    statuses.firstWhere((s) => s.containsSymbol).watchlistId;
+                ref.read(watchlistsProvider.notifier).removeStock(wid, symbol);
+                ref.invalidate(watchlistCheckStatusProvider(symbol));
+              }
+            },
+            icon: Icon(
+              Icons.bookmark_added_rounded,
+              size: 14,
+              color: onPrimary,
+            ),
+            label: Text(
+              compact ? 'Added' : 'Already Added',
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
                 color: onPrimary,
               ),
-              label: Text(
-                compact ? 'Added' : 'Already Added',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: onPrimary,
-                ),
-              ),
-              style: FilledButton.styleFrom(
-                backgroundColor: ModuleColors.market,
-                foregroundColor: onPrimary,
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
-                visualDensity: VisualDensity.compact,
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(6),
-                ),
+            ),
+            style: FilledButton.styleFrom(
+              backgroundColor: ModuleColors.market,
+              foregroundColor: onPrimary,
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
+              visualDensity: VisualDensity.compact,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(6),
               ),
             ),
-          );
-        }
+          ),
+        );
+      }
 
-      return SizedBox(
-        height: 28,
-        child: OutlinedButton.icon(
-          onPressed: () {
-            AddToWatchlistPopup.show(context, symbol);
-          },
-          icon: Icon(Icons.add, size: 14, color: ModuleColors.market),
-          label: Text(
-            compact ? 'Watchlist' : 'Add to Watchlist',
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: ModuleColors.market,
-            ),
-          ),
-          style: OutlinedButton.styleFrom(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
-            visualDensity: VisualDensity.compact,
-            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            side: BorderSide(
-              color: ModuleColors.market.withValues(alpha: 0.4),
-              width: 1,
-            ),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(6),
-            ),
-          ),
-        ),
-      );
+      return addCta();
     },
-    loading: () => const SizedBox(
-      height: 28,
-      width: 100,
-      child: Center(child: CircularProgressIndicator()),
-    ),
-    error: (_, __) => const SizedBox.shrink(),
+    loading: addCta,
+    error: (_, __) => addCta(),
   );
 }
 
@@ -726,7 +598,7 @@ class _MobileMetaBadge extends StatelessWidget {
       child: Text(
         text,
         style: TextStyle(
-          fontSize: 11,
+          fontSize: 10,
           fontWeight: FontWeight.w600,
           color: fg,
         ),

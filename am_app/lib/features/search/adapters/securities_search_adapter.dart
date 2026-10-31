@@ -2,6 +2,8 @@ import 'package:am_common/am_common.dart' hide ApiClient;
 import 'package:am_market_sdk/market/api.dart';
 import 'package:get_it/get_it.dart';
 
+import '../search_relevance.dart';
+
 class SecuritiesHit {
   const SecuritiesHit({
     required this.symbol,
@@ -16,7 +18,7 @@ class SecuritiesHit {
 
 /// Live instrument search via market gateway (same path as SmartSearchAnchor).
 class SecuritiesSearchAdapter {
-  SecuritiesSearchAdapter({this.limit = 8});
+  SecuritiesSearchAdapter({this.limit = SearchRelevance.fetchLimit});
 
   final int limit;
 

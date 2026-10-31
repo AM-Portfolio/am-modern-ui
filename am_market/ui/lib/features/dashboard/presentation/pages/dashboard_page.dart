@@ -138,6 +138,7 @@ class _MarketContentState extends ConsumerState<MarketContent> {
   late final Widget _dashboardPage = const UserDashboardPage();
   final GlobalKey<EquityInsiderPageState> _equityInsiderKey =
       GlobalKey<EquityInsiderPageState>();
+  final GlobalKey<FoPageState> _foPageKey = GlobalKey<FoPageState>();
 
   static const _staticTitleToSlug = {
     'Paper': 'paper',
@@ -284,6 +285,12 @@ class _MarketContentState extends ConsumerState<MarketContent> {
       if (!mounted) return;
       final currentTitle = _swipeController.currentItem.title;
 
+      if (currentTitle == 'Futures & Options') {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _foPageKey.currentState?.resetToOptionChain();
+        });
+      }
+
       // Guests cannot land on Paper via swipe — bounce back + dialog.
       if (currentTitle == 'Paper') {
         final auth = context.read<AuthCubit>().state;
@@ -372,6 +379,19 @@ class _MarketContentState extends ConsumerState<MarketContent> {
           });
         }
 
+        final selectedTitle = _swipeController.items.isEmpty
+            ? ''
+            : _swipeController
+                .items[_swipeController.currentIndex.clamp(
+                0,
+                _swipeController.items.length - 1,
+              )]
+                .title;
+        // Market Analysis / Heatmap: use Global Search from shell only.
+        final hideSearchPin = selectedTitle == 'Heatmap' ||
+            selectedTitle == 'Market Analysis' ||
+            selectedTitle == 'Heatmap Explorer';
+
         return UnifiedSidebarScaffold(
           module: ModuleType.market,
           onBackToGlobal: widget.onBack,
@@ -382,6 +402,7 @@ class _MarketContentState extends ConsumerState<MarketContent> {
           // relying on hidden scroll chrome.
           autoHideMobileTabsOnScroll: false,
           showMobileMenuButton: false,
+          enableMobileSearch: !hideSearchPin,
           sections: _buildSidebarSections(
             provider,
             viewModeProvider,
@@ -628,6 +649,34 @@ class _MarketContentState extends ConsumerState<MarketContent> {
     ];
   }
 
+  static String? _shortTitleFor(String title) {
+    switch (title) {
+      case 'All Indices':
+        return 'Indices';
+      case 'Market Analysis':
+      case 'Heatmap':
+        return 'Analysis';
+      case 'Heatmap Explorer':
+        return 'Explorer';
+      case 'Equity Insider':
+        return 'Insider';
+      case 'Futures & Options':
+        return 'F&O';
+      case 'IPO Center':
+        return 'IPO';
+      case 'Watch List':
+        return 'Watchlist';
+      case 'Instrument Explorer':
+        return 'Instruments';
+      case 'Security Explorer':
+        return 'Security';
+      case 'ETF Explorer':
+        return 'ETF';
+      default:
+        return null;
+    }
+  }
+
   SecondarySidebarItem _createSidebarItem(
     int index,
     String title,
@@ -636,6 +685,7 @@ class _MarketContentState extends ConsumerState<MarketContent> {
   ) =>
       SecondarySidebarItem(
         title: title,
+        shortTitle: _shortTitleFor(title),
         icon: icon,
         subtitle: subtitle,
         isSelected: _swipeController.currentIndex == index,
@@ -739,7 +789,7 @@ class _MarketContentState extends ConsumerState<MarketContent> {
         title: 'Futures & Options',
         subtitle: 'Futures and Options',
         icon: Icons.candlestick_chart_rounded,
-        page: wrap(const FoPage()),
+        page: wrap(FoPage(key: _foPageKey)),
         accentColor: accentColor,
       ),
       if (isIpoEnabled)
@@ -868,7 +918,7 @@ class _MarketContentState extends ConsumerState<MarketContent> {
         title: 'Futures & Options',
         subtitle: 'F&O contracts & chain',
         icon: Icons.candlestick_chart_rounded,
-        page: wrap(const FoPage()),
+        page: wrap(FoPage(key: _foPageKey)),
         accentColor: accentColor,
       ),
       if (isIpoEnabled)

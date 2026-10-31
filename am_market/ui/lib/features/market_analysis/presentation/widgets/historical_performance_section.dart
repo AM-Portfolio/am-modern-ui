@@ -67,7 +67,7 @@ class _HistoricalPerformanceSectionState extends State<HistoricalPerformanceSect
                   widget.focusSymbol != null &&
                           widget.focusSymbol!.trim().isNotEmpty
                       ? 'Historical Monthly Performance · ${widget.focusSymbol}'
-                      : 'Historical Monthly Performance (10 Years)',
+                      : 'Historical Monthly Performance',
                   style: AmTextStyles.h6.copyWith(
                     color: context.colors.textPrimary,
                     fontSize: isMobile ? 14 : 18,
@@ -194,6 +194,7 @@ class _HistoricalPerformanceSectionState extends State<HistoricalPerformanceSect
                             groupedData: groupedData,
                             rowHeight: 34.0,
                             isDark: isDark,
+                            focusSymbol: widget.focusSymbol,
                           ),
                         ),
                       ],
@@ -309,7 +310,12 @@ class _HistoricalPerformanceSectionState extends State<HistoricalPerformanceSect
                                                 child: Padding(
                                                   padding: const EdgeInsets.symmetric(horizontal: 4.0),
                                                   child: item != null 
-                                                    ? MonthlyPerformanceCard(data: item, isCompactTable: true)
+                                                    ? MonthlyPerformanceCard(
+                                                        data: item,
+                                                        isCompactTable: true,
+                                                        focusSymbol:
+                                                            widget.focusSymbol,
+                                                      )
                                                     : Container(decoration: BoxDecoration(color: context.colors.surface.withValues(alpha: 0.5), borderRadius: BorderRadius.circular(8))),
                                                 ),
                                               );

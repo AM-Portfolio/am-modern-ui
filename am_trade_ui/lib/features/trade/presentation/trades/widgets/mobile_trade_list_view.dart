@@ -6,10 +6,12 @@ import 'package:flutter_animate/flutter_animate.dart';
 class MobileTradeListView extends StatelessWidget {
   final List<TradeHoldingViewModel> holdings;
   final Function(TradeHoldingViewModel) onSelectTrade;
+  final Function(TradeHoldingViewModel)? onJournalThis;
 
   const MobileTradeListView({
     required this.holdings,
     required this.onSelectTrade,
+    this.onJournalThis,
     super.key,
   });
 
@@ -67,6 +69,7 @@ class MobileTradeListView extends StatelessWidget {
   }
 
   Widget _buildFilterSection(BuildContext context) {
+    final accent = ModuleColorProvider.maybeOf(context) ?? ModuleColors.trade;
     return Container(
        height: 70, // Container for the whole filter block
        padding: const EdgeInsets.all(12),
@@ -79,8 +82,11 @@ class MobileTradeListView extends StatelessWidget {
              // Filter Icon
              Container(
                 height: 48, width: 48,
-                decoration: BoxDecoration(color: ModuleColors.trade.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
-                child: Icon(Icons.tune, color: ModuleColors.trade),
+                decoration: BoxDecoration(
+                  color: accent.withValues(alpha: 0.1),
+                  borderRadius: AppRadii.input,
+                ),
+                child: Icon(Icons.tune, color: accent),
              ),
              const SizedBox(width: 12),
              Expanded(
@@ -98,12 +104,15 @@ class MobileTradeListView extends StatelessWidget {
                       // Add Button
                       Container(
                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                         decoration: BoxDecoration(color: ModuleColors.trade.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
+                         decoration: BoxDecoration(
+                           color: accent.withValues(alpha: 0.1),
+                           borderRadius: AppRadii.button,
+                         ),
                          child: Row(
                             children: [
-                               Icon(Icons.add, size: 16, color: ModuleColors.trade),
+                               Icon(Icons.add, size: 16, color: accent),
                                const SizedBox(width: 4),
-                               Text("+ Add", style: TextStyle(color: ModuleColors.trade, fontWeight: FontWeight.bold))
+                               Text('+ Add', style: TextStyle(color: accent, fontWeight: FontWeight.bold))
                             ],
                          ),
                       ),
@@ -176,19 +185,9 @@ class MobileTradeListView extends StatelessWidget {
         textPillColor = context.colors.statusNeutral;
      }
 
-     final isDark = Theme.of(context).brightness == Brightness.dark;
-     final symbolColors = [
-        Colors.blue.withOpacity(0.1),
-        Colors.purple.withOpacity(0.1),
-        Colors.orange.withOpacity(0.1),
-        Colors.teal.withOpacity(0.1)
-     ];
-     final symbolTextColors = [
-        isDark ? Colors.blue.shade300 : Colors.blue.shade700,
-        isDark ? Colors.purple.shade300 : Colors.purple.shade700,
-        isDark ? Colors.orange.shade300 : Colors.orange.shade800,
-        isDark ? Colors.teal.shade300 : Colors.teal.shade700
-     ];
+     final palette = IntelligenceColors.chartPalette;
+     final symbolColors = palette.map((c) => c.withValues(alpha: 0.12)).toList();
+     final symbolTextColors = palette;
      final colorIndex = holding.displaySymbol.length % symbolColors.length;
 
      return Container(
@@ -199,7 +198,7 @@ class MobileTradeListView extends StatelessWidget {
            borderRadius: BorderRadius.circular(20),
            border: Border.all(color: context.colors.border),
            boxShadow: [
-              BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4))
+              BoxShadow(color: context.shadow(0.02), blurRadius: 10, offset: const Offset(0, 4))
            ]
         ),
         child: InkWell(
@@ -260,7 +259,24 @@ class MobileTradeListView extends StatelessWidget {
                        const SizedBox(height: 2),
                        Text("Qty: ${_formatCompactQty(holding.quantity)}", style: TextStyle(color: context.textSecondary, fontSize: 11)),
                     ],
-                 )
+                 ),
+                 if (onJournalThis != null) ...[
+                   const SizedBox(width: 4),
+                   IconButton(
+                     icon: Icon(
+                       Icons.menu_book_outlined,
+                       size: 20,
+                       color: context.textSecondary,
+                     ),
+                     tooltip: 'Journal this',
+                     onPressed: () => onJournalThis!(holding),
+                     padding: EdgeInsets.zero,
+                     constraints: const BoxConstraints(
+                       minWidth: 36,
+                       minHeight: 36,
+                     ),
+                   ),
+                 ],
               ],
            ),
         ),

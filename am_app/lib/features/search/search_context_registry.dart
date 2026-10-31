@@ -84,8 +84,8 @@ class SearchContextRegistry {
       case SearchContext.trade:
         return const SearchContextCopy(
           bannerTitle: 'Searching in Trade',
-          bannerSubtitle: 'Trading tools and instruments first.',
-          categoryBoost: {'Trade': 90, 'Action': 60, 'Market': 40},
+          bannerSubtitle: 'Journal notes, tools and instruments first.',
+          categoryBoost: {'Journal': 95, 'Trade': 90, 'Action': 60, 'Market': 40},
         );
       case SearchContext.dashboard:
       case SearchContext.other:
@@ -115,7 +115,7 @@ class SearchContextRegistry {
       case SearchContext.chart:
         return 'Search chart symbols…';
       case SearchContext.portfolio:
-        return 'Search portfolios & baskets…';
+        return 'Search holdings & baskets…';
       case SearchContext.market:
         return 'Search markets & symbols…';
       case SearchContext.trade:

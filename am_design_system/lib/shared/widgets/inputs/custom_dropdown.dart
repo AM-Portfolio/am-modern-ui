@@ -23,12 +23,16 @@ class CustomDropdown<T> extends StatefulWidget {
     this.borderRadius = 12,
     this.contentPadding = const EdgeInsets.symmetric(horizontal: 12),
     this.backgroundColor,
+    this.menuBackgroundColor,
     this.borderColor,
     this.textColor,
     this.enabled = true,
     this.enableGlass = false,
     this.menuMaxHeight = 300,
     this.menuMaxWidth,
+    this.leading,
+    this.trailingDivider = false,
+    this.selectedItemBuilder,
   });
 
   /// Current selected value
@@ -70,8 +74,11 @@ class CustomDropdown<T> extends StatefulWidget {
   /// Padding inside the container
   final EdgeInsets contentPadding;
 
-  /// Background color override
+  /// Background color override (closed trigger)
   final Color? backgroundColor;
+
+  /// Open menu panel color. Defaults to [backgroundColor] or theme surface.
+  final Color? menuBackgroundColor;
 
   /// Border color override
   final Color? borderColor;
@@ -91,6 +98,16 @@ class CustomDropdown<T> extends StatefulWidget {
   /// Max width of the open menu. When null, compact expanded triggers cap near
   /// the button width (not a full 280px panel).
   final double? menuMaxWidth;
+
+  /// Optional leading widget on the closed trigger (not copied into menu rows).
+  final Widget? leading;
+
+  /// Hairline before the chevron on the closed trigger.
+  final bool trailingDivider;
+
+  /// Optional closed-trigger content. When set, replaces the selected item’s
+  /// [DropdownMenuItem.child] on the trigger only (menu rows unchanged).
+  final Widget Function(BuildContext context, T? value)? selectedItemBuilder;
 
   @override
   State<CustomDropdown<T>> createState() => _CustomDropdownState<T>();
@@ -130,15 +147,18 @@ class _CustomDropdownState<T> extends State<CustomDropdown<T>> {
     final theme = Theme.of(context);
     final origin = renderBox.localToGlobal(Offset.zero);
     final screenWidth = MediaQuery.sizeOf(context).width;
-    // Pin menu to the right of the button when near the screen edge so
-    // long labels are not clipped off-screen.
-    final alignEnd = origin.dx + size.width > screenWidth * 0.62;
-    // Cap default at 280 for wide fields; compact expanded triggers stay near
-    // the button so 1D/1W menus are not half-screen wide.
+    // Wide expanded form fields: open under the left edge (right-pin looks
+    // detached on journal / full-width triggers). Compact chips still pin end
+    // when near the screen edge so labels are not clipped.
+    final alignEnd = size.width < 200 &&
+        origin.dx + size.width > screenWidth * 0.62;
+    // Prefer caller cap; else match wide expanded triggers; compact → 280.
     final defaultCap = widget.menuMaxWidth ??
-        (widget.isExpanded && size.width < 160
-            ? math.max(size.width, 120.0)
-            : 280.0);
+        (widget.isExpanded && size.width >= 160
+            ? size.width
+            : (widget.isExpanded && size.width < 160
+                ? math.max(size.width, 120.0)
+                : 280.0));
     final maxMenuWidth = math.min(screenWidth - 24, defaultCap);
     // Never allow minWidth > maxWidth (wide expanded fields used to crash).
     final preferredMin = widget.isExpanded
@@ -180,7 +200,8 @@ class _CustomDropdownState<T> extends State<CustomDropdown<T>> {
                               BorderRadius.circular(widget.borderRadius),
                         )
                       : BoxDecoration(
-                          color: widget.backgroundColor ??
+                          color: widget.menuBackgroundColor ??
+                              widget.backgroundColor ??
                               theme.colorScheme.surface,
                           borderRadius:
                               BorderRadius.circular(widget.borderRadius),
@@ -279,7 +300,9 @@ class _CustomDropdownState<T> extends State<CustomDropdown<T>> {
     final effectivePrimaryColor = widget.primaryColor ?? theme.primaryColor;
 
     Widget? displayWidget;
-    if (widget.value != null) {
+    if (widget.selectedItemBuilder != null) {
+      displayWidget = widget.selectedItemBuilder!(context, widget.value);
+    } else if (widget.value != null) {
       final selectedItem = widget.items.cast<DropdownMenuItem<T>?>().firstWhere(
         (item) => item?.value == widget.value,
         orElse: () => null,
@@ -302,22 +325,36 @@ class _CustomDropdownState<T> extends State<CustomDropdown<T>> {
       );
     }
 
+    final chevronColor = DropdownStyles.getIconColor(
+      context,
+      primaryColor: effectivePrimaryColor,
+      enabled: widget.enabled,
+    );
+
     Widget dropdownBody = Row(
       mainAxisSize: widget.isExpanded ? MainAxisSize.max : MainAxisSize.min,
       mainAxisAlignment: widget.isExpanded
           ? MainAxisAlignment.spaceBetween
           : MainAxisAlignment.start,
       children: [
+        if (widget.leading != null) ...[
+          widget.leading!,
+          const SizedBox(width: 4),
+        ],
         if (displayWidget != null)
           widget.isExpanded ? Expanded(child: displayWidget) : displayWidget,
         if (!widget.isExpanded) const SizedBox(width: 4),
+        if (widget.trailingDivider) ...[
+          Container(
+            width: 1,
+            height: widget.iconSize,
+            margin: const EdgeInsets.symmetric(horizontal: 4),
+            color: (widget.borderColor ?? chevronColor).withValues(alpha: 0.45),
+          ),
+        ],
         Icon(
           widget.icon ?? (_isOpen ? Icons.expand_less : Icons.expand_more),
-          color: DropdownStyles.getIconColor(
-            context,
-            primaryColor: effectivePrimaryColor,
-            enabled: widget.enabled,
-          ),
+          color: chevronColor,
           size: widget.iconSize,
         ),
       ],
@@ -400,7 +437,12 @@ extension DropdownItemHelper<T> on T {
     double fontSize = 14,
   }) => DropdownMenuItem<T>(
     value: this,
-    child: Text(text, style: TextStyle(fontSize: fontSize)),
+    child: Text(
+      text,
+      style: TextStyle(fontSize: fontSize),
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+    ),
   );
 }
 

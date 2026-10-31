@@ -49,7 +49,7 @@ abstract class HeatmapLayoutBuilder {
     }
 
     final tileColor = getTileColor(context, tile, data);
-    final textColor = getTextColor(tileColor);
+    final textColor = getTextColor(context, tileColor);
     final config = data.configuration;
 
     return GestureDetector(
@@ -368,60 +368,87 @@ abstract class HeatmapLayoutBuilder {
         tile.name.toLowerCase().contains(needle);
   }
 
+  /// Resolves [AppColorsTheme] from the active Theme (centralized tokens).
+  AppColorsTheme themeColors(BuildContext context) {
+    final brightness = Theme.of(context).brightness;
+    return Theme.of(context).extension<AppColorsTheme>() ??
+        (brightness == Brightness.dark
+            ? AppColorsTheme.dark
+            : AppColorsTheme.light);
+  }
+
   /// Gets the color for a heatmap tile based on configuration
   Color getTileColor(
     BuildContext context,
     HeatmapTileData tile,
     HeatmapData data,
   ) {
+    final colors = themeColors(context);
     switch (data.configuration.colorScheme) {
       case HeatmapColorSchemeType.performance:
         return getPerformanceColor(context, tile.performance);
       case HeatmapColorSchemeType.custom:
-        return tile.customColor ?? Colors.grey.shade300;
+        return tile.customColor ?? colors.statusNeutral;
       case HeatmapColorSchemeType.weightage:
-        return getWeightageColor(tile.weightage);
+        return getWeightageColor(context, tile.weightage);
       case HeatmapColorSchemeType.neutral:
-        return Colors.grey.shade300;
+        return colors.statusNeutral;
     }
   }
 
-  /// Gets color based on performance using theme market tokens.
+  /// Flat / near-zero day — muted theme surface (never [statusNeutral] orange).
+  Color getMarketFlatColor(BuildContext context) {
+    final colors = themeColors(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Color.lerp(
+      colors.cardSurface,
+      colors.textTertiary,
+      isDark ? 0.38 : 0.28,
+    )!;
+  }
+
+  /// Performance tint from market tokens + global theme (no brand wash).
   Color getPerformanceColor(BuildContext context, double changePercent) {
-    final intensity = (changePercent.abs() / 5.0).clamp(0.0, 1.0);
-    final colors = Theme.of(context).extension<AppColorsTheme>();
-    final positive =
-        colors?.marketPositiveIndicator ?? const Color(0xFF00C896);
-    final negative =
-        colors?.marketNegativeIndicator ?? const Color(0xFFF87171);
-    final neutral = colors?.statusNeutral ?? const Color(0xFF6B7280);
+    final intensity = (changePercent.abs() / 4.0).clamp(0.0, 1.0);
+    final colors = themeColors(context);
+    final positive = colors.marketPositiveIndicator;
+    final negative = colors.marketNegativeIndicator;
 
     if (changePercent > 0.05) {
       return Color.lerp(
-        positive.withValues(alpha: 0.55),
+        positive.withValues(alpha: 0.42),
         positive,
         intensity,
       )!;
-    } else if (changePercent < -0.05) {
+    }
+    if (changePercent < -0.05) {
       return Color.lerp(
-        negative.withValues(alpha: 0.55),
+        negative.withValues(alpha: 0.42),
         negative,
         intensity,
       )!;
     }
-    return neutral;
+    return getMarketFlatColor(context);
   }
 
-  /// Gets color based on weightage value
-  Color getWeightageColor(double weightage) {
+  /// Weightage tint using theme info / primary action tokens.
+  Color getWeightageColor(BuildContext context, double weightage) {
     final intensity = (weightage / 100).clamp(0.2, 1.0);
-    return Color.lerp(Colors.blue.shade100, Colors.blue.shade600, intensity)!;
+    final colors = themeColors(context);
+    return Color.lerp(
+      colors.statusInfo.withValues(alpha: 0.35),
+      colors.actionPrimaryBg,
+      intensity,
+    )!;
   }
 
-  /// Determines text color based on background luminance
-  Color getTextColor(Color backgroundColor) {
+  /// Contrast text from theme tokens by background luminance.
+  Color getTextColor(BuildContext context, Color backgroundColor) {
+    final colors = themeColors(context);
     final luminance = backgroundColor.computeLuminance();
-    return luminance > 0.5 ? Colors.black87 : Colors.white;
+    // Light tiles → dark ink (scaffold); dark tiles → light ink (textPrimary).
+    // Do not use actionPrimaryFg — that is brand FG and washes gold/pink themes.
+    return luminance > 0.5 ? colors.scaffoldBackground : colors.textPrimary;
   }
 
   /// Builds a unified heatmap tile card that adapts to different layout types
@@ -487,10 +514,11 @@ abstract class HeatmapLayoutBuilder {
   ) {
     final hierarchyLevel = _calculateHierarchyLevel(tile, data);
 
+    final colors = themeColors(context);
     return Container(
       decoration: BoxDecoration(
         border: hierarchyLevel > 0
-            ? Border.all(color: Colors.grey.shade400)
+            ? Border.all(color: colors.border)
             : null,
         borderRadius: BorderRadius.circular(4),
       ),
@@ -509,7 +537,7 @@ abstract class HeatmapLayoutBuilder {
             Positioned(
               top: 2,
               left: 2,
-              child: _buildHierarchyIndicator(hierarchyLevel),
+              child: _buildHierarchyIndicator(context, hierarchyLevel),
             ),
         ],
       ),
@@ -526,7 +554,8 @@ abstract class HeatmapLayoutBuilder {
     VoidCallback? onTilePressed,
   ) {
     final tileColor = getTileColor(context, tile, data);
-    final textColor = getTextColor(tileColor);
+    final textColor = getTextColor(context, tileColor);
+    final colors = themeColors(context);
     final hierarchyLevel = _calculateHierarchyLevel(tile, data);
 
     return GestureDetector(
@@ -536,10 +565,10 @@ abstract class HeatmapLayoutBuilder {
         decoration: BoxDecoration(
           color: tileColor,
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: Colors.white.withOpacity(0.3)),
+          border: Border.all(color: colors.border.withValues(alpha: 0.55)),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
+              color: colors.textPrimary.withValues(alpha: 0.08),
               blurRadius: 2,
               offset: const Offset(0, 1),
             ),
@@ -573,8 +602,8 @@ abstract class HeatmapLayoutBuilder {
   ) {
     final tileColor = getTileColor(context, tile, data);
     final isPositive = tile.performance >= 0;
-    // Always white text — all tile colors (green, red, neutral) are dark enough
-    const textColor = Colors.white;
+    final textColor = getTextColor(context, tileColor);
+    final colors = themeColors(context);
     final effectiveW = width ?? 100.0;
     final effectiveH = height ?? 80.0;
 
@@ -603,7 +632,7 @@ abstract class HeatmapLayoutBuilder {
             color: tileColor,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: Colors.white.withOpacity(0.08),
+              color: colors.border.withValues(alpha: 0.35),
               width: 1,
             ),
           ),
@@ -837,21 +866,27 @@ abstract class HeatmapLayoutBuilder {
   }
 
   /// Builds a hierarchy indicator badge
-  Widget _buildHierarchyIndicator(int hierarchyLevel) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-    decoration: BoxDecoration(
-      color: Colors.white.withOpacity(0.8),
-      borderRadius: BorderRadius.circular(8),
-    ),
-    child: Text(
-      'L${hierarchyLevel + 1}',
-      style: TextStyle(
-        fontSize: 8,
-        fontWeight: FontWeight.bold,
-        color: Colors.grey.shade600,
+  Widget _buildHierarchyIndicator(
+    BuildContext context,
+    int hierarchyLevel,
+  ) {
+    final colors = themeColors(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+      decoration: BoxDecoration(
+        color: colors.cardSurface.withValues(alpha: 0.85),
+        borderRadius: BorderRadius.circular(8),
       ),
-    ),
-  );
+      child: Text(
+        'L${hierarchyLevel + 1}',
+        style: TextStyle(
+          fontSize: 8,
+          fontWeight: FontWeight.bold,
+          color: colors.textSecondary,
+        ),
+      ),
+    );
+  }
 
   /// Calculates the hierarchy level of a tile (0 for root, 1+ for children)
   int _calculateHierarchyLevel(HeatmapTileData targetTile, HeatmapData data) {

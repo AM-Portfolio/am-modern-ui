@@ -46,11 +46,14 @@ class AttachmentPreviewGrid extends StatelessWidget {
 
   Widget _buildThumbnail(BuildContext context, AttachmentItem item, int index) {
     final theme = Theme.of(context);
-    final isImage = _isImage(item);
+    final isStub = item.isUploaded &&
+        item.uploadedUrl != null &&
+        UploadConfig.isStubOrPlaceholderUrl(item.uploadedUrl!);
+    final isImage = !isStub && _isImage(item);
     final canViewImage = isImage && item.isUploaded;
 
     AppLogger.debug(
-      '🖼️ Building thumbnail $index: isImage=$isImage, canView=$canViewImage',
+      '🖼️ Building thumbnail $index: isImage=$isImage, stub=$isStub, canView=$canViewImage',
       tag: 'AttachmentPreview',
     );
     AppLogger.debug(
@@ -80,9 +83,11 @@ class AttachmentPreviewGrid extends StatelessWidget {
               height: 100,
               decoration: BoxDecoration(
                 border: Border.all(
-                  color: item.isUploaded
-                      ? theme.colorScheme.outline.withOpacity(0.3)
-                      : theme.colorScheme.primary.withOpacity(0.5),
+                  color: isStub
+                      ? theme.colorScheme.error.withOpacity(0.55)
+                      : item.isUploaded
+                          ? theme.colorScheme.outline.withOpacity(0.3)
+                          : theme.colorScheme.primary.withOpacity(0.5),
                   width: item.isUploaded ? 1 : 2,
                 ),
                 borderRadius: BorderRadius.circular(8),
@@ -91,9 +96,11 @@ class AttachmentPreviewGrid extends StatelessWidget {
                 children: [
                   ClipRRect(
                     borderRadius: BorderRadius.circular(8),
-                    child: isImage
-                        ? _buildImagePreview(item)
-                        : _buildFileIcon(theme, item),
+                    child: isStub
+                        ? _buildStubPreview(theme)
+                        : isImage
+                            ? _buildImagePreview(item)
+                            : _buildFileIcon(theme, item),
                   ),
                   if (!item.isUploaded)
                     Positioned.fill(
@@ -189,6 +196,36 @@ class AttachmentPreviewGrid extends StatelessWidget {
     );
   }
 
+  Widget _buildStubPreview(ThemeData theme) {
+    return ColoredBox(
+      color: theme.colorScheme.errorContainer.withOpacity(0.35),
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(8),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.hide_image_outlined,
+                size: 28,
+                color: theme.colorScheme.error,
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Re-upload',
+                textAlign: TextAlign.center,
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.colorScheme.error,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   void _viewFullImage(BuildContext context, AttachmentItem item) {
     AppLogger.debug(
       '🖼️ Attempting to view full image',
@@ -206,6 +243,14 @@ class AttachmentPreviewGrid extends StatelessWidget {
     if (item.uploadedUrl == null) {
       AppLogger.error(
         '⚠️ Cannot view image - uploadedUrl is null',
+        tag: 'AttachmentPreview',
+      );
+      return;
+    }
+
+    if (UploadConfig.isStubOrPlaceholderUrl(item.uploadedUrl!)) {
+      AppLogger.warning(
+        '⚠️ Refusing to open stub/placeholder URL',
         tag: 'AttachmentPreview',
       );
       return;
@@ -275,6 +320,12 @@ class AttachmentPreviewGrid extends StatelessWidget {
 
   Widget _buildImagePreview(AttachmentItem item) {
     if (item.isUploaded && item.uploadedUrl != null) {
+      // Defense in depth — never paint Phase-1 stub URLs as real images.
+      if (UploadConfig.isStubOrPlaceholderUrl(item.uploadedUrl!)) {
+        return Builder(
+          builder: (context) => _buildStubPreview(Theme.of(context)),
+        );
+      }
       return Image.network(
         item.uploadedUrl!,
         fit: BoxFit.cover,
@@ -329,13 +380,23 @@ class AttachmentPreviewGrid extends StatelessWidget {
   }
 
   bool _isImage(AttachmentItem item) {
-    final extension = _getExtension(item);
-    return UploadConfig.isImageExtension(extension);
+    if (item.isUploaded && item.uploadedUrl != null) {
+      return UploadConfig.looksLikeImageUrl(item.uploadedUrl!);
+    }
+    if (item.pendingAttachment != null) {
+      final ext = item.pendingAttachment!.extension.toLowerCase();
+      if (UploadConfig.isImageExtension(ext)) return true;
+      // Pending web blobs / extension-less picks in journal are usually images.
+      if (ext.isEmpty) return true;
+    }
+    return false;
   }
 
   String _getExtension(AttachmentItem item) {
     if (item.isUploaded && item.uploadedUrl != null) {
-      return item.uploadedUrl!.split('.').last.split('?').first.toLowerCase();
+      final ext = UploadConfig.extensionFromUrl(item.uploadedUrl!);
+      if (ext.isNotEmpty) return ext;
+      return 'file';
     } else if (item.pendingAttachment != null) {
       return item.pendingAttachment!.extension;
     }

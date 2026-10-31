@@ -34,4 +34,43 @@ void main() {
       isTrue,
     );
   });
+
+  test('shouldOpenTradeWorkflow excludes bare trade notes and linked ids', () {
+    expect(
+      JournalFolderFilter.shouldOpenTradeWorkflow(
+        entry(entryType: 'TRADE_JOURNAL'),
+      ),
+      isTrue,
+    );
+    expect(
+      JournalFolderFilter.shouldOpenTradeWorkflow(
+        entry(entryType: 'TRADE_NOTE'),
+      ),
+      isFalse,
+    );
+    expect(
+      JournalFolderFilter.shouldOpenTradeWorkflow(entry(tradeId: 'tid-1')),
+      isFalse,
+    );
+    expect(
+      JournalFolderFilter.shouldOpenTradeWorkflow(
+        entry(entryType: 'DAILY', related: ['t1']),
+      ),
+      isFalse,
+    );
+  });
+
+  test('shouldOpenTradeWorkflow opens when structured plan data exists', () {
+    final withPlan = JournalEntry(
+      id: '1',
+      userId: 'u',
+      title: 'Note',
+      entryDate: DateTime(2026, 1, 1),
+      createdAt: DateTime(2026, 1, 1),
+      updatedAt: DateTime(2026, 1, 1),
+      entryType: 'TRADE_NOTE',
+      preTradePlan: const PreTradePlan(plannedEntryPrice: 100),
+    );
+    expect(JournalFolderFilter.shouldOpenTradeWorkflow(withPlan), isTrue);
+  });
 }

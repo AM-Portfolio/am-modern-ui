@@ -65,6 +65,15 @@ class _PortfolioSelectionScopeState extends State<PortfolioSelectionScope> {
     });
   }
 
+  /// Clears shell selection when [id] is the current selection (e.g. after delete).
+  void clearSelectionIf(String id) {
+    if (_selectedPortfolioId != id) return;
+    setState(() {
+      _selectedPortfolioId = null;
+      _selectedPortfolioName = null;
+    });
+  }
+
   String? get selectedPortfolioId => _selectedPortfolioId;
   String? get selectedPortfolioName => _selectedPortfolioName;
 
@@ -112,5 +121,9 @@ extension PortfolioSelectionContext on BuildContext {
 
   void selectPortfolio(String id, String name) {
     PortfolioSelectionScope.maybeStateOf(this)?.updateSelection(id, name);
+  }
+
+  void clearPortfolioSelectionIf(String id) {
+    PortfolioSelectionScope.maybeStateOf(this)?.clearSelectionIf(id);
   }
 }

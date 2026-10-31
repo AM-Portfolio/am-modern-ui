@@ -16,15 +16,19 @@ class TimingAnalysisTab extends StatefulWidget {
   const TimingAnalysisTab({
     super.key,
     required this.cubit,
-    required this.onOpenCalendar,
-    required this.onOpenJournalInsights,
     required this.onApply,
+    this.compact = false,
+    this.accent,
   });
 
   final TradeMetricsCubit cubit;
-  final VoidCallback onOpenCalendar;
-  final VoidCallback onOpenJournalInsights;
   final VoidCallback onApply;
+
+  /// Mobile Metrics layout — filled avg-basis pills + compact chrome.
+  final bool compact;
+
+  /// Module accent; defaults to [ModuleColors.trade] / [ModuleColorProvider].
+  final Color? accent;
 
   @override
   State<TimingAnalysisTab> createState() => _TimingAnalysisTabState();
@@ -33,8 +37,14 @@ class TimingAnalysisTab extends StatefulWidget {
 class _TimingAnalysisTabState extends State<TimingAnalysisTab> {
   TimingAvgBasis _avgBasis = TimingAvgBasis.perTrade;
 
+  Color _accent(BuildContext context) =>
+      widget.accent ??
+      ModuleColorProvider.maybeOf(context) ??
+      ModuleColors.trade;
+
   @override
   Widget build(BuildContext context) {
+    final accent = _accent(context);
     return BlocBuilder<TradeMetricsCubit, TradeMetricsState>(
       bloc: widget.cubit,
       builder: (context, state) {
@@ -50,39 +60,50 @@ class _TimingAnalysisTabState extends State<TimingAnalysisTab> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            TimingInsightsBanner(
-              tradeCount: tradeCount,
-              styleHint: dist?.tradingStyleHint,
-              timezoneNote: dist?.timezoneNote,
-              skippedMissingEntry: dist?.skippedMissingEntryCount ?? 0,
-              openOrMissingPnl: dist?.openOrMissingPnlCount ?? 0,
-              badTimestamp: dist?.badTimestampCount ?? 0,
-              onOpenCalendar: widget.onOpenCalendar,
-              onOpenJournalInsights: widget.onOpenJournalInsights,
+            // Trades chip + avg basis share one wrap row (chip must not own a full row).
+            Padding(
+              padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+              child: Wrap(
+                spacing: AppSpacing.md,
+                runSpacing: AppSpacing.sm,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  TimingInsightsBanner(
+                    tradeCount: tradeCount,
+                    accent: accent,
+                  ),
+                  _AvgBasisFilter(
+                    selected: _avgBasis,
+                    onChanged: (b) => setState(() => _avgBasis = b),
+                    filled: widget.compact,
+                    accent: accent,
+                  ),
+                ],
+              ),
             ),
-            _AvgBasisFilter(
-              selected: _avgBasis,
-              onChanged: (b) => setState(() => _avgBasis = b),
-            ),
-            const SizedBox(height: AppSpacing.sm),
             TimingKpiRow(
               performance: perf,
               distribution: dist,
               totalTradesCount: tradeCount,
               avgBasis: _avgBasis,
+              compact: widget.compact,
             ),
             const SizedBox(height: AppSpacing.md),
-            Expanded(child: _buildBody(context, state)),
+            Expanded(child: _buildBody(context, state, accent)),
           ],
         );
       },
     );
   }
 
-  Widget _buildBody(BuildContext context, TradeMetricsState state) {
+  Widget _buildBody(
+    BuildContext context,
+    TradeMetricsState state,
+    Color accent,
+  ) {
     if (state is TradeMetricsLoading || state is TradeMetricsInitial) {
       return Center(
-        child: CircularProgressIndicator(color: ModuleColors.trade),
+        child: CircularProgressIndicator(color: accent),
       );
     }
     if (state is TradeMetricsError) {
@@ -96,7 +117,11 @@ class _TimingAnalysisTabState extends State<TimingAnalysisTab> {
       if (metrics.totalTradesCount <= 0) {
         return _EmptyTimingState(onRetry: widget.onApply);
       }
-      return _TimingDashboard(metrics: metrics, avgBasis: _avgBasis);
+      return _TimingDashboard(
+        metrics: metrics,
+        avgBasis: _avgBasis,
+        accent: accent,
+      );
     }
     return const SizedBox.shrink();
   }
@@ -106,10 +131,14 @@ class _AvgBasisFilter extends StatelessWidget {
   const _AvgBasisFilter({
     required this.selected,
     required this.onChanged,
+    required this.accent,
+    this.filled = false,
   });
 
   final TimingAvgBasis selected;
   final ValueChanged<TimingAvgBasis> onChanged;
+  final Color accent;
+  final bool filled;
 
   @override
   Widget build(BuildContext context) {
@@ -119,30 +148,29 @@ class _AvgBasisFilter extends StatelessWidget {
         label: label,
         selected: selected == value,
         compact: true,
-        accentColor: ModuleColors.trade,
+        filled: filled,
+        accentColor: accent,
         onTap: () => onChanged(value),
       );
     }
 
-    return Padding(
-      padding: const EdgeInsets.only(top: AppSpacing.sm),
-      child: Row(
-        children: [
-          Text(
-            'Avg basis:',
-            style: context.text.label(compact: true).copyWith(
-                  color: colors.textSecondary,
-                  fontWeight: FontWeight.w600,
-                ),
-          ),
-          const SizedBox(width: AppSpacing.sm),
-          pill(timingAvgBasisLabel(TimingAvgBasis.perTrade),
-              TimingAvgBasis.perTrade),
-          const SizedBox(width: AppSpacing.sm),
-          pill(timingAvgBasisLabel(TimingAvgBasis.perActiveDay),
-              TimingAvgBasis.perActiveDay),
-        ],
-      ),
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          filled ? 'Avg basis' : 'Avg basis:',
+          style: context.text.label(compact: true).copyWith(
+                color: colors.textSecondary,
+                fontWeight: FontWeight.w600,
+              ),
+        ),
+        const SizedBox(width: AppSpacing.sm),
+        pill(timingAvgBasisLabel(TimingAvgBasis.perTrade),
+            TimingAvgBasis.perTrade),
+        const SizedBox(width: AppSpacing.sm),
+        pill(timingAvgBasisLabel(TimingAvgBasis.perActiveDay),
+            TimingAvgBasis.perActiveDay),
+      ],
     );
   }
 }
@@ -191,7 +219,8 @@ class _EmptyTimingState extends StatelessWidget {
               icon: Icons.refresh,
               onPressed: onRetry,
               height: 36,
-              backgroundColor: ModuleColors.trade,
+              backgroundColor:
+                  ModuleColorProvider.maybeOf(context) ?? ModuleColors.trade,
             ),
           ],
         ),
@@ -204,10 +233,12 @@ class _TimingDashboard extends StatefulWidget {
   const _TimingDashboard({
     required this.metrics,
     required this.avgBasis,
+    required this.accent,
   });
 
   final TradeMetricsResponse metrics;
   final TimingAvgBasis avgBasis;
+  final Color accent;
 
   @override
   State<_TimingDashboard> createState() => _TimingDashboardState();
@@ -342,6 +373,7 @@ class _TimingDashboardState extends State<_TimingDashboard> {
               onRankView: (v) => setState(() => _rankView = v),
               rowCount: rankRows.length,
               bucketLabel: bucketLabel,
+              accent: widget.accent,
             ),
             const SizedBox(height: AppSpacing.sm),
             TimingRankTable(
@@ -353,6 +385,7 @@ class _TimingDashboardState extends State<_TimingDashboard> {
                   : 'AVG / TRADE (₹)',
               emptyMessage: emptyRank,
               showLowSampleBadges: _rankView == TimingRankView.all,
+              accent: widget.accent,
             ),
             const SizedBox(height: AppSpacing.md),
           ],
@@ -370,6 +403,7 @@ class _RankControls extends StatelessWidget {
     required this.onRankView,
     required this.rowCount,
     required this.bucketLabel,
+    required this.accent,
   });
 
   final TimingDimension dimension;
@@ -378,6 +412,7 @@ class _RankControls extends StatelessWidget {
   final ValueChanged<TimingRankView> onRankView;
   final int rowCount;
   final String bucketLabel;
+  final Color accent;
 
   @override
   Widget build(BuildContext context) {
@@ -420,21 +455,21 @@ class _RankControls extends StatelessWidget {
                     label: 'Session',
                     selected: dimension == TimingDimension.session,
                     compact: true,
-                    accentColor: ModuleColors.trade,
+                    accentColor: accent,
                     onTap: () => onDimension(TimingDimension.session),
                   ),
                   AmToggleChip(
                     label: 'Day',
                     selected: dimension == TimingDimension.weekday,
                     compact: true,
-                    accentColor: ModuleColors.trade,
+                    accentColor: accent,
                     onTap: () => onDimension(TimingDimension.weekday),
                   ),
                   AmToggleChip(
                     label: 'Month',
                     selected: dimension == TimingDimension.month,
                     compact: true,
-                    accentColor: ModuleColors.trade,
+                    accentColor: accent,
                     onTap: () => onDimension(TimingDimension.month),
                   ),
                 ],
@@ -446,21 +481,21 @@ class _RankControls extends StatelessWidget {
                     label: 'All',
                     selected: rankView == TimingRankView.all,
                     compact: true,
-                    accentColor: ModuleColors.trade,
+                    accentColor: accent,
                     onTap: () => onRankView(TimingRankView.all),
                   ),
                   AmToggleChip(
                     label: 'Best',
                     selected: rankView == TimingRankView.best,
                     compact: true,
-                    accentColor: ModuleColors.trade,
+                    accentColor: accent,
                     onTap: () => onRankView(TimingRankView.best),
                   ),
                   AmToggleChip(
                     label: 'Worst',
                     selected: rankView == TimingRankView.worst,
                     compact: true,
-                    accentColor: ModuleColors.trade,
+                    accentColor: accent,
                     onTap: () => onRankView(TimingRankView.worst),
                   ),
                 ],

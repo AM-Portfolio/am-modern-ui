@@ -153,9 +153,20 @@ class ApiClient {
         if (response.body.isEmpty) {
           return parser(null);
         }
+        // Flutter web-server / gateway SPA shells return HTML with 200 for
+        // unknown paths (e.g. missing `/portfolio` prefix). Surface that
+        // clearly instead of a raw FormatException.
+        final trimmed = response.body.trimLeft();
+        if (trimmed.startsWith('<')) {
+          throw ApiException(
+            'Unexpected HTML from API (wrong base URL or gateway SPA fallback)',
+            statusCode: response.statusCode,
+          );
+        }
         final dynamic data = jsonDecode(response.body);
         return parser(data);
       } catch (e) {
+        if (e is ApiException) rethrow;
         AppLogger.error('❌ JSON parsing failed', tag: 'ApiClient', error: e);
         rethrow;
       }
@@ -176,6 +187,21 @@ class ApiClient {
                   .toString();
           if (errorData['detail'] is Map) {
             message = errorData['detail'].toString();
+          }
+          // Surface field-level validation (e.g. createdBy @NotBlank) in the UI.
+          final errors = errorData['errors'];
+          if (errors is List && errors.isNotEmpty) {
+            final fields = errors.map((e) {
+              if (e is Map) {
+                final field = e['field'] ?? e['name'] ?? '';
+                final msg = e['message'] ?? e['defaultMessage'] ?? e.toString();
+                return field.toString().isEmpty ? msg.toString() : '$field: $msg';
+              }
+              return e.toString();
+            }).join('; ');
+            if (fields.isNotEmpty) {
+              message = '$message ($fields)';
+            }
           }
         } else if (errorData is String && errorData.isNotEmpty) {
           message = errorData;

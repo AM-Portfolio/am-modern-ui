@@ -34,6 +34,7 @@ class JournalTemplateRepositoryImpl implements JournalTemplateRepository {
     );
 
     try {
+      // createdBy is set server-side from UserContext (dig trade-api).
       final request = JournalTemplateRequestDto(
         name: name,
         category: category.value,

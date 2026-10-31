@@ -16,12 +16,16 @@ class TimingKpiRow extends StatelessWidget {
     required this.distribution,
     required this.totalTradesCount,
     this.avgBasis = TimingAvgBasis.perTrade,
+    this.compact = false,
   });
 
   final PerformanceMetrics? performance;
   final TradeDistributionMetrics? distribution;
   final int? totalTradesCount;
   final TimingAvgBasis avgBasis;
+
+  /// Mobile Metrics: 2-column grid, last card full width.
+  final bool compact;
 
   static final _inr = NumberFormat.currency(
     locale: 'en_IN',
@@ -192,7 +196,7 @@ class TimingKpiRow extends StatelessWidget {
           ),
         ];
 
-        if (wide) {
+        if (wide && !compact) {
           return Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -203,14 +207,19 @@ class TimingKpiRow extends StatelessWidget {
             ],
           );
         }
+
+        // Mobile / narrow: 2-up grid; last KPI (Avg Hold) spans full width.
+        final half = (constraints.maxWidth - AppSpacing.sm) / 2;
         return Wrap(
           spacing: AppSpacing.sm,
           runSpacing: AppSpacing.sm,
           children: [
-            for (final c in cards)
+            for (var i = 0; i < cards.length; i++)
               SizedBox(
-                width: (constraints.maxWidth - AppSpacing.sm) / 2,
-                child: c,
+                width: (compact && i == cards.length - 1)
+                    ? constraints.maxWidth
+                    : half,
+                child: cards[i],
               ),
           ],
         );
@@ -262,15 +271,14 @@ class _KpiCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.colors;
 
-    return Container(
+    // AppCard chrome + sparkline slot (AmStatCard has no trailing chart slot).
+    return AppCard(
+      elevation: 0,
+      backgroundColor: colors.cardSurface,
+      margin: EdgeInsets.zero,
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.md,
         vertical: AppSpacing.md,
-      ),
-      decoration: BoxDecoration(
-        color: colors.cardSurface,
-        borderRadius: AppRadii.card,
-        border: Border.all(color: colors.border.withValues(alpha: 0.4)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -285,9 +293,9 @@ class _KpiCard extends StatelessWidget {
                     Text(
                       title,
                       style: context.text.caption(compact: true).copyWith(
-                        color: colors.textSecondary,
-                        fontWeight: FontWeight.w500,
-                      ),
+                            color: colors.textSecondary,
+                            fontWeight: FontWeight.w500,
+                          ),
                     ),
                     const SizedBox(width: AppSpacing.xxs),
                     Icon(
@@ -301,10 +309,10 @@ class _KpiCard extends StatelessWidget {
                 Text(
                   value,
                   style: context.text.heroTitle(compact: true).copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: valueColor ?? colors.textPrimary,
-                    height: 1.1,
-                  ),
+                        fontWeight: FontWeight.bold,
+                        color: valueColor ?? colors.textPrimary,
+                        height: 1.1,
+                      ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -313,8 +321,8 @@ class _KpiCard extends StatelessWidget {
                   Text(
                     subtitle!,
                     style: context.text.caption(compact: true).copyWith(
-                      color: subtitleColor ?? colors.textSecondary,
-                    ),
+                          color: subtitleColor ?? colors.textSecondary,
+                        ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),

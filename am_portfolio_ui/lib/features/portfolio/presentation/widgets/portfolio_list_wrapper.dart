@@ -121,9 +121,22 @@ class _PortfolioListWrapperState extends ConsumerState<PortfolioListWrapper> {
     if (portfolios.isEmpty) return;
 
     if (selectedPortfolioId == 'all' || context.selectedPortfolioId == 'all') return;
+
+    // Drop ghost selection (e.g. deleted broker still stuck in shell/URL).
     if (selectedPortfolioId != null) {
-      _ensureStreamActive(selectedPortfolioId!);
-      return;
+      final stillPresent =
+          portfolios.any((p) => p.portfolioId == selectedPortfolioId);
+      if (stillPresent) {
+        _ensureStreamActive(selectedPortfolioId!);
+        return;
+      }
+      if (context.mounted) {
+        context.clearPortfolioSelectionIf(selectedPortfolioId!);
+      }
+      setState(() {
+        selectedPortfolioId = null;
+        selectedPortfolioName = null;
+      });
     }
 
     final urlId = widget.initialPortfolioId;

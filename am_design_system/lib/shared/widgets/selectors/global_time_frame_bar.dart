@@ -27,6 +27,8 @@ class GlobalTimeFrameBar extends ConsumerWidget {
     this.availableTimeFrames,
     this.dropdownWidth = 72,
     this.primaryColor,
+    this.dropdownLeading,
+    this.dropdownTrailingDivider = false,
   });
 
   final GlobalTimeFrameVariant variant;
@@ -37,6 +39,12 @@ class GlobalTimeFrameBar extends ConsumerWidget {
 
   /// Accent for pills/dropdown; defaults to theme [actionPrimaryBg].
   final Color? primaryColor;
+
+  /// Closed-trigger leading icon for the dropdown variant only.
+  final Widget? dropdownLeading;
+
+  /// Hairline before the dropdown chevron. Dropdown variant only.
+  final bool dropdownTrailingDivider;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -52,6 +60,8 @@ class GlobalTimeFrameBar extends ConsumerWidget {
         width: dropdownWidth,
         availableTimeFrames: availableTimeFrames,
         primaryColor: accent,
+        leading: dropdownLeading,
+        trailingDivider: dropdownTrailingDivider,
       );
     }
 

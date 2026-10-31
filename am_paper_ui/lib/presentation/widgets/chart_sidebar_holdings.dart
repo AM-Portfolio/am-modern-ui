@@ -33,8 +33,10 @@ class _ChartSidebarHoldingsState extends State<ChartSidebarHoldings> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final positions = context.read<PaperOmsCubit>().state.positions;
-    _loadLtps(positions);
+    try {
+      final positions = context.read<PaperOmsCubit>().state.positions;
+      _loadLtps(positions);
+    } catch (_) {}
   }
 
   Future<void> _loadLtps(List<OmsPosition> positions) async {
@@ -96,7 +98,16 @@ class _ChartSidebarHoldingsState extends State<ChartSidebarHoldings> {
 
   @override
   Widget build(BuildContext context) {
+    PaperOmsCubit? cubit;
+    try {
+      cubit = context.read<PaperOmsCubit>();
+    } catch (_) {
+      cubit = null;
+    }
+    if (cubit == null) return const SizedBox.shrink();
+
     return BlocBuilder<PaperOmsCubit, PaperOmsState>(
+      bloc: cubit,
       buildWhen: (p, c) => p.positions != c.positions || p.orders != c.orders,
       builder: (context, state) {
         if (state.positions.isEmpty) {
@@ -253,7 +264,16 @@ class _ChartSidebarRecentHistoryState extends State<ChartSidebarRecentHistory> {
 
   @override
   Widget build(BuildContext context) {
+    PaperOmsCubit? cubit;
+    try {
+      cubit = context.read<PaperOmsCubit>();
+    } catch (_) {
+      cubit = null;
+    }
+    if (cubit == null) return const SizedBox.shrink();
+
     return BlocBuilder<PaperOmsCubit, PaperOmsState>(
+      bloc: cubit,
       buildWhen: (p, c) => p.orders != c.orders,
       builder: (context, state) {
         if (state.orders.isEmpty) return const SizedBox.shrink();

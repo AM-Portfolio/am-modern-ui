@@ -10,6 +10,7 @@ class IntelligenceGlassCard extends StatelessWidget {
     required this.title,
     required this.icon,
     required this.child,
+    this.subtitle,
     this.trailing,
     this.footer,
     this.padding = const EdgeInsets.all(20),
@@ -20,6 +21,7 @@ class IntelligenceGlassCard extends StatelessWidget {
   });
 
   final String title;
+  final String? subtitle;
   final IconData icon;
   final Widget child;
   final Widget? trailing;
@@ -50,15 +52,45 @@ class IntelligenceGlassCard extends StatelessWidget {
         ),
         const SizedBox(width: 10),
         Expanded(
-          child: Text(
-            title,
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+              ),
+              if (subtitle != null && subtitle!.trim().isNotEmpty) ...[
+                const SizedBox(height: 2),
+                Text(
+                  subtitle!,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurfaceVariant
+                            .withValues(alpha: 0.8),
+                      ),
                 ),
+              ],
+            ],
           ),
         ),
-        ?trailing,
+        if (trailing != null)
+          Flexible(
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: trailing,
+            ),
+          ),
       ],
     );
 
@@ -90,7 +122,7 @@ class IntelligenceGlassCard extends StatelessWidget {
 
     // Web: skip BackdropFilter — multiple live blurs tank Overview scroll.
     final surface = Container(
-      width: fillHeight ? double.infinity : null,
+      width: double.infinity,
       constraints:
           minHeight != null ? BoxConstraints(minHeight: minHeight!) : null,
       decoration: BoxDecoration(
@@ -211,10 +243,15 @@ InputDecoration intelligenceFieldDecoration(
   bool compact = false,
 }) {
   final isDark = Theme.of(context).brightness == Brightness.dark;
+  final hintStyle = TextStyle(
+    color: context.colors.textTertiary,
+    fontSize: compact ? 13 : null,
+  );
   return InputDecoration(
     // Compact row: avoid floating label (needs ~56px) — use hint instead.
     labelText: compact ? null : label,
     hintText: compact ? (hint ?? label) : hint,
+    hintStyle: hintStyle,
     floatingLabelBehavior:
         compact ? FloatingLabelBehavior.never : FloatingLabelBehavior.auto,
     isDense: true,

@@ -27,17 +27,22 @@ class JournalCubit extends Cubit<JournalState> {
 
   String _statusFilter = '';
   String? _folderId;
+  String? _portfolioId;
   List<String> _tagIds = [];
   String _searchQuery = '';
   String? _setupFilter;
   DateTime? _startDate;
   DateTime? _endDate;
   JournalSummaryDto? _summary;
+  JournalAdherenceDto? _adherence;
+
+  /// Page size for hub lists. Callers needing more should use [fetchEntriesOnce] / load-more.
+  static const int defaultPageSize = 500;
 
   Map<String, dynamic> _buildQuery() {
     final query = <String, dynamic>{
       // Classic UI folders filter client-side; fetch a large page so lists are complete.
-      'size': 100,
+      'size': defaultPageSize,
       'page': 0,
     };
     if (_statusFilter.isNotEmpty && _statusFilter != 'ALL') {
@@ -45,6 +50,9 @@ class JournalCubit extends Cubit<JournalState> {
     }
     if (_folderId != null && _folderId!.isNotEmpty) {
       query['folderId'] = _folderId;
+    }
+    if (_portfolioId != null && _portfolioId!.isNotEmpty) {
+      query['portfolioId'] = _portfolioId;
     }
     if (_tagIds.isNotEmpty) query['tagIds'] = _tagIds;
     if (_searchQuery.trim().isNotEmpty) query['q'] = _searchQuery.trim();
@@ -69,7 +77,8 @@ class JournalCubit extends Cubit<JournalState> {
     // Keep previous loaded entries visible — bare `loading` makes the page treat
     // state as empty and unmounts Log Day / create mode.
     final keepEntries = state.maybeWhen(
-      loaded: (entries, summary, status, folder, tags, q, setup) => true,
+      loaded: (entries, summary, adherence, status, folder, tags, q, setup) =>
+          true,
       orElse: () => false,
     );
     if (!keepEntries) {
@@ -80,14 +89,26 @@ class JournalCubit extends Cubit<JournalState> {
       final entries = await getJournalEntries.getByUser(
         query: query.isEmpty ? null : query,
       );
+      final rangeStart = _startDate ?? _defaultStart;
+      final rangeEnd = _endDate ?? _defaultEnd;
       try {
-        _summary = await repository.getSummary(
-          _startDate ?? _defaultStart,
-          _endDate ?? _defaultEnd,
-        );
+        final results = await Future.wait([
+          repository.getSummary(
+            rangeStart,
+            rangeEnd,
+            portfolioId: _portfolioId,
+          ),
+          repository.getAdherence(
+            rangeStart,
+            rangeEnd,
+            portfolioId: _portfolioId,
+          ),
+        ]);
+        _summary = results[0] as JournalSummaryDto;
+        _adherence = results[1] as JournalAdherenceDto;
       } catch (e) {
         AppLogger.warning(
-          'Failed to load journal summary: $e',
+          'Failed to load journal summary/adherence: $e',
           tag: 'JournalCubit',
         );
       }
@@ -95,6 +116,7 @@ class JournalCubit extends Cubit<JournalState> {
         JournalState.loaded(
           entries: entries,
           summary: _summary,
+          adherence: _adherence,
           statusFilter: _statusFilter,
           folderId: _folderId,
           tagIds: _tagIds,
@@ -117,14 +139,16 @@ class JournalCubit extends Cubit<JournalState> {
       _summary = await repository.getSummary(
         start ?? _startDate ?? _defaultStart,
         end ?? _endDate ?? _defaultEnd,
+        portfolioId: _portfolioId,
       );
       final current = state;
       current.maybeWhen(
-        loaded: (entries, _, status, folder, tags, q, setup) {
+        loaded: (entries, _, adherence, status, folder, tags, q, setup) {
           emit(
             JournalState.loaded(
               entries: entries,
               summary: _summary,
+              adherence: adherence,
               statusFilter: status,
               folderId: folder,
               tagIds: tags,
@@ -143,6 +167,7 @@ class JournalCubit extends Cubit<JournalState> {
   void setFilters({
     String? status,
     String? folderId,
+    String? portfolioId,
     List<String>? tagIds,
     String? searchQuery,
     String? setup,
@@ -152,12 +177,68 @@ class JournalCubit extends Cubit<JournalState> {
   }) {
     if (status != null) _statusFilter = status;
     if (folderId != null) _folderId = folderId.isEmpty ? null : folderId;
+    if (portfolioId != null) {
+      _portfolioId = portfolioId.isEmpty ? null : portfolioId;
+    }
     if (tagIds != null) _tagIds = tagIds;
     if (searchQuery != null) _searchQuery = searchQuery;
     if (setup != null) _setupFilter = setup.isEmpty ? null : setup;
     if (startDate != null) _startDate = startDate;
     if (endDate != null) _endDate = endDate;
     if (reload) loadJournalEntries();
+  }
+
+  /// Scope hub lists / creates to the active portfolio (null = all portfolios).
+  void setPortfolioId(String? portfolioId, {bool reload = true}) {
+    _portfolioId = (portfolioId == null || portfolioId.isEmpty)
+        ? null
+        : portfolioId;
+    if (reload) loadJournalEntries();
+  }
+
+  String? get portfolioId => _portfolioId;
+
+  /// Entries from the current `loaded` state (empty otherwise).
+  List<JournalEntry> get currentEntries => state.maybeWhen(
+        loaded: (entries, summary, adherence, status, folder, tags, q, setup) =>
+            entries,
+        orElse: () => const <JournalEntry>[],
+      );
+
+  /// Fetch a single entry and merge it into the loaded list when present.
+  Future<JournalEntry?> loadEntryDetail(String entryId) async {
+    if (entryId.isEmpty || entryId.startsWith('temp-')) return null;
+    try {
+      final fresh = await getJournalEntries.getById(entryId);
+      state.maybeWhen(
+        loaded: (entries, summary, adherence, status, folder, tags, q, setup) {
+          final idx = entries.indexWhere((e) => e.id == entryId);
+          if (idx < 0) return;
+          final next = [...entries];
+          next[idx] = fresh;
+          emit(
+            JournalState.loaded(
+              entries: next,
+              summary: summary,
+              adherence: adherence,
+              statusFilter: status,
+              folderId: folder,
+              tagIds: tags,
+              searchQuery: q,
+              setupFilter: setup,
+            ),
+          );
+        },
+        orElse: () {},
+      );
+      return fresh;
+    } catch (e) {
+      AppLogger.warning(
+        'loadEntryDetail failed for $entryId: $e',
+        tag: 'JournalCubit',
+      );
+      return null;
+    }
   }
 
   Future<void> loadEntriesByTrade(String tradeId) async {
@@ -168,6 +249,7 @@ class JournalCubit extends Cubit<JournalState> {
         JournalState.loaded(
           entries: entries,
           summary: _summary,
+          adherence: _adherence,
           statusFilter: _statusFilter,
           folderId: _folderId,
           tagIds: _tagIds,
@@ -193,6 +275,7 @@ class JournalCubit extends Cubit<JournalState> {
     String? tradeDirection,
     String? folderId,
     String? playbookId,
+    String? portfolioId,
     PreTradePlan? preTradePlan,
     TradeExecution? tradeExecution,
     PostTradeReview? postTradeReview,
@@ -210,6 +293,8 @@ class JournalCubit extends Cubit<JournalState> {
     List<String>? externalUrls,
   }) async {
     AppLogger.methodEntry('saveEntryFull', tag: 'JournalCubit');
+    final resolvedPortfolio =
+        portfolioId ?? _portfolioId;
     try {
       final JournalEntry saved;
       if (entryId == null || entryId.isEmpty || entryId.startsWith('temp-')) {
@@ -225,6 +310,7 @@ class JournalCubit extends Cubit<JournalState> {
           tradeDirection: tradeDirection,
           folderId: folderId,
           playbookId: playbookId,
+          portfolioId: resolvedPortfolio,
           preTradePlan: preTradePlan,
           tradeExecution: tradeExecution,
           postTradeReview: postTradeReview,
@@ -255,6 +341,7 @@ class JournalCubit extends Cubit<JournalState> {
           tradeDirection: tradeDirection,
           folderId: folderId,
           playbookId: playbookId,
+          portfolioId: resolvedPortfolio,
           preTradePlan: preTradePlan,
           tradeExecution: tradeExecution,
           postTradeReview: postTradeReview,
@@ -272,9 +359,22 @@ class JournalCubit extends Cubit<JournalState> {
           externalUrls: externalUrls,
         );
       }
+      // Enrich execution/review from TradeDetails when a tradeId is present.
+      JournalEntry result = saved;
+      final linkedId = tradeId ?? saved.tradeId;
+      if (linkedId != null &&
+          linkedId.isNotEmpty &&
+          result.id.isNotEmpty &&
+          !result.id.startsWith('temp-')) {
+        try {
+          result = await repository.linkTrade(result.id, linkedId);
+        } catch (_) {
+          // Keep saved entry if enrichment fails (ownership / missing trade).
+        }
+      }
       // Reload without an intermediate empty `success` state that drops entries.
       await loadJournalEntries();
-      return saved;
+      return result;
     } catch (e) {
       emit(JournalState.error(e.toString()));
       rethrow;
@@ -306,12 +406,129 @@ class JournalCubit extends Cubit<JournalState> {
       repository.exportCsv(
         start ?? _startDate ?? _defaultStart,
         end ?? _endDate ?? _defaultEnd,
+        portfolioId: _portfolioId,
       );
 
-  Future<List<JournalEntry>> createFromTrades(List<String> tradeIds) async {
-    final created = await repository.createFromTrades(tradeIds);
-    await loadJournalEntries();
+  /// Upserts per-trade journal stubs (DRAFT by default) scoped to the active portfolio.
+  Future<List<JournalEntry>> createFromTrades(
+    List<String> tradeIds, {
+    String journalStatus = 'DRAFT',
+    String? portfolioId,
+    bool reload = true,
+  }) async {
+    final created = await repository.createFromTrades(
+      tradeIds,
+      journalStatus: journalStatus,
+      portfolioId: portfolioId ?? _portfolioId,
+    );
+    // Widen hub date filter so stubs outside the prior range still appear.
+    if (created.isNotEmpty) {
+      DateTime? earliest;
+      DateTime? latest;
+      for (final e in created) {
+        if (earliest == null || e.entryDate.isBefore(earliest)) {
+          earliest = e.entryDate;
+        }
+        if (latest == null || e.entryDate.isAfter(latest)) {
+          latest = e.entryDate;
+        }
+      }
+      if (earliest != null &&
+          (_startDate == null || earliest.isBefore(_startDate!))) {
+        _startDate = DateTime(earliest.year, earliest.month, earliest.day);
+      }
+      if (latest != null) {
+        // Inclusive calendar day (+1 so same-day / timed stubs stay in range).
+        final endDay = DateTime(latest.year, latest.month, latest.day)
+            .add(const Duration(days: 1));
+        if (_endDate == null || endDay.isAfter(_endDate!)) {
+          _endDate = endDay;
+        }
+      }
+    }
+    if (reload) await loadJournalEntries();
+    // Guarantee stubs appear even if the list query filtered them out
+    // (date/portfolio race). Call again after any later reload.
+    upsertEntries(created);
     return created;
+  }
+
+  /// Prepend / replace entries in the current loaded list (no network).
+  void upsertEntries(List<JournalEntry> incoming) {
+    if (incoming.isEmpty) return;
+    state.maybeWhen(
+      loaded: (entries, summary, adherence, status, folder, tags, q, setup) {
+        final byId = {for (final e in entries) e.id: e};
+        for (final e in incoming) {
+          byId[e.id] = e;
+        }
+        final merged = byId.values.toList()
+          ..sort((a, b) => b.entryDate.compareTo(a.entryDate));
+        emit(
+          JournalState.loaded(
+            entries: merged,
+            summary: summary,
+            adherence: adherence,
+            statusFilter: status,
+            folderId: folder,
+            tagIds: tags,
+            searchQuery: q,
+            setupFilter: setup,
+          ),
+        );
+      },
+      orElse: () {
+        emit(
+          JournalState.loaded(
+            entries: List<JournalEntry>.from(incoming),
+            summary: _summary,
+            adherence: _adherence,
+            statusFilter: _statusFilter,
+            folderId: _folderId,
+            tagIds: _tagIds,
+            searchQuery: _searchQuery,
+            setupFilter: _setupFilter,
+          ),
+        );
+      },
+    );
+  }
+
+  DateTime get effectiveStart => _startDate ?? _defaultStart;
+  DateTime get effectiveEnd => _endDate ?? _defaultEnd;
+
+  /// One-off fetch that does **not** mutate hub Filters (used by Weekly Review).
+  Future<List<JournalEntry>> fetchEntriesOnce({
+    String? status,
+    String? entryType,
+    String? portfolioId,
+    DateTime? start,
+    DateTime? end,
+    int size = 50,
+  }) {
+    final query = <String, dynamic>{
+      'size': size,
+      'page': 0,
+    };
+    if (status != null && status.isNotEmpty && status != 'ALL') {
+      query['journalStatus'] = status;
+    }
+    if (entryType != null && entryType.isNotEmpty) {
+      query['entryType'] = entryType;
+    }
+    final pid = portfolioId ?? _portfolioId;
+    if (pid != null && pid.isNotEmpty) {
+      query['portfolioId'] = pid;
+    }
+    final s = start ?? _startDate;
+    final e = end ?? _endDate;
+    if (s != null) {
+      query['startDate'] = s.toIso8601String().split('T').first;
+    }
+    if (e != null) {
+      query['endDate'] = e.toIso8601String().split('T').first;
+    }
+    return getJournalEntries.getByUser(query: query);
   }
 
   Future<List<MistakeAnalysisDto>> loadMistakesSummary({
@@ -319,8 +536,9 @@ class JournalCubit extends Cubit<JournalState> {
     DateTime? end,
   }) =>
       repository.getMistakesSummary(
-        start ?? _defaultStart,
-        end ?? _defaultEnd,
+        start ?? effectiveStart,
+        end ?? effectiveEnd,
+        portfolioId: _portfolioId,
       );
 
   Future<List<LessonLearnedDto>> loadLessons({
@@ -329,22 +547,31 @@ class JournalCubit extends Cubit<JournalState> {
     int limit = 10,
   }) =>
       repository.getLessons(
-        start ?? _defaultStart,
-        end ?? _defaultEnd,
+        start ?? effectiveStart,
+        end ?? effectiveEnd,
         limit: limit,
+        portfolioId: _portfolioId,
       );
 
   Future<JournalAdherenceDto> loadAdherence({
     DateTime? start,
     DateTime? end,
   }) =>
-      repository.getAdherence(start ?? _defaultStart, end ?? _defaultEnd);
+      repository.getAdherence(
+        start ?? effectiveStart,
+        end ?? effectiveEnd,
+        portfolioId: _portfolioId,
+      );
 
   Future<JournalReportCardDto> loadReportCard({
     DateTime? start,
     DateTime? end,
   }) =>
-      repository.getReportCard(start ?? _defaultStart, end ?? _defaultEnd);
+      repository.getReportCard(
+        start ?? effectiveStart,
+        end ?? effectiveEnd,
+        portfolioId: _portfolioId,
+      );
 
   Future<JournalEntry> addAttachment(
     String entryId,
@@ -374,13 +601,14 @@ class JournalCubit extends Cubit<JournalState> {
     String entryId,
     PostTradeReview review, {
     bool markCompleted = false,
+    bool reload = true,
   }) async {
     final saved = await repository.updatePostReview(
       entryId,
       review,
       markCompleted: markCompleted,
     );
-    await loadJournalEntries();
+    if (reload) await loadJournalEntries();
     return saved;
   }
 
@@ -396,9 +624,11 @@ class JournalCubit extends Cubit<JournalState> {
     String? tradeDirection,
     String? folderId,
     String? playbookId,
+    String? portfolioId,
     PreTradePlan? preTradePlan,
     TradeExecution? tradeExecution,
     PostTradeReview? postTradeReview,
+    double? checklistCompletionPct,
     List<BehaviorPatternSummary>? behaviorPatternSummaries,
     Map<String, dynamic>? customFields,
     List<String>? imageUrls,
@@ -422,9 +652,11 @@ class JournalCubit extends Cubit<JournalState> {
         tradeDirection: tradeDirection,
         folderId: folderId,
         playbookId: playbookId,
+        portfolioId: portfolioId,
         preTradePlan: preTradePlan,
         tradeExecution: tradeExecution,
         postTradeReview: postTradeReview,
+        checklistCompletionPct: checklistCompletionPct,
         behaviorPatternSummaries: behaviorPatternSummaries,
         customFields: customFields,
         imageUrls: imageUrls,
@@ -450,9 +682,11 @@ class JournalCubit extends Cubit<JournalState> {
     String? tradeDirection,
     String? folderId,
     String? playbookId,
+    String? portfolioId,
     PreTradePlan? preTradePlan,
     TradeExecution? tradeExecution,
     PostTradeReview? postTradeReview,
+    double? checklistCompletionPct,
     List<BehaviorPatternSummary>? behaviorPatternSummaries,
     Map<String, dynamic>? customFields,
     List<String>? imageUrls,
@@ -477,9 +711,11 @@ class JournalCubit extends Cubit<JournalState> {
       tradeDirection: tradeDirection,
       folderId: folderId,
       playbookId: playbookId,
+      portfolioId: portfolioId,
       preTradePlan: preTradePlan,
       tradeExecution: tradeExecution,
       postTradeReview: postTradeReview,
+      checklistCompletionPct: checklistCompletionPct,
       behaviorPatternSummaries: behaviorPatternSummaries,
       customFields: customFields,
       imageUrls: imageUrls,

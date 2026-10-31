@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:am_design_system/am_design_system.dart';
+import '../../../../shared/widgets/market_async_error_view.dart';
 import '../../providers/watchlist_provider.dart';
 import '../../data/models/watchlist_model.dart';
-import 'package:am_market_ui/core/styles/market_theme_extension.dart';
 
 class AddToWatchlistPopup extends ConsumerStatefulWidget {
   final String symbol;
@@ -254,11 +254,19 @@ class _AddToWatchlistPopupState extends ConsumerState<AddToWatchlistPopup> {
             );
           },
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (_, __) => const Text('Error loading status'),
+          error: (e, _) => MarketAsyncErrorView(
+            title: "Couldn't load status",
+            error: e,
+            onRetry: () => ref.invalidate(watchlistCheckStatusProvider(widget.symbol)),
+          ),
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (_, __) => const Text('Error loading watchlists'),
+      error: (e, _) => MarketAsyncErrorView(
+        title: "Couldn't load watchlists",
+        error: e,
+        onRetry: () => ref.read(watchlistsProvider.notifier).refresh(),
+      ),
     );
   }
 

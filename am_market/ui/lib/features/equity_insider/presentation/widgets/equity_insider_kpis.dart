@@ -32,11 +32,10 @@ class EquityInsiderKpis extends ConsumerWidget {
       EquityFundamentalQuery(symbol: symbol, exchange: activeExchange),
     ));
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildSectionHeader(context, 'Valuation & Key Metrics', activeExchange),
-        asyncData.when(
+    return LayoutBuilder(
+      builder: (context, outer) {
+        final fill = outer.maxHeight.isFinite && outer.maxHeight > 0;
+        final metricsBody = asyncData.when(
           data: (data) {
             if (data == null) {
               return Text(
@@ -76,7 +75,7 @@ class EquityInsiderKpis extends ConsumerWidget {
             final List<_KpiMetric> candidates = [
               if (yoyRevGrowth != null)
                 _KpiMetric(
-                  label: 'YoY Rev Growth %',
+                  label: 'YoY Rev',
                   value: yoyRevGrowth,
                   subtitle: 'Growth',
                   isPositive: yoyRevGrowth > 0,
@@ -84,7 +83,7 @@ class EquityInsiderKpis extends ConsumerWidget {
                 ),
               if (yoyProfitGrowth != null)
                 _KpiMetric(
-                  label: 'YoY PAT Growth %',
+                  label: 'YoY PAT',
                   value: yoyProfitGrowth,
                   subtitle: 'Growth',
                   isPositive: yoyProfitGrowth > 0,
@@ -215,15 +214,15 @@ class EquityInsiderKpis extends ConsumerWidget {
 
             return LayoutBuilder(
               builder: (context, constraints) {
-                final double totalWidth = constraints.maxWidth;
-                if (totalWidth < AmBreakpoints.mobile) {
+                final isMobileShell = MediaQuery.sizeOf(context).width < 800;
+                if (isMobileShell) {
                   return GridView.builder(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
                     gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 2,
-                      crossAxisSpacing: 8,
-                      mainAxisSpacing: 8,
+                      crossAxisSpacing: AppSpacing.sm,
+                      mainAxisSpacing: AppSpacing.sm,
                       mainAxisExtent: 81,
                     ),
                     itemCount: mobileMetrics.length,
@@ -251,34 +250,38 @@ class EquityInsiderKpis extends ConsumerWidget {
                   );
                 }
 
-                int cols = 5;
-                if (totalWidth < 700) {
-                  cols = 3;
-                } else if (totalWidth < 950) {
-                  cols = 4;
-                }
-
-                const double spacing = 8.0;
-                final double itemWidth = (totalWidth - (spacing * (cols - 1))) / cols;
-
-                return Wrap(
-                  alignment: WrapAlignment.center,
-                  spacing: spacing,
-                  runSpacing: spacing,
-                  children: validMetrics.take(15).map((metric) {
-                    return SizedBox(
-                      width: itemWidth.clamp(100.0, 200.0),
-                      height: 90,
-                      child: _buildKpi(
-                        context,
-                        label: metric.label,
-                        value: metric.value!,
-                        subtitle: metric.subtitle,
-                        isPositive: metric.isPositive,
-                        isNegative: metric.isNegative,
-                      ),
+                final metrics = validMetrics.take(12).toList();
+                const cols = 4;
+                const spacing = AppSpacing.sm;
+                final rows = (metrics.length / cols).ceil().clamp(1, 4);
+                final bounded = fill &&
+                    constraints.maxHeight.isFinite &&
+                    constraints.maxHeight > 0;
+                final extent = bounded
+                    ? ((constraints.maxHeight - spacing * (rows - 1)) / rows)
+                        .clamp(72.0, 200.0)
+                    : 90.0;
+                return GridView.builder(
+                  shrinkWrap: !bounded,
+                  physics: const NeverScrollableScrollPhysics(),
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: cols,
+                    crossAxisSpacing: spacing,
+                    mainAxisSpacing: spacing,
+                    mainAxisExtent: extent,
+                  ),
+                  itemCount: metrics.length,
+                  itemBuilder: (context, i) {
+                    final metric = metrics[i];
+                    return _buildKpi(
+                      context,
+                      label: metric.label,
+                      value: metric.value!,
+                      subtitle: metric.subtitle,
+                      isPositive: metric.isPositive,
+                      isNegative: metric.isNegative,
                     );
-                  }).toList(),
+                  },
                 );
               },
             );
@@ -288,8 +291,19 @@ class EquityInsiderKpis extends ConsumerWidget {
             'Failed to load KPIs: $e',
             style: TextStyle(color: Theme.of(context).colorScheme.error),
           ),
-        ),
-      ],
+        );
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildSectionHeader(
+              context,
+              'Valuation & Key Metrics',
+              activeExchange,
+            ),
+            if (fill) Expanded(child: metricsBody) else metricsBody,
+          ],
+        );
+      },
     );
   }
 
@@ -303,7 +317,7 @@ class EquityInsiderKpis extends ConsumerWidget {
   }) {
     return [
       _KpiMetric(
-        label: 'YoY Rev Growth %',
+        label: 'YoY Rev',
         value: yoyRevGrowth,
         subtitle: 'Growth',
         isPositive: (yoyRevGrowth ?? 0) > 0,
@@ -345,18 +359,23 @@ class EquityInsiderKpis extends ConsumerWidget {
 
   Widget _buildSectionHeader(BuildContext context, String title, String exchange) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Row(
+          Expanded(
+            child: Row(
             children: [
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: context.textPrimary,
+              Flexible(
+                child: Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: context.textPrimary,
+                  ),
                 ),
               ),
               const SizedBox(width: 8),
@@ -376,6 +395,7 @@ class EquityInsiderKpis extends ConsumerWidget {
                 ),
               ),
             ],
+            ),
           ),
         ],
       ),
@@ -510,7 +530,7 @@ class EquityInsiderKpis extends ConsumerWidget {
             subtitle,
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 11,
+              fontSize: 10,
               color: ModuleColors.market,
               fontWeight: FontWeight.w600,
               letterSpacing: 0.2,

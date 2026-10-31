@@ -34,7 +34,14 @@ class SectorHeatmapConverter {
 
   static const String unknownTileName = 'Unknown';
   static const String otherSmallWeightName = 'Other (<3%)';
+  static const String otherStocksName = 'Other';
   static const double smallWeightThresholdPercent = 3.0;
+  /// Compact nested treemap: keep this many stocks per sector; fold the rest.
+  static const int compactMaxStocksPerSector = 15;
+
+  /// Wide web nested overview — still capped so Flutter Web does not lock up
+  /// painting hundreds of nested leaf tiles in one frame.
+  static const int webMaxStocksPerSector = 20;
 
   static bool isExcludedFromRanking(String name) {
     final n = name.trim().toLowerCase();
@@ -134,7 +141,7 @@ class SectorHeatmapConverter {
     }
 
     final resolvedSectors = _mergeSectorsByName(
-      _resolveSectorLabels(heatmap.sectors, sectorAllocation),
+      _redistributeSectorsByStock(heatmap.sectors, sectorAllocation),
     );
     final totalValue = _calculateTotalValue(resolvedSectors);
     final tiles = _createHierarchicalTiles(resolvedSectors, totalValue);
@@ -150,23 +157,32 @@ class SectorHeatmapConverter {
     );
   }
 
+  /// Symbol → sector from allocation topStocks (best available book map).
+  static Map<String, String> _symbolSectorMap(SectorAllocation? allocation) {
+    final map = <String, String>{};
+    if (allocation == null) return map;
+    for (final weight in allocation.sectorWeights) {
+      if (isInvalidSectorName(weight.sectorName)) continue;
+      for (final symbol in weight.topStocks) {
+        final key = symbol.trim().toUpperCase();
+        if (key.isNotEmpty) {
+          map[key] = weight.sectorName.trim();
+        }
+      }
+    }
+    return map;
+  }
+
   /// Prefer allocation / stock.sector names when heatmap labels are Unknown/-/empty.
+  ///
+  /// Renames whole unknown buckets by majority vote (legacy path kept for
+  /// callers that only need a sector-level label). Prefer
+  /// [_redistributeSectorsByStock] for treemap tiles.
   static List<Sector> _resolveSectorLabels(
     List<Sector> sectors,
     SectorAllocation? allocation,
   ) {
-    final symbolToSector = <String, String>{};
-    if (allocation != null) {
-      for (final weight in allocation.sectorWeights) {
-        if (isInvalidSectorName(weight.sectorName)) continue;
-        for (final symbol in weight.topStocks) {
-          final key = symbol.trim().toUpperCase();
-          if (key.isNotEmpty) {
-            symbolToSector[key] = weight.sectorName.trim();
-          }
-        }
-      }
-    }
+    final symbolToSector = _symbolSectorMap(allocation);
 
     return sectors.map((sector) {
       if (!isInvalidSectorName(sector.sectorName)) return sector;
@@ -202,6 +218,97 @@ class SectorHeatmapConverter {
         stocks: sector.stocks,
       );
     }).toList();
+  }
+
+  /// Split Unknown/- buckets **per stock** into real sectors.
+  /// Majority-rename left mixed IT+Energy holdings under one wrong label.
+  static List<Sector> _redistributeSectorsByStock(
+    List<Sector> sectors,
+    SectorAllocation? allocation,
+  ) {
+    final symbolToSector = _symbolSectorMap(allocation);
+    // Named heatmap sectors also teach symbol → sector for leftovers.
+    for (final sector in sectors) {
+      if (isInvalidSectorName(sector.sectorName)) continue;
+      for (final stock in sector.stocks) {
+        final key = stock.symbol.trim().toUpperCase();
+        if (key.isNotEmpty) {
+          symbolToSector.putIfAbsent(key, () => sector.sectorName.trim());
+        }
+      }
+    }
+
+    final passthrough = <Sector>[];
+    final buckets = <String, List<Stock>>{};
+    void place(String sectorName, Stock stock) {
+      final name =
+          sectorName.trim().isEmpty ? unknownTileName : sectorName.trim();
+      final tagged = isInvalidSectorName(stock.sector)
+          ? stock.copyWith(sector: name)
+          : stock;
+      buckets.putIfAbsent(name, () => []).add(tagged);
+    }
+
+    for (final sector in sectors) {
+      final parentValid = !isInvalidSectorName(sector.sectorName);
+      // Value-only sectors (no stock rows) keep aggregates for mass/fallback.
+      if (sector.stocks.isEmpty) {
+        if (parentValid || _calculateSectorValue(sector) > 0) {
+          passthrough.add(sector);
+        }
+        continue;
+      }
+
+      for (final stock in sector.stocks) {
+        final fromStock = stock.sector.trim();
+        if (!isInvalidSectorName(fromStock)) {
+          place(fromStock, stock);
+          continue;
+        }
+        final fromMap = symbolToSector[stock.symbol.trim().toUpperCase()];
+        if (fromMap != null && !isInvalidSectorName(fromMap)) {
+          place(fromMap, stock);
+          continue;
+        }
+        if (parentValid) {
+          place(sector.sectorName, stock);
+          continue;
+        }
+        place(unknownTileName, stock);
+      }
+    }
+
+    final fromBuckets = buckets.entries.map((entry) {
+      final stocks = entry.value;
+      final totalValue =
+          stocks.fold(0.0, (sum, s) => sum + _calculateStockValue(s));
+      final totalReturn =
+          stocks.fold(0.0, (sum, s) => sum + (s.totalReturn ?? 0));
+      final weightSum =
+          stocks.fold(0.0, (sum, s) => sum + _calculateStockValue(s));
+      final avgChange = weightSum > 0
+          ? stocks.fold(
+                0.0,
+                (sum, s) =>
+                    sum +
+                    s.changePercent * (_calculateStockValue(s) / weightSum),
+              )
+          : 0.0;
+      return Sector(
+        sectorName: entry.key,
+        performanceRank: 0,
+        performance: avgChange,
+        changePercent: avgChange,
+        weightage: 0,
+        color: '',
+        stockCount: stocks.length,
+        totalValue: totalValue,
+        totalReturnAmount: totalReturn,
+        stocks: stocks,
+      );
+    });
+
+    return [...passthrough, ...fromBuckets];
   }
 
   /// Combine sectors that share a resolved name so tiles stay one-per-sector.
@@ -272,7 +379,7 @@ class SectorHeatmapConverter {
     }
 
     final resolved = _mergeSectorsByName(
-      _resolveSectorLabels(heatmap.sectors, sectorAllocation),
+      _redistributeSectorsByStock(heatmap.sectors, sectorAllocation),
     );
     // Zero-value sectors must not count as "complete" structure.
     final namedHeatmapCount = resolved
@@ -297,6 +404,17 @@ class SectorHeatmapConverter {
     }
 
     final resolvedTotal = _calculateTotalValue(resolved);
+    // Count-based check misses prod: one giant Unknown + many tiny named sectors.
+    // Fall back when Unknown still owns most of the book after stock redistrib.
+    final unknownMass = resolved
+        .where((sector) => isInvalidSectorName(sector.sectorName))
+        .fold(0.0, (sum, sector) => sum + _calculateSectorValue(sector));
+    if (resolvedTotal > 0 &&
+        unknownMass / resolvedTotal >= 0.35 &&
+        namedAllocationCount >= 2) {
+      return true;
+    }
+
     final heatmapTiles =
         _createHierarchicalTiles(resolved, resolvedTotal);
     if (heatmapTiles.length == 1 &&
@@ -308,7 +426,9 @@ class SectorHeatmapConverter {
     // lists one extra named sector (e.g. ETFs) or similar label gaps.
     final hasWeightCoverage = valueCoverage >= 0.5;
     final heatmapCompleteEnough =
-        namedHeatmapCount >= 3 && hasWeightCoverage;
+        namedHeatmapCount >= 3 &&
+        hasWeightCoverage &&
+        (resolvedTotal <= 0 || unknownMass / resolvedTotal < 0.35);
     if (heatmapCompleteEnough || namedHeatmapCount >= namedAllocationCount) {
       return false;
     }
@@ -354,10 +474,13 @@ class SectorHeatmapConverter {
               matchingSector,
               weight,
               weight.marketCap,
+              totalPortfolioValue: totalValue,
               heatmap: heatmap,
             )
           : _createSymbolTiles(weight, weight.marketCap, heatmap: heatmap);
 
+      final holdingsCount =
+          stockTiles.isNotEmpty ? stockTiles.length : weight.topStocks.length;
       return HeatmapTileData(
         id: 'sector_${weight.sectorName}',
         name: weight.sectorName,
@@ -370,7 +493,9 @@ class SectorHeatmapConverter {
           'type': 'sector',
           'sectorName': weight.sectorName,
           'dataSource': 'sectorAllocation',
-          'stockCount': weight.topStocks.length,
+          'stockCount': holdingsCount,
+          'holdingsCount': holdingsCount,
+          'totalQuantity': _sumStockQuantities(stockTiles),
         },
       );
     }).toList()
@@ -480,11 +605,13 @@ class SectorHeatmapConverter {
     Sector matchingSector,
     SectorWeight weight,
     double sectorValue, {
+    double? totalPortfolioValue,
     Heatmap? heatmap,
   }) {
+    final portfolioTotal = totalPortfolioValue ?? sectorValue;
     final symbols = weight.topStocks.map((s) => s.trim().toUpperCase()).toSet();
     if (symbols.isEmpty) {
-      return _createStockTiles(matchingSector, sectorValue);
+      return _createStockTiles(matchingSector, sectorValue, portfolioTotal);
     }
 
     // Prefer stocks from the matched sector; fall back to a cross-sector scan.
@@ -514,7 +641,7 @@ class SectorHeatmapConverter {
       totalReturnAmount: matchingSector.totalReturnAmount,
       stocks: filteredStocks,
     );
-    return _createStockTiles(subset, sectorValue);
+    return _createStockTiles(subset, sectorValue, portfolioTotal);
   }
 
   static bool _sectorNamesMatch(String left, String right) {
@@ -637,13 +764,90 @@ class SectorHeatmapConverter {
         performance: avgPerformance,
         value: combinedValue,
         children: combinedChildren.isNotEmpty ? combinedChildren : null,
-        metadata: {'type': 'sector', 'sectorName': unknownTileName},
+        metadata: {
+          'type': 'sector',
+          'sectorName': unknownTileName,
+          'stockCount': combinedChildren.length,
+          'holdingsCount': combinedChildren.length,
+          'totalQuantity': _sumStockQuantities(combinedChildren),
+        },
       ));
     }
 
     // Sort sectors by weightage descending (largest sectors first)
     tiles.sort((a, b) => b.weightage.compareTo(a.weightage));
     return tiles;
+  }
+
+  /// Compact nested overview only: small-sector merge + per-sector stock cap.
+  /// Drill-down / list / grid should keep the unbudgeted tile list.
+  static List<HeatmapTileData> applyCompactTreemapBudget(
+    List<HeatmapTileData> source, {
+    int maxStocksPerSector = compactMaxStocksPerSector,
+  }) {
+    final merged = mergeSmallWeightTilesForTreemap(source);
+    if (maxStocksPerSector <= 0) return merged;
+    return merged
+        .map((sector) => _limitSectorChildren(sector, maxStocksPerSector))
+        .toList();
+  }
+
+  static HeatmapTileData _limitSectorChildren(
+    HeatmapTileData sector,
+    int maxStocksPerSector,
+  ) {
+    final raw = sector.children;
+    if (raw == null || raw.length <= maxStocksPerSector) return sector;
+
+    final children = raw
+        .map((c) => c is HeatmapTileData ? c : HeatmapTileData.fromEntity(c))
+        .toList()
+      ..sort((a, b) => b.weightage.compareTo(a.weightage));
+
+    final keep = children.take(maxStocksPerSector).toList();
+    final rest = children.skip(maxStocksPerSector).toList();
+    if (rest.isEmpty) return sector;
+
+    final combinedWeight = rest.fold<double>(0, (s, t) => s + t.weightage);
+    final combinedValue = rest.fold<double>(0, (s, t) => s + (t.value ?? 0));
+    final avgPerformance = combinedWeight > 0
+        ? rest.fold<double>(0, (s, t) => s + t.performance * t.weightage) /
+            combinedWeight
+        : 0.0;
+
+    // Leaf tile (no children) so nested mode does not spawn another sector panel.
+    keep.add(
+      HeatmapTileData(
+        id: '${sector.id}_other_stocks',
+        name: otherStocksName,
+        displayName: otherStocksName,
+        weightage: combinedWeight,
+        performance: avgPerformance,
+        value: combinedValue,
+        metadata: {
+          'type': 'stock',
+          'mergedStockTail': true,
+          'stockCount': rest.length,
+          'sectorName': sector.name,
+        },
+      ),
+    );
+
+    return HeatmapTileData(
+      id: sector.id,
+      name: sector.name,
+      displayName: sector.displayName,
+      weightage: sector.weightage,
+      performance: sector.performance,
+      value: sector.value,
+      metadata: sector.metadata,
+      children: keep,
+      customColor: sector.customColor,
+      icon: sector.icon,
+      imageUrl: sector.imageUrl,
+      onTap: sector.onTap,
+      customWidgets: sector.customWidgets,
+    );
   }
 
   /// Merges sectors under [smallWeightThresholdPercent] into Other (<3%).
@@ -719,7 +923,7 @@ class SectorHeatmapConverter {
 
     if (sectorWeightage <= 0) return null;
 
-    final stockTiles = _createStockTiles(sector, sectorValue);
+    final stockTiles = _createStockTiles(sector, sectorValue, totalValue);
     final avgPerformance = _calculateSectorPerformance(sector);
 
     return HeatmapTileData(
@@ -733,12 +937,25 @@ class SectorHeatmapConverter {
       metadata: {
         'type': 'sector',
         'sectorName': sector.sectorName,
-        'stockCount': sector.stockCount,
+        'stockCount': stockTiles.length,
+        'holdingsCount': stockTiles.length,
+        'totalQuantity': _sumStockQuantities(stockTiles),
         'totalReturnAmount': sector.totalReturnAmount,
         'color': sector.color,
+        'changePercent': avgPerformance,
+        'weightPortfolioPct': sectorWeightage.toDouble(),
       },
       customColor: _parseColor(sector.color),
     );
+  }
+
+  static double _sumStockQuantities(List<HeatmapTileData> stocks) {
+    var total = 0.0;
+    for (final stock in stocks) {
+      final q = stock.metadata?['quantity'];
+      if (q is num) total += q.toDouble();
+    }
+    return total;
   }
 
   static Color? _parseColor(String? colorHex) {
@@ -755,11 +972,13 @@ class SectorHeatmapConverter {
   static List<HeatmapTileData> _createStockTiles(
     Sector sector,
     double sectorValue,
+    double totalPortfolioValue,
   ) {
     final stockTiles = <HeatmapTileData>[];
 
     for (final stock in sector.stocks) {
-      final stockTile = _createStockTile(stock, sector, sectorValue);
+      final stockTile =
+          _createStockTile(stock, sector, sectorValue, totalPortfolioValue);
       if (stockTile != null) {
         stockTiles.add(stockTile);
       }
@@ -775,11 +994,15 @@ class SectorHeatmapConverter {
     Stock stock,
     Sector sector,
     double sectorValue,
+    double totalPortfolioValue,
   ) {
     final stockValue = _calculateStockValue(stock);
     final stockSectorWeightage = sectorValue > 0
         ? (stockValue / sectorValue) * 100
         : 0.0;
+    final portfolioWeightage = totalPortfolioValue > 0
+        ? (stockValue / totalPortfolioValue) * 100
+        : stockSectorWeightage;
 
     if (stockSectorWeightage <= 0) return null;
 
@@ -799,6 +1022,9 @@ class SectorHeatmapConverter {
         'lastPrice': stock.lastPrice,
         'totalReturn': stock.totalReturn,
         'sector': sector.sectorName,
+        'changePercent': stock.changePercent,
+        'weightPortfolioPct': portfolioWeightage.toDouble(),
+        'weightSectorPct': stockSectorWeightage.toDouble(),
       },
     );
   }
@@ -1045,29 +1271,19 @@ class SectorHeatmapConverter {
     return avg;
   }
 
-  /// Get display name for a sector (with abbreviations for long names)
+  /// Sector header label. Keep readable short forms for known long names;
+  /// never mid-word truncate (that produced "Consumer Dis...").
   static String _getSectorDisplayName(String sectorName) {
-    // Shorten long sector names for better display
     final sectorAbbreviations = <String, String>{
       'Information Technology': 'IT',
       'Financial Services': 'Finance',
-      'Consumer Durables': 'Consumer Dur.',
-      'Consumer Non-Durables': 'Consumer Non-Dur.',
-      'Health Technology': 'Health Tech',
-      'Electronic Technology': 'Electronic Tech',
-      'Technology Services': 'Tech Services',
-      'Producer Manufacturing': 'Manufacturing',
-      'Process Industries': 'Process Ind.',
-      'Transportation': 'Transport',
-      'Commercial Services': 'Commercial',
-      'Energy Minerals': 'Energy',
-      'Non-Energy Minerals': 'Minerals',
       'Fast Moving Consumer Goods': 'FMCG',
+      'Consumer Discretionary': 'Consumer Discretionary',
+      'Consumer Staples': 'Consumer Staples',
+      'Consumer Durables': 'Consumer Durables',
+      'Consumer Non-Durables': 'Consumer Non-Durables',
     };
 
-    return sectorAbbreviations[sectorName] ??
-        (sectorName.length > 12
-            ? '${sectorName.substring(0, 12)}...'
-            : sectorName);
+    return sectorAbbreviations[sectorName] ?? sectorName;
   }
 }

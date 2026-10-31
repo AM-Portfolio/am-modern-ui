@@ -49,11 +49,13 @@ class _PaperPositionsPnlPaneState extends State<PaperPositionsPnlPane> {
   }
 
   void _maybeRefreshLtps() {
-    final state = context.read<PaperOmsCubit>().state;
-    final key = state.positions.map((p) => '${p.symbol}:${p.qty}').join('|');
-    if (key == _lastPosKey && _ltpBySymbol.isNotEmpty) return;
-    _lastPosKey = key;
-    _loadLtps(state.positions);
+    try {
+      final state = context.read<PaperOmsCubit>().state;
+      final key = state.positions.map((p) => '${p.symbol}:${p.qty}').join('|');
+      if (key == _lastPosKey && _ltpBySymbol.isNotEmpty) return;
+      _lastPosKey = key;
+      _loadLtps(state.positions);
+    } catch (_) {}
   }
 
   Future<void> _loadLtps(List<OmsPosition> positions) async {

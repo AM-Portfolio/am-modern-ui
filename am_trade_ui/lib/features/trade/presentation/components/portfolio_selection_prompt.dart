@@ -5,12 +5,17 @@ class PortfolioSelectionPrompt extends StatelessWidget {
   final String title;
   final IconData icon;
   final VoidCallback onViewPortfolioList;
+  /// Optional second action (e.g. Journal "All portfolios").
+  final String? secondaryLabel;
+  final VoidCallback? onSecondary;
 
   const PortfolioSelectionPrompt({
     super.key,
     required this.title,
     required this.icon,
     required this.onViewPortfolioList,
+    this.secondaryLabel,
+    this.onSecondary,
   });
 
   @override
@@ -46,6 +51,13 @@ class PortfolioSelectionPrompt extends StatelessWidget {
             icon: const Icon(Icons.list),
             label: const Text('View Portfolio List'),
           ),
+          if (secondaryLabel != null && onSecondary != null) ...[
+            const SizedBox(height: 12),
+            TextButton(
+              onPressed: onSecondary,
+              child: Text(secondaryLabel!),
+            ),
+          ],
         ],
       ),
     );

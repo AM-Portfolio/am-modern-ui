@@ -355,7 +355,11 @@ class _FilterBottomSheetContentState extends ConsumerState<_FilterBottomSheetCon
       decoration: BoxDecoration(color: ModuleColors.trade, borderRadius: BorderRadius.circular(12)),
       child: Text(
         '$_activeFilterCount',
-        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.bold,
+          color: context.colors.actionPrimaryFg,
+        ),
       ),
     ),
   );
@@ -548,7 +552,10 @@ class _FilterBottomSheetContentState extends ConsumerState<_FilterBottomSheetCon
     children: [
       _buildSelectionIcon(theme, isSelected),
       const SizedBox(width: 10),
-      if (filter.isDefault) ...[Icon(Icons.star, size: 16, color: Colors.amber[700]), const SizedBox(width: 6)],
+      if (filter.isDefault) ...[
+        Icon(Icons.star, size: 16, color: context.statusWarning),
+        const SizedBox(width: 6),
+      ],
       Expanded(
         child: Text(
           filter.name,
@@ -590,9 +597,9 @@ class _FilterBottomSheetContentState extends ConsumerState<_FilterBottomSheetCon
     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
     child: Row(
       children: [
-        Icon(Icons.delete_outline, size: 18, color: Colors.red.shade400),
+        Icon(Icons.delete_outline, size: 18, color: context.statusError),
         const SizedBox(width: 10),
-        Text('Delete', style: TextStyle(fontSize: 14, color: Colors.red.shade400)),
+        Text('Delete', style: TextStyle(fontSize: 14, color: context.statusError)),
       ],
     ),
   );
@@ -654,7 +661,7 @@ class _FilterBottomSheetContentState extends ConsumerState<_FilterBottomSheetCon
                 ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('"${filter.name}" deleted')));
               }
             },
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            style: TextButton.styleFrom(foregroundColor: context.statusError),
             child: const Text('Delete'),
           ),
         ],
@@ -691,18 +698,20 @@ class _FilterBottomSheetContentState extends ConsumerState<_FilterBottomSheetCon
     itemBuilder: (context, index) => _buildFilterCard(filterList.filters[index]),
   );
 
-  Widget _buildFilterCard(FavoriteFilter filter) => Card(
-    margin: const EdgeInsets.only(bottom: 8),
-    child: ListTile(
-      leading: _buildFilterLeadingIcon(filter.isDefault),
-      title: Text(filter.name),
-      subtitle: filter.description != null ? Text(filter.description!) : null,
-      trailing: _buildFilterTrailingActions(filter),
+  Widget _buildFilterCard(FavoriteFilter filter) => Builder(
+    builder: (context) => Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: ListTile(
+        leading: Icon(
+          filter.isDefault ? Icons.star : Icons.bookmark_outline,
+          color: filter.isDefault ? context.statusWarning : null,
+        ),
+        title: Text(filter.name),
+        subtitle: filter.description != null ? Text(filter.description!) : null,
+        trailing: _buildFilterTrailingActions(filter),
+      ),
     ),
   );
-
-  Widget _buildFilterLeadingIcon(bool isDefault) =>
-      Icon(isDefault ? Icons.star : Icons.bookmark_outline, color: isDefault ? Colors.amber[700] : null);
 
   Widget _buildFilterTrailingActions(FavoriteFilter filter) => Row(
     mainAxisSize: MainAxisSize.min,
@@ -714,7 +723,7 @@ class _FilterBottomSheetContentState extends ConsumerState<_FilterBottomSheetCon
           tooltip: 'Set as default',
         ),
       IconButton(
-        icon: const Icon(Icons.delete_outline, color: Colors.red),
+        icon: Icon(Icons.delete_outline, color: context.statusError),
         onPressed: () {
           Navigator.of(context).pop();
           _confirmDelete(filter);

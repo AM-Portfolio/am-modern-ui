@@ -4,16 +4,15 @@ import 'package:am_market_ui/features/f_o/presentation/pages/margin_calculator_v
 import 'package:am_market_ui/features/f_o/presentation/pages/option_chain_view.dart';
 import 'package:am_market_ui/features/f_o/presentation/widgets/fo_empty_landing_view.dart';
 import 'package:am_market_ui/features/f_o/presentation/widgets/fo_header_card.dart';
+import 'package:am_market_ui/features/f_o/presentation/widgets/fo_expiry_picker.dart';
 import 'package:am_market_ui/features/f_o/providers/fo_provider.dart';
+import 'package:am_market_ui/features/f_o/providers/option_chain_provider.dart';
+import 'package:am_market_ui/features/f_o/providers/futures_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Which F&O body to show when [FoPage.embed] is true (chart bottom chips).
-enum FoEmbedSection {
-  optionChain,
-  futures,
-  margin,
-}
+enum FoEmbedSection { optionChain, futures, margin }
 
 class FoPage extends ConsumerStatefulWidget {
   const FoPage({
@@ -33,21 +32,47 @@ class FoPage extends ConsumerStatefulWidget {
   final FoEmbedSection embedSection;
 
   @override
-  ConsumerState<FoPage> createState() => _FoPageState();
+  ConsumerState<FoPage> createState() => FoPageState();
 }
 
-class _FoPageState extends ConsumerState<FoPage> {
+class FoPageState extends ConsumerState<FoPage>
+    with SingleTickerProviderStateMixin {
+  late final TabController _tabController;
+  final GlobalKey<OptionChainViewState> _optionChainKey =
+      GlobalKey<OptionChainViewState>();
+
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 3, vsync: this, initialIndex: 0);
     final initial = widget.initialSymbol?.trim().toUpperCase();
     if (initial != null && initial.isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
         ref.read(recentlyViewedFoSymbolsProvider.notifier).add(initial);
+        ref.read(foSelectedExpiryProvider.notifier).state = null;
+        ref.read(selectedFutureContractProvider.notifier).state = null;
+        ref.read(futuresShowAllUnderlyingsProvider.notifier).state = false;
+        ref.read(futuresExpiryFilterProvider.notifier).state = 'All';
         ref.read(foActiveSymbolProvider.notifier).state = initial;
       });
     }
+  }
+
+  /// Called by the parent market navigator whenever it enters F&O. The page is
+  /// retained by that navigator, so [DefaultTabController.initialIndex] alone
+  /// would otherwise retain the last tab the user visited.
+  void resetToOptionChain() {
+    if (_tabController.index != 0) {
+      _tabController.animateTo(0);
+    }
+    _optionChainKey.currentState?.resetToSpotPosition();
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 
   @override
@@ -57,12 +82,20 @@ class _FoPageState extends ConsumerState<FoPage> {
     final prev = oldWidget.initialSymbol?.trim().toUpperCase();
     if (next != null && next.isNotEmpty && next != prev) {
       ref.read(recentlyViewedFoSymbolsProvider.notifier).add(next);
+      ref.read(foSelectedExpiryProvider.notifier).state = null;
+      ref.read(selectedFutureContractProvider.notifier).state = null;
+      ref.read(futuresShowAllUnderlyingsProvider.notifier).state = false;
+      ref.read(futuresExpiryFilterProvider.notifier).state = 'All';
       ref.read(foActiveSymbolProvider.notifier).state = next;
     }
   }
 
   void _onSymbolSelected(String symbol) {
     ref.read(recentlyViewedFoSymbolsProvider.notifier).add(symbol);
+    ref.read(foSelectedExpiryProvider.notifier).state = null;
+    ref.read(selectedFutureContractProvider.notifier).state = null;
+    ref.read(futuresShowAllUnderlyingsProvider.notifier).state = false;
+    ref.read(futuresExpiryFilterProvider.notifier).state = 'All';
     ref.read(foActiveSymbolProvider.notifier).state = symbol;
   }
 
@@ -74,12 +107,10 @@ class _FoPageState extends ConsumerState<FoPage> {
     final scaffoldBg = colors.scaffoldBackground;
 
     final body = activeSymbol == null
-        ? FoEmptyLandingView(
-            onSelected: _onSymbolSelected,
-          )
+        ? FoEmptyLandingView(onSelected: _onSymbolSelected)
         : widget.embed
-            ? _buildEmbedDetailView()
-            : _buildTabDetailView(activeSymbol, colors);
+        ? _buildEmbedDetailView()
+        : _buildTabDetailView(activeSymbol, colors);
 
     if (widget.embed) {
       return ColoredBox(color: Colors.transparent, child: body);
@@ -99,10 +130,7 @@ class _FoPageState extends ConsumerState<FoPage> {
             stops: const [0.0, 0.5, 1.0],
           ),
         ),
-        child: SafeArea(
-          top: false,
-          child: body,
-        ),
+        child: SafeArea(top: false, child: body),
       ),
     );
   }
@@ -112,59 +140,108 @@ class _FoPageState extends ConsumerState<FoPage> {
     final width = MediaQuery.sizeOf(context).width;
     final isMobile = width < AmBreakpoints.mobile;
     final bottomInset = MediaQuery.paddingOf(context).bottom;
+    final chainData = isMobile
+        ? ref.watch(optionChainProvider).asData?.value
+        : null;
+    final expiries =
+        (chainData?['expiries'] as List<dynamic>?)
+            ?.map((expiry) => expiry.toString())
+            .toList() ??
+        const <String>[];
+    final selectedExpiry = ref.watch(foSelectedExpiryProvider);
+    final responseExpiry = chainData?['expiry']?.toString() ?? '';
+    final activeExpiry =
+        selectedExpiry != null && expiries.contains(selectedExpiry)
+        ? selectedExpiry
+        : responseExpiry;
 
-    return DefaultTabController(
-      length: 3,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          FoHeaderCard(
-            symbol: symbol,
-            onBack: () {
-              ref.read(foActiveSymbolProvider.notifier).state = null;
-            },
-          ),
-          TabBar(
-            isScrollable: true,
-            tabAlignment: TabAlignment.start,
-            indicatorColor: ModuleColors.market,
-            indicatorWeight: isMobile ? 2 : 2.5,
-            dividerHeight: isMobile ? 0.5 : 1,
-            labelColor: colors.textPrimary,
-            unselectedLabelColor: colors.textSecondary,
-            labelPadding: EdgeInsets.symmetric(
-              horizontal: isMobile ? 10 : 16,
-            ),
-            labelStyle: TextStyle(
-              fontSize: isMobile ? 12.5 : 14,
-              fontWeight: FontWeight.w600,
-              height: 1.1,
-            ),
-            unselectedLabelStyle: TextStyle(
-              fontSize: isMobile ? 12.5 : 14,
-              fontWeight: FontWeight.w500,
-              height: 1.1,
-            ),
-            tabs: [
-              Tab(height: isMobile ? 36 : 46, text: 'Option Chain'),
-              Tab(height: isMobile ? 36 : 46, text: 'Futures Contracts'),
-              Tab(height: isMobile ? 36 : 46, text: 'Margin Calculator'),
-            ],
-          ),
-          Expanded(
-            child: Padding(
-              padding: EdgeInsets.only(bottom: isMobile ? bottomInset : 0),
-              child: const TabBarView(
-                children: [
-                  OptionChainView(),
-                  FuturesView(),
-                  MarginCalculatorView(),
-                ],
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        FoHeaderCard(symbol: symbol),
+        const SizedBox(height: AppSpacing.xs),
+        Builder(
+          builder: (tabContext) {
+            final tabs = TabBar(
+              controller: _tabController,
+              isScrollable: !isMobile,
+              tabAlignment: isMobile ? null : TabAlignment.start,
+              indicatorColor: ModuleColors.market,
+              indicatorWeight: isMobile ? 2 : 2.5,
+              dividerHeight: isMobile ? 0.5 : 1,
+              labelColor: colors.textPrimary,
+              unselectedLabelColor: colors.textSecondary,
+              labelPadding: EdgeInsets.symmetric(
+                horizontal: isMobile ? 10 : 16,
               ),
+              labelStyle: TextStyle(
+                fontSize: isMobile ? 12.5 : 14,
+                fontWeight: FontWeight.w600,
+                height: 1.1,
+              ),
+              unselectedLabelStyle: TextStyle(
+                fontSize: isMobile ? 12.5 : 14,
+                fontWeight: FontWeight.w500,
+                height: 1.1,
+              ),
+              tabs: [
+                for (final title in const [
+                  'Option Chain',
+                  'Futures Contracts',
+                  'Margin Calculator',
+                ])
+                  Tab(
+                    height: isMobile ? 36 : 46,
+                    child: isMobile
+                        ? FittedBox(fit: BoxFit.scaleDown, child: Text(title))
+                        : Text(title),
+                  ),
+              ],
+            );
+            if (!isMobile) return tabs;
+            return Row(
+              children: [
+                Expanded(child: tabs),
+                SizedBox(
+                  width: 82,
+                  child: AnimatedBuilder(
+                    animation: _tabController,
+                    builder: (context, child) => child!.withSubmarineReveal(
+                      visible: _tabController.index == 0,
+                      height: 36,
+                      accentColor: ModuleColors.market,
+                    ),
+                    child: FoExpiryPicker(
+                      expiries: expiries,
+                      activeExpiry: activeExpiry,
+                      compact: true,
+                      onSelected: (expiry) =>
+                          ref.read(foSelectedExpiryProvider.notifier).state =
+                              expiry,
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+        Expanded(
+          child: Padding(
+            padding: EdgeInsets.only(bottom: isMobile ? bottomInset : 0),
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                OptionChainView(
+                  key: _optionChainKey,
+                  showExpiryInToolbar: !isMobile,
+                ),
+                const FuturesView(),
+                const MarginCalculatorView(),
+              ],
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 

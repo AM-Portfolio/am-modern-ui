@@ -6,7 +6,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:am_portfolio_ui/features/portfolio/presentation/sections/portfolio_comparison_chart_section.dart';
 import 'portfolio_top_movers_panel.dart';
 import 'package:am_design_system/am_design_system.dart' as ds;
-import 'package:intl/intl.dart';
 
 import '../cubit/portfolio_cubit.dart';
 import '../cubit/portfolio_state.dart';
@@ -15,7 +14,7 @@ import '../cubit/portfolio_analytics_state.dart';
 import '../cubit/portfolio_intraday_cubit.dart';
 import 'package:am_common/am_common.dart';
 import 'package:am_news_ui/am_news_ui.dart';
-import 'portfolio_metric_card.dart';
+import 'overview_metric_strip.dart';
 import '../../providers/portfolio_providers.dart';
 import 'intelligence/portfolio_health_card.dart';
 import 'intelligence/portfolio_risk_radar_card.dart';
@@ -343,7 +342,10 @@ class _PortfolioOverviewWidgetState
                             buildWhen: (previous, current) {
                               if (previous is PortfolioLoaded &&
                                   current is PortfolioLoaded) {
-                                return previous.summary != current.summary;
+                                return previous.summary != current.summary ||
+                                    previous.holdings != current.holdings ||
+                                    previous.isHoldingsLoading !=
+                                        current.isHoldingsLoading;
                               }
                               return previous.runtimeType !=
                                   current.runtimeType;
@@ -373,97 +375,15 @@ class _PortfolioOverviewWidgetState
                                             ),
                                       ),
                                     ),
-                                  if (isPhone)
-                                    Builder(
-                                      builder: (context) {
-                                        final cards = _buildMetricCards(
-                                          loaded,
-                                          compact: true,
-                                          glowBorder: false,
-                                        );
-                                        return Column(
-                                          children: [
-                                            Row(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                                Expanded(child: cards[0]),
-                                                const SizedBox(width: 10),
-                                                Expanded(child: cards[1]),
-                                              ],
-                                            ),
-                                            const SizedBox(height: 10),
-                                            Row(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                                Expanded(child: cards[2]),
-                                                const SizedBox(width: 10),
-                                                Expanded(child: cards[3]),
-                                              ],
-                                            ),
-                                          ],
-                                        );
-                                      },
-                                    )
-                                  else
-                                    Builder(
-                                      builder: (context) {
-                                        final cards = _buildMetricCards(
-                                          loaded,
-                                          compact: isTablet,
-                                        );
-                                        final leftGroup = Row(
-                                          children: [
-                                            Expanded(
-                                              child: cards[0]
-                                                  .animate()
-                                                  .fadeIn(duration: 400.ms)
-                                                  .slideY(begin: 0.2, end: 0),
-                                            ),
-                                            const SizedBox(width: 12),
-                                            Expanded(
-                                              child: cards[1]
-                                                  .animate()
-                                                  .fadeIn(
-                                                    duration: 400.ms,
-                                                    delay: 100.ms,
-                                                  )
-                                                  .slideY(begin: 0.2, end: 0),
-                                            ),
-                                          ],
-                                        );
-                                        final rightGroup = Row(
-                                          children: [
-                                            Expanded(
-                                              child: cards[2]
-                                                  .animate()
-                                                  .fadeIn(
-                                                    duration: 400.ms,
-                                                    delay: 200.ms,
-                                                  )
-                                                  .slideY(begin: 0.2, end: 0),
-                                            ),
-                                            const SizedBox(width: 12),
-                                            Expanded(
-                                              child: cards[3]
-                                                  .animate()
-                                                  .fadeIn(
-                                                    duration: 400.ms,
-                                                    delay: 300.ms,
-                                                  )
-                                                  .slideY(begin: 0.2, end: 0),
-                                            ),
-                                          ],
-                                        );
-                                        return _twoCol(
-                                          leftGroup,
-                                          rightGroup,
-                                          leftFlex: 14,
-                                          rightFlex: 10,
-                                        );
-                                      },
-                                    ),
+                                  OverviewMetricStrip(
+                                    summary: loaded.summary,
+                                    holdings: loaded.holdings,
+                                    isPhone: isPhone,
+                                    isHoldingsLoading: loaded.isHoldingsLoading,
+                                    compact: isPhone || isTablet,
+                                    glowBorder: !isPhone,
+                                    animate: !isPhone,
+                                  ),
                                 ],
                               );
                             },
@@ -624,7 +544,8 @@ class _PortfolioOverviewWidgetState
         ? PortfolioStressCard(
             key: ValueKey('stress_$portfolioId'),
             portfolioId: portfolioId,
-            initiallyExpanded: !isPhone,
+            // Always open so mobile users see scenarios without an extra tap.
+            initiallyExpanded: true,
             fillHeight: fillBottom,
           )
         : null;
@@ -632,7 +553,8 @@ class _PortfolioOverviewWidgetState
         ? PortfolioWhatIfCard(
             key: ValueKey('whatif_$portfolioId'),
             portfolioId: portfolioId,
-            initiallyExpanded: !isPhone,
+            // Always open so mobile users see the simulator without an extra tap.
+            initiallyExpanded: true,
             fillHeight: fillBottom,
           )
         : null;
@@ -694,7 +616,7 @@ class _PortfolioOverviewWidgetState
 
     // Web always, and tablet ≥900: Movers | Stress | What-If one equal-height band.
     // Narrow tablet 600–899 keeps Movers full-width then Stress|What-If.
-    const bottomBandH = 430.0;
+    const bottomBandH = PortfolioTopMoversPanel.peerBandHeight;
     if (useThreeColBottom) {
       final bottom = <Widget>[
         Expanded(child: movers),
@@ -762,112 +684,6 @@ class _PortfolioOverviewWidgetState
       return SizedBox(height: forceHeight, child: row);
     }
     return row;
-  }
-
-  /// Builds the 4 metric cards with real data from [state].
-  List<Widget> _buildMetricCards(
-    PortfolioLoaded state, {
-    bool compact = false,
-    bool glowBorder = true,
-  }) {
-    final summaryToUse = state.summary;
-
-    // Total Return = overall unrealized P&L (mark − invested). Not session / not period.
-    final double periodReturn = summaryToUse.totalGainLoss;
-    final double periodReturnPct = summaryToUse.totalGainLossPercentage;
-    const String periodLabel = 'total';
-    // Today's P&L = last-session LTP day move only. AS_OF + ₹0 is collapsed quotes, not a real flat day.
-    final bool todayLooksCollapsedZero = !summaryToUse.isLivePrices &&
-        summaryToUse.todayChange != null &&
-        summaryToUse.todayChange!.abs() < 0.005;
-    final double? effectiveToday =
-        todayLooksCollapsedZero ? null : summaryToUse.todayChange;
-    final double? effectiveTodayPct =
-        todayLooksCollapsedZero ? null : summaryToUse.todayChangePercentage;
-    final bool todayUnavailable = effectiveToday == null;
-    final double todayChange = effectiveToday ?? 0;
-    final double todayChangePct = effectiveTodayPct ?? 0;
-
-    final modulePink = ds.ModuleColors.portfolio;
-
-    return [
-      PortfolioMetricCard(
-        title: 'Total Return',
-        value: _formatCurrency(periodReturn),
-        subtitle:
-            '${periodReturnPct >= 0 ? "+" : ""}${periodReturnPct.toStringAsFixed(2)}% in $periodLabel',
-        accentColor: periodReturn == 0
-            ? context.statusNeutral
-            : (periodReturn > 0
-                  ? context.marketPositive
-                  : context.marketNegative),
-        chromeColor: modulePink,
-        icon: periodReturn >= 0
-            ? Icons.trending_up_rounded
-            : Icons.trending_down_rounded,
-        isPositive: periodReturn == 0 ? null : periodReturn > 0,
-        compact: compact,
-        glowBorder: glowBorder,
-        tooltip: 'Total unrealized profit or loss across all holdings',
-      ),
-      PortfolioMetricCard(
-        title: "Today's P&L",
-        value: todayUnavailable ? '—' : _formatCurrency(todayChange),
-        subtitle: todayUnavailable
-            ? 'Unavailable'
-            : '${todayChangePct >= 0 ? "+" : ""}${todayChangePct.toStringAsFixed(2)}%',
-        accentColor: todayUnavailable || todayChange == 0
-            ? context.statusNeutral
-            : (todayChange > 0
-                  ? context.marketPositive
-                  : context.marketNegative),
-        chromeColor: modulePink,
-        icon: todayUnavailable || todayChange >= 0
-            ? Icons.keyboard_double_arrow_up_rounded
-            : Icons.keyboard_double_arrow_down_rounded,
-        isPositive: todayUnavailable || todayChange == 0
-            ? null
-            : todayChange > 0,
-        compact: compact,
-        glowBorder: glowBorder,
-        tooltip: todayUnavailable
-            ? 'Day P&L unavailable (missing prior session close)'
-            : 'Unrealized profit or loss for the last cash session',
-      ),
-      PortfolioMetricCard(
-        title: 'Total Balance',
-        value: _formatCurrency(summaryToUse.totalValue),
-        subtitle: '${summaryToUse.totalAssets} holdings',
-        accentColor: modulePink,
-        icon: null,
-        isPositive: null,
-        compact: compact,
-        glowBorder: false,
-        tooltip: 'Total value of all holdings based on current market price',
-      ),
-      PortfolioMetricCard(
-        title: 'Invested Amount',
-        value: _formatCurrency(summaryToUse.investmentValue),
-        subtitle: 'Total Principal',
-        accentColor: modulePink,
-        icon: null,
-        isPositive: null,
-        isHighlight: false,
-        compact: compact,
-        glowBorder: false,
-        tooltip: 'Total principal amount invested',
-      ),
-    ];
-  }
-
-  String _formatCurrency(double amount) {
-    if (!amount.isFinite) return '₹0';
-    final formatter = NumberFormat.currency(
-      locale: 'en_IN',
-      symbol: '₹',
-      decimalDigits: 2,
-    );
-    return formatter.format(amount);
   }
 
   Widget _buildOverviewSkeleton(BuildContext context) {

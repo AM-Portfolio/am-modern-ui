@@ -15,6 +15,7 @@ abstract class JournalRepository {
     String? tradeDirection,
     String? folderId,
     String? playbookId,
+    String? portfolioId,
     PreTradePlan? preTradePlan,
     TradeExecution? tradeExecution,
     PostTradeReview? postTradeReview,
@@ -47,6 +48,7 @@ abstract class JournalRepository {
     String? tradeDirection,
     String? folderId,
     String? playbookId,
+    String? portfolioId,
     PreTradePlan? preTradePlan,
     TradeExecution? tradeExecution,
     PostTradeReview? postTradeReview,
@@ -77,28 +79,36 @@ abstract class JournalRepository {
     DateTime endDate,
   );
 
-  Future<JournalSummaryDto> getSummary(DateTime startDate, DateTime endDate);
+  Future<JournalSummaryDto> getSummary(
+    DateTime startDate,
+    DateTime endDate, {
+    String? portfolioId,
+  });
 
   Future<List<MistakeAnalysisDto>> getMistakesSummary(
     DateTime startDate,
-    DateTime endDate,
-  );
+    DateTime endDate, {
+    String? portfolioId,
+  });
 
   Future<List<LessonLearnedDto>> getLessons(
     DateTime startDate,
     DateTime endDate, {
     int limit = 10,
+    String? portfolioId,
   });
 
   Future<JournalAdherenceDto> getAdherence(
     DateTime startDate,
-    DateTime endDate,
-  );
+    DateTime endDate, {
+    String? portfolioId,
+  });
 
   Future<JournalReportCardDto> getReportCard(
     DateTime startDate,
-    DateTime endDate,
-  );
+    DateTime endDate, {
+    String? portfolioId,
+  });
 
   Future<JournalEntry> updatePrePlan(String entryId, PreTradePlan plan);
 
@@ -123,10 +133,15 @@ abstract class JournalRepository {
 
   Future<int> bulkDelete(List<String> entryIds);
 
-  Future<String> exportCsv(DateTime startDate, DateTime endDate);
+  Future<String> exportCsv(
+    DateTime startDate,
+    DateTime endDate, {
+    String? portfolioId,
+  });
 
   Future<List<JournalEntry>> createFromTrades(
     List<String> tradeIds, {
-    String journalStatus = 'COMPLETED',
+    String journalStatus = 'DRAFT',
+    String? portfolioId,
   });
 }

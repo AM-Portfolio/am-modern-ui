@@ -23,6 +23,9 @@ class ChartPaneState {
     this.quote,
     this.error,
     this.isMock = false,
+    this.comparisonSymbols = const [],
+    this.comparisonBars = const {},
+    this.loadingComparisons = false,
   });
 
   final String id;
@@ -35,6 +38,11 @@ class ChartPaneState {
   final ChartQuote? quote;
   final String? error;
   final bool isMock;
+  final List<String> comparisonSymbols;
+  final Map<String, List<ChartBar>> comparisonBars;
+  final bool loadingComparisons;
+
+  bool get hasComparisons => comparisonSymbols.isNotEmpty;
 
   ChartPaneState copyWith({
     String? symbol,
@@ -46,7 +54,11 @@ class ChartPaneState {
     ChartQuote? quote,
     String? error,
     bool? isMock,
+    List<String>? comparisonSymbols,
+    Map<String, List<ChartBar>>? comparisonBars,
+    bool? loadingComparisons,
     bool clearError = false,
+    bool clearComparisons = false,
   }) {
     return ChartPaneState(
       id: id,
@@ -59,6 +71,13 @@ class ChartPaneState {
       quote: quote ?? this.quote,
       error: clearError ? null : (error ?? this.error),
       isMock: isMock ?? this.isMock,
+      comparisonSymbols: clearComparisons
+          ? const []
+          : (comparisonSymbols ?? this.comparisonSymbols),
+      comparisonBars: clearComparisons
+          ? const {}
+          : (comparisonBars ?? this.comparisonBars),
+      loadingComparisons: loadingComparisons ?? this.loadingComparisons,
     );
   }
 }
@@ -352,10 +371,19 @@ class ChartTerminalController extends Notifier<ChartTerminalState> {
   }) async {
     final i = paneIndex ?? state.activePaneIndex;
     final panes = [...state.panes];
-    panes[i] = panes[i].copyWith(
+    final currentPane = panes[i];
+    final filteredComparisons = currentPane.comparisonSymbols
+        .where((s) => s.toUpperCase() != symbol.toUpperCase())
+        .toList();
+    final filteredBars = Map<String, List<ChartBar>>.from(currentPane.comparisonBars)
+      ..removeWhere((k, _) => k.toUpperCase() == symbol.toUpperCase());
+
+    panes[i] = currentPane.copyWith(
       symbol: symbol,
       exchange: exchange ?? _exchangeFor(symbol),
       timeframe: ChartTimeframe.y1,
+      comparisonSymbols: filteredComparisons,
+      comparisonBars: filteredBars,
       loading: true,
       clearError: true,
     );
@@ -472,17 +500,38 @@ class ChartTerminalController extends Notifier<ChartTerminalState> {
     final market = ref.read(chartMarketProvider);
     final mock = history.isMock;
     try {
-      final bars = await history.getBars(
+      final barsFuture = history.getBars(
         symbol: pane.symbol,
         timeframe: pane.timeframe.code,
       );
-      final quote = await market.getQuote(pane.symbol);
+      final quoteFuture = market.getQuote(pane.symbol);
+
+      final compFutures = <String, Future<List<ChartBar>>>{};
+      for (final sym in pane.comparisonSymbols) {
+        compFutures[sym] = history.getBars(
+          symbol: sym,
+          timeframe: pane.timeframe.code,
+        );
+      }
+
+      final bars = await barsFuture;
+      final quote = await quoteFuture;
+
+      final compBars = <String, List<ChartBar>>{};
+      for (final entry in compFutures.entries) {
+        try {
+          compBars[entry.key] = await entry.value;
+        } catch (_) {}
+      }
+
       final panes = [...state.panes];
       panes[index] = pane.copyWith(
         bars: bars,
+        comparisonBars: compBars,
         quote: quote,
         exchange: quote?.exchange ?? pane.exchange,
         loading: false,
+        loadingComparisons: false,
         isMock: mock,
         clearError: true,
       );
@@ -493,11 +542,96 @@ class ChartTerminalController extends Notifier<ChartTerminalState> {
       panes[index] = pane.copyWith(
         bars: const [],
         loading: false,
+        loadingComparisons: false,
         error: 'Failed to load chart data',
         isMock: mock,
       );
       state = state.copyWith(panes: panes);
     }
+  }
+
+  Future<void> toggleComparison(String symbol, {int? paneIndex}) async {
+    final i = paneIndex ?? state.activePaneIndex;
+    if (i < 0 || i >= state.panes.length) return;
+    final pane = state.panes[i];
+    final clean = symbol.trim().toUpperCase();
+    if (clean.isEmpty || clean == pane.symbol.toUpperCase()) return;
+
+    if (pane.comparisonSymbols.any((s) => s.toUpperCase() == clean)) {
+      await removeComparison(clean, paneIndex: i);
+    } else {
+      await addComparison(clean, paneIndex: i);
+    }
+  }
+
+  Future<void> addComparison(String symbol, {int? paneIndex}) async {
+    final i = paneIndex ?? state.activePaneIndex;
+    if (i < 0 || i >= state.panes.length) return;
+    final pane = state.panes[i];
+    final clean = symbol.trim().toUpperCase();
+    if (clean.isEmpty || clean == pane.symbol.toUpperCase()) return;
+    if (pane.comparisonSymbols.any((s) => s.toUpperCase() == clean)) return;
+
+    final updatedSymbols = [...pane.comparisonSymbols, clean];
+    final panes = [...state.panes];
+    panes[i] = pane.copyWith(
+      comparisonSymbols: updatedSymbols,
+      loadingComparisons: true,
+    );
+    state = state.copyWith(panes: panes);
+
+    final history = ref.read(chartHistoricalProvider);
+    try {
+      final bars = await history.getBars(
+        symbol: clean,
+        timeframe: pane.timeframe.code,
+      );
+      final currentPane = state.panes[i];
+      final newBarsMap = Map<String, List<ChartBar>>.from(currentPane.comparisonBars);
+      newBarsMap[clean] = bars;
+      final updatedPanes = [...state.panes];
+      updatedPanes[i] = currentPane.copyWith(
+        comparisonBars: newBarsMap,
+        loadingComparisons: false,
+      );
+      state = state.copyWith(panes: updatedPanes);
+    } catch (_) {
+      final currentPane = state.panes[i];
+      final updatedPanes = [...state.panes];
+      updatedPanes[i] = currentPane.copyWith(
+        loadingComparisons: false,
+      );
+      state = state.copyWith(panes: updatedPanes);
+    }
+  }
+
+  Future<void> removeComparison(String symbol, {int? paneIndex}) async {
+    final i = paneIndex ?? state.activePaneIndex;
+    if (i < 0 || i >= state.panes.length) return;
+    final pane = state.panes[i];
+    final clean = symbol.trim().toUpperCase();
+    final updatedSymbols =
+        pane.comparisonSymbols.where((s) => s.toUpperCase() != clean).toList();
+    final updatedBars = Map<String, List<ChartBar>>.from(pane.comparisonBars)
+      ..removeWhere((k, _) => k.toUpperCase() == clean);
+    final panes = [...state.panes];
+    panes[i] = pane.copyWith(
+      comparisonSymbols: updatedSymbols,
+      comparisonBars: updatedBars,
+    );
+    state = state.copyWith(panes: panes);
+  }
+
+  Future<void> clearComparisons({int? paneIndex}) async {
+    final i = paneIndex ?? state.activePaneIndex;
+    if (i < 0 || i >= state.panes.length) return;
+    final pane = state.panes[i];
+    final panes = [...state.panes];
+    panes[i] = pane.copyWith(
+      clearComparisons: true,
+      loadingComparisons: false,
+    );
+    state = state.copyWith(panes: panes);
   }
 
   Future<void> _persist() async {

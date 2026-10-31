@@ -163,6 +163,7 @@ class JournalEntryMapper {
         tradeDirection: dto.tradeDirection,
         folderId: dto.folderId,
         playbookId: dto.playbookId,
+        portfolioId: dto.portfolioId,
         preTradePlan: dto.preTradePlan != null
             ? fromPreTradePlanDto(dto.preTradePlan!)
             : null,
@@ -203,6 +204,7 @@ class JournalEntryMapper {
         tradeDirection: entry.tradeDirection,
         folderId: entry.folderId,
         playbookId: entry.playbookId,
+        portfolioId: entry.portfolioId,
         preTradePlan: entry.preTradePlan != null
             ? toPreTradePlanDto(entry.preTradePlan!)
             : null,

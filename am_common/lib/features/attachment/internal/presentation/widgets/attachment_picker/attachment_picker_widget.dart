@@ -57,21 +57,22 @@ class _AttachmentPickerWidgetState
         // Label with count
         Row(
           children: [
-            if (widget.label != null)
-              Text(
-                widget.label!,
-                style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              )
-            else
+            if (widget.label == null)
               Text(
                 'Attachments',
                 style: theme.textTheme.titleSmall?.copyWith(
                   fontWeight: FontWeight.w600,
                 ),
+              )
+            else if (widget.label!.isNotEmpty)
+              Text(
+                widget.label!,
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
               ),
-            const SizedBox(width: 8),
+            if (widget.label == null || widget.label!.isNotEmpty)
+              const SizedBox(width: 8),
             Text(
               '(${widget.attachmentUrls.length}/${widget.maxAttachments})',
               style: theme.textTheme.bodySmall?.copyWith(
@@ -133,7 +134,8 @@ class _AttachmentPickerWidgetState
   );
 
   Widget _buildThumbnail(String url, int index) {
-    final isImage = _isImageUrl(url);
+    final isStub = UploadConfig.isStubOrPlaceholderUrl(url);
+    final isImage = !isStub && _isImageUrl(url);
     final theme = Theme.of(context);
 
     return Stack(
@@ -143,43 +145,69 @@ class _AttachmentPickerWidgetState
           height: 100,
           decoration: BoxDecoration(
             border: Border.all(
-              color: theme.colorScheme.outline.withOpacity(0.3),
+              color: isStub
+                  ? theme.colorScheme.error.withOpacity(0.55)
+                  : theme.colorScheme.outline.withOpacity(0.3),
             ),
             borderRadius: BorderRadius.circular(8),
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(8),
-            child: isImage
-                ? Image.network(
-                    url,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => const Center(
-                      child: Icon(Icons.broken_image, color: Colors.grey),
+            child: isStub
+                ? ColoredBox(
+                    color: theme.colorScheme.errorContainer.withOpacity(0.35),
+                    child: Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.hide_image_outlined,
+                            size: 28,
+                            color: theme.colorScheme.error,
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            'Re-upload',
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: theme.colorScheme.error,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                    loadingBuilder: (context, child, loadingProgress) {
-                      if (loadingProgress == null) return child;
-                      return const Center(
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      );
-                    },
                   )
-                : Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          _getFileIcon(url),
-                          size: 32,
-                          color: theme.colorScheme.primary,
+                : isImage
+                    ? Image.network(
+                        url,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => const Center(
+                          child: Icon(Icons.broken_image, color: Colors.grey),
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          _getFileExtension(url).toUpperCase(),
-                          style: theme.textTheme.labelSmall,
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return const Center(
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          );
+                        },
+                      )
+                    : Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              _getFileIcon(url),
+                              size: 32,
+                              color: theme.colorScheme.primary,
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              _getFileExtension(url).toUpperCase(),
+                              style: theme.textTheme.labelSmall,
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
-                  ),
+                      ),
           ),
         ),
         Positioned(
@@ -424,7 +452,7 @@ class _AttachmentPickerWidgetState
   }
 
   IconData _getFileIcon(String url) {
-    final ext = _getFileExtension(url).toLowerCase();
+    final ext = UploadConfig.extensionFromUrl(url);
     if (UploadConfig.isDocumentExtension(ext)) {
       return Icons.description;
     } else if (UploadConfig.isVideoExtension(ext)) {
@@ -433,10 +461,16 @@ class _AttachmentPickerWidgetState
     return Icons.insert_drive_file;
   }
 
-  String _getFileExtension(String url) => url.split('.').last.split('?').first;
-
-  bool _isImageUrl(String url) {
-    final ext = _getFileExtension(url).toLowerCase();
-    return UploadConfig.isImageExtension(ext);
+  String _getFileExtension(String url) {
+    final ext = UploadConfig.extensionFromUrl(url);
+    if (ext.isNotEmpty) return ext;
+    final uri = Uri.tryParse(url);
+    final segments =
+        (uri?.pathSegments.isNotEmpty ?? false) ? uri!.pathSegments : <String>[];
+    if (segments.isEmpty) return 'FILE';
+    final name = segments.last;
+    return name.length > 12 ? '${name.substring(0, 12)}…' : name;
   }
+
+  bool _isImageUrl(String url) => UploadConfig.looksLikeImageUrl(url);
 }
