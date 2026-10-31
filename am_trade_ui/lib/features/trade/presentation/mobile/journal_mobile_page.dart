@@ -467,8 +467,9 @@ class _JournalMobilePageState extends ConsumerState<JournalMobilePage> {
         loaded: (entries, summary, adherence, status, folder, tags, q, setup) {
           if (entries.isEmpty) {
             return _EmptyMobileEntries(
-              onLogDay: () => _openComposer(trade: false),
-              onTradeJournal: () => _openComposer(trade: true),
+              onOpenTemplates: () {
+                setState(() => _tab = _JournalMobileTab.playbooks);
+              },
             );
           }
           final bottomPad =
@@ -648,16 +649,15 @@ class _EntryTypeChip extends StatelessWidget {
 
 class _EmptyMobileEntries extends StatelessWidget {
   const _EmptyMobileEntries({
-    required this.onLogDay,
-    required this.onTradeJournal,
+    required this.onOpenTemplates,
   });
 
-  final VoidCallback onLogDay;
-  final VoidCallback onTradeJournal;
+  final VoidCallback onOpenTemplates;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
+    final accent = ModuleColorProvider.maybeOf(context) ?? ModuleColors.trade;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.lg),
@@ -675,17 +675,24 @@ class _EmptyMobileEntries extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.xs),
             Text(
-              'Start with a Log day note or a Trade journal.',
+              'Start with a Log day note, a Trade journal, or pick a template.',
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: colors.textSecondary,
                   ),
             ),
             const SizedBox(height: AppSpacing.lg),
-            JournalCreateModeToggle(
-              selected: true,
-              onLogDay: onLogDay,
-              onTradeJournal: onTradeJournal,
+            AppButton(
+              text: 'Browse Templates',
+              icon: Icons.description_outlined,
+              type: AppButtonType.primary,
+              backgroundColor: accent,
+              height: 40,
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.lg,
+                vertical: AppSpacing.sm,
+              ),
+              onPressed: onOpenTemplates,
             ),
           ],
         ),
