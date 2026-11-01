@@ -112,46 +112,139 @@ class MarketProvider with ChangeNotifier {
     unawaited(_resubscribeActiveSymbols());
   }
 
-  Future<void> _resubscribeActiveSymbols() async {
-    if (_priceService == null) return;
+  /// Max simultaneous live-streamed symbols before evicting lower-priority symbols.
+  static const int kMaxLiveSymbolSubscriptions = 100;
 
-    final symbols = <String>{..._subscribedSymbols};
-    if (symbols.isEmpty) {
-      symbols.addAll(_priceService!.subscribedSymbols);
+  @visibleForTesting
+  List<String> prioritizeSubscriptionBudgetForTest(
+          Iterable<String> requested) =>
+      _prioritizeSubscriptionBudget(requested);
+
+  @visibleForTesting
+  Set<String> get subscribedSymbolsForTest =>
+      Set.unmodifiable(_subscribedSymbols);
+
+  @visibleForTesting
+  set currentIndexDataForTest(StockIndicesMarketData? data) =>
+      _currentIndexData = data;
+
+  @visibleForTesting
+  set selectedIndexForTest(String? s) => _selectedIndex = s;
+
+  List<String> _prioritizeSubscriptionBudget(Iterable<String> requested) {
+    final prioritized = <String>[];
+    final seen = <String>{};
+
+    void addSymbol(String s) {
+      final norm = s.trim();
+      if (norm.isNotEmpty && seen.add(norm.toUpperCase())) {
+        prioritized.add(norm);
+      }
     }
+
+    // 1. Current active index
     if (_selectedIndex != null &&
         _selectedIndex != 'All Indices' &&
         _selectedIndex != 'Dashboard' &&
         !isNavigationOnlySelection(_selectedIndex)) {
-      symbols.add(_selectedIndex!);
+      addSymbol(_selectedIndex!);
+    }
+
+    // 2. Explicit detail symbols (e.g. active stock detail page)
+    for (final s in _detailSymbols) {
+      addSymbol(s);
+    }
+
+    // 3. Current active index constituents
+    if (_currentIndexData != null) {
+      for (final stock in _currentIndexData!.stocks) {
+        addSymbol(stock.symbol);
+      }
+    }
+
+    // 4. Newly requested symbols
+    for (final s in requested) {
+      addSymbol(s);
+    }
+
+    // 5. Existing overview symbols
+    for (final e in _allIndicesData) {
+      addSymbol(e.indexSymbol);
+    }
+
+    if (prioritized.length > kMaxLiveSymbolSubscriptions) {
+      return prioritized.take(kMaxLiveSymbolSubscriptions).toList();
+    }
+    return prioritized;
+  }
+
+  Future<void> _resubscribeActiveSymbols() async {
+    if (_priceService == null) return;
+
+    final candidates = <String>{};
+    if (_selectedIndex != null &&
+        _selectedIndex != 'All Indices' &&
+        _selectedIndex != 'Dashboard' &&
+        !isNavigationOnlySelection(_selectedIndex)) {
+      candidates.add(_selectedIndex!);
+    }
+    candidates.addAll(_detailSymbols);
+    if (_currentIndexData != null) {
+      candidates.addAll(_currentIndexData!.stocks.map((s) => s.symbol));
     }
     if (_allIndicesData.isNotEmpty) {
-      symbols.addAll(_allIndicesData.map((e) => e.indexSymbol));
+      candidates.addAll(_allIndicesData.map((e) => e.indexSymbol));
     }
-    symbols.addAll(_detailSymbols);
-    if (symbols.isEmpty) return;
 
-    await _priceService!.subscribe(
-      symbols.toList(),
-      isIndexSymbol: _indexSymbol,
-      forceResubscribe: true,
-    );
-    _subscribedSymbols
-      ..clear()
-      ..addAll(symbols);
+    final budgeted = _prioritizeSubscriptionBudget(candidates);
+    final budgetedSet = budgeted.map((s) => s.toUpperCase()).toSet();
+    final toEvict = _subscribedSymbols
+        .where((s) => !budgetedSet.contains(s.toUpperCase()))
+        .toList();
+
+    if (toEvict.isNotEmpty) {
+      await _priceService!.unsubscribe(toEvict);
+      _subscribedSymbols.removeWhere((s) => toEvict.contains(s));
+    }
+
+    if (budgeted.isNotEmpty) {
+      await _priceService!.subscribe(
+        budgeted,
+        isIndexSymbol: _indexSymbol,
+        forceResubscribe: true,
+      );
+      _subscribedSymbols
+        ..clear()
+        ..addAll(budgeted);
+    }
   }
 
   Future<void> _ensurePriceSubscription(List<String> symbols,
       {bool? isIndexSymbol}) async {
     if (symbols.isEmpty) return;
 
+    final budgeted = _prioritizeSubscriptionBudget(symbols);
+    final budgetedSet = budgeted.map((s) => s.toUpperCase()).toSet();
+
+    // Evict symbols not in budget
+    final toEvict = _subscribedSymbols
+        .where((s) => !budgetedSet.contains(s.toUpperCase()))
+        .toList();
+
+    if (toEvict.isNotEmpty && _priceService != null) {
+      await _priceService!.unsubscribe(toEvict);
+      _subscribedSymbols.removeWhere((s) => toEvict.contains(s));
+      CommonLogger.info(
+        'Evicted ${toEvict.length} symbols from subscription budget',
+        tag: 'MarketProvider._ensurePriceSubscription',
+      );
+    }
+
     final pending =
-        symbols.where((s) => !_subscribedSymbols.contains(s)).toList();
+        budgeted.where((s) => !_subscribedSymbols.contains(s)).toList();
     if (pending.isEmpty) return;
 
     if (_priceService == null) {
-      // Keep ownership until PriceService is attached; setPriceService will
-      // replay the complete active set through _resubscribeActiveSymbols.
       _subscribedSymbols.addAll(pending);
       return;
     }
@@ -172,9 +265,7 @@ class MarketProvider with ChangeNotifier {
     final normalized = symbol.trim();
     if (normalized.isEmpty) return;
     _detailSymbols.add(normalized);
-    if (_priceService == null) return;
-    await _priceService!.subscribe([normalized], isIndexSymbol: isIndexSymbol);
-    _subscribedSymbols.add(normalized);
+    await _ensurePriceSubscription([normalized], isIndexSymbol: isIndexSymbol);
   }
 
   Future<void> unsubscribeLiveSymbol(String symbol) async {
@@ -755,6 +846,14 @@ class MarketProvider with ChangeNotifier {
         tag: "MarketProvider.selectIndex");
 
     _selectedIndex = indexSymbol;
+    if (previous != indexSymbol) {
+      if (indexSymbol == "All Indices" ||
+          indexSymbol == "Dashboard" ||
+          isNavigationOnlySelection(indexSymbol)) {
+        _currentIndexData = null;
+      }
+      unawaited(_resubscribeActiveSymbols());
+    }
     if (_selectedIndex == "All Indices") {
       await loadAllIndicesData();
     } else if (_selectedIndex == "Dashboard") {
@@ -787,6 +886,8 @@ class MarketProvider with ChangeNotifier {
         tag: "MarketProvider.refreshIndexData");
     _isLoading = true;
     _error = null;
+    _currentIndexData = null;
+    unawaited(_resubscribeActiveSymbols());
     notifyListeners();
 
     try {

@@ -102,9 +102,18 @@ Future<void> configureCoreDependencies() async {
 /// Feature DI — lightweight services needed by deferred modules when they load.
 Future<void> configureFeatureDependencies() async {
   if (_featureDependenciesConfigured) return;
-  _featureDependenciesConfigured = true;
-  await _registerSubscriptionDependencies();
-  common.BootTrace.instance.mark('di_feature_done');
+  try {
+    await _registerSubscriptionDependencies();
+    _featureDependenciesConfigured = true;
+    common.BootTrace.instance.mark('di_feature_done');
+  } catch (e, st) {
+    common.AppLogger.error(
+      'Feature dependencies failed to configure',
+      error: e,
+      stackTrace: st,
+    );
+    rethrow;
+  }
 }
 
 /// Backward-compatible entry — registers everything (used by standalone modules).

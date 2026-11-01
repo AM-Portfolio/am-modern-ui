@@ -1,5 +1,4 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
 import 'package:am_design_system/core/navigation/app_web_navigation.dart';
@@ -429,69 +428,45 @@ class _GlobalSidebarItemState extends State<_GlobalSidebarItem> {
     return Tooltip(
       message: tooltip,
       preferBelow: false,
-      child: Listener(
-        onPointerDown: (event) {
-          final path = widget.navPath;
-          if (path == null) return;
-          if (event.buttons == kMiddleMouseButton) {
-            AppWebNavigation.navigate(
-              context: context,
-              path: path,
-              onSameTab: widget.onTap,
-              pointerDown: event,
-            );
-          }
-        },
-        child: GestureDetector(
-          onTap: () {
-            final path = widget.navPath;
-            if (path == null) {
-              widget.onTap();
-              return;
-            }
-            AppWebNavigation.navigate(
-              context: context,
-              path: path,
-              onSameTab: widget.onTap,
-            );
-          },
-          onLongPress: widget.onLongPress,
-          child: ConditionalMouseRegion(
-            cursor: SystemMouseCursors.click,
-            onEnter: (_) => setState(() => _isHovered = true),
-            onExit: (_) => setState(() => _isHovered = false),
-            child: SidebarFinDashTile(
-              isActive: isSelected,
-              isDark: widget.isDark,
-              accentColor: widget.accentColor,
-              size: SidebarLayoutMetrics.navTileSize,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    widget.item.icon,
+      child: AppNavigationGesture(
+        path: widget.navPath,
+        onSameTab: widget.onTap,
+        onLongPress: widget.onLongPress,
+        child: ConditionalMouseRegion(
+          cursor: SystemMouseCursors.click,
+          onEnter: (_) => setState(() => _isHovered = true),
+          onExit: (_) => setState(() => _isHovered = false),
+          child: SidebarFinDashTile(
+            isActive: isSelected,
+            isDark: widget.isDark,
+            accentColor: widget.accentColor,
+            size: SidebarLayoutMetrics.navTileSize,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  widget.item.icon,
+                  color: (isSelected || _isHovered)
+                      ? widget.accentColor
+                      : (widget.isDark ? Colors.white54 : Colors.black87),
+                  size: 24,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  widget.item.title,
+                  style: TextStyle(
+                    fontSize: 9,
+                    fontWeight:
+                        isSelected ? FontWeight.w600 : FontWeight.normal,
                     color: (isSelected || _isHovered)
                         ? widget.accentColor
                         : (widget.isDark ? Colors.white54 : Colors.black87),
-                    size: 24,
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    widget.item.title,
-                    style: TextStyle(
-                      fontSize: 9,
-                      fontWeight:
-                          isSelected ? FontWeight.w600 : FontWeight.normal,
-                      color: (isSelected || _isHovered)
-                          ? widget.accentColor
-                          : (widget.isDark ? Colors.white54 : Colors.black87),
-                    ),
-                    textAlign: TextAlign.center,
-                    maxLines: 1,
-                    overflow: TextOverflow.visible,
-                  ),
-                ],
-              ),
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.visible,
+                ),
+              ],
             ),
           ),
         ),
