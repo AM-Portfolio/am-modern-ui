@@ -6,6 +6,8 @@ class BatchSyncStatus {
   final int failed;
   final String overallStatus;
   final List<FileSyncStatus> files;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
 
   const BatchSyncStatus({
     required this.batchId,
@@ -14,6 +16,8 @@ class BatchSyncStatus {
     required this.failed,
     required this.overallStatus,
     required this.files,
+    this.createdAt,
+    this.updatedAt,
   });
 
   int get skipped => files.where((f) => f.status == 'SKIPPED').length;
@@ -45,6 +49,63 @@ class BatchSyncStatus {
               .map((e) => FileSyncStatus.fromJson(Map<String, dynamic>.from(e)))
               .toList()
           : const [],
+      createdAt: DateTime.tryParse('${json['createdAt'] ?? ''}'),
+      updatedAt: DateTime.tryParse('${json['updatedAt'] ?? ''}'),
+    );
+  }
+}
+
+/// Response for `GET /v1/documents/sync` (user batch history).
+class BatchSyncHistoryResponse {
+  final List<BatchSyncStatus> items;
+
+  const BatchSyncHistoryResponse({required this.items});
+
+  factory BatchSyncHistoryResponse.fromJson(Map<String, dynamic> json) {
+    final raw = json['items'];
+    return BatchSyncHistoryResponse(
+      items: raw is List
+          ? raw
+              .whereType<Map>()
+              .map((e) =>
+                  BatchSyncStatus.fromJson(Map<String, dynamic>.from(e)))
+              .toList()
+          : const [],
+    );
+  }
+}
+
+/// One row from `GET /api/v1/extract/history`.
+class ExtractHistoryItem {
+  final String id;
+  final String broker;
+  final DateTime extractedAt;
+  final String source;
+  final String? filename;
+  final String? mailbox;
+  final int holdingsCount;
+
+  const ExtractHistoryItem({
+    required this.id,
+    required this.broker,
+    required this.extractedAt,
+    required this.source,
+    this.filename,
+    this.mailbox,
+    this.holdingsCount = 0,
+  });
+
+  factory ExtractHistoryItem.fromJson(Map<String, dynamic> json) {
+    return ExtractHistoryItem(
+      id: '${json['id'] ?? ''}',
+      broker: '${json['broker'] ?? ''}',
+      extractedAt:
+          DateTime.tryParse('${json['extracted_at'] ?? ''}')?.toLocal() ??
+              DateTime.now(),
+      source: '${json['source'] ?? 'gmail'}',
+      filename: json['filename']?.toString(),
+      mailbox: json['mailbox']?.toString(),
+      holdingsCount: (json['holdings_count'] as num?)?.toInt() ?? 0,
     );
   }
 }
@@ -63,6 +124,8 @@ class FileSyncStatus {
   final String status;
   final String? errorMessage;
   final int recordsProcessed;
+  final DateTime? startedAt;
+  final DateTime? completedAt;
 
   const FileSyncStatus({
     required this.fileId,
@@ -77,6 +140,8 @@ class FileSyncStatus {
     required this.status,
     this.errorMessage,
     this.recordsProcessed = 0,
+    this.startedAt,
+    this.completedAt,
   });
 
   bool get isSkipped => status == 'SKIPPED';
@@ -116,6 +181,8 @@ class FileSyncStatus {
       status: (json['status'] ?? 'QUEUED').toString(),
       errorMessage: json['errorMessage']?.toString(),
       recordsProcessed: (json['recordsProcessed'] as num?)?.toInt() ?? 0,
+      startedAt: DateTime.tryParse('${json['startedAt'] ?? ''}'),
+      completedAt: DateTime.tryParse('${json['completedAt'] ?? ''}'),
     );
   }
 }

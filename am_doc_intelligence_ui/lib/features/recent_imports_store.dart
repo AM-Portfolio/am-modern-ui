@@ -86,7 +86,7 @@ class RecentImportEntry {
   }
 }
 
-/// Device-local recent import history (not synced to backend).
+/// Optional device cache for Recent imports (server history APIs are SoT).
 class RecentImportsStore {
   RecentImportsStore._();
   static final RecentImportsStore instance = RecentImportsStore._();
@@ -159,6 +159,17 @@ class RecentImportsStore {
       return const [];
     }
     return items;
+  }
+
+  /// Replace the whole cache with a server-fetched list (newest first).
+  Future<void> replaceAll(String userId, List<RecentImportEntry> entries) async {
+    final prefs = await SharedPreferences.getInstance();
+    final key = _storageKey(userId);
+    final next = entries.take(maxEntries).toList();
+    await prefs.setString(
+      key,
+      jsonEncode(next.map((e) => e.toJson()).toList()),
+    );
   }
 
   Future<List<RecentImportEntry>> prepend(
