@@ -572,11 +572,13 @@ class _PortfolioHeatmapWidgetState
       final screenH = MediaQuery.sizeOf(context).height;
       final topSafe = MediaQuery.paddingOf(context).top;
       final bottomSafe = MediaQuery.paddingOf(context).bottom;
+      final navReserve = PlatformConstants.globalBottomNavReserve(context);
       // When scrolled down, sticky header (~44px) and pinned filters (46px) remain at top.
       const stickyHeaderH = 44.0;
       final topChromeWhenPinned =
           topSafe + stickyHeaderH + _mobilePinnedFiltersH;
-      final bottomMargin = (bottomSafe > 0 ? bottomSafe : 8.0) + 4.0;
+      final bottomMargin =
+          (bottomSafe > 0 ? bottomSafe : 8.0) + (navReserve > 0 ? navReserve : 20.0);
       final fullMobileScreenH = screenH - topChromeWhenPinned - bottomMargin;
       final mapH =
           (fullMobileScreenH > (mobileViewportH - _mobilePinnedFiltersH)
@@ -584,32 +586,39 @@ class _PortfolioHeatmapWidgetState
                   : (mobileViewportH - _mobilePinnedFiltersH))
               .clamp(540.0, 4000.0);
 
-      return CustomScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        slivers: [
-          SliverToBoxAdapter(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [_buildSummaryCardsRow(), const SizedBox(height: 8)],
+      return Listener(
+        behavior: HitTestBehavior.translucent,
+        onPointerDown: (_) {
+          GlobalBottomNavVisibility.suppressChromeTapReveal = true;
+          GlobalBottomNavVisibility.requestHide();
+        },
+        child: CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          slivers: [
+            SliverToBoxAdapter(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [_buildSummaryCardsRow(), const SizedBox(height: 8)],
+              ),
             ),
-          ),
-          SliverPersistentHeader(
-            pinned: true,
-            delegate: _PinnedHeatmapFiltersDelegate(
-              height: _mobilePinnedFiltersH,
-              background: scheme.surface,
-              child: _buildMobilePinnedFilters(context),
+            SliverPersistentHeader(
+              pinned: true,
+              delegate: _PinnedHeatmapFiltersDelegate(
+                height: _mobilePinnedFiltersH,
+                background: scheme.surface,
+                child: _buildMobilePinnedFilters(context),
+              ),
             ),
-          ),
-          SliverToBoxAdapter(
-            child: SizedBox(
-              height: mapH,
-              width: double.infinity,
-              child: heatmapBody(showSelectors: false),
+            SliverToBoxAdapter(
+              child: SizedBox(
+                height: mapH,
+                width: double.infinity,
+                child: heatmapBody(showSelectors: false),
+              ),
             ),
-          ),
-          SliverToBoxAdapter(child: SizedBox(height: bottomMargin)),
-        ],
+            SliverToBoxAdapter(child: SizedBox(height: bottomMargin)),
+          ],
+        ),
       );
     }
 

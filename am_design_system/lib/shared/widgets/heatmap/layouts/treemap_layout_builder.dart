@@ -450,7 +450,7 @@ class _NestedSectorPanelState extends State<_NestedSectorPanel> {
     final quantity = _asDouble(meta['totalQuantity']);
     final wide = widget.width >= 150;
     // Border is inside the Positioned box — size chrome from the inner area.
-    const borderW = 1.5;
+    const borderW = 1.0;
     final innerW = max(0.0, widget.width - borderW * 2);
     final innerH = max(0.0, widget.height - borderW * 2);
     final idealHeader = wide ? 32.0 : 40.0;
@@ -573,7 +573,7 @@ class _NestedSectorPanelState extends State<_NestedSectorPanel> {
                     builder: (context, bodyConstraints) {
                       final bw = bodyConstraints.maxWidth.floorToDouble();
                       final bh = bodyConstraints.maxHeight.floorToDouble();
-                      if (!bw.isFinite || !bh.isFinite || bw < 4 || bh < 4) {
+                      if (!bw.isFinite || !bh.isFinite || bw < 16 || bh < 12) {
                         return const SizedBox.shrink();
                       }
                       return Stack(

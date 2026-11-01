@@ -458,6 +458,10 @@ class _PortfolioMobileViewState extends ConsumerState<PortfolioMobileView>
     if (_tabController.index != index) {
       _tabController.animateTo(index);
     }
+    if (index == 2) {
+      GlobalBottomNavVisibility.suppressChromeTapReveal = true;
+      GlobalBottomNavVisibility.requestHide();
+    }
     setState(() {
       _clearActiveOperation();
     });
