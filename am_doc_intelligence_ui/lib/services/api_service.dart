@@ -70,6 +70,7 @@ class ApiService {
     'DHAN',
     'MSTOCK',
     'ANGEL_ONE',
+    'KOTAK',
   ];
 
   // --- Document Processor endpoints ---

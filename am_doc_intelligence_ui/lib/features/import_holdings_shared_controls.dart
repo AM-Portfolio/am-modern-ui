@@ -12,6 +12,7 @@ const List<ImportBrokerOption> kImportBrokerOptions = [
   ImportBrokerOption(key: 'dhan', label: 'Dhan'),
   ImportBrokerOption(key: 'mstock', label: 'mStock'),
   ImportBrokerOption(key: 'upstox', label: 'Upstox'),
+  ImportBrokerOption(key: 'kotak', label: 'Kotak'),
 ];
 
 class ImportBrokerOption {
@@ -33,6 +34,7 @@ String? brokerKeyToEmailId(String? key) {
     case 'dhan':
     case 'mstock':
     case 'upstox':
+    case 'kotak':
       return key.toLowerCase();
     default:
       return key.toLowerCase();
@@ -57,6 +59,8 @@ String? brokerKeyToDocCode(String? key) {
       return 'MSTOCK';
     case 'upstox':
       return 'UPSTOX';
+    case 'kotak':
+      return 'KOTAK';
     default:
       return key.toUpperCase();
   }
@@ -80,6 +84,8 @@ String? normalizeBrokerKey(String? raw) {
       return 'mstock';
     case 'upstox':
       return 'upstox';
+    case 'kotak':
+      return 'kotak';
     default:
       final upper = raw.toUpperCase();
       switch (upper) {
@@ -96,6 +102,8 @@ String? normalizeBrokerKey(String? raw) {
           return 'mstock';
         case 'UPSTOX':
           return 'upstox';
+        case 'KOTAK':
+          return 'kotak';
         default:
           return null;
       }
@@ -312,16 +320,11 @@ class _ImportHoldingsSharedControlsState
             const SizedBox(height: 8),
             LayoutBuilder(
               builder: (context, constraints) {
-                // Prefer one row of all brokers when width allows (6 today).
+                // Fixed 4-up grid → first row 4, second row 3 (7 brokers).
+                // Narrow phones: 3 columns.
                 final brokerCount = kImportBrokerOptions.length;
-                final cols = constraints.maxWidth < 360
-                    ? 3
-                    : (constraints.maxWidth < 480
-                        ? 4
-                        : (constraints.maxWidth < 600 ? 5 : brokerCount));
-                final aspect = cols >= brokerCount
-                    ? 1.25
-                    : (constraints.maxWidth < 520 ? 1.35 : 1.15);
+                final cols = constraints.maxWidth < 360 ? 3 : 4;
+                final aspect = constraints.maxWidth < 360 ? 1.3 : 1.45;
                 return GridView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
@@ -357,12 +360,16 @@ class _ImportHoldingsSharedControlsState
                                 width: selected ? 3 : 1,
                               ),
                             ),
-                            padding: const EdgeInsets.all(6),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 10,
+                            ),
                             child: logoPath != null
                                 ? Image.asset(
                                     logoPath,
                                     package: 'am_doc_intelligence_ui',
                                     fit: BoxFit.contain,
+                                    filterQuality: FilterQuality.high,
                                     errorBuilder: (_, __, ___) =>
                                         brokerLetterAvatar(
                                       opt.key,

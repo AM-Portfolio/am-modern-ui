@@ -21,6 +21,8 @@ String? _logoKey(String? raw) {
       return 'mstock';
     case 'upstox':
       return 'upstox';
+    case 'kotak':
+      return 'kotak';
     default:
       return null;
   }
@@ -41,6 +43,8 @@ String? brokerLogoAsset(String? brokerId) {
       return 'assets/images/brokers/mstock.png';
     case 'upstox':
       return 'assets/images/brokers/upstox.png';
+    case 'kotak':
+      return 'assets/images/brokers/kotak.png';
     default:
       return null;
   }
@@ -63,6 +67,8 @@ String brokerDisplayName(String code) {
       return 'mStock';
     case 'upstox':
       return 'Upstox';
+    case 'kotak':
+      return 'Kotak';
     case '__auto__':
       return 'Auto-detect';
     default:
@@ -80,6 +86,8 @@ String brokerDisplayName(String code) {
           return 'mStock';
         case 'UPSTOX':
           return 'Upstox';
+        case 'KOTAK':
+          return 'Kotak';
         case '__AUTO__':
           return 'Auto-detect';
         default:
@@ -121,6 +129,7 @@ const List<String> equityBrokerLogoAssets = [
   'assets/images/brokers/dhan.png',
   'assets/images/brokers/mstock.png',
   'assets/images/brokers/upstox.png',
+  'assets/images/brokers/kotak.png',
 ];
 
 /// Equal-size square chip for rail distribution (fills parent).
