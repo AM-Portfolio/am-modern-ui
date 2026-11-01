@@ -31,6 +31,7 @@ class JournalWebPage extends ConsumerStatefulWidget {
   const JournalWebPage({
     this.portfolioId,
     this.initialTab = 'entries',
+    this.initialFocusEntryId,
     this.onOpenAnalysis,
     this.onInitialTabApplied,
     super.key,
@@ -40,6 +41,9 @@ class JournalWebPage extends ConsumerStatefulWidget {
 
   /// `entries` | `playbooks` | `insights` | `weekly`
   final String initialTab;
+
+  /// When set (e.g. Holdings → Journal), select this entry on Entries tab.
+  final String? initialFocusEntryId;
   final VoidCallback? onOpenAnalysis;
   final VoidCallback? onInitialTabApplied;
 
@@ -92,7 +96,10 @@ class _JournalWebPageState extends ConsumerState<JournalWebPage> {
   @override
   void initState() {
     super.initState();
-    _tab = _journalTabFromSlug(widget.initialTab);
+    _tab = widget.initialFocusEntryId != null
+        ? _JournalTab.entries
+        : _journalTabFromSlug(widget.initialTab);
+    _focusEntryId = widget.initialFocusEntryId;
     final now = DateTime.now();
     _dateRange = DateTimeRange(
       start: DateTime(now.year - 1, now.month, now.day),
@@ -140,6 +147,16 @@ class _JournalWebPageState extends ConsumerState<JournalWebPage> {
         if (!mounted) return;
         cubit.setPortfolioId(widget.portfolioId);
       });
+    }
+    if (widget.initialFocusEntryId != null &&
+        widget.initialFocusEntryId != oldWidget.initialFocusEntryId) {
+      setState(() {
+        _tab = _JournalTab.entries;
+        _focusEntryId = widget.initialFocusEntryId;
+      });
+    }
+    if (widget.initialTab != oldWidget.initialTab) {
+      setState(() => _tab = _journalTabFromSlug(widget.initialTab));
     }
   }
 
