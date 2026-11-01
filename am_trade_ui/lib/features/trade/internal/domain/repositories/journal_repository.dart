@@ -144,4 +144,7 @@ abstract class JournalRepository {
     String journalStatus = 'DRAFT',
     String? portfolioId,
   });
+
+  /// Idempotent demo Log Day + Trade Journal (`POST /v1/journal/seed-demo`).
+  Future<List<JournalEntry>> seedDemoEntries();
 }

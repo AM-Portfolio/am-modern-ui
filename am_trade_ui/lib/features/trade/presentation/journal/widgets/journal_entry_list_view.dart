@@ -323,6 +323,11 @@ class JournalEntryItem extends StatefulWidget {
 class _JournalEntryItemState extends State<JournalEntryItem> {
   bool _isHovered = false;
 
+  static bool _isDemoEntry(JournalEntry entry) {
+    final raw = entry.customFields['demo'];
+    return raw == true || raw?.toString().toLowerCase() == 'true';
+  }
+
   static Color _moduleAccent(BuildContext context) =>
       ModuleColorProvider.maybeOf(context) ?? ModuleColors.trade;
 
@@ -520,6 +525,14 @@ class _JournalEntryItemState extends State<JournalEntryItem> {
                                         : colors.statusNeutral
                                             .withValues(alpha: 0.18),
                                   ),
+                                  if (_isDemoEntry(widget.entry))
+                                    _pill(
+                                      context,
+                                      label: 'Demo',
+                                      fg: colors.statusInfo,
+                                      bg: colors.statusInfo
+                                          .withValues(alpha: 0.16),
+                                    ),
                                   if (outcome != null)
                                     _pill(
                                       context,

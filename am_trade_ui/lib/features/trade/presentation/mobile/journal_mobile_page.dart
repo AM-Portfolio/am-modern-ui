@@ -547,6 +547,12 @@ class _JournalMobilePageState extends ConsumerState<JournalMobilePage> {
                                     label: isTrade ? 'Trade journal' : 'Log',
                                     trade: isTrade,
                                   ),
+                                  if (_isDemoJournalEntry(entry))
+                                    const _EntryTypeChip(
+                                      label: 'Demo',
+                                      trade: false,
+                                      info: true,
+                                    ),
                                   if (status.isNotEmpty)
                                     _EntryTypeChip(
                                       label: status.toUpperCase(),
@@ -601,32 +607,44 @@ class _JournalMobilePageState extends ConsumerState<JournalMobilePage> {
   }
 }
 
+bool _isDemoJournalEntry(JournalEntry entry) {
+  final raw = entry.customFields['demo'];
+  return raw == true || raw?.toString().toLowerCase() == 'true';
+}
+
 class _EntryTypeChip extends StatelessWidget {
   const _EntryTypeChip({
     required this.label,
     required this.trade,
     this.muted = false,
+    this.info = false,
   });
 
   final String label;
   final bool trade;
   final bool muted;
+  final bool info;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
     final accent =
         ModuleColorProvider.maybeOf(context) ?? ModuleColors.trade;
-    final bg = muted
-        ? colors.border.withValues(alpha: 0.25)
-        : trade
-            ? accent.withValues(alpha: 0.14)
-            : colors.statusNeutral.withValues(alpha: 0.18);
-    final fg = muted
-        ? colors.textSecondary
-        : trade
-            ? accent
-            : colors.textSecondary;
+    final Color bg;
+    final Color fg;
+    if (info) {
+      bg = colors.statusInfo.withValues(alpha: 0.16);
+      fg = colors.statusInfo;
+    } else if (muted) {
+      bg = colors.border.withValues(alpha: 0.25);
+      fg = colors.textSecondary;
+    } else if (trade) {
+      bg = accent.withValues(alpha: 0.14);
+      fg = accent;
+    } else {
+      bg = colors.statusNeutral.withValues(alpha: 0.18);
+      fg = colors.textSecondary;
+    }
     return Container(
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.sm - AppSpacing.xxs,

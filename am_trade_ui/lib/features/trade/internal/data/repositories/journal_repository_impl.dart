@@ -398,4 +398,10 @@ class JournalRepositoryImpl implements JournalRepository {
     );
     return dtos.map(JournalEntryMapper.fromResponseDto).toList();
   }
+
+  @override
+  Future<List<JournalEntry>> seedDemoEntries() async {
+    final dtos = await _remoteDataSource.seedDemoEntries();
+    return dtos.map(JournalEntryMapper.fromResponseDto).toList();
+  }
 }
