@@ -669,7 +669,15 @@ class TradeJournalWorkflowPageState
                   child: child,
                 ),
               ),
-            ),
+              if (_readOnly)
+                Positioned.fill(
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.translucent,
+                    onDoubleTap: _unlockEdit,
+                    child: const SizedBox.expand(),
+                  ),
+                ),
+            ],
           ),
         ),
       ),
