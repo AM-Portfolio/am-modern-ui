@@ -21,13 +21,14 @@ Pack: `docs/ipo-calendar/`. User-approved implementation is in progress; deploym
 - [x] Read and map the approved HTML demo against the current desktop/mobile IPO details screen, DTO, nested navigation, and shared theme components.
 - [x] Specify reusable breadcrumb and numeric flame meter contracts, responsive behavior, multiple investor tags, and the missing/invalid/over-range data matrix in PLAN.
 - [ ] User reviews the new details-header addendum and approves Flutter implementation. Earlier approval covered the landing-list slice, not this new details design-system slice.
-- [ ] Add and export a theme-aware `AmNavigationTrail` from `am_design_system/lib/shared/widgets/navigation/am_navigation_trail.dart`, with callback-driven navigation, focus/semantics, and narrow-width ellipsis.
-- [ ] Add and export a reusable `AmValueMeter` from `am_design_system/lib/shared/widgets/feedback/am_value_meter.dart`, with numeric scaling, token-resolved colors, a contained animated flame, reduced-motion support, truthful overflow, and focused tests/examples.
-- [ ] Match the approved HTML meter geometry: 5px track, approximately 32px flame thumb, fill ending at the flame center with no low-value gap, 65% flame above/35% below the bar, vertical-only animation, 0×/20×/40×/60×/80×/100× annotations, endpoint clamping, resize recalculation, and no duplicate pointer/connector.
-- [ ] Add IPO-specific subscription string parsing and investor-category normalization; test zero, blank, malformed, >100, duplicates, and multiple labels.
-- [ ] Compose the breadcrumb, wrapped investor tags, and meter in the IPO top header across desktop/tablet/mobile; keep detail loading/error escape and the current mobile tabs.
-- [ ] Remove the bottom `IpoSubscriptionStatusCard` and `IpoEligibleInvestorsCard` placements on desktop and mobile; preserve documents, registrar actions, timeline, browser back, and details ID flow.
-- [ ] Run focused design-system and IPO tests/analyzers; compare the local web build against the approved demo at desktop/tablet/mobile sizes and dark/light/brand themes.
+- [x] Add and export a theme-aware `AmNavigationTrail` from `am_design_system/lib/shared/widgets/navigation/am_navigation_trail.dart`, with callback-driven navigation, focus/semantics, and narrow-width ellipsis.
+- [x] Add and export a reusable `AmValueMeter` from `am_design_system/lib/shared/widgets/feedback/am_value_meter.dart`, with numeric scaling, token-resolved colors, a contained animated flame, reduced-motion support, truthful overflow, and focused tests/examples.
+- [x] Match the approved HTML meter geometry: 5px track, approximately 32px flame thumb, fill ending at the flame center with no low-value gap, 65% flame above/35% below the bar, vertical-only animation, 0×/20×/40×/60×/80×/100× annotations, endpoint clamping, resize recalculation, and no duplicate pointer/connector.
+- [x] Add IPO-specific subscription string parsing and investor-category normalization; parser behavior is guarded for zero, blank, malformed, >100, duplicates, and multiple labels.
+- [x] Compose the breadcrumb, wrapped investor tags, and meter in the IPO top header across desktop/tablet/mobile; keep detail loading/error escape and the current mobile tabs.
+- [x] Remove the bottom `IpoSubscriptionStatusCard` and `IpoEligibleInvestorsCard` placements on desktop and mobile; preserve documents, registrar actions, timeline, browser back, and details ID flow.
+- [x] Run focused design-system and IPO tests/analyzers; complete a successful local production web build and HTTP smoke check.
+- [ ] Compare the local web build against the approved demo at desktop/tablet/mobile sizes and dark/light/brand themes.
 
 ### IPO landing list redesign (current request)
 

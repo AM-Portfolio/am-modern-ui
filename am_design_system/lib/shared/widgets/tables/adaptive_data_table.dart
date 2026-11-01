@@ -43,6 +43,9 @@ class AdaptiveDataTable<T> extends StatefulWidget {
     this.rowTextStyle,
     this.headerBackgroundColor,
     this.rowHoverColor,
+    this.expandToAvailableWidth = false,
+    this.columnSpacing,
+    this.resetSortOnThirdTap = false,
   });
   final List<T> data;
   final List<DataTableColumn<T>> columns;
@@ -60,6 +63,17 @@ class AdaptiveDataTable<T> extends StatefulWidget {
   final TextStyle? rowTextStyle;
   final Color? headerBackgroundColor;
   final Color? rowHoverColor;
+
+  /// Makes the desktop table occupy the parent width before horizontal
+  /// overflow is considered. Opt-in so existing table layouts stay unchanged.
+  final bool expandToAvailableWidth;
+
+  /// Optional responsive spacing between table columns.
+  final double? columnSpacing;
+
+  /// When enabled, a third tap on the active sorted column restores the
+  /// caller-provided natural order and clears the sort indicator.
+  final bool resetSortOnThirdTap;
 
   /// Keeps the tabular layout on narrow screens and lets the caller provide
   /// horizontal scrolling. The default preserves the existing card fallback.
@@ -91,6 +105,15 @@ class _AdaptiveDataTableState<T> extends State<AdaptiveDataTable<T>> {
 
   void _onSort(String columnKey, bool ascending) {
     setState(() {
+      if (widget.resetSortOnThirdTap &&
+          _sortColumnKey == columnKey &&
+          !_sortAscending &&
+          ascending) {
+        _sortColumnKey = null;
+        _sortAscending = true;
+        _sortedData = List.from(widget.data);
+        return;
+      }
       _sortColumnKey = columnKey;
       _sortAscending = ascending;
       _applySorting();
@@ -137,7 +160,7 @@ class _AdaptiveDataTableState<T> extends State<AdaptiveDataTable<T>> {
         final isDesktop = constraints.maxWidth > 768;
 
         if (isDesktop || widget.keepTableOnMobile) {
-          return _buildDesktopTable();
+          return _buildDesktopTable(minWidth: constraints.maxWidth);
         } else {
           return _buildMobileTable();
         }
@@ -145,68 +168,77 @@ class _AdaptiveDataTableState<T> extends State<AdaptiveDataTable<T>> {
     );
   }
 
-  Widget _buildDesktopTable() => SingleChildScrollView(
+  Widget _buildDesktopTable({required double minWidth}) =>
+      SingleChildScrollView(
         scrollDirection: Axis.horizontal,
-        child: DataTable(
-          headingRowColor: widget.headerBackgroundColor == null
-              ? null
-              : WidgetStatePropertyAll(widget.headerBackgroundColor),
-          dataRowColor: widget.rowHoverColor == null
-              ? null
-              : WidgetStateProperty.resolveWith((states) {
-                  if (states.contains(WidgetState.hovered)) {
-                    return widget.rowHoverColor;
-                  }
-                  return null;
-                }),
-          headingTextStyle: widget.headerTextStyle,
-          dataTextStyle: widget.rowTextStyle,
-          dataRowMinHeight: widget.rowHeight,
-          dataRowMaxHeight: widget.rowHeight,
-          columns: widget.columns
-              .map(
-                (column) => DataColumn(
-                  label: Text(
-                    column.title,
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  onSort: column.sortable
-                      ? (columnIndex, ascending) =>
-                          _onSort(column.key, ascending)
-                      : null,
-                  numeric: column.numeric,
-                ),
-              )
-              .toList(),
-          rows: _sortedData.map((item) {
-            final isSelected = widget.selectedItems?.contains(item) ?? false;
-
-            return DataRow(
-              cells: widget.columns
-                  .map(
-                    (column) => DataCell(
-                      column.cellBuilder(item),
-                      onTap: widget.onRowTap != null
-                          ? () => widget.onRowTap!(item)
-                          : null,
-                      onLongPress: widget.onRowLongPress != null
-                          ? () => widget.onRowLongPress!(item)
-                          : null,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            minWidth: widget.expandToAvailableWidth ? minWidth : 0,
+          ),
+          child: DataTable(
+            columnSpacing: widget.columnSpacing,
+            headingRowColor: widget.headerBackgroundColor == null
+                ? null
+                : WidgetStatePropertyAll(widget.headerBackgroundColor),
+            dataRowColor: widget.rowHoverColor == null
+                ? null
+                : WidgetStateProperty.resolveWith((states) {
+                    if (states.contains(WidgetState.hovered)) {
+                      return widget.rowHoverColor;
+                    }
+                    return null;
+                  }),
+            headingTextStyle: widget.headerTextStyle,
+            dataTextStyle: widget.rowTextStyle,
+            dataRowMinHeight: widget.rowHeight,
+            dataRowMaxHeight: widget.rowHeight,
+            columns: widget.columns
+                .map(
+                  (column) => DataColumn(
+                    label: Text(
+                      column.title,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
+                    onSort: column.sortable
+                        ? (columnIndex, ascending) =>
+                            _onSort(column.key, ascending)
+                        : null,
+                    numeric: column.numeric,
+                  ),
+                )
+                .toList(),
+            rows: _sortedData.map((item) {
+              final isSelected = widget.selectedItems?.contains(item) ?? false;
+
+              return DataRow(
+                cells: widget.columns
+                    .map(
+                      (column) => DataCell(
+                        column.cellBuilder(item),
+                        onTap: widget.onRowTap != null
+                            ? () => widget.onRowTap!(item)
+                            : null,
+                        onLongPress: widget.onRowLongPress != null
+                            ? () => widget.onRowLongPress!(item)
+                            : null,
+                      ),
+                    )
+                    .toList(),
+                selected: isSelected,
+                onSelectChanged: widget.showCheckboxes
+                    ? (selected) =>
+                        _onRowSelectionChanged(item, selected ?? false)
+                    : null,
+              );
+            }).toList(),
+            sortColumnIndex: _sortColumnKey != null
+                ? widget.columns.indexWhere(
+                    (col) => col.key == _sortColumnKey,
                   )
-                  .toList(),
-              selected: isSelected,
-              onSelectChanged: widget.showCheckboxes
-                  ? (selected) =>
-                      _onRowSelectionChanged(item, selected ?? false)
-                  : null,
-            );
-          }).toList(),
-          sortColumnIndex: _sortColumnKey != null
-              ? widget.columns.indexWhere((col) => col.key == _sortColumnKey)
-              : null,
-          sortAscending: _sortAscending,
-          showCheckboxColumn: widget.showCheckboxes,
+                : null,
+            sortAscending: _sortAscending,
+            showCheckboxColumn: widget.showCheckboxes,
+          ),
         ),
       );
 

@@ -16,88 +16,102 @@ class IpoTableView extends StatelessWidget {
     final showSubscription = items.any(_hasSubscription);
     final colors = context.colors;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: context.surfaceColor,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: context.borderColor),
-      ),
-      child: AdaptiveDataTable<AsraxIpoSummaryDto>(
-        data: items,
-        keepTableOnMobile: true,
-        rowHeight: 72,
-        headerBackgroundColor: colors.marketCardSurface.withValues(alpha: 0.72),
-        rowHoverColor: ModuleColors.market.withValues(alpha: 0.06),
-        headerTextStyle: TextStyle(
-          color: context.textSecondary,
-          fontSize: 11,
-          fontWeight: FontWeight.w700,
-          letterSpacing: 0.35,
-        ),
-        rowTextStyle: TextStyle(
-          color: context.textPrimary,
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-        ),
-        columns: [
-          DataTableColumn(
-            key: 'ipo',
-            title: 'IPO',
-            cellBuilder: (ipo) => _IpoIdentityCell(ipo: ipo),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // The IPO table shares its surface with a collapsible Market sidebar.
+        // Reduce spacing before overflow on the narrow shell and use the extra
+        // space when the sidebar is collapsed.
+        final columnSpacing =
+            (constraints.maxWidth * 0.035).clamp(28.0, 56.0).toDouble();
+
+        return Container(
+          decoration: BoxDecoration(
+            color: context.surfaceColor,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: context.borderColor),
           ),
-          DataTableColumn(
-            key: 'board',
-            title: 'BOARD',
-            cellBuilder: (ipo) => _BoardLabel(issueType: ipo.issueType),
-          ),
-          DataTableColumn(
-            key: 'status',
-            title: 'STATUS',
-            cellBuilder: (ipo) => _StatusBadge(status: ipo.status),
-          ),
-          if (showSubscription)
-            DataTableColumn(
-              key: 'subscription',
-              title: 'SUB',
-              cellBuilder: (ipo) => _TableValue(
-                value: _formatSubscription(ipo.totalSubscription),
-                muted: !_hasSubscription(ipo),
+          child: AdaptiveDataTable<AsraxIpoSummaryDto>(
+            data: items,
+            keepTableOnMobile: true,
+            expandToAvailableWidth: true,
+            columnSpacing: columnSpacing,
+            resetSortOnThirdTap: true,
+            rowHeight: 72,
+            headerBackgroundColor:
+                colors.marketCardSurface.withValues(alpha: 0.72),
+            rowHoverColor: ModuleColors.market.withValues(alpha: 0.06),
+            headerTextStyle: TextStyle(
+              color: context.textSecondary,
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.35,
+            ),
+            rowTextStyle: TextStyle(
+              color: context.textPrimary,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+            columns: [
+              DataTableColumn(
+                key: 'ipo',
+                title: 'IPO',
+                cellBuilder: (ipo) => _IpoIdentityCell(ipo: ipo),
               ),
-            ),
-          DataTableColumn(
-            key: 'price',
-            title: 'PRICE BAND',
-            cellBuilder: (ipo) => _TableValue(value: _formatPriceBand(ipo)),
+              DataTableColumn(
+                key: 'board',
+                title: 'BOARD',
+                cellBuilder: (ipo) => _BoardLabel(issueType: ipo.issueType),
+              ),
+              DataTableColumn(
+                key: 'status',
+                title: 'STATUS',
+                cellBuilder: (ipo) => _StatusBadge(status: ipo.status),
+              ),
+              if (showSubscription)
+                DataTableColumn(
+                  key: 'subscription',
+                  title: 'SUB',
+                  cellBuilder: (ipo) => _TableValue(
+                    value: _formatSubscription(ipo.totalSubscription),
+                    muted: !_hasSubscription(ipo),
+                  ),
+                ),
+              DataTableColumn(
+                key: 'price',
+                title: 'PRICE BAND',
+                sortable: true,
+                sortValue: _priceSortValue,
+                cellBuilder: (ipo) => _TableValue(value: _formatPriceBand(ipo)),
+              ),
+              DataTableColumn(
+                key: 'size',
+                title: 'ISSUE SIZE',
+                sortable: true,
+                sortValue: (ipo) => ipo.issueSizeCr ?? double.infinity,
+                cellBuilder: (ipo) =>
+                    _TableValue(value: _formatIssueSize(ipo.issueSizeCr)),
+              ),
+              DataTableColumn(
+                key: 'open',
+                title: 'BIDDING OPENS',
+                sortable: true,
+                sortValue: (ipo) => _dateSortValue(ipo.biddingStartDate),
+                cellBuilder: (ipo) =>
+                    _TableValue(value: _formatDate(ipo.biddingStartDate)),
+              ),
+              DataTableColumn(
+                key: 'close',
+                title: 'BIDDING CLOSES',
+                sortable: true,
+                sortValue: (ipo) => _dateSortValue(ipo.biddingEndDate),
+                cellBuilder: (ipo) =>
+                    _TableValue(value: _formatDate(ipo.biddingEndDate)),
+              ),
+            ],
+            onRowTap: (ipo) => openIpoDetails(context, ipo.id),
           ),
-          DataTableColumn(
-            key: 'size',
-            title: 'ISSUE SIZE',
-            cellBuilder: (ipo) =>
-                _TableValue(value: _formatIssueSize(ipo.issueSizeCr)),
-          ),
-          DataTableColumn(
-            key: 'open',
-            title: 'BIDDING OPENS',
-            cellBuilder: (ipo) =>
-                _TableValue(value: _formatDate(ipo.biddingStartDate)),
-          ),
-          DataTableColumn(
-            key: 'close',
-            title: 'BIDDING CLOSES',
-            cellBuilder: (ipo) =>
-                _TableValue(value: _formatDate(ipo.biddingEndDate)),
-          ),
-          DataTableColumn(
-            key: 'action',
-            title: '',
-            cellBuilder: (ipo) => Icon(
-              Icons.chevron_right_rounded,
-              color: context.textTertiary,
-            ),
-          ),
-        ],
-        onRowTap: (ipo) => openIpoDetails(context, ipo.id),
-      ),
+        );
+      },
     );
   }
 }
@@ -248,6 +262,12 @@ class _TableValue extends StatelessWidget {
 
 bool _hasSubscription(AsraxIpoSummaryDto ipo) =>
     ipo.totalSubscription?.trim().isNotEmpty == true;
+
+double _priceSortValue(AsraxIpoSummaryDto ipo) =>
+    ipo.minimumPrice ?? ipo.maximumPrice ?? double.infinity;
+
+DateTime _dateSortValue(String? value) =>
+    DateTime.tryParse(value?.trim() ?? '') ?? DateTime.utc(9999, 12, 31);
 
 String _formatSubscription(String? value) =>
     value?.trim().isNotEmpty == true ? '${value!.trim()}x' : '—';

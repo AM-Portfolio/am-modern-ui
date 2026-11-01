@@ -83,6 +83,7 @@ export 'shared/widgets/navigation/sidebar_primary_action.dart';
 export 'shared/widgets/navigation/sidebar_floating_action_menu.dart';
 export 'shared/widgets/navigation/floating_menu_action.dart';
 export 'shared/widgets/navigation/global_add_menu_actions.dart';
+export 'shared/widgets/navigation/am_navigation_trail.dart';
 export 'shared/widgets/navigation/quick_actions_sheet.dart';
 export 'shared/widgets/navigation/sync_quick_actions_control.dart';
 export 'shared/widgets/navigation/swipeable_page_view.dart';
@@ -192,6 +193,7 @@ export 'shared/widgets/feedback/am_session_status_view.dart';
 export 'shared/widgets/feedback/demo_account_badge.dart';
 export 'shared/widgets/feedback/demo_account_inline_banner.dart';
 export 'shared/widgets/feedback/demo_portfolio_banner.dart';
+export 'shared/widgets/feedback/am_value_meter.dart';
 
 // --- Filters ---
 export 'shared/widgets/filters/am_filter_panel.dart';
