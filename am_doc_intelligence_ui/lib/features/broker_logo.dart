@@ -19,6 +19,8 @@ String? _logoKey(String? raw) {
       return 'dhan';
     case 'mstock':
       return 'mstock';
+    case 'upstox':
+      return 'upstox';
     default:
       return null;
   }
@@ -37,6 +39,8 @@ String? brokerLogoAsset(String? brokerId) {
       return 'assets/images/brokers/dhan.png';
     case 'mstock':
       return 'assets/images/brokers/mstock.png';
+    case 'upstox':
+      return 'assets/images/brokers/upstox.png';
     default:
       return null;
   }
@@ -84,7 +88,7 @@ String brokerDisplayName(String code) {
   }
 }
 
-/// Colored letter chip when no logo asset exists (e.g. Upstox).
+/// Colored letter chip when no logo asset exists.
 Widget brokerLetterAvatar(String code, {double size = 26, Color? color}) {
   final name = brokerDisplayName(code);
   final letter = name.isNotEmpty ? name[0].toUpperCase() : '?';
@@ -116,6 +120,7 @@ const List<String> equityBrokerLogoAssets = [
   'assets/images/brokers/groww.png',
   'assets/images/brokers/dhan.png',
   'assets/images/brokers/mstock.png',
+  'assets/images/brokers/upstox.png',
 ];
 
 /// Equal-size square chip for rail distribution (fills parent).
