@@ -177,7 +177,7 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
         ? files.first
         : 'Upload · ${status.completed}/${status.total} files';
     final entry = RecentImportEntry(
-      id: 'up-${status.batchId}-${DateTime.now().millisecondsSinceEpoch}',
+      id: 'up-${status.batchId}',
       source: 'upload',
       title: title,
       status: entryStatus,

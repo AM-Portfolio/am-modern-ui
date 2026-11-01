@@ -33,6 +33,8 @@ class DocIntelligenceScreen extends StatefulWidget {
 
 class _DocIntelligenceScreenState extends State<DocIntelligenceScreen> {
   List<RecentImportEntry> _recentEntries = const [];
+  /// Bumped on prepend / userId change so a stale [_loadRecent] cannot clobber.
+  int _recentLoadGen = 0;
   String? _selectedBrokerKey;
   String? _documentType;
   late _ImportSource _source;
@@ -74,8 +76,9 @@ class _DocIntelligenceScreenState extends State<DocIntelligenceScreen> {
   }
 
   Future<void> _loadRecent() async {
+    final gen = ++_recentLoadGen;
     final items = await RecentImportsStore.instance.load(widget.userId);
-    if (!mounted) return;
+    if (!mounted || gen != _recentLoadGen) return;
     setState(() => _recentEntries = items);
   }
 
@@ -92,6 +95,8 @@ class _DocIntelligenceScreenState extends State<DocIntelligenceScreen> {
   }
 
   Future<void> _prependRecent(RecentImportEntry entry) async {
+    // Invalidate in-flight loads before writing so they cannot overwrite us.
+    _recentLoadGen++;
     final next =
         await RecentImportsStore.instance.prepend(widget.userId, entry);
     if (!mounted) return;
