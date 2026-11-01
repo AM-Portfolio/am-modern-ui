@@ -55,12 +55,12 @@ class PortfolioHeatmapUiConfig {
   );
 
   /// Space so the treemap sits above the floating global bottom nav.
-  ///
-  /// Always reserves the full nav height on compact — tying inset to
-  /// [GlobalBottomNavVisibility.factor] collapsed padding when the nav hid on
-  /// scroll, so sector tiles painted under the bar when it returned.
-  static double mobileBottomInset(BuildContext context) {
-    return 8.0 + PlatformConstants.globalBottomNavReserve(context);
+  static double mobileBottomInset(
+    BuildContext context, {
+    double navFactor = 1,
+  }) {
+    final reserve = PlatformConstants.globalBottomNavReserve(context);
+    return 8.0 + reserve * navFactor.clamp(0.0, 1.0);
   }
 
   /// Web configuration — tight padding so the treemap uses the page width/height.
@@ -154,6 +154,7 @@ class _PortfolioHeatmapWidgetState
       return;
     }
     if (tile.metadata?['type'] != 'stock') return;
+    if (_inspectedTile.value?.id == tile.id) return;
     _inspectedTile.value = tile;
   }
 
@@ -191,6 +192,11 @@ class _PortfolioHeatmapWidgetState
     if (oldWidget.config.defaultLayout != widget.config.defaultLayout &&
         _selectedLayout == oldWidget.config.defaultLayout) {
       setState(() => _selectedLayout = widget.config.defaultLayout);
+    }
+    if (oldWidget.portfolioId != widget.portfolioId) {
+      _drillDownTile = null;
+      _inspectedTile.value = null;
+      _loadHeatmapData();
     }
   }
 
@@ -588,24 +594,16 @@ class _PortfolioHeatmapWidgetState
             delegate: _PinnedHeatmapFiltersDelegate(
               height: _mobilePinnedFiltersH,
               background: scheme.surface,
-              child: Listener(
-                behavior: HitTestBehavior.opaque,
-                onPointerDown: (_) => _suppressBottomNavOnHeatmapTap(),
-                child: _buildMobilePinnedFilters(context),
-              ),
+              child: _buildMobilePinnedFilters(context),
             ),
           ),
           SliverToBoxAdapter(
             child: SizedBox(
               height: mapH,
               width: double.infinity,
-              child: Listener(
-                behavior: HitTestBehavior.opaque,
-                onPointerDown: (_) => _suppressBottomNavOnHeatmapTap(),
-                child: _padAboveBottomNav(
-                  context,
-                  child: heatmapBody(showSelectors: false),
-                ),
+              child: _padAboveBottomNav(
+                context,
+                child: heatmapBody(showSelectors: false),
               ),
             ),
           ),
@@ -1183,11 +1181,8 @@ class _PortfolioHeatmapWidgetState
     );
   }
 
-  /// Heatmap taps must not flash the floating company bottom nav.
-  void _suppressBottomNavOnHeatmapTap() {
-    GlobalBottomNavVisibility.suppressChromeTapReveal = true;
-    GlobalBottomNavVisibility.requestHide();
-  }
+  /// Retained for compatibility. Heatmap interactions allow the global nav to remain interactive.
+  void _suppressBottomNavOnHeatmapTap() {}
 
   /// Handles filter changes from heatmap selectors
   void _onFiltersChanged({

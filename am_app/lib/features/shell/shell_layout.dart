@@ -1,12 +1,14 @@
 part of 'app_shell.dart';
 
 /// Desktop GlobalSidebar + mobile bottom-nav / search overlay chrome.
-mixin ShellLayout on State<AppShell>,
-    ShellNav,
-    ShellBottomNavChrome,
-    ShellSecurityAlerts,
-    ShellGlobalAdd,
-    ShellSearchOps {
+mixin ShellLayout
+    on
+        State<AppShell>,
+        ShellNav,
+        ShellBottomNavChrome,
+        ShellSecurityAlerts,
+        ShellGlobalAdd,
+        ShellSearchOps {
   Widget _buildShellScaffold({
     required AuthState authState,
     required String userId,
@@ -103,8 +105,7 @@ mixin ShellLayout on State<AppShell>,
                                   ),
                                   child: common.PortfolioSelectionScope(
                                     child: CrossSectionSwipeHost(
-                                      onNext: () =>
-                                          _onCrossSectionNext(userId),
+                                      onNext: () => _onCrossSectionNext(userId),
                                       onPrevious: () =>
                                           _onCrossSectionPrevious(userId),
                                       child: child,
@@ -146,47 +147,56 @@ mixin ShellLayout on State<AppShell>,
                     ).animate(_bottomNavFactor),
                     child: FadeTransition(
                       opacity: _bottomNavFactor,
-                      child: GlobalBottomNavigation(
-                        activeNavItem: _activeNavItem,
-                        isDarkMode: isDark,
-                        accentColor: _moduleAccentFor(_activeNavItem),
-                        userName: authState.user.displayName,
-                        visibleCount: 5,
-                        moduleShareUrls: AppRoutes.navTitleToDefaultPath,
-                        onNavigate: (title) =>
-                            _onGlobalNavigate(title, userId),
-                        items: [
-                          const SidebarItem(
-                            title: 'Dashboard',
-                            icon: Icons.dashboard_rounded,
+                      child: MouseRegion(
+                        onEnter: _onBottomNavEnter,
+                        onExit: _onBottomNavExit,
+                        child: Listener(
+                          onPointerDown: _onBottomNavPointerDown,
+                          onPointerUp: _onBottomNavPointerEnd,
+                          onPointerCancel: _onBottomNavPointerEnd,
+                          child: GlobalBottomNavigation(
+                            activeNavItem: _activeNavItem,
+                            isDarkMode: isDark,
+                            accentColor: _moduleAccentFor(_activeNavItem),
+                            userName: authState.user.displayName,
+                            visibleCount: 5,
+                            moduleShareUrls: AppRoutes.navTitleToDefaultPath,
+                            onNavigate: (title) =>
+                                _onGlobalNavigate(title, userId),
+                            items: [
+                              const SidebarItem(
+                                title: 'Dashboard',
+                                icon: Icons.dashboard_rounded,
+                              ),
+                              const SidebarItem(
+                                title: 'Portfolio',
+                                icon: Icons.account_balance_wallet_rounded,
+                              ),
+                              const SidebarItem(
+                                title: 'Trade',
+                                icon: Icons.swap_horiz_rounded,
+                              ),
+                              const SidebarItem(
+                                title: 'Market',
+                                icon: Icons.show_chart_rounded,
+                              ),
+                              const SidebarItem(
+                                title: 'AI Chat',
+                                icon: Icons.auto_awesome_rounded,
+                              ),
+                              const SidebarItem(
+                                title: 'Profile',
+                                icon: Icons.person_rounded,
+                              ),
+                              if (isAdmin) ...[
+                                const SidebarItem(
+                                  title: 'Analysis',
+                                  icon: Icons.analytics_outlined,
+                                ),
+                              ],
+                            ],
                           ),
-                          const SidebarItem(
-                            title: 'Portfolio',
-                            icon: Icons.account_balance_wallet_rounded,
-                          ),
-                          const SidebarItem(
-                            title: 'Trade',
-                            icon: Icons.swap_horiz_rounded,
-                          ),
-                          const SidebarItem(
-                            title: 'Market',
-                            icon: Icons.show_chart_rounded,
-                          ),
-                          const SidebarItem(
-                            title: 'AI Chat',
-                            icon: Icons.auto_awesome_rounded,
-                          ),
-                          const SidebarItem(
-                            title: 'Profile',
-                            icon: Icons.person_rounded,
-                          ),
-                          if (isAdmin) ...[
-                            const SidebarItem(
-                              title: 'Analysis',
-                              icon: Icons.analytics_outlined,
-                            ),
-                          ],
-                        ],
+                        ),
                       ),
                     ),
                   ),
@@ -228,9 +238,7 @@ mixin ShellLayout on State<AppShell>,
                 },
               ),
             ),
-          if (kIsWeb &&
-              _isSecurityAlertBannerEnabled &&
-              _securityAlert != null)
+          if (kIsWeb && _isSecurityAlertBannerEnabled && _securityAlert != null)
             Positioned(
               top: 0,
               left: 0,

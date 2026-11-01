@@ -22,12 +22,11 @@ class HeatmapInteractionScope extends InheritedWidget {
   /// Nested sector header tap → expand that sector to fill the heatmap.
   final ValueChanged<HeatmapTileData>? onSectorDrill;
 
+  /// Uses [getInheritedWidgetOfExactType] so tiles read callbacks on interaction
+  /// without registering as layout-phase rebuild dependents.
   static HeatmapInteractionScope? maybeOf(BuildContext context) =>
-      context.dependOnInheritedWidgetOfExactType<HeatmapInteractionScope>();
+      context.getInheritedWidgetOfExactType<HeatmapInteractionScope>();
 
   @override
-  bool updateShouldNotify(HeatmapInteractionScope oldWidget) =>
-      onTileHover != oldWidget.onTileHover ||
-      onTileSelect != oldWidget.onTileSelect ||
-      onSectorDrill != oldWidget.onSectorDrill;
+  bool updateShouldNotify(HeatmapInteractionScope oldWidget) => false;
 }

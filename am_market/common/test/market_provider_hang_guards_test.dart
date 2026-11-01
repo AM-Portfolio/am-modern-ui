@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:am_market_common/models/market_data.dart';
 import 'package:am_market_common/providers/market_provider.dart';
 
 void main() {
@@ -126,6 +127,110 @@ void main() {
       expect(seenRanges, containsAll(['1W', '1M']));
       expect(provider.indexSparklines['NIFTY 50'], [200.0, 201.0]);
       await tfFuture;
+    });
+  });
+
+  group('MarketProvider subscription budget & prioritization', () {
+    test('enforces kMaxLiveSymbolSubscriptions = 100 cap', () {
+      final provider = MarketProvider();
+      final oversizedList = List.generate(150, (i) => 'STOCK_$i');
+
+      final budgeted =
+          provider.prioritizeSubscriptionBudgetForTest(oversizedList);
+
+      expect(budgeted.length, 100);
+      expect(budgeted.first, 'STOCK_0');
+      expect(budgeted.last, 'STOCK_99');
+    });
+
+    test('deduplicates symbols case-insensitively and trims whitespace', () {
+      final provider = MarketProvider();
+      final requested = ['RELIANCE', ' reliance ', 'Reliance', 'TCS', 'tcs'];
+
+      final budgeted = provider.prioritizeSubscriptionBudgetForTest(requested);
+
+      expect(budgeted, ['RELIANCE', 'TCS']);
+    });
+
+    test(
+        'prioritizes active selected index and detail symbols over generic requests',
+        () async {
+      final provider = MarketProvider();
+      // Select index (e.g. NIFTY 50)
+      provider.selectedIndexForTest = 'NIFTY 50';
+      await provider.subscribeLiveSymbol('RELIANCE');
+      await provider.subscribeLiveSymbol('INFY');
+
+      // Request 120 extra symbols
+      final extras = List.generate(120, (i) => 'EXTRA_$i');
+      final budgeted = provider.prioritizeSubscriptionBudgetForTest(extras);
+
+      expect(budgeted.length, 100);
+      // NIFTY 50 should be index 0
+      expect(budgeted[0], 'NIFTY 50');
+      // Detail symbols should come next
+      expect(budgeted[1], 'RELIANCE');
+      expect(budgeted[2], 'INFY');
+      // Remaining 97 slots taken by extras
+      expect(budgeted[3], 'EXTRA_0');
+      expect(budgeted.last, 'EXTRA_96');
+    });
+  });
+
+  group('MarketProvider view-change eviction lifecycle', () {
+    test('switching to navigation-only view clears currentIndexData', () async {
+      final provider = MarketProvider();
+      provider.currentIndexDataForTest = StockIndicesMarketData(
+        indexSymbol: 'NIFTY 50',
+        lastPrice: 22000,
+        change: 50,
+        pChange: 0.25,
+        stocks: [
+          StockData(
+            symbol: 'RELIANCE',
+            lastPrice: 2800,
+            change: 10,
+            pChange: 0.35,
+            open: 2790,
+            dayHigh: 2810,
+            dayLow: 2780,
+          ),
+        ],
+      );
+      expect(provider.currentIndexData, isNotNull);
+
+      await provider.selectIndex('Paper');
+
+      expect(provider.selectedIndex, 'Paper');
+      expect(provider.currentIndexData, isNull);
+    });
+
+    test('switching to All Indices clears old constituents', () async {
+      final provider = MarketProvider();
+      provider.currentIndexDataForTest = StockIndicesMarketData(
+        indexSymbol: 'NIFTY 50',
+        lastPrice: 22000,
+        change: 50,
+        pChange: 0.25,
+        stocks: [
+          StockData(
+            symbol: 'TCS',
+            lastPrice: 3800,
+            change: 20,
+            pChange: 0.5,
+            open: 3780,
+            dayHigh: 3820,
+            dayLow: 3770,
+          ),
+        ],
+      );
+      expect(provider.currentIndexData, isNotNull);
+
+      // When switching away from NIFTY 50 to All Indices
+      await provider.selectIndex('All Indices');
+
+      expect(provider.selectedIndex, 'All Indices');
+      expect(provider.currentIndexData, isNull);
     });
   });
 }
