@@ -38,6 +38,11 @@ class AdaptiveDataTable<T> extends StatefulWidget {
     this.loadingWidget,
     this.rowHeight,
     this.contentPadding,
+    this.keepTableOnMobile = false,
+    this.headerTextStyle,
+    this.rowTextStyle,
+    this.headerBackgroundColor,
+    this.rowHoverColor,
   });
   final List<T> data;
   final List<DataTableColumn<T>> columns;
@@ -51,6 +56,14 @@ class AdaptiveDataTable<T> extends StatefulWidget {
   final Widget? loadingWidget;
   final double? rowHeight;
   final EdgeInsetsGeometry? contentPadding;
+  final TextStyle? headerTextStyle;
+  final TextStyle? rowTextStyle;
+  final Color? headerBackgroundColor;
+  final Color? rowHoverColor;
+
+  /// Keeps the tabular layout on narrow screens and lets the caller provide
+  /// horizontal scrolling. The default preserves the existing card fallback.
+  final bool keepTableOnMobile;
 
   @override
   State<AdaptiveDataTable<T>> createState() => _AdaptiveDataTableState<T>();
@@ -123,7 +136,7 @@ class _AdaptiveDataTableState<T> extends State<AdaptiveDataTable<T>> {
       builder: (context, constraints) {
         final isDesktop = constraints.maxWidth > 768;
 
-        if (isDesktop) {
+        if (isDesktop || widget.keepTableOnMobile) {
           return _buildDesktopTable();
         } else {
           return _buildMobileTable();
@@ -133,107 +146,126 @@ class _AdaptiveDataTableState<T> extends State<AdaptiveDataTable<T>> {
   }
 
   Widget _buildDesktopTable() => SingleChildScrollView(
-    child: DataTable(
-      columns: widget.columns
-          .map(
-            (column) => DataColumn(
-              label: Text(
-                column.title,
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-              onSort: column.sortable
-                  ? (columnIndex, ascending) => _onSort(column.key, ascending)
-                  : null,
-              numeric: column.numeric,
-            ),
-          )
-          .toList(),
-      rows: _sortedData.map((item) {
-        final isSelected = widget.selectedItems?.contains(item) ?? false;
-
-        return DataRow(
-          cells: widget.columns
+        scrollDirection: Axis.horizontal,
+        child: DataTable(
+          headingRowColor: widget.headerBackgroundColor == null
+              ? null
+              : WidgetStatePropertyAll(widget.headerBackgroundColor),
+          dataRowColor: widget.rowHoverColor == null
+              ? null
+              : WidgetStateProperty.resolveWith((states) {
+                  if (states.contains(WidgetState.hovered)) {
+                    return widget.rowHoverColor;
+                  }
+                  return null;
+                }),
+          headingTextStyle: widget.headerTextStyle,
+          dataTextStyle: widget.rowTextStyle,
+          dataRowMinHeight: widget.rowHeight,
+          dataRowMaxHeight: widget.rowHeight,
+          columns: widget.columns
               .map(
-                (column) => DataCell(
-                  column.cellBuilder(item),
-                  onTap: widget.onRowTap != null
-                      ? () => widget.onRowTap!(item)
+                (column) => DataColumn(
+                  label: Text(
+                    column.title,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  onSort: column.sortable
+                      ? (columnIndex, ascending) =>
+                          _onSort(column.key, ascending)
                       : null,
-                  onLongPress: widget.onRowLongPress != null
-                      ? () => widget.onRowLongPress!(item)
-                      : null,
+                  numeric: column.numeric,
                 ),
               )
               .toList(),
-          selected: isSelected,
-          onSelectChanged: widget.showCheckboxes
-              ? (selected) => _onRowSelectionChanged(item, selected ?? false)
-              : null,
-        );
-      }).toList(),
-      sortColumnIndex: _sortColumnKey != null
-          ? widget.columns.indexWhere((col) => col.key == _sortColumnKey)
-          : null,
-      sortAscending: _sortAscending,
-      showCheckboxColumn: widget.showCheckboxes,
-    ),
-  );
+          rows: _sortedData.map((item) {
+            final isSelected = widget.selectedItems?.contains(item) ?? false;
 
-  Widget _buildMobileTable() => ListView.builder(
-    padding: widget.contentPadding ?? const EdgeInsets.all(16),
-    itemCount: _sortedData.length,
-    itemBuilder: (context, index) {
-      final item = _sortedData[index];
-      final isSelected = widget.selectedItems?.contains(item) ?? false;
-
-      return Card(
-        margin: const EdgeInsets.only(bottom: 8),
-        child: InkWell(
-          onTap: widget.onRowTap != null ? () => widget.onRowTap!(item) : null,
-          onLongPress: widget.onRowLongPress != null
-              ? () => widget.onRowLongPress!(item)
-              : null,
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: isSelected
-                ? BoxDecoration(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.primaryContainer.withOpacity(0.3),
-                    borderRadius: BorderRadius.circular(8),
-                  )
-                : null,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: widget.columns
+            return DataRow(
+              cells: widget.columns
                   .map(
-                    (column) => Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          SizedBox(
-                            width: 100,
-                            child: Text(
-                              column.title,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w500,
-                                color: Colors.grey,
-                              ),
-                            ),
-                          ),
-                          Expanded(child: column.cellBuilder(item)),
-                        ],
-                      ),
+                    (column) => DataCell(
+                      column.cellBuilder(item),
+                      onTap: widget.onRowTap != null
+                          ? () => widget.onRowTap!(item)
+                          : null,
+                      onLongPress: widget.onRowLongPress != null
+                          ? () => widget.onRowLongPress!(item)
+                          : null,
                     ),
                   )
                   .toList(),
-            ),
-          ),
+              selected: isSelected,
+              onSelectChanged: widget.showCheckboxes
+                  ? (selected) =>
+                      _onRowSelectionChanged(item, selected ?? false)
+                  : null,
+            );
+          }).toList(),
+          sortColumnIndex: _sortColumnKey != null
+              ? widget.columns.indexWhere((col) => col.key == _sortColumnKey)
+              : null,
+          sortAscending: _sortAscending,
+          showCheckboxColumn: widget.showCheckboxes,
         ),
       );
-    },
-  );
+
+  Widget _buildMobileTable() => ListView.builder(
+        padding: widget.contentPadding ?? const EdgeInsets.all(16),
+        itemCount: _sortedData.length,
+        itemBuilder: (context, index) {
+          final item = _sortedData[index];
+          final isSelected = widget.selectedItems?.contains(item) ?? false;
+
+          return Card(
+            margin: const EdgeInsets.only(bottom: 8),
+            child: InkWell(
+              onTap:
+                  widget.onRowTap != null ? () => widget.onRowTap!(item) : null,
+              onLongPress: widget.onRowLongPress != null
+                  ? () => widget.onRowLongPress!(item)
+                  : null,
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: isSelected
+                    ? BoxDecoration(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.primaryContainer.withValues(alpha: 0.3),
+                        borderRadius: BorderRadius.circular(8),
+                      )
+                    : null,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: widget.columns
+                      .map(
+                        (column) => Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              SizedBox(
+                                width: 100,
+                                child: Text(
+                                  column.title,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                              ),
+                              Expanded(child: column.cellBuilder(item)),
+                            ],
+                          ),
+                        ),
+                      )
+                      .toList(),
+                ),
+              ),
+            ),
+          );
+        },
+      );
 
   void _onRowSelectionChanged(T item, bool selected) {
     if (widget.onSelectionChanged == null) return;

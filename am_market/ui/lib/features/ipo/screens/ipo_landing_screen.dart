@@ -1,5 +1,6 @@
 import 'package:am_design_system/am_design_system.dart';
 import 'package:am_market_ui/features/ipo/ipo_layout.dart';
+import 'package:am_market_ui/features/ipo/ipo_view_mode.dart';
 import 'package:am_market_ui/features/ipo/models/ipo_models.dart';
 import 'package:am_market_ui/features/ipo/providers/ipo_providers.dart';
 import 'package:am_market_ui/features/ipo/providers/ipo_calendar_providers.dart';
@@ -7,6 +8,7 @@ import 'package:am_market_ui/features/ipo/widgets/calendar/ipo_calendar_overlay.
 import 'package:am_market_ui/features/ipo/widgets/ipo_filter_toolbar.dart';
 import 'package:am_market_ui/features/ipo/widgets/ipo_kpi_stats_bar.dart';
 import 'package:am_market_ui/features/ipo/widgets/ipo_summary_card.dart';
+import 'package:am_market_ui/features/ipo/widgets/ipo_table_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -27,6 +29,7 @@ class IpoLandingScreen extends ConsumerStatefulWidget {
 
 class _IpoLandingScreenState extends ConsumerState<IpoLandingScreen> {
   int _page = 0;
+  IpoViewMode _viewMode = IpoViewMode.cards;
 
   @override
   Widget build(BuildContext context) {
@@ -34,6 +37,7 @@ class _IpoLandingScreenState extends ConsumerState<IpoLandingScreen> {
     final filteredIposAsync = ref.watch(filteredIposProvider);
     final width = MediaQuery.sizeOf(context).width;
     final isCompactMobile = width < AmBreakpoints.mobile;
+    final activeViewMode = isCompactMobile ? IpoViewMode.cards : _viewMode;
     final hPad = isCompactMobile ? 12.0 : 14.0;
 
     ref.listen<IpoFilterState>(ipoFilterStateProvider, (prev, next) {
@@ -111,7 +115,6 @@ class _IpoLandingScreenState extends ConsumerState<IpoLandingScreen> {
                 ),
               ),
             ),
-
           if (!isCompactMobile) ...[
             SliverToBoxAdapter(
               child: Padding(
@@ -119,8 +122,7 @@ class _IpoLandingScreenState extends ConsumerState<IpoLandingScreen> {
                 child: countsAsync.when(
                   data: (counts) => IpoKpiStatsBar(counts: counts),
                   loading: () => const _KpiSkeleton(),
-                  error: (_, __) =>
-                      IpoKpiStatsBar(counts: AsraxIpoCountsDto()),
+                  error: (_, __) => IpoKpiStatsBar(counts: AsraxIpoCountsDto()),
                 ),
               ),
             ),
@@ -129,25 +131,30 @@ class _IpoLandingScreenState extends ConsumerState<IpoLandingScreen> {
             SliverToBoxAdapter(
               child: SizedBox(height: widget.embedded ? 8 : 12),
             ),
-
           SliverToBoxAdapter(
             child: Padding(
               padding: EdgeInsets.symmetric(horizontal: hPad),
               child: countsAsync.when(
-                data: (counts) => IpoFilterToolbar(counts: counts),
+                data: (counts) => IpoFilterToolbar(
+                  counts: counts,
+                  viewMode: activeViewMode,
+                  onViewModeChanged: _setViewMode,
+                ),
                 loading: () => const SizedBox(height: 40),
-                error: (_, __) =>
-                    IpoFilterToolbar(counts: AsraxIpoCountsDto()),
+                error: (_, __) => IpoFilterToolbar(
+                  counts: AsraxIpoCountsDto(),
+                  viewMode: activeViewMode,
+                  onViewModeChanged: _setViewMode,
+                ),
               ),
             ),
           ),
-
           SliverToBoxAdapter(
             child: SizedBox(height: isCompactMobile ? 12 : 14),
           ),
-
           ...filteredIposAsync.when(
-            data: (ipos) => _buildIpoSlivers(context, ipos, hPad),
+            data: (ipos) =>
+                _buildIpoSlivers(context, ipos, hPad, activeViewMode),
             loading: () => const [
               SliverFillRemaining(
                 hasScrollBody: false,
@@ -217,6 +224,7 @@ class _IpoLandingScreenState extends ConsumerState<IpoLandingScreen> {
     BuildContext context,
     List<AsraxIpoSummaryDto> ipos,
     double hPad,
+    IpoViewMode viewMode,
   ) {
     if (ipos.isEmpty) {
       return [
@@ -275,52 +283,56 @@ class _IpoLandingScreenState extends ConsumerState<IpoLandingScreen> {
     }
     final pageItems = window.items;
 
-    return [
-      SliverPadding(
-        padding: EdgeInsets.fromLTRB(hPad, 0, hPad, 8),
-        sliver: SliverLayoutBuilder(
-          builder: (context, constraints) {
-            final crossAxisCount =
-                columnsForIpoGrid(constraints.crossAxisExtent);
+    final contentSliver = viewMode == IpoViewMode.table
+        ? SliverToBoxAdapter(child: IpoTableView(items: pageItems))
+        : SliverLayoutBuilder(
+            builder: (context, constraints) {
+              final crossAxisCount =
+                  columnsForIpoGrid(constraints.crossAxisExtent);
 
-            if (crossAxisCount == 1) {
-              return SliverList(
+              if (crossAxisCount == 1) {
+                return SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) => Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: IpoSummaryCard(
+                        ipo: pageItems[index],
+                        compact: true,
+                      ),
+                    ),
+                    childCount: pageItems.length,
+                  ),
+                );
+              }
+
+              return SliverGrid(
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: crossAxisCount,
+                  mainAxisSpacing: 8,
+                  crossAxisSpacing: 8,
+                  mainAxisExtent: 176,
+                ),
                 delegate: SliverChildBuilderDelegate(
-                  (context, index) => Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
-                    child: IpoSummaryCard(
-                      ipo: pageItems[index],
-                      compact: true,
+                  (context, index) => Align(
+                    alignment: Alignment.topCenter,
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: IpoSummaryCard(
+                        ipo: pageItems[index],
+                        compact: true,
+                      ),
                     ),
                   ),
                   childCount: pageItems.length,
                 ),
               );
-            }
+            },
+          );
 
-            return SliverGrid(
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: crossAxisCount,
-                mainAxisSpacing: 8,
-                crossAxisSpacing: 8,
-                mainAxisExtent: 104,
-              ),
-              delegate: SliverChildBuilderDelegate(
-                (context, index) => Align(
-                  alignment: Alignment.topCenter,
-                  child: SizedBox(
-                    width: double.infinity,
-                    child: IpoSummaryCard(
-                      ipo: pageItems[index],
-                      compact: true,
-                    ),
-                  ),
-                ),
-                childCount: pageItems.length,
-              ),
-            );
-          },
-        ),
+    return [
+      SliverPadding(
+        padding: EdgeInsets.fromLTRB(hPad, 0, hPad, 8),
+        sliver: contentSliver,
       ),
       if (ipos.length > IpoLandingScreen.pageSize)
         SliverToBoxAdapter(
@@ -396,6 +408,11 @@ class _IpoLandingScreenState extends ConsumerState<IpoLandingScreen> {
         ),
       ),
     );
+  }
+
+  void _setViewMode(IpoViewMode mode) {
+    if (_viewMode == mode) return;
+    setState(() => _viewMode = mode);
   }
 }
 

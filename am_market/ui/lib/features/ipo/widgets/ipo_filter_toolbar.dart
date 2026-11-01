@@ -1,13 +1,21 @@
 import 'package:am_design_system/am_design_system.dart';
 import 'package:am_market_ui/features/ipo/models/ipo_models.dart';
 import 'package:am_market_ui/features/ipo/providers/ipo_providers.dart';
+import 'package:am_market_ui/features/ipo/ipo_view_mode.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class IpoFilterToolbar extends ConsumerWidget {
   final AsraxIpoCountsDto counts;
+  final IpoViewMode viewMode;
+  final ValueChanged<IpoViewMode> onViewModeChanged;
 
-  const IpoFilterToolbar({super.key, required this.counts});
+  const IpoFilterToolbar({
+    super.key,
+    required this.counts,
+    required this.viewMode,
+    required this.onViewModeChanged,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -57,6 +65,8 @@ class IpoFilterToolbar extends ConsumerWidget {
                             .read(ipoFilterStateProvider.notifier)
                             .toggleSme(val),
                       ),
+                      const SizedBox(width: 14),
+                      _buildViewModeControl(context),
                     ],
                   ),
                 ),
@@ -98,6 +108,10 @@ class IpoFilterToolbar extends ConsumerWidget {
                       .read(ipoFilterStateProvider.notifier)
                       .toggleSme(!filterState.filterSme),
                 ),
+                if (!isCompact) ...[
+                  const SizedBox(width: 8),
+                  _buildViewModeControl(context),
+                ],
                 const Spacer(),
                 industryDropdown,
               ],
@@ -105,6 +119,21 @@ class IpoFilterToolbar extends ConsumerWidget {
           ],
         );
       },
+    );
+  }
+
+  Widget _buildViewModeControl(BuildContext context) {
+    return Semantics(
+      label: 'IPO list view',
+      child: AppSegmentedControl<IpoViewMode>(
+        selectedValue: viewMode,
+        children: const {
+          IpoViewMode.cards: 'Cards',
+          IpoViewMode.table: 'Table',
+        },
+        primaryColor: ModuleColors.market,
+        onValueChanged: onViewModeChanged,
+      ),
     );
   }
 
@@ -310,8 +339,7 @@ class IpoFilterToolbar extends ConsumerWidget {
           borderRadius: 10,
           menuMaxHeight: 220,
           primaryColor: ModuleColors.market,
-          backgroundColor:
-              isDark ? Colors.white.withValues(alpha: 0.06) : null,
+          backgroundColor: isDark ? Colors.white.withValues(alpha: 0.06) : null,
           borderColor: isDark ? Colors.white.withValues(alpha: 0.1) : null,
           contentPadding: const EdgeInsets.symmetric(horizontal: 10),
           items: industries.map((ind) {

@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>IPO details — inline subscription demo</title>
+  <style>
+    :root {
+      --bg: #050707;
+      --surface: #0c0f10;
+      --surface-2: #101516;
+      --surface-3: #151b1d;
+      --border: #263033;
+      --border-soft: #1b2426;
+      --text: #f5f7f7;
+      --muted: #a4afb1;
+      --subtle: #788487;
+      --market: #26c7e9;
+      --market-soft: rgba(38, 199, 233, .13);
+      --positive: #55d4b0;
+      --warning: #f4c966;
+      --shadow: 0 18px 44px rgba(0, 0, 0, .38);
+    }
+
+    * { box-sizing: border-box; }
+    html { background: var(--bg); }
+    body {
+      min-width: 320px;
+      margin: 0;
+      background:
+        radial-gradient(900px 400px at 57% -12%, #07353d 0%, transparent 68%),
+        var(--bg);
+      color: var(--text);
+      font: 14px/1.35 Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    button { font: inherit; color: inherit; cursor: pointer; }
+    button:focus-visible { outline: 2px solid var(--market); outline-offset: 2px; }
+
+    .app { min-height: 100vh; display: grid; grid-template-columns: 76px 1fr; }
+    .rail {
+      position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; align-items: center;
+      gap: 12px; padding: 18px 10px; border-right: 1px solid #1c2325; background: rgba(8, 10, 11, .88);
+    }
+    .brand, .rail-button, .profile { display: grid; place-items: center; }
+    .brand { width: 48px; height: 48px; border: 1px solid #1d373c; border-radius: 13px; background: #0d1719; color: var(--market); font-size: 21px; font-weight: 900; }
+    .rail-button { width: 48px; height: 48px; border: 1px solid transparent; border-radius: 13px; background: transparent; color: var(--subtle); font-size: 20px; }
+    .rail-button.active, .rail-button:hover { border-color: #1d5b66; background: var(--market-soft); color: var(--market); }
+    .rail-spacer { flex: 1; }
+    .profile { width: 36px; height: 36px; border: 1px solid #6d38d8; border-radius: 50%; background: #251346; color: #dac7ff; font-weight: 850; }
+
+    .content { width: min(1720px, 100%); margin: 0 auto; padding: 16px 24px 52px; }
+    .breadcrumb-bar { display: flex; align-items: center; gap: 9px; margin: 0; padding: 13px 20px 0; color: var(--subtle); font-size: 13px; }
+    .breadcrumb-link { display: inline-flex; align-items: center; gap: 6px; border: 0; background: transparent; color: var(--muted); font-weight: 750; text-decoration: none; }
+    .breadcrumb-link:hover { color: var(--market); text-decoration: underline; text-underline-offset: 3px; }
+    .breadcrumb-separator { color: var(--subtle); font-size: 17px; }
+    .breadcrumb-current { overflow: hidden; color: var(--text); font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
+
+    .top-card, .section-card { border: 1px solid var(--border); border-radius: 16px; background: rgba(12, 15, 16, .94); box-shadow: var(--shadow); }
+    .top-card { overflow: hidden; }
+    .top-main { display: grid; grid-template-columns: minmax(320px, 1fr) 300px 112px; align-items: center; gap: 24px; padding: 14px 20px 20px; }
+    .identity { display: flex; align-items: center; gap: 13px; min-width: 0; }
+    .avatar { width: 56px; height: 56px; display: grid; place-items: center; flex: 0 0 auto; border-radius: 13px; background: #131f3b; color: #b8d0ff; font-size: 19px; font-weight: 850; }
+    .identity-copy { min-width: 0; }
+    h1 { margin: 0; overflow: hidden; font-size: 21px; line-height: 1.15; letter-spacing: -.5px; text-overflow: ellipsis; white-space: nowrap; }
+    .legal-name { margin: 5px 0 9px; overflow: hidden; color: var(--muted); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+    .tags { display: flex; flex-wrap: wrap; gap: 6px; }
+    .tag { padding: 3px 7px; border: 1px solid var(--border); border-radius: 5px; color: var(--muted); font-size: 10px; font-weight: 750; }
+    .tag.accent { border-color: rgba(38, 199, 233, .42); background: var(--market-soft); color: var(--market); }
+
+    .subscription-meter { width: 300px; justify-self: end; }
+    .subscription-box { min-width: 0; padding: 7px 10px 6px; border: 1px solid var(--border-soft); border-radius: 10px; background: rgba(21, 27, 29, .72); }
+    .subscription-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; min-width: 0; }
+    .subscription-label { overflow: hidden; color: var(--subtle); font-size: 10px; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
+    .subscription-value { color: var(--text); font-size: 18px; font-weight: 850; letter-spacing: -.3px; }
+    .subscription-track { position: relative; height: 5px; margin-top: 16px; overflow: visible; border-radius: 99px; background: var(--border-soft); }
+    .subscription-fill { width: var(--fill-width, var(--progress, .87%)); height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--market), var(--positive)); box-shadow: 0 0 10px rgba(38, 199, 233, .34); }
+    .subscription-marker { position: absolute; z-index: 3; top: 50%; left: 17px; width: 32px; height: 32px; color: var(--market); transform: translate(-50%, -65%); }
+    .subscription-marker svg { display: block; width: 100%; height: 100%; overflow: visible; filter: drop-shadow(0 0 5px var(--market)); transform-origin: 50% 90%; animation: flameFlicker .9s ease-in-out infinite; }
+    .subscription-marker .flame-outer { fill: currentColor; }
+    .subscription-marker .flame-inner { fill: var(--text); opacity: .9; animation: emberPulse .8s ease-in-out infinite alternate; }
+    .subscription-tick { position: absolute; top: -2px; left: var(--position); width: 1px; height: 11px; transform: translateX(-50%); background: var(--subtle); opacity: .65; pointer-events: none; }
+    .subscription-scale { position: relative; height: 12px; margin-top: 14px; color: var(--subtle); font-size: 9px; }
+    .subscription-scale span { position: absolute; top: 0; left: var(--position); transform: translateX(-50%); white-space: nowrap; }
+    .subscription-scale span:first-child { transform: none; }
+    .subscription-scale span:last-child { transform: translateX(-100%); }
+    @keyframes flameFlicker { 0%, 100% { transform: translateY(1px) scale(.96, .98); } 45% { transform: translateY(-1px) scale(1.02, 1.05); } 72% { transform: translateY(0) scale(.99, 1.01); } }
+    @keyframes emberPulse { from { opacity: .55; } to { opacity: 1; } }
+    @media (prefers-reduced-motion: reduce) { .subscription-marker svg, .subscription-marker .flame-inner { animation: none; } }
+    .close-status { min-width: 112px; text-align: right; }
+    .status { display: inline-flex; padding: 5px 9px; border: 1px solid #267861; border-radius: 99px; background: #102a25; color: var(--positive); font-size: 10px; font-weight: 850; letter-spacing: .25px; }
+    .close-status small { display: block; margin-top: 12px; color: var(--subtle); font-size: 10px; }
+    .close-status strong { display: block; margin-top: 3px; color: var(--positive); font-size: 17px; }
+    .close-status time { display: block; margin-top: 2px; color: var(--muted); font-size: 11px; }
+
+    .facts { display: grid; grid-template-columns: repeat(8, minmax(100px, 1fr)); gap: 0; margin: 0 20px; padding: 16px 0 18px; border-top: 1px solid var(--border-soft); }
+    .fact { min-width: 0; padding: 0 14px; border-left: 1px solid var(--border-soft); }
+    .fact:first-child { padding-left: 0; border-left: 0; }
+    .fact-label { display: block; color: var(--subtle); font-size: 10px; font-weight: 620; white-space: nowrap; }
+    .fact-value { display: block; margin-top: 5px; overflow: hidden; color: var(--text); font-size: 13px; font-weight: 780; text-overflow: ellipsis; white-space: nowrap; }
+    .fact-label::first-letter { color: var(--market); }
+
+    .section-card { margin-top: 14px; padding: 19px 20px; }
+    .section-title { display: flex; align-items: center; gap: 9px; margin: 0 0 18px; font-size: 16px; letter-spacing: -.2px; }
+    .section-title .icon { color: var(--market); }
+    .timeline { display: grid; grid-template-columns: repeat(8, minmax(92px, 1fr)); gap: 0; overflow-x: auto; padding-bottom: 2px; }
+    .timeline-step { position: relative; min-width: 105px; text-align: center; }
+    .timeline-step::after { position: absolute; top: 12px; left: calc(50% + 18px); width: calc(100% - 36px); height: 2px; background: var(--border-soft); content: ""; }
+    .timeline-step.done::after { background: var(--positive); opacity: .7; }
+    .timeline-step:last-child::after { display: none; }
+    .timeline-dot { position: relative; z-index: 1; width: 25px; height: 25px; display: grid; place-items: center; margin: 0 auto 10px; border: 2px solid var(--border); border-radius: 50%; background: var(--bg); color: var(--subtle); font-size: 12px; }
+    .timeline-step.done .timeline-dot { border-color: var(--positive); background: var(--positive); color: #06231d; }
+    .timeline-date { display: block; color: var(--muted); font-size: 11px; }
+    .timeline-label { display: block; margin-top: 3px; color: var(--text); font-size: 11px; font-weight: 750; }
+    .timeline-note { display: block; margin-top: 3px; color: var(--subtle); font-size: 10px; }
+
+    .lower-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .document-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; min-height: 44px; padding: 0 12px; border: 1px solid var(--market); border-radius: 10px; background: var(--market-soft); color: var(--market); font-weight: 700; }
+    .document-row + .document-row { margin-top: 9px; border-color: var(--border); background: transparent; color: var(--muted); }
+    .helper { margin: 11px 0 0; color: var(--subtle); font-size: 11px; }
+    .registrar-grid { display: grid; grid-template-columns: 125px 1fr; gap: 10px 16px; font-size: 12px; }
+    .registrar-grid span { color: var(--subtle); }
+    .registrar-grid strong, .registrar-grid a { color: var(--text); font-weight: 700; }
+    .registrar-grid a { color: var(--market); }
+
+    @media (max-width: 1180px) {
+      .top-main { grid-template-columns: minmax(280px, 1fr) auto; gap: 18px; }
+      .subscription-meter { grid-column: 1 / -1; grid-row: 2; justify-self: end; max-width: 390px; }
+      .close-status { grid-column: 2; grid-row: 1; }
+      .facts { grid-template-columns: repeat(4, 1fr); row-gap: 17px; }
+      .fact:nth-child(5) { padding-left: 0; border-left: 0; }
+    }
+    @media (max-width: 760px) {
+      .app { display: block; }
+      .rail { position: fixed; z-index: 5; top: auto; bottom: 0; width: 100%; height: 60px; flex-direction: row; justify-content: space-around; padding: 6px 9px; border-top: 1px solid var(--border); border-right: 0; }
+      .brand, .rail-spacer, .profile { display: none; }
+      .rail-button { width: 42px; height: 42px; }
+      .content { padding: 17px 12px 82px; }
+      .breadcrumb-bar { padding: 12px 15px 0; }
+      .top-main { display: flex; flex-direction: column; align-items: stretch; gap: 16px; padding: 14px 15px 17px; }
+      .subscription-meter { width: 100%; max-width: none; }
+      .close-status { min-width: 0; text-align: left; }
+      .close-status small, .close-status strong, .close-status time { display: inline; margin: 0 7px 0 0; }
+      .close-status .status { margin-right: 7px; }
+      .facts { grid-template-columns: repeat(2, 1fr); margin: 0 15px; padding: 14px 0 16px; }
+      .fact, .fact:nth-child(5) { padding: 0 10px; border-left: 1px solid var(--border-soft); }
+      .fact:nth-child(odd) { padding-left: 0; border-left: 0; }
+      .section-card { padding: 16px 15px; }
+      .lower-grid { grid-template-columns: 1fr; }
+      h1 { font-size: 19px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="rail" aria-label="Application navigation">
+      <div class="brand">A</div>
+      <button class="rail-button" aria-label="Search">⌕</button>
+      <button class="rail-button" aria-label="Dashboard">▦</button>
+      <button class="rail-button" aria-label="Portfolio">▣</button>
+      <button class="rail-button" aria-label="Trade">⇄</button>
+      <button class="rail-button active" aria-label="Market">⌁</button>
+      <div class="rail-spacer"></div>
+      <button class="rail-button" aria-label="Settings">⚙</button>
+      <div class="profile" aria-label="Profile">S</div>
+    </aside>
+
+    <main class="content">
+      <section class="top-card" aria-labelledby="ipoTitle">
+        <nav class="breadcrumb-bar" aria-label="Breadcrumb">
+          <a class="breadcrumb-link" href="./index.html">IPOs</a>
+          <span class="breadcrumb-separator" aria-hidden="true">›</span>
+          <span class="breadcrumb-current" aria-current="page">Antala Industries IPO</span>
+        </nav>
+        <div class="top-main">
+          <div class="identity">
+            <div class="avatar">AI</div>
+            <div class="identity-copy">
+              <h1 id="ipoTitle">Antala Industries IPO</h1>
+              <p class="legal-name">Antala Industries IPO Limited</p>
+              <div class="tags"><span class="tag">ANTALA</span><span class="tag accent">SME</span><span class="tag">Packaging</span><span class="tag accent">HNI</span></div>
+            </div>
+          </div>
+
+          <div class="subscription-meter" aria-label="IPO subscription summary">
+            <div class="subscription-box" data-value="0.87" data-max="100" role="meter" aria-label="Overall subscription 0.87 times" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0.87">
+              <div class="subscription-heading">
+                <span class="subscription-label">Overall subscription</span>
+                <strong class="subscription-value">0.87×</strong>
+              </div>
+              <div class="subscription-track" aria-hidden="true">
+                <div class="subscription-fill"></div>
+                <span class="subscription-marker">
+                  <svg viewBox="0 0 24 30" focusable="false" aria-hidden="true">
+                    <path class="flame-outer" d="M12.9 1C14 5.4 10.5 7.5 9.2 10.8c-.6 1.5-.6 2.8-.2 4.1-1.9-1.2-2.4-3.1-2.1-5.2C4.4 12.4 3 15.6 3 19.1 3 24.6 6.8 29 12 29s9-4.4 9-9.9c0-5.2-2.6-8.6-5.3-11.5.2 3.3-1.3 4.6-2.6 5.3 1-4.5 2.3-7.1-.2-11.9Z"/>
+                    <path class="flame-inner" d="M12.5 15.2c.1 2.1-2.5 3.3-2.5 5.7 0 1 .3 1.7.8 2.2-.1-1.8.8-3 2.2-3.8.1 1.7 2.4 2.7 2.4 4.5 0 2.2-1.5 3.8-3.4 3.8-2.1 0-3.6-1.8-3.6-4.2 0-3.2 2.4-5.1 4.1-8.2Z"/>
+                  </svg>
+                </span>
+                <span class="subscription-tick" style="--position:0%"></span>
+                <span class="subscription-tick" style="--position:20%"></span>
+                <span class="subscription-tick" style="--position:40%"></span>
+                <span class="subscription-tick" style="--position:60%"></span>
+                <span class="subscription-tick" style="--position:80%"></span>
+                <span class="subscription-tick" style="--position:100%"></span>
+              </div>
+              <div class="subscription-scale" aria-hidden="true">
+                <span style="--position:0%">0×</span>
+                <span style="--position:20%">20×</span>
+                <span style="--position:40%">40×</span>
+                <span style="--position:60%">60×</span>
+                <span style="--position:80%">80×</span>
+                <span style="--position:100%">100×</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="close-status">
+            <span class="status">OPEN</span>
+            <small>Bidding closes in</small>
+            <strong>1 day</strong>
+            <time datetime="2026-11-02">(2 Nov 2026)</time>
+          </div>
+        </div>
+
+        <div class="facts" aria-label="IPO facts">
+          <div class="fact"><span class="fact-label">⌁ Price Band</span><strong class="fact-value">₹63 – ₹67</strong></div>
+          <div class="fact"><span class="fact-label">▣ Min. Investment</span><strong class="fact-value">₹2,68,000</strong></div>
+          <div class="fact"><span class="fact-label">◇ Issue Size</span><strong class="fact-value">₹23 Cr</strong></div>
+          <div class="fact"><span class="fact-label">▤ Lot Size</span><strong class="fact-value">2000 shares</strong></div>
+          <div class="fact"><span class="fact-label">▥ Min. Quantity</span><strong class="fact-value">4000 shares</strong></div>
+          <div class="fact"><span class="fact-label">♙ Cut-off Price</span><strong class="fact-value">₹67</strong></div>
+          <div class="fact"><span class="fact-label">₹ Face Value</span><strong class="fact-value">₹10</strong></div>
+          <div class="fact"><span class="fact-label">▥ Listing Exchange</span><strong class="fact-value">BSE</strong></div>
+        </div>
+      </section>
+
+      <section class="section-card" aria-labelledby="datesTitle">
+        <h2 class="section-title" id="datesTitle"><span class="icon">▦</span> Important Dates</h2>
+        <div class="timeline">
+          <div class="timeline-step done"><div class="timeline-dot">✓</div><span class="timeline-date">28 Oct 2026</span><strong class="timeline-label">Pre-Apply Start</strong><span class="timeline-note">(Optional)</span></div>
+          <div class="timeline-step done"><div class="timeline-dot">✓</div><span class="timeline-date">29 Oct 2026</span><strong class="timeline-label">Application Start</strong><span class="timeline-note">10:00</span></div>
+          <div class="timeline-step"><div class="timeline-dot"></div><span class="timeline-date">02 Nov 2026</span><strong class="timeline-label">Application End</strong><span class="timeline-note">17:00</span></div>
+          <div class="timeline-step"><div class="timeline-dot"></div><span class="timeline-date">03 Nov 2026</span><strong class="timeline-label">Allotment Start</strong></div>
+          <div class="timeline-step"><div class="timeline-dot"></div><span class="timeline-date">04 Nov 2026</span><strong class="timeline-label">Allotment Date</strong></div>
+          <div class="timeline-step"><div class="timeline-dot"></div><span class="timeline-date">04 Nov 2026</span><strong class="timeline-label">Refund Initiation</strong></div>
+          <div class="timeline-step"><div class="timeline-dot"></div><span class="timeline-date">05 Nov 2026</span><strong class="timeline-label">Listing Date</strong><span class="timeline-note">BSE</span></div>
+          <div class="timeline-step"><div class="timeline-dot"></div><span class="timeline-date">14 Dec 2026</span><strong class="timeline-label">Mandate End</strong><span class="timeline-note">(Auto UPI)</span></div>
+        </div>
+      </section>
+
+      <div class="lower-grid">
+        <section class="section-card" aria-labelledby="documentsTitle">
+          <h2 class="section-title" id="documentsTitle"><span class="icon">▤</span> Documents</h2>
+          <div class="document-row"><span>▣ &nbsp; RHP PDF</span><span>↗</span></div>
+          <div class="document-row"><span>▣ &nbsp; DRHP PDF</span><span>Not available</span></div>
+          <p class="helper">ⓘ &nbsp;Read the official RHP for detailed information before investing.</p>
+        </section>
+
+        <section class="section-card" aria-labelledby="registrarTitle">
+          <h2 class="section-title" id="registrarTitle"><span class="icon">♧</span> Registrar Details</h2>
+          <div class="registrar-grid">
+            <span>Name</span><strong>BIGSHARE SERVICES PRIVATE LIMITED</strong>
+            <span>Contact Person</span><strong>Mr. Vinayak Morbale</strong>
+            <span>Email</span><a href="mailto:ipo@bigshareonline.com">ipo@bigshareonline.com</a>
+            <span>Contact Number</span><a href="tel:+912262638200">022-62638200</a>
+            <span>Website</span><a href="https://www.bigshareonline.com/" target="_blank" rel="noreferrer">bigshareonline.com ↗</a>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const subscriptionBox = document.querySelector('.subscription-box[data-value][data-max]');
+    const previewRate = new URLSearchParams(window.location.search).get('rate');
+    const rate = Number(previewRate ?? subscriptionBox.dataset.value);
+    const scaleMax = Number(subscriptionBox.dataset.max);
+    if (Number.isFinite(rate) && rate >= 0 && Number.isFinite(scaleMax) && scaleMax > 0) {
+      const progress = Math.min(100, Math.max(0, (rate / scaleMax) * 100));
+      subscriptionBox.style.setProperty('--progress', `${progress}%`);
+      subscriptionBox.querySelector('.subscription-value').textContent = `${rate}×`;
+      subscriptionBox.setAttribute('aria-valuenow', String(rate));
+      subscriptionBox.setAttribute('aria-valuemax', String(scaleMax));
+      subscriptionBox.setAttribute('aria-label', `Overall subscription ${rate} times`);
+      const track = subscriptionBox.querySelector('.subscription-track');
+      const flame = subscriptionBox.querySelector('.subscription-marker');
+      const fill = subscriptionBox.querySelector('.subscription-fill');
+      const positionPointer = () => {
+        const width = track.getBoundingClientRect().width;
+        const valueX = width * progress / 100;
+        const flameX = Math.min(Math.max(valueX, 17), width - 17);
+        flame.style.left = `${flameX}px`;
+        // The active fill ends at the flame's center, so the flame never
+        // appears detached from the track at very small subscription values.
+        fill.style.width = `${flameX}px`;
+      };
+      positionPointer();
+      new ResizeObserver(positionPointer).observe(track);
+    }
+  </script>
+</body>
+</html>

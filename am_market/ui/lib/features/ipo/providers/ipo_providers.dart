@@ -1,6 +1,7 @@
 import 'package:am_market_ui/core/services/market_data_sdk_service.dart';
 import 'package:am_market_ui/features/ipo/data/ipo_api_client.dart';
 import 'package:am_market_ui/features/ipo/models/ipo_models.dart';
+import 'package:am_market_ui/features/ipo/ipo_sorting.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final ipoApiClientProvider = Provider<IpoApiClient>((ref) {
@@ -13,29 +14,113 @@ final ipoCountsProvider = FutureProvider<AsraxIpoCountsDto>((ref) async {
   return await client.getIpoCounts();
 });
 
-final ipoListProvider = FutureProvider.family<List<AsraxIpoSummaryDto>, String>((ref, status) async {
+final ipoListProvider = FutureProvider.family<List<AsraxIpoSummaryDto>, String>(
+    (ref, status) async {
   final client = ref.watch(ipoApiClientProvider);
   return await client.getIpos(status);
 });
 
 final allIposProvider = FutureProvider<List<AsraxIpoSummaryDto>>((ref) async {
   final client = ref.watch(ipoApiClientProvider);
-  final results = await Future.wait([
-    client.getIpos('open').catchError((_) => <AsraxIpoSummaryDto>[]),
-    client.getIpos('upcoming').catchError((_) => <AsraxIpoSummaryDto>[]),
-    client.getIpos('closed').catchError((_) => <AsraxIpoSummaryDto>[]),
-  ]);
+  const statuses = ['open', 'upcoming', 'closed', 'listed'];
+  final results = await Future.wait(
+    statuses.map((status) => _fetchAllPages(client, status)),
+  );
 
   final Map<String, AsraxIpoSummaryDto> dedup = {};
   for (final list in results) {
     for (final item in list) {
-      dedup[item.id] = item;
+      if (item.id.trim().isEmpty) continue;
+      final existing = dedup[item.id];
+      if (existing == null || _shouldPrefer(item, existing)) {
+        dedup[item.id] = item;
+      }
     }
   }
   return dedup.values.toList();
 });
 
-final ipoDetailsProvider = FutureProvider.family<AsraxIpoDetailsDto, String>((ref, id) async {
+const _listPageSize = 100;
+const _maxPagesPerStatus = 50;
+
+Future<List<AsraxIpoSummaryDto>> _fetchAllPages(
+  IpoApiClient client,
+  String status,
+) async {
+  final items = <AsraxIpoSummaryDto>[];
+  final fingerprints = <String>{};
+
+  for (var page = 1; page <= _maxPagesPerStatus; page++) {
+    final rawPage = await client.getIpos(
+      status,
+      pageNumber: page,
+      records: _listPageSize,
+      cacheOnly: true,
+    );
+    final validPage =
+        rawPage.where((item) => item.id.trim().isNotEmpty).toList();
+
+    if (rawPage.isNotEmpty && validPage.isEmpty) {
+      throw StateError(
+          'IPO $status page $page contained no valid provider ids');
+    }
+
+    final fingerprint =
+        (validPage.map((item) => item.id).toList()..sort()).join('|');
+    if (fingerprint.isNotEmpty && !fingerprints.add(fingerprint)) {
+      throw StateError('IPO $status pagination repeated page $page');
+    }
+
+    items.addAll(validPage);
+    if (rawPage.length < _listPageSize) return items;
+  }
+
+  throw StateError('IPO $status pagination exceeded $_maxPagesPerStatus pages');
+}
+
+bool _shouldPrefer(AsraxIpoSummaryDto candidate, AsraxIpoSummaryDto current) {
+  final candidateStatus = _statusPriority(candidate.status);
+  final currentStatus = _statusPriority(current.status);
+  if (candidateStatus != currentStatus) return candidateStatus > currentStatus;
+  return _fieldCompleteness(candidate) > _fieldCompleteness(current);
+}
+
+int _statusPriority(String? status) {
+  switch (status?.trim().toLowerCase()) {
+    case 'listed':
+      return 4;
+    case 'closed':
+      return 3;
+    case 'open':
+      return 2;
+    case 'upcoming':
+      return 1;
+    default:
+      return 0;
+  }
+}
+
+int _fieldCompleteness(AsraxIpoSummaryDto item) {
+  final values = <Object?>[
+    item.companyName,
+    item.symbol,
+    item.status,
+    item.issueType,
+    item.industry,
+    item.biddingStartDate,
+    item.biddingEndDate,
+    item.totalSubscription,
+    item.issueSizeCr,
+    item.minimumPrice,
+    item.maximumPrice,
+  ];
+  return values
+      .where((value) => value != null && value.toString().trim().isNotEmpty)
+      .length;
+}
+
+final ipoDetailsProvider =
+    FutureProvider.family<AsraxIpoDetailsDto, String>((ref, id) async {
   final client = ref.watch(ipoApiClientProvider);
   return await client.getIpoDetails(id);
 });
@@ -75,7 +160,8 @@ class IpoFilterState {
       statusFilter: statusFilter ?? this.statusFilter,
       filterMainboard: filterMainboard ?? this.filterMainboard,
       filterSme: filterSme ?? this.filterSme,
-      selectedIndustry: clearIndustry ? null : (selectedIndustry ?? this.selectedIndustry),
+      selectedIndustry:
+          clearIndustry ? null : (selectedIndustry ?? this.selectedIndustry),
       searchQuery: searchQuery ?? this.searchQuery,
     );
   }
@@ -143,9 +229,7 @@ bool ipoMatchesFilter(
   IpoFilterState filter, {
   DateTime? now,
 }) {
-  final clock = now ?? DateTime.now();
-  final todayStr =
-      '${clock.year.toString().padLeft(4, '0')}-${clock.month.toString().padLeft(2, '0')}-${clock.day.toString().padLeft(2, '0')}';
+  final todayStr = ipoTodayIndiaDateKey(now: now);
 
   final status = (ipo.status ?? '').toLowerCase();
   switch (filter.statusFilter) {
@@ -156,9 +240,7 @@ bool ipoMatchesFilter(
       break;
     case IpoStatusFilter.closingToday:
       // Must be open AND bidding end date is today (not all open IPOs).
-      final end = (ipo.biddingEndDate ?? '').length >= 10
-          ? ipo.biddingEndDate!.substring(0, 10)
-          : (ipo.biddingEndDate ?? '');
+      final end = ipoIndiaDateKey(ipo.biddingEndDate);
       if (status != 'open' || end != todayStr) return false;
       break;
     case IpoStatusFilter.upcoming:
@@ -191,9 +273,7 @@ bool ipoMatchesFilter(
     final name = (ipo.companyName ?? '').toLowerCase();
     final sym = (ipo.symbol ?? '').toLowerCase();
     final ind = (ipo.industry ?? '').toLowerCase();
-    if (!name.contains(query) &&
-        !sym.contains(query) &&
-        !ind.contains(query)) {
+    if (!name.contains(query) && !sym.contains(query) && !ind.contains(query)) {
       return false;
     }
   }
@@ -207,6 +287,10 @@ final filteredIposProvider =
   final filter = ref.watch(ipoFilterStateProvider);
 
   return iposAsync.whenData((ipos) {
-    return ipos.where((ipo) => ipoMatchesFilter(ipo, filter)).toList();
+    final matching =
+        ipos.where((ipo) => ipoMatchesFilter(ipo, filter)).toList();
+    return filter.statusFilter == IpoStatusFilter.all
+        ? sortIposForAll(matching)
+        : matching;
   });
 });

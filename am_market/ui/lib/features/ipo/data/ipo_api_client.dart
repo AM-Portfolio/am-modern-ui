@@ -28,11 +28,21 @@ class IpoApiClient {
     }
   }
 
-  Future<List<AsraxIpoSummaryDto>> getIpos(String status) async {
+  Future<List<AsraxIpoSummaryDto>> getIpos(
+    String status, {
+    int pageNumber = 1,
+    int records = 100,
+    bool cacheOnly = true,
+  }) async {
     final response = await _client.invokeAPI(
       '/v1/market-data/ipo',
       'GET',
-      [QueryParam('status', status)],
+      [
+        QueryParam('status', status),
+        QueryParam('pageNumber', pageNumber.toString()),
+        QueryParam('records', records.toString()),
+        QueryParam('cacheOnly', cacheOnly.toString()),
+      ],
       null,
       {},
       {},
@@ -40,8 +50,12 @@ class IpoApiClient {
     );
     if (response.statusCode >= 200 && response.statusCode < 300) {
       final jsonResponse = json.decode(response.body);
-      final List data = (jsonResponse is List) ? jsonResponse : (jsonResponse['data'] as List? ?? []);
-      return data.map((e) => AsraxIpoSummaryDto.fromJson(e as Map<String, dynamic>)).toList();
+      final List data = (jsonResponse is List)
+          ? jsonResponse
+          : (jsonResponse['data'] as List? ?? []);
+      return data
+          .map((e) => AsraxIpoSummaryDto.fromJson(e as Map<String, dynamic>))
+          .toList();
     } else {
       throw Exception('Failed to load IPOs: ${response.statusCode}');
     }

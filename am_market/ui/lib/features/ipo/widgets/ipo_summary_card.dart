@@ -1,6 +1,6 @@
 import 'package:am_design_system/am_design_system.dart';
 import 'package:am_market_ui/features/ipo/models/ipo_models.dart';
-import 'package:am_market_ui/features/ipo/screens/ipo_details_screen.dart';
+import 'package:am_market_ui/features/ipo/ipo_navigation.dart';
 import 'package:am_market_ui/features/ipo/widgets/ipo_board_badge.dart';
 import 'package:am_market_ui/features/ipo/widgets/subscription_progress_bar.dart';
 import 'package:flutter/material.dart';
@@ -42,9 +42,8 @@ class IpoSummaryCard extends StatelessWidget {
               ),
             ],
           ),
-          child: compact
-              ? _buildCompactBody(context)
-              : _buildDesktopBody(context),
+          child:
+              compact ? _buildCompactBody(context) : _buildDesktopBody(context),
         ),
       ),
     );
@@ -147,13 +146,35 @@ class IpoSummaryCard extends StatelessWidget {
                 alignCenter: true,
               ),
             ),
-            _metricDivider(context),
+            if (_hasSubscription) ...[
+              _metricDivider(context),
+              Expanded(
+                child: _buildMetricItem(
+                  context,
+                  label: 'Subscription',
+                  value: _formatSubscription(ipo.totalSubscription),
+                  alignEnd: true,
+                ),
+              ),
+            ],
+          ],
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
             Expanded(
-              child: _buildMetricItem(
+              child: _buildDateItem(
                 context,
                 label: 'Bidding Opens',
-                value: _formatDate(ipo.biddingStartDate),
-                alignEnd: true,
+                dateStr: ipo.biddingStartDate,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildDateItem(
+                context,
+                label: 'Bidding Closes',
+                dateStr: ipo.biddingEndDate,
               ),
             ),
           ],
@@ -256,8 +277,10 @@ class IpoSummaryCard extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 16),
-        SubscriptionProgressBar(subscriptionStr: ipo.totalSubscription),
-        const SizedBox(height: 14),
+        if (_hasSubscription) ...[
+          SubscriptionProgressBar(subscriptionStr: ipo.totalSubscription),
+          const SizedBox(height: 14),
+        ],
         InkWell(
           onTap: () => _openDetails(context),
           borderRadius: BorderRadius.circular(6),
@@ -306,15 +329,10 @@ class IpoSummaryCard extends StatelessWidget {
   void _openDetails(BuildContext context) {
     // Nearest navigator is IpoCenterHost when embedded in Market — keeps
     // module pills / sidebar visible. Standalone falls back to root nav.
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (context) => IpoDetailsScreen(
-          ipoId: ipo.id,
-          embedded: true,
-        ),
-      ),
-    );
+    openIpoDetails(context, ipo.id);
   }
+
+  bool get _hasSubscription => ipo.totalSubscription?.trim().isNotEmpty == true;
 
   Widget _buildAvatar(BuildContext context, {required double size}) {
     final initials = _getInitials(ipo.companyName ?? ipo.symbol ?? 'IP');
@@ -384,8 +402,9 @@ class IpoSummaryCard extends StatelessWidget {
     final align = alignEnd
         ? CrossAxisAlignment.end
         : (alignCenter ? CrossAxisAlignment.center : CrossAxisAlignment.start);
-    final textAlign =
-        alignEnd ? TextAlign.end : (alignCenter ? TextAlign.center : TextAlign.start);
+    final textAlign = alignEnd
+        ? TextAlign.end
+        : (alignCenter ? TextAlign.center : TextAlign.start);
 
     return Column(
       crossAxisAlignment: align,
@@ -488,6 +507,11 @@ class IpoSummaryCard extends StatelessWidget {
   String _formatIssueSize(double? size) {
     if (size == null) return '₹--';
     return '₹${size.toStringAsFixed(size % 1 == 0 ? 0 : 1)} Cr';
+  }
+
+  String _formatSubscription(String? value) {
+    final trimmed = value?.trim();
+    return trimmed == null || trimmed.isEmpty ? '—' : '${trimmed}x';
   }
 
   String _formatDate(String? dateStr) {
