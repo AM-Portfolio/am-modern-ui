@@ -1,4 +1,3 @@
-
 import 'dart:math';
 import 'dart:ui';
 
@@ -108,17 +107,22 @@ class TreemapLayoutBuilder extends HeatmapLayoutBuilder {
     if (tiles.isEmpty) return [];
 
     // Normalise weights so they sum to the total canvas area.
-    final totalWeight = tiles.fold<double>(0, (s, t) => s + t.weightage);
+    final totalWeight = tiles.fold<double>(
+        0, (s, t) => s + (t.weightage > 0 ? t.weightage : 0));
     final safeTotal = totalWeight > 0 ? totalWeight : tiles.length.toDouble();
     final totalArea = width * height;
+    if (totalArea <= 0 || !totalArea.isFinite) return [];
 
-    final normalised = tiles
-        .map((t) => _NormTile(
-              tile: t,
-              area: (t.weightage / safeTotal) * totalArea,
-            ))
-        .toList()
-      ..sort((a, b) => b.area.compareTo(a.area)); // largest first
+    final normalised =
+        tiles.where((t) => t.weightage > 0 || totalWeight == 0).map((t) {
+      final w = totalWeight > 0 ? t.weightage : 1.0;
+      final safeArea = (w / safeTotal) * totalArea;
+      return _NormTile(
+        tile: t,
+        area: max(1.0, safeArea.isFinite ? safeArea : 1.0),
+      );
+    }).toList()
+          ..sort((a, b) => b.area.compareTo(a.area)); // largest first
 
     final rects = <_Rect>[];
     _squarify(
@@ -133,10 +137,7 @@ class TreemapLayoutBuilder extends HeatmapLayoutBuilder {
     for (var i = 0; i < rects.length && i < normalised.length; i++) {
       // Round shared edges (no hairline cracks), then clamp so we never
       // expand past the canvas (no bottom-right overflow stripes).
-      final r = rects[i]
-          .withGap(gap)
-          .pixelSnapped()
-          .clamped(width, height);
+      final r = rects[i].withGap(gap).pixelSnapped().clamped(width, height);
       if (r.width < 1 || r.height < 1) continue;
       if (r.left + r.width > width + 0.01 || r.top + r.height > height + 0.01) {
         continue;
@@ -146,43 +147,44 @@ class TreemapLayoutBuilder extends HeatmapLayoutBuilder {
       final hasChildren =
           nested && tile.children != null && tile.children!.isNotEmpty;
 
+      final tileWidget = hasChildren
+          ? _NestedSectorPanel(
+              key: ValueKey(tile.id),
+              tile: tile,
+              data: data,
+              width: r.width,
+              height: r.height,
+              gap: childGap ?? gap,
+              onTilePressed: onTilePressed,
+              customTileBuilder: customTileBuilder,
+              selectedMetric: selectedMetric,
+              builder: this,
+            )
+          : _HoverTile(
+              key: ValueKey(tile.id),
+              tile: tile,
+              data: data,
+              width: r.width,
+              height: r.height,
+              onTilePressed: onTilePressed,
+              customTileBuilder: customTileBuilder,
+              selectedMetric: selectedMetric,
+              builder: this,
+            );
+
       widgets.add(
         Positioned(
           left: r.left,
           top: r.top,
           width: r.width,
           height: r.height,
-          child: RepaintBoundary(
-            child: SizedBox(
-              width: r.width,
-              height: r.height,
-              child: ClipRect(
-                clipBehavior: Clip.hardEdge,
-                child: hasChildren
-                    ? _NestedSectorPanel(
-                        key: ValueKey(tile.id),
-                        tile: tile,
-                        data: data,
-                        width: r.width,
-                        height: r.height,
-                        gap: childGap ?? gap,
-                        onTilePressed: onTilePressed,
-                        customTileBuilder: customTileBuilder,
-                        selectedMetric: selectedMetric,
-                        builder: this,
-                      )
-                    : _HoverTile(
-                        key: ValueKey(tile.id),
-                        tile: tile,
-                        data: data,
-                        width: r.width,
-                        height: r.height,
-                        onTilePressed: onTilePressed,
-                        customTileBuilder: customTileBuilder,
-                        selectedMetric: selectedMetric,
-                        builder: this,
-                      ),
-              ),
+          child: SizedBox(
+            width: r.width,
+            height: r.height,
+            child: ClipRect(
+              clipBehavior: Clip.hardEdge,
+              child:
+                  hasChildren ? RepaintBoundary(child: tileWidget) : tileWidget,
             ),
           ),
         ),
@@ -202,88 +204,138 @@ class TreemapLayoutBuilder extends HeatmapLayoutBuilder {
     return widgets;
   }
 
-  /// Classic squarify: fill the shorter side of [free] with rows of tiles
+  /// Iterative squarify: fill the shorter side of [free] with rows of tiles
   /// whose aspect ratios are as close to 1:1 as possible.
+  /// Uses index slices into [items] to avoid list allocations and recursion.
   void _squarify(
     List<_NormTile> items,
     _Rect free,
     List<_Rect> out,
   ) {
     if (items.isEmpty) return;
-    if (free.width <= 0 || free.height <= 0) return;
+    var currentIndex = 0;
+    var currentFree = free;
 
-    // Determine the shorter side — that becomes our "row" width.
-    final shortSide = min(free.width, free.height);
-    final isHorizontal = free.width >= free.height; // lay tiles top→bottom
-
-    // Greedy: keep adding tiles to the current row while aspect ratio improves.
-    var row = <_NormTile>[items[0]];
-    var rowArea = items[0].area;
-    var bestWorst = _worstAspect(row, shortSide);
-
-    for (var i = 1; i < items.length; i++) {
-      final candidate = [...row, items[i]];
-      final candidateArea = rowArea + items[i].area;
-      final candidateWorst = _worstAspect(candidate, shortSide);
-
-      if (candidateWorst <= bestWorst) {
-        // Adding this tile improved (or didn't worsen) aspect ratio — accept.
-        row = candidate;
-        rowArea = candidateArea;
-        bestWorst = candidateWorst;
-      } else {
-        // Aspect ratio would worsen — finalise the current row.
-        _layoutRow(row, rowArea, free, isHorizontal, out);
-        final remaining = _shrink(free, rowArea, isHorizontal);
-        _squarify(items.sublist(i), remaining, out);
-        return;
+    while (currentIndex < items.length) {
+      if (currentFree.width <= 1 ||
+          currentFree.height <= 1 ||
+          !currentFree.width.isFinite ||
+          !currentFree.height.isFinite) {
+        break;
       }
-    }
 
-    // All remaining items go into one final row.
-    _layoutRow(row, rowArea, free, isHorizontal, out);
+      final shortSide = min(currentFree.width, currentFree.height);
+      if (shortSide <= 0 || !shortSide.isFinite) break;
+      final isHorizontal = currentFree.width >= currentFree.height;
+
+      // Start a new row with items[currentIndex]
+      final rowStart = currentIndex;
+      var rowEnd = currentIndex + 1;
+      var rowArea = items[currentIndex].area;
+      var bestWorst =
+          _worstAspectSlice(items, rowStart, rowEnd, rowArea, shortSide);
+
+      while (rowEnd < items.length) {
+        final candidateArea = rowArea + items[rowEnd].area;
+        final candidateWorst = _worstAspectSlice(
+          items,
+          rowStart,
+          rowEnd + 1,
+          candidateArea,
+          shortSide,
+        );
+
+        if (candidateWorst <= bestWorst) {
+          // Accept candidate
+          rowArea = candidateArea;
+          bestWorst = candidateWorst;
+          rowEnd++;
+        } else {
+          // Aspect ratio worsened, finalize current row
+          break;
+        }
+      }
+
+      // Layout the row from rowStart to rowEnd
+      _layoutRowSlice(
+          items, rowStart, rowEnd, rowArea, currentFree, isHorizontal, out);
+
+      final nextFree = _shrink(currentFree, rowArea, isHorizontal);
+      if (nextFree.width >= currentFree.width &&
+          nextFree.height >= currentFree.height) {
+        // Did not advance/shrink, break to avoid infinite loop
+        break;
+      }
+      currentFree = nextFree;
+      currentIndex = rowEnd;
+    }
   }
 
-  /// Worst (maximum) aspect ratio in [row] if laid in a strip of [stripWidth].
-  double _worstAspect(List<_NormTile> row, double stripWidth) {
-    final rowArea = row.fold<double>(0, (s, t) => s + t.area);
-    if (rowArea <= 0 || stripWidth <= 0) return double.infinity;
+  /// Worst (maximum) aspect ratio in slice [start..end] if laid in a strip of [stripWidth].
+  double _worstAspectSlice(
+    List<_NormTile> items,
+    int start,
+    int end,
+    double rowArea,
+    double stripWidth,
+  ) {
+    if (rowArea <= 0 ||
+        stripWidth <= 0 ||
+        !rowArea.isFinite ||
+        !stripWidth.isFinite) {
+      return double.infinity;
+    }
+    final stripDim = rowArea / stripWidth;
+    if (stripDim <= 0 || !stripDim.isFinite) return double.infinity;
 
     var worst = 0.0;
-    for (final t in row) {
-      final tileHeight = t.area / (rowArea / stripWidth); // h = area / strip_h
-      final tileWidth = t.area / tileHeight;
+    for (var i = start; i < end; i++) {
+      final area = items[i].area;
+      final tileHeight = area / stripDim;
+      if (tileHeight <= 0 || !tileHeight.isFinite) continue;
+      final tileWidth = area / tileHeight;
+      if (tileWidth <= 0 || !tileWidth.isFinite) continue;
       final ar = max(tileWidth / tileHeight, tileHeight / tileWidth);
-      if (ar > worst) worst = ar;
+      if (ar.isFinite && ar > worst) worst = ar;
     }
-    return worst;
+    return worst > 0 ? worst : double.infinity;
   }
 
-  /// Turn [row] into positioned rectangles inside [free].
-  void _layoutRow(
-    List<_NormTile> row,
+  /// Turn slice [start..end] into positioned rectangles inside [free].
+  void _layoutRowSlice(
+    List<_NormTile> items,
+    int start,
+    int end,
     double rowArea,
     _Rect free,
     bool isHorizontal,
     List<_Rect> out,
   ) {
     final totalArea = free.width * free.height;
-    if (totalArea <= 0 || free.width <= 0 || free.height <= 0) return;
+    if (totalArea <= 0 ||
+        free.width <= 0 ||
+        free.height <= 0 ||
+        rowArea <= 0 ||
+        !totalArea.isFinite ||
+        !rowArea.isFinite) {
+      return;
+    }
 
     // The row uses a fraction of the free strip proportional to its combined area.
     if (isHorizontal) {
       // Strip runs left→right; tiles stack top→bottom within it.
       final stripWidth = min(rowArea / free.height, free.width);
+      if (stripWidth <= 0 || !stripWidth.isFinite) return;
       var cursor = free.top;
       final bottom = free.top + free.height;
-      for (var i = 0; i < row.length; i++) {
+      for (var i = start; i < end; i++) {
         final remaining = bottom - cursor;
         if (remaining <= 0) break;
-        final tileH = row[i].area / stripWidth;
+        final tileH = items[i].area / stripWidth;
+        if (!tileH.isFinite || tileH <= 0) continue;
         // Last tile always consumes the exact remainder (no float bleed).
-        final actualH = i == row.length - 1
-            ? remaining
-            : min(tileH, remaining);
+        final actualH = i == end - 1 ? remaining : min(tileH, remaining);
+        if (actualH <= 0) continue;
         out.add(_Rect(
           left: free.left,
           top: cursor,
@@ -295,15 +347,16 @@ class TreemapLayoutBuilder extends HeatmapLayoutBuilder {
     } else {
       // Strip runs top→bottom; tiles stack left→right within it.
       final stripHeight = min(rowArea / free.width, free.height);
+      if (stripHeight <= 0 || !stripHeight.isFinite) return;
       var cursor = free.left;
       final right = free.left + free.width;
-      for (var i = 0; i < row.length; i++) {
+      for (var i = start; i < end; i++) {
         final remaining = right - cursor;
         if (remaining <= 0) break;
-        final tileW = row[i].area / stripHeight;
-        final actualW = i == row.length - 1
-            ? remaining
-            : min(tileW, remaining);
+        final tileW = items[i].area / stripHeight;
+        if (!tileW.isFinite || tileW <= 0) continue;
+        final actualW = i == end - 1 ? remaining : min(tileW, remaining);
+        if (actualW <= 0) continue;
         out.add(_Rect(
           left: cursor,
           top: free.top,
@@ -319,10 +372,14 @@ class TreemapLayoutBuilder extends HeatmapLayoutBuilder {
   /// Must use the same strip size as [_layoutRow] (capped to free side).
   _Rect _shrink(_Rect free, double rowArea, bool isHorizontal) {
     final totalArea = free.width * free.height;
-    if (totalArea <= 0) return free;
+    if (totalArea <= 0 ||
+        rowArea <= 0 ||
+        !totalArea.isFinite ||
+        !rowArea.isFinite) return free;
 
     if (isHorizontal) {
       final usedWidth = min(rowArea / free.height, free.width);
+      if (!usedWidth.isFinite || usedWidth <= 0) return free;
       return _Rect(
         left: free.left + usedWidth,
         top: free.top,
@@ -331,6 +388,7 @@ class TreemapLayoutBuilder extends HeatmapLayoutBuilder {
       );
     } else {
       final usedHeight = min(rowArea / free.width, free.height);
+      if (!usedHeight.isFinite || usedHeight <= 0) return free;
       return _Rect(
         left: free.left,
         top: free.top + usedHeight,
@@ -392,7 +450,7 @@ class _NestedSectorPanelState extends State<_NestedSectorPanel> {
     final quantity = _asDouble(meta['totalQuantity']);
     final wide = widget.width >= 150;
     // Border is inside the Positioned box — size chrome from the inner area.
-    const borderW = 1.5;
+    const borderW = 1.0;
     final innerW = max(0.0, widget.width - borderW * 2);
     final innerH = max(0.0, widget.height - borderW * 2);
     final idealHeader = wide ? 32.0 : 40.0;
@@ -425,8 +483,7 @@ class _NestedSectorPanelState extends State<_NestedSectorPanel> {
         : colors.surface;
     final titleColor = colors.textPrimary;
     final metaColor = colors.textSecondary;
-    final borderColor =
-        _focused ? accent.withValues(alpha: 0.9) : borderIdle;
+    final borderColor = _focused ? accent.withValues(alpha: 0.9) : borderIdle;
 
     final hoverOn = widget.data.configuration.enableHoverEffects;
     // SizedBox.expand + ClipRRect: never ask for more than the Positioned slot.
@@ -516,10 +573,7 @@ class _NestedSectorPanelState extends State<_NestedSectorPanel> {
                     builder: (context, bodyConstraints) {
                       final bw = bodyConstraints.maxWidth.floorToDouble();
                       final bh = bodyConstraints.maxHeight.floorToDouble();
-                      if (!bw.isFinite ||
-                          !bh.isFinite ||
-                          bw < 4 ||
-                          bh < 4) {
+                      if (!bw.isFinite || !bh.isFinite || bw < 16 || bh < 12) {
                         return const SizedBox.shrink();
                       }
                       return Stack(
@@ -560,8 +614,12 @@ class _NestedSectorPanelState extends State<_NestedSectorPanel> {
 
     if (!hoverOn) return panel;
     return MouseRegion(
-      onEnter: (_) => setState(() => _focused = true),
-      onExit: (_) => setState(() => _focused = false),
+      onEnter: (_) {
+        if (!_focused) setState(() => _focused = true);
+      },
+      onExit: (_) {
+        if (_focused) setState(() => _focused = false);
+      },
       cursor: SystemMouseCursors.click,
       child: panel,
     );
@@ -815,11 +873,11 @@ class _HoverTileState extends State<_HoverTile> {
     return SizedBox.expand(
       child: MouseRegion(
         onEnter: (_) {
-          setState(() => _hovered = true);
+          if (!_hovered) setState(() => _hovered = true);
           scope?.onTileHover?.call(widget.tile);
         },
         onExit: (_) {
-          setState(() => _hovered = false);
+          if (_hovered) setState(() => _hovered = false);
           scope?.onTileHover?.call(null);
         },
         cursor: SystemMouseCursors.click,
@@ -972,8 +1030,7 @@ class _HoverTileState extends State<_HoverTile> {
 
     final pctText =
         '${widget.tile.performance >= 0 ? '+' : ''}${widget.tile.performance.toStringAsFixed(2)}%';
-    final amountText =
-        value != null ? StringUtils.formatCurrency(value) : null;
+    final amountText = value != null ? StringUtils.formatCurrency(value) : null;
 
     Widget content = Padding(
       padding: EdgeInsets.symmetric(
@@ -1034,7 +1091,8 @@ class _HoverTileState extends State<_HoverTile> {
                 child: Text(
                   amountText,
                   style: TextStyle(
-                    color: textColor.withValues(alpha: isDark || solid ? 0.88 : 0.90),
+                    color: textColor.withValues(
+                        alpha: isDark || solid ? 0.88 : 0.90),
                     fontSize: secondaryFontSize,
                     fontWeight: FontWeight.w700,
                   ),
@@ -1048,8 +1106,7 @@ class _HoverTileState extends State<_HoverTile> {
                 child: Text(
                   '${widget.tile.weightage.toStringAsFixed(1)}% Weight',
                   style: TextStyle(
-                    color:
-                        textColor.withValues(alpha: isDark ? 0.80 : 0.90),
+                    color: textColor.withValues(alpha: isDark ? 0.80 : 0.90),
                     fontSize: secondaryFontSize,
                     fontWeight: FontWeight.w600,
                   ),
@@ -1138,8 +1195,8 @@ class _Rect {
     // by a fractional pixel (yellow overflow stripes on nested mobile tiles).
     final l = left.floorToDouble().clamp(0.0, maxW);
     final t = top.floorToDouble().clamp(0.0, maxH);
-    final w = min(width.floorToDouble(), (maxW - l).floorToDouble())
-        .clamp(0.0, maxW);
+    final w =
+        min(width.floorToDouble(), (maxW - l).floorToDouble()).clamp(0.0, maxW);
     final h = min(height.floorToDouble(), (maxH - t).floorToDouble())
         .clamp(0.0, maxH);
     return _Rect(left: l, top: t, width: w, height: h);

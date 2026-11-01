@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:am_common/am_common.dart';
+import 'package:am_design_system/am_design_system.dart';
 import '../../../internal/domain/entities/trade_controller_entities.dart';
 import '../../add_trade/components/add_trade_form.dart';
 import '../../cubit/trade_controller_cubit.dart';
@@ -72,6 +73,7 @@ class _AddTradeMobilePageState extends State<AddTradeMobilePage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colors = context.colors;
 
     // Title lives in UnifiedSidebarScaffold app bar — no nested AppBar / logo.
     return ColoredBox(
@@ -92,10 +94,10 @@ class _AddTradeMobilePageState extends State<AddTradeMobilePage> {
               setState(() => _isLoading = false);
 
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('✅ Trade updated successfully!'),
-                  backgroundColor: Colors.green,
-                  duration: Duration(seconds: 2),
+                SnackBar(
+                  content: const Text('✅ Trade updated successfully!'),
+                  backgroundColor: colors.statusSuccess,
+                  duration: const Duration(seconds: 2),
                   behavior: SnackBarBehavior.floating,
                 ),
               );
@@ -116,10 +118,10 @@ class _AddTradeMobilePageState extends State<AddTradeMobilePage> {
               setState(() => _isLoading = false);
 
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('✅ Trade saved successfully!'),
-                  backgroundColor: Colors.green,
-                  duration: Duration(seconds: 2),
+                SnackBar(
+                  content: const Text('✅ Trade saved successfully!'),
+                  backgroundColor: colors.statusSuccess,
+                  duration: const Duration(seconds: 2),
                   behavior: SnackBarBehavior.floating,
                 ),
               );
@@ -149,7 +151,7 @@ class _AddTradeMobilePageState extends State<AddTradeMobilePage> {
             ),
             if (_isLoading)
               Container(
-                color: Colors.black.withOpacity(0.3),
+                color: colors.textPrimary.withValues(alpha: 0.3),
                 child: Center(
                   child: Card(
                     child: Padding(
@@ -157,7 +159,9 @@ class _AddTradeMobilePageState extends State<AddTradeMobilePage> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          CircularProgressIndicator(color: theme.colorScheme.primary),
+                          CircularProgressIndicator(
+                            color: ModuleColorProvider.maybeOf(context) ?? ModuleColors.trade,
+                          ),
                           const SizedBox(height: 16),
                           Text(
                             'Saving trade...',

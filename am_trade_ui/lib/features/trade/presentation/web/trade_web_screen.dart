@@ -104,6 +104,9 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
   bool _journalAllPortfolios = false;
   late TextEditingController _symbolController;
   TradeDetails? _existingTradeToEdit;
+  int? _lastNotifiedTabIndex;
+  String? _handledGhostPortfolioId;
+  bool _hasAutoSelectedFirstPortfolio = false;
 
   @override
   void initState() {
@@ -142,6 +145,9 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
         widget.selectedPortfolioName != null &&
         widget.selectedPortfolioName!.isNotEmpty;
     if (idChanged || nameChanged) {
+      if (widget.selectedPortfolioId != _handledGhostPortfolioId) {
+        _handledGhostPortfolioId = null;
+      }
       setState(() {
         if (widget.selectedPortfolioId != null) {
           _currentPortfolioId = widget.selectedPortfolioId;
@@ -162,12 +168,14 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
     if (widget.initialTabIndex != null &&
         widget.initialTabIndex != oldWidget.initialTabIndex &&
         widget.initialTabIndex != _swipeController.currentIndex) {
+      _lastNotifiedTabIndex = widget.initialTabIndex;
       _swipeController.navigateTo(widget.initialTabIndex!);
     }
   }
 
   void _initializeSwipeController() {
     final initialIndex = _getInitialIndex();
+    _lastNotifiedTabIndex = initialIndex;
     _swipeController = SwipeNavigationController(
       items: _buildNavigationItems(),
       initialIndex: initialIndex,
@@ -176,9 +184,14 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
     // Listen to controller changes to update sidebar selection
     _swipeController.addListener(() {
       if (mounted) {
-        setState(() {});
-        // Notify parent about tab changes for cross-layout state sync
-        widget.onTabChanged?.call(_swipeController.currentIndex);
+        final currentIndex = _swipeController.currentIndex;
+        if (currentIndex != _lastNotifiedTabIndex) {
+          _lastNotifiedTabIndex = currentIndex;
+          setState(() {});
+          widget.onTabChanged?.call(currentIndex);
+        } else {
+          setState(() {});
+        }
       }
     });
   }
@@ -479,16 +492,20 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
         _currentPortfolioId != 'all' &&
         !portfolios.any((p) => p.id == _currentPortfolioId)) {
       final ghostId = _currentPortfolioId!;
-      final fallback = portfolios.first;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
-        context.clearPortfolioSelectionIf(ghostId);
-        _onPortfolioSelected(fallback.id, fallback.name, autoSelect: true);
-      });
+      if (_handledGhostPortfolioId != ghostId) {
+        _handledGhostPortfolioId = ghostId;
+        final fallback = portfolios.first;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          context.clearPortfolioSelectionIf(ghostId);
+          _onPortfolioSelected(fallback.id, fallback.name, autoSelect: true);
+        });
+      }
     }
 
     // Automatically select the first portfolio if none is selected
-    if (portfolios.isNotEmpty && _currentPortfolioId == null) {
+    if (portfolios.isNotEmpty && _currentPortfolioId == null && !_hasAutoSelectedFirstPortfolio) {
+      _hasAutoSelectedFirstPortfolio = true;
       final defaultPortfolio = portfolios.first;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {

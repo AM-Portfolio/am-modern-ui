@@ -47,11 +47,10 @@ class JournalEntryListView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final colors = context.colors;
 
     return Container(
-      width: width,
+      width: width.isFinite ? width : null,
       decoration: BoxDecoration(
         color: colors.cardSurface.withValues(alpha: 0.4),
         border: Border(
@@ -63,26 +62,37 @@ class JournalEntryListView extends StatelessWidget {
         children: [
           if (showListTitle)
             Padding(
-              padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.md,
+                AppSpacing.md,
+                AppSpacing.md,
+                AppSpacing.sm,
+              ),
               child: Text(
                 listTitle,
-                style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
+                style: context.text.sectionTitle(compact: true).copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: colors.textPrimary,
+                    ),
               ),
             ),
           Padding(
-            padding: EdgeInsets.fromLTRB(10, showListTitle ? 0 : 10, 10, 8),
+            padding: EdgeInsets.fromLTRB(
+              AppSpacing.sm + AppSpacing.xxs,
+              showListTitle ? 0 : AppSpacing.sm + AppSpacing.xxs,
+              AppSpacing.sm + AppSpacing.xxs,
+              AppSpacing.sm,
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _CreateModeToggle(
+                JournalCreateModeToggle(
                   selected: createMode,
                   onLogDay: onLogDayPressed,
                   onTradeJournal: onNewTradeJournalPressed,
                 ),
                 if (filterSlot != null) ...[
-                  const SizedBox(height: 10),
+                  const SizedBox(height: AppSpacing.sm + AppSpacing.xxs),
                   filterSlot!,
                 ],
               ],
@@ -95,9 +105,15 @@ class JournalEntryListView extends StatelessWidget {
                     subtitle: emptySubtitle,
                   )
                 : ListView.separated(
-                    padding: const EdgeInsets.fromLTRB(8, 0, 8, 12),
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.sm,
+                      0,
+                      AppSpacing.sm,
+                      AppSpacing.md,
+                    ),
                     itemCount: entries.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 6),
+                    separatorBuilder: (_, __) =>
+                        const SizedBox(height: AppSpacing.sm - AppSpacing.xxs),
                     itemBuilder: (context, index) {
                       final entry = entries[index];
                       return JournalEntryItem(
@@ -117,12 +133,13 @@ class JournalEntryListView extends StatelessWidget {
   }
 }
 
-/// Full-width Log day | Trade journal toggle (pill track).
-class _CreateModeToggle extends StatelessWidget {
-  const _CreateModeToggle({
-    required this.selected,
+/// Full-width Log day | Trade journal toggle (pill track). Shared by web + mobile.
+class JournalCreateModeToggle extends StatelessWidget {
+  const JournalCreateModeToggle({
     required this.onLogDay,
+    this.selected,
     this.onTradeJournal,
+    super.key,
   });
 
   /// `null` browsing; `false` Log day; `true` Trade journal.
@@ -134,15 +151,14 @@ class _CreateModeToggle extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.colors;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final accent = ModuleColors.trade;
+    final accent =
+        ModuleColorProvider.maybeOf(context) ?? ModuleColors.trade;
 
     return Container(
-      padding: const EdgeInsets.all(3),
+      padding: const EdgeInsets.all(AppSpacing.xxs),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(10),
-        color: isDark
-            ? Colors.white.withValues(alpha: 0.06)
-            : Colors.black.withValues(alpha: 0.05),
+        borderRadius: AppRadii.input,
+        color: colors.textPrimary.withValues(alpha: isDark ? 0.06 : 0.05),
         border: Border.all(color: colors.border.withValues(alpha: 0.45)),
       ),
       child: Row(
@@ -188,43 +204,47 @@ class _CreateModeSegment extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final colors = context.colors;
     final enabled = onTap != null;
     final fg = !enabled
         ? colors.textTertiary
         : selected
-            ? Colors.white
+            ? colors.actionPrimaryFg
             : colors.textSecondary;
+    final clear = colors.cardSurface.withValues(alpha: 0);
 
     return Material(
-      color: Colors.transparent,
+      color: clear,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: AppRadii.button,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 160),
           curve: Curves.easeOut,
-          padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 6),
+          padding: const EdgeInsets.symmetric(
+            vertical: AppSpacing.sm + AppSpacing.xxs,
+            horizontal: AppSpacing.sm - AppSpacing.xxs,
+          ),
           decoration: BoxDecoration(
-            color: selected ? accent : Colors.transparent,
-            borderRadius: BorderRadius.circular(8),
+            color: selected ? accent : clear,
+            borderRadius: AppRadii.button,
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, size: 15, color: fg),
-              const SizedBox(width: 4),
+              Icon(icon, size: AppSpacing.md - AppSpacing.xxs, color: fg),
+              const SizedBox(width: AppSpacing.xs),
               Flexible(
                 child: Text(
                   label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   textAlign: TextAlign.center,
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    color: fg,
-                    fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
-                  ),
+                  style: context.text.label(compact: true).copyWith(
+                        color: fg,
+                        fontWeight:
+                            selected ? FontWeight.w700 : FontWeight.w600,
+                      ),
                 ),
               ),
             ],
@@ -246,11 +266,10 @@ class _EmptyListState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final colors = context.colors;
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -259,21 +278,22 @@ class _EmptyListState extends StatelessWidget {
               size: 32,
               color: colors.textTertiary,
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: AppSpacing.sm + AppSpacing.xxs),
             Text(
               message,
               textAlign: TextAlign.center,
-              style: theme.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
+              style: context.text.sectionTitle(compact: true).copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: colors.textPrimary,
+                  ),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: AppSpacing.xs),
             Text(
               subtitle,
               textAlign: TextAlign.center,
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: colors.textSecondary,
-              ),
+              style: context.text.caption(compact: true).copyWith(
+                    color: colors.textSecondary,
+                  ),
             ),
           ],
         ),
@@ -303,6 +323,9 @@ class JournalEntryItem extends StatefulWidget {
 class _JournalEntryItemState extends State<JournalEntryItem> {
   bool _isHovered = false;
 
+  static Color _moduleAccent(BuildContext context) =>
+      ModuleColorProvider.maybeOf(context) ?? ModuleColors.trade;
+
   static ({String label, Color fg, Color bg})? statusChip(
     BuildContext context,
     JournalEntry entry,
@@ -310,13 +333,14 @@ class _JournalEntryItemState extends State<JournalEntryItem> {
     if (!JournalFolderFilter.shouldOpenTradeWorkflow(entry)) return null;
     final status = (entry.journalStatus ?? 'DRAFT').toUpperCase();
     final colors = context.colors;
+    final accent = _moduleAccent(context);
     switch (status) {
       case 'DRAFT':
       case 'PLANNED':
         return (
           label: 'Draft',
-          fg: ModuleColors.trade,
-          bg: ModuleColors.trade.withValues(alpha: 0.16),
+          fg: accent,
+          bg: accent.withValues(alpha: 0.16),
         );
       case 'OPEN':
         return (
@@ -337,6 +361,7 @@ class _JournalEntryItemState extends State<JournalEntryItem> {
     if (raw == null || raw.isEmpty) return null;
     final key = raw.toLowerCase();
     final colors = context.colors;
+    final accent = _moduleAccent(context);
     if (key.contains('profit') ||
         key.contains('win') ||
         key == 'green' ||
@@ -366,8 +391,8 @@ class _JournalEntryItemState extends State<JournalEntryItem> {
     }
     return (
       label: raw,
-      fg: ModuleColors.trade,
-      bg: ModuleColors.trade.withValues(alpha: 0.16),
+      fg: accent,
+      bg: accent.withValues(alpha: 0.16),
     );
   }
 
@@ -378,17 +403,20 @@ class _JournalEntryItemState extends State<JournalEntryItem> {
     required Color bg,
   }) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.sm - AppSpacing.xxs,
+        vertical: AppSpacing.xxs,
+      ),
       decoration: BoxDecoration(
         color: bg,
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: AppRadii.chip,
       ),
       child: Text(
         label,
-        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+        style: context.text.caption(compact: true).copyWith(
               color: fg,
               fontWeight: FontWeight.w700,
-              fontSize: 10,
+              fontSize: AppTypeScale.xs,
             ),
       ),
     );
@@ -396,10 +424,11 @@ class _JournalEntryItemState extends State<JournalEntryItem> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final colors = context.colors;
-    final dateStr =
-        DateFormat('EEE, MMM d, yyyy').format(widget.entry.entryDate);
+    final moduleAccent = _moduleAccent(context);
+    final locale = Localizations.localeOf(context).toString();
+    final dateStr = DateFormat('EEE, MMM d, yyyy', locale)
+        .format(widget.entry.entryDate);
     final title = JournalTradeHeader.displayTitle(widget.entry);
     final isTrade = JournalFolderFilter.shouldOpenTradeWorkflow(widget.entry);
     final outcome = outcomePill(context, widget.entry);
@@ -407,7 +436,7 @@ class _JournalEntryItemState extends State<JournalEntryItem> {
         outcome == null ? statusChip(context, widget.entry) : null;
     final selected = widget.isSelected;
     final accent = isTrade
-        ? ModuleColors.trade
+        ? moduleAccent
         : colors.border.withValues(alpha: 0.7);
 
     return MouseRegion(
@@ -415,7 +444,7 @@ class _JournalEntryItemState extends State<JournalEntryItem> {
       onExit: (_) => setState(() => _isHovered = false),
       child: Material(
         color: selected
-            ? ModuleColors.trade.withValues(alpha: 0.12)
+            ? moduleAccent.withValues(alpha: 0.12)
             : _isHovered
                 ? colors.surface.withValues(alpha: 0.7)
                 : colors.surface.withValues(alpha: 0.4),
@@ -431,15 +460,20 @@ class _JournalEntryItemState extends State<JournalEntryItem> {
                   width: 3,
                   decoration: BoxDecoration(
                     color: accent,
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(10),
-                      bottomLeft: Radius.circular(10),
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(AppRadii.sm + AppSpacing.xxs),
+                      bottomLeft: Radius.circular(AppRadii.sm + AppSpacing.xxs),
                     ),
                   ),
                 ),
                 Expanded(
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(10, 8, 4, 8),
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.sm + AppSpacing.xxs,
+                      AppSpacing.sm,
+                      AppSpacing.xs,
+                      AppSpacing.sm,
+                    ),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -449,35 +483,40 @@ class _JournalEntryItemState extends State<JournalEntryItem> {
                             children: [
                               Text(
                                 dateStr,
-                                style: theme.textTheme.labelSmall?.copyWith(
-                                  color: colors.textTertiary,
-                                  fontSize: 10,
-                                ),
+                                style:
+                                    context.text.caption(compact: true).copyWith(
+                                          color: colors.textTertiary,
+                                          fontSize: AppTypeScale.xs,
+                                        ),
                               ),
-                              const SizedBox(height: 2),
+                              const SizedBox(height: AppSpacing.xxs),
                               Text(
                                 title,
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
-                                style: theme.textTheme.titleSmall?.copyWith(
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 13,
-                                ),
+                                style: context.text
+                                    .sectionTitle(compact: true)
+                                    .copyWith(
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: AppTypeScale.md,
+                                      color: colors.textPrimary,
+                                    ),
                               ),
-                              const SizedBox(height: 6),
+                              const SizedBox(
+                                height: AppSpacing.sm - AppSpacing.xxs,
+                              ),
                               Wrap(
-                                spacing: 6,
-                                runSpacing: 4,
+                                spacing: AppSpacing.sm - AppSpacing.xxs,
+                                runSpacing: AppSpacing.xs,
                                 children: [
                                   _pill(
                                     context,
-                                    label: isTrade ? 'Trade' : 'Log day',
+                                    label: isTrade ? 'Trade journal' : 'Log',
                                     fg: isTrade
-                                        ? ModuleColors.trade
+                                        ? moduleAccent
                                         : colors.textSecondary,
                                     bg: isTrade
-                                        ? ModuleColors.trade
-                                            .withValues(alpha: 0.16)
+                                        ? moduleAccent.withValues(alpha: 0.16)
                                         : colors.statusNeutral
                                             .withValues(alpha: 0.18),
                                   ),
@@ -504,6 +543,15 @@ class _JournalEntryItemState extends State<JournalEntryItem> {
                           PopupMenuButton<String>(
                             tooltip: 'More',
                             padding: EdgeInsets.zero,
+                            color: colors.cardSurface,
+                            surfaceTintColor:
+                                colors.cardSurface.withValues(alpha: 0),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: AppRadii.card,
+                              side: BorderSide(
+                                color: colors.border.withValues(alpha: 0.45),
+                              ),
+                            ),
                             icon: Icon(
                               Icons.more_vert_rounded,
                               size: 16,

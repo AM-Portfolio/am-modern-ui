@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:am_design_system/am_design_system.dart';
 
 /// Compact portfolio discovery summary — full-width equal columns.
 /// Layout per metric: icon + label on top, value centered below.
@@ -27,11 +28,11 @@ class TradePortfolioMobileHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final muted = isDark ? Colors.white54 : Colors.black45;
+    final muted = isDark ? context.textMuted : context.textSecondary;
     final realizedColor =
-        totalNetProfitLoss >= 0 ? const Color(0xFF10B981) : const Color(0xFFEF4444);
+        totalNetProfitLoss >= 0 ? context.marketPositive : context.marketNegative;
     final liveColor =
-        totalUnrealizedPnL >= 0 ? const Color(0xFF10B981) : const Color(0xFFEF4444);
+        totalUnrealizedPnL >= 0 ? context.marketPositive : context.marketNegative;
 
     // Keep unused discovery stats available for API compatibility.
     assert(profitableCount >= 0 && totalTrades >= 0 && avgWinRate >= 0);
@@ -44,13 +45,13 @@ class TradePortfolioMobileHeader extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
           color: isDark
-              ? Colors.white.withValues(alpha: 0.05)
-              : Colors.black.withValues(alpha: 0.04),
+              ? context.colors.actionPrimaryFg.withValues(alpha: 0.05)
+              : context.shadow(0.04),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isDark
-                ? Colors.white.withValues(alpha: 0.08)
-                : Colors.black.withValues(alpha: 0.08),
+                ? context.colors.actionPrimaryFg.withValues(alpha: 0.08)
+                : context.shadow(0.08),
           ),
         ),
         child: Row(
@@ -60,7 +61,7 @@ class TradePortfolioMobileHeader extends StatelessWidget {
                 icon: Icons.account_balance_wallet_rounded,
                 label: 'Value',
                 value: '₹${_formatNum(totalValue)}',
-                color: Colors.lightBlueAccent,
+                color: context.statusInfo,
                 muted: muted,
               ),
             ),

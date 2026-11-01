@@ -16,12 +16,16 @@ class TimingKpiRow extends StatelessWidget {
     required this.distribution,
     required this.totalTradesCount,
     this.avgBasis = TimingAvgBasis.perTrade,
+    this.compact = false,
   });
 
   final PerformanceMetrics? performance;
   final TradeDistributionMetrics? distribution;
   final int? totalTradesCount;
   final TimingAvgBasis avgBasis;
+
+  /// Mobile Metrics: 2-column grid, last card full width.
+  final bool compact;
 
   static final _inr = NumberFormat.currency(
     locale: 'en_IN',
@@ -192,7 +196,7 @@ class TimingKpiRow extends StatelessWidget {
           ),
         ];
 
-        if (wide) {
+        if (wide && !compact) {
           return Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -203,14 +207,19 @@ class TimingKpiRow extends StatelessWidget {
             ],
           );
         }
+
+        // Mobile / narrow: 2-up grid; last KPI (Avg Hold) spans full width.
+        final half = (constraints.maxWidth - AppSpacing.sm) / 2;
         return Wrap(
           spacing: AppSpacing.sm,
           runSpacing: AppSpacing.sm,
           children: [
-            for (final c in cards)
+            for (var i = 0; i < cards.length; i++)
               SizedBox(
-                width: (constraints.maxWidth - AppSpacing.sm) / 2,
-                child: c,
+                width: (compact && i == cards.length - 1)
+                    ? constraints.maxWidth
+                    : half,
+                child: cards[i],
               ),
           ],
         );

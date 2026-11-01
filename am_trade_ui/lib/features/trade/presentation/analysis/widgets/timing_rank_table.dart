@@ -15,6 +15,7 @@ class TimingRankTable extends StatelessWidget {
     this.avgColumnLabel = 'AVG P&L (₹)',
     this.emptyMessage,
     this.showLowSampleBadges = true,
+    this.accent,
   });
 
   final String title;
@@ -23,6 +24,7 @@ class TimingRankTable extends StatelessWidget {
   final String avgColumnLabel;
   final String? emptyMessage;
   final bool showLowSampleBadges;
+  final Color? accent;
 
   static final _inr = NumberFormat.currency(
     locale: 'en_IN',
@@ -32,8 +34,10 @@ class TimingRankTable extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final colors = context.colors;
+    final accentColor = accent ??
+        ModuleColorProvider.maybeOf(context) ??
+        ModuleColors.trade;
 
     return AppCard(
       padded: false,
@@ -52,10 +56,10 @@ class TimingRankTable extends StatelessWidget {
             ),
             child: Text(
               title,
-              style: theme.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w700,
-                color: colors.textPrimary,
-              ),
+              style: context.text.sectionTitle(compact: true).copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: colors.textPrimary,
+                  ),
             ),
           ),
           Divider(
@@ -68,9 +72,9 @@ class TimingRankTable extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
               child: Text(
                 emptyMessage ?? 'No data in this range',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: colors.textSecondary,
-                ),
+                style: context.text.bodyMuted(compact: true).copyWith(
+                      color: colors.textSecondary,
+                    ),
                 textAlign: TextAlign.center,
               ),
             )
@@ -91,13 +95,14 @@ class TimingRankTable extends StatelessWidget {
                       fontWeight: FontWeight.w600,
                       letterSpacing: 0.2,
                     ),
-                columns: _columns(context),
+                columns: _columns(context, accentColor),
               ),
               cardBuilder: (context, bucket, _) =>
                   _TimingBucketCard(
                     bucket: bucket,
                     avgColumnLabel: avgColumnLabel,
                     showLowSampleBadges: showLowSampleBadges,
+                    accent: accentColor,
                   ),
             ),
         ],
@@ -105,7 +110,10 @@ class TimingRankTable extends StatelessWidget {
     );
   }
 
-  List<SortableColumn<TimingBucket>> _columns(BuildContext context) {
+  List<SortableColumn<TimingBucket>> _columns(
+    BuildContext context,
+    Color accentColor,
+  ) {
     final colors = context.colors;
     final body = context.text.body(compact: true);
 
@@ -134,13 +142,13 @@ class TimingRankTable extends StatelessWidget {
                   vertical: AppSpacing.xxs,
                 ),
                 decoration: BoxDecoration(
-                  color: ModuleColors.trade.withValues(alpha: 0.12),
+                  color: accentColor.withValues(alpha: 0.12),
                   borderRadius: AppRadii.chip,
                 ),
                 child: Text(
                   'Low',
                   style: context.text.caption(compact: true).copyWith(
-                        color: ModuleColors.trade,
+                        color: accentColor,
                         fontWeight: FontWeight.w700,
                       ),
                 ),
@@ -247,11 +255,13 @@ class _TimingBucketCard extends StatelessWidget {
     required this.bucket,
     required this.avgColumnLabel,
     required this.showLowSampleBadges,
+    required this.accent,
   });
 
   final TimingBucket bucket;
   final String avgColumnLabel;
   final bool showLowSampleBadges;
+  final Color accent;
 
   static final _inr = NumberFormat.currency(
     locale: 'en_IN',
@@ -288,7 +298,7 @@ class _TimingBucketCard extends StatelessWidget {
                 Text(
                   'Low',
                   style: context.text.caption(compact: true).copyWith(
-                        color: ModuleColors.trade,
+                        color: accent,
                         fontWeight: FontWeight.w700,
                       ),
                 ),
@@ -412,7 +422,7 @@ class _RrCell extends StatelessWidget {
               child: Container(
                 decoration: BoxDecoration(
                   color: barColor,
-                  borderRadius: BorderRadius.circular(AppRadii.xs),
+                  borderRadius: BorderRadius.all(Radius.circular(AppRadii.xs)),
                 ),
               ),
             ),
