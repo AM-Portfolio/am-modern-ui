@@ -4,6 +4,7 @@ part of 'app_shell.dart';
 mixin ShellNav on State<AppShell> {
   // Satisfied by [ShellBottomNavChrome] on the same State.
   void _showBottomNavWithIdleHide();
+  ValueNotifier<bool> get _mobileSearchOpen;
 
   String get _currentLocation => GoRouterState.of(context).matchedLocation;
 
@@ -74,9 +75,26 @@ mixin ShellNav on State<AppShell> {
         .onTabSelected(tabTitle);
   }
 
+  /// Clear fullscreen search / dialog routes that can leave an invisible
+  /// hit barrier after long Flutter-web sessions.
+  void _dismissTransientShellUi() {
+    try {
+      if (_mobileSearchOpen.value) {
+        _mobileSearchOpen.value = false;
+      }
+    } catch (_) {}
+    try {
+      final nav = Navigator.of(context, rootNavigator: true);
+      nav.popUntil((route) => route is! PopupRoute);
+    } catch (_) {}
+    GlobalBottomNavVisibility.suppressChromeTapReveal = false;
+  }
+
   void _onGlobalNavigate(String title, String userId) {
     var path = AppRoutes.pathForNavTitle(title);
     if (path == null) return;
+
+    _dismissTransientShellUi();
 
     // Trade: land on last concrete portfolio when known (not empty discovery).
     if (title == 'Trade') {

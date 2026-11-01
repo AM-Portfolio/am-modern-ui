@@ -56,26 +56,42 @@ class _SidebarFloatingActionMenuState extends State<SidebarFloatingActionMenu>
 
   @override
   void dispose() {
+    // Never leave a full-screen hit barrier mounted after this widget dies.
+    if (_overlayController.isShowing) {
+      _overlayController.hide();
+    }
     _controller.dispose();
     super.dispose();
   }
 
-  void _toggle() {
+  void _open() {
+    if (_expanded) return;
+    setState(() => _expanded = true);
+    _overlayController.show();
+    _controller.forward(from: 0.0);
+  }
+
+  /// Drop the overlay hit layer immediately. Waiting on [AnimationController.reverse]
+  /// left an opaque full-screen barrier that ate every click whenever the ticker
+  /// stalled (common on Flutter web after tab blur / long sessions).
+  void _close() {
+    if (!_expanded && !_overlayController.isShowing) return;
     if (_expanded) {
-      setState(() {
-        _expanded = false;
-      });
-      _controller.reverse().then((_) {
-        if (mounted && !_expanded) {
-          _overlayController.hide();
-        }
-      });
+      setState(() => _expanded = false);
+    }
+    if (_overlayController.isShowing) {
+      _overlayController.hide();
+    }
+    if (_controller.isAnimating || _controller.value > 0) {
+      _controller.reverse();
+    }
+  }
+
+  void _toggle() {
+    if (_expanded || _overlayController.isShowing) {
+      _close();
     } else {
-      setState(() {
-        _expanded = true;
-      });
-      _overlayController.show();
-      _controller.forward(from: 0.0);
+      _open();
     }
   }
 
@@ -104,13 +120,18 @@ class _SidebarFloatingActionMenuState extends State<SidebarFloatingActionMenu>
 
     return Stack(
       children: [
-        // Invisible full-screen tap target to dismiss when clicking outside
-        GestureDetector(
-          onTap: () {
-            if (_expanded) _toggle();
-          },
-          behavior: HitTestBehavior.opaque,
-          child: const SizedBox(width: double.infinity, height: double.infinity),
+        // Dismiss on any pointer down — GestureDetector.onTap can lose the
+        // arena while HitTestBehavior.opaque still blocks the page underneath.
+        Positioned.fill(
+          child: Listener(
+            behavior: HitTestBehavior.opaque,
+            // Defer hide so we don't mutate the overlay tree mid hit-test.
+            onPointerDown: (_) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted) _close();
+              });
+            },
+          ),
         ),
         CompositedTransformFollower(
           link: _layerLink,
@@ -157,9 +178,8 @@ class _SidebarFloatingActionMenuState extends State<SidebarFloatingActionMenu>
                       direction: widget.direction,
                       colors: colors,
                       onTap: () {
-                        // Close menu first, then fire action after 180ms so the
-                        // close animation completes before any navigation/rebuild.
-                        _toggle();
+                        // Barrier gone immediately so navigation/rebuild is not blocked.
+                        _close();
                         Future.delayed(
                           const Duration(milliseconds: 180),
                           action.onTap,

@@ -61,6 +61,8 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
   // Desktop drawer animation state
   late AnimationController _drawerController;
   bool _isDrawerVisible = false;
+  /// When false, drawer chrome is still animating out but must not eat hits.
+  bool _drawerBlocksHits = false;
 
   // Anchored popover state for indices comparison
   final OverlayPortalController _popoverController = OverlayPortalController();
@@ -369,6 +371,7 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
   void _openDrawer() {
     setState(() {
       _isDrawerVisible = true;
+      _drawerBlocksHits = true;
     });
     _drawerController.forward();
 
@@ -383,6 +386,12 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
   }
 
   void _closeDrawer() {
+    if (!_isDrawerVisible) return;
+    // Drop hit absorption immediately — waiting on reverse() left an invisible
+    // full-page barrier when the ticker stalled (Flutter web / long sessions).
+    if (_drawerBlocksHits) {
+      setState(() => _drawerBlocksHits = false);
+    }
     _drawerController.reverse();
   }
 
@@ -454,6 +463,9 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
     _marketProvider?.removeListener(_onMarketProviderChanged);
     _marketProvider = null;
     _preloadTimer?.cancel();
+    if (_popoverController.isShowing) {
+      _popoverController.hide();
+    }
     _drawerController.dispose();
     _popoverAnimationController.dispose();
     super.dispose();
@@ -631,17 +643,15 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
 
   void _togglePopover() {
     if (_popoverController.isShowing) {
-      _popoverAnimationController.reverse().then((_) {
-        if (mounted) {
-          _popoverController.hide();
-        }
-      });
+      // Hide barrier immediately; animate the menu out without blocking hits.
+      _popoverController.hide();
+      _popoverAnimationController.reverse();
     } else {
       setState(() {
         _popoverSearchQuery = '';
       });
       _popoverController.show();
-      _popoverAnimationController.forward();
+      _popoverAnimationController.forward(from: 0);
     }
   }
 
@@ -1106,12 +1116,16 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
         // Drawer Overlay (semi-transparent background)
         if (_isDrawerVisible)
           Positioned.fill(
-            child: FadeTransition(
-              opacity: _drawerController,
-              child: GestureDetector(
-                onTap: _closeDrawer,
-                child: Container(
-                  color: context.glassOverlay(0.5),
+            child: IgnorePointer(
+              ignoring: !_drawerBlocksHits,
+              child: FadeTransition(
+                opacity: _drawerController,
+                child: Listener(
+                  behavior: HitTestBehavior.opaque,
+                  onPointerDown: (_) => _closeDrawer(),
+                  child: Container(
+                    color: context.glassOverlay(0.5),
+                  ),
                 ),
               ),
             ),
@@ -1247,10 +1261,9 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
               return Stack(
                 children: [
                   Positioned.fill(
-                    child: GestureDetector(
-                      behavior: HitTestBehavior.translucent,
-                      onTap: _togglePopover,
-                      child: Container(color: Colors.transparent),
+                    child: Listener(
+                      behavior: HitTestBehavior.opaque,
+                      onPointerDown: (_) => _togglePopover(),
                     ),
                   ),
                   Positioned(

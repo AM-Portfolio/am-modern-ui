@@ -137,8 +137,9 @@ class _RightFloatingQuickActionsState
       // Overlay to close actions when tapping outside
       if (_isExpanded)
         Positioned.fill(
-          child: GestureDetector(
-            onTap: _toggleActions,
+          child: Listener(
+            behavior: HitTestBehavior.opaque,
+            onPointerDown: (_) => _toggleActions(),
             child: Container(color: Colors.black.withOpacity(0.1)),
           ),
         ),

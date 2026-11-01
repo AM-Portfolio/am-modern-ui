@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:am_design_system/core/config/design_system_provider.dart';
+import 'package:am_design_system/core/module/module_color_provider.dart';
 import 'package:flutter/cupertino.dart';
 
 import '../platform_widget.dart';
@@ -85,9 +86,15 @@ class AppTextField extends PlatformWidget<CupertinoTextField, TextField> {
   @override
   TextField buildMaterialWidget(BuildContext context) {
     final config = DesignSystemProvider.of(context);
-    
+    // Prefer module / theme accent over brand default (avoids hardcoded purple
+    // focus rings inside Portfolio / Trade / Market surfaces).
+    final focusColor = focusedBorderColor ??
+        ModuleColorProvider.maybeOf(context) ??
+        Theme.of(context).colorScheme.primary;
+
     return TextField(
       controller: controller,
+      cursorColor: focusColor,
       decoration: InputDecoration(
         labelText: labelText,
         hintText: hintText,
@@ -95,19 +102,20 @@ class AppTextField extends PlatformWidget<CupertinoTextField, TextField> {
         contentPadding: contentPadding ?? const EdgeInsets.all(16),
         prefixIcon: prefix,
         suffixIcon: suffix,
+        floatingLabelStyle: TextStyle(color: focusColor),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(config.defaultRadius),
+          borderSide: BorderSide(
+            color: focusColor,
+            width: focusedBorderWidth,
+          ),
+        ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(config.defaultRadius),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(config.defaultRadius),
           borderSide: const BorderSide(color: Colors.grey),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(config.defaultRadius),
-          borderSide: BorderSide(
-            color: focusedBorderColor ?? config.primaryColor,
-            width: focusedBorderWidth,
-          ),
         ),
       ),
       obscureText: obscureText,
