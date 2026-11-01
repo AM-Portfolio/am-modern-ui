@@ -42,10 +42,11 @@ class TradeJournalWorkflowPage extends ConsumerStatefulWidget {
   final VoidCallback? onEmbeddedCancel;
   final VoidCallback? onEmbeddedDeleted;
 
-  /// Optional override for initial wizard step (e.g. Edit from completed → 2).
+  /// Optional override for initial wizard step (defaults via [stepFromStatus]).
   final int? startAtStep;
 
-  /// Same Pre/Execute/Post template, fields locked until user taps Edit.
+  /// Same Pre/Execute/Post template; completed journals stay locked until
+  /// the user double-clicks / double-taps a field to edit.
   final bool initialReadOnly;
 
   @override
@@ -81,13 +82,18 @@ class TradeJournalWorkflowPageState
     switch ((status ?? 'DRAFT').toUpperCase()) {
       case 'OPEN':
         return 1;
+      // Completed demos / reviews still open on Pre-Trade so the plan is first.
       case 'COMPLETED':
-        return 2;
       case 'PLANNED':
       case 'DRAFT':
       default:
         return 0;
     }
+  }
+
+  void _unlockEdit() {
+    if (!_readOnly) return;
+    setState(() => _readOnly = false);
   }
 
   @override
@@ -461,50 +467,62 @@ class TradeJournalWorkflowPageState
           ),
         ),
         Expanded(
-          child: IgnorePointer(
-            ignoring: _readOnly,
-            child: Opacity(
-              opacity: _readOnly ? 0.92 : 1,
-              child: SingleChildScrollView(
-                controller: _stepScrollController,
-                // Extra bottom inset so last fields clear the sticky action row.
-                padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.md,
-                  AppSpacing.sm,
-                  AppSpacing.md,
-                  AppSpacing.xxl + AppSpacing.lg,
+          child: Stack(
+            children: [
+              IgnorePointer(
+                ignoring: _readOnly,
+                child: Opacity(
+                  opacity: _readOnly ? 0.92 : 1,
+                  child: SingleChildScrollView(
+                    controller: _stepScrollController,
+                    // Extra bottom inset so last fields clear the sticky action row.
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.md,
+                      AppSpacing.sm,
+                      AppSpacing.md,
+                      AppSpacing.xxl + AppSpacing.lg,
+                    ),
+                    // Stable step keys — remounting on entry id change (temp→real)
+                    // disposed AttachmentPicker and wiped visible uploads.
+                    child: _currentStep == 0
+                        ? (widget.useMobileLayout
+                            ? PreTradePlanStepMobile(
+                                key: const ValueKey('pre-step-mobile'),
+                                entry: _entry,
+                                onUpdate: _updateEntry,
+                                applyDefaultChecklist: _isNew && !_readOnly,
+                              )
+                            : PreTradePlanStep(
+                                key: const ValueKey('pre-step'),
+                                entry: _entry,
+                                onUpdate: _updateEntry,
+                                applyDefaultChecklist: _isNew && !_readOnly,
+                              ))
+                        : _currentStep == 1
+                            ? ExecuteTradeStep(
+                                key: const ValueKey('exec-step'),
+                                entry: _entry,
+                                onUpdate: _updateEntry,
+                                portfolioId: widget.portfolioId,
+                                onLinkTrade: _readOnly ? null : _linkTrade,
+                              )
+                            : PostTradeReviewStep(
+                                key: const ValueKey('post-step'),
+                                entry: _entry,
+                                onUpdate: _updateEntry,
+                              ),
+                  ),
                 ),
-                // Stable step keys — remounting on entry id change (temp→real)
-                // disposed AttachmentPicker and wiped visible uploads.
-                child: _currentStep == 0
-                    ? (widget.useMobileLayout
-                        ? PreTradePlanStepMobile(
-                            key: const ValueKey('pre-step-mobile'),
-                            entry: _entry,
-                            onUpdate: _updateEntry,
-                            applyDefaultChecklist: _isNew && !_readOnly,
-                          )
-                        : PreTradePlanStep(
-                            key: const ValueKey('pre-step'),
-                            entry: _entry,
-                            onUpdate: _updateEntry,
-                            applyDefaultChecklist: _isNew && !_readOnly,
-                          ))
-                    : _currentStep == 1
-                        ? ExecuteTradeStep(
-                            key: const ValueKey('exec-step'),
-                            entry: _entry,
-                            onUpdate: _updateEntry,
-                            portfolioId: widget.portfolioId,
-                            onLinkTrade: _readOnly ? null : _linkTrade,
-                          )
-                        : PostTradeReviewStep(
-                            key: const ValueKey('post-step'),
-                            entry: _entry,
-                            onUpdate: _updateEntry,
-                          ),
               ),
-            ),
+              if (_readOnly)
+                Positioned.fill(
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.translucent,
+                    onDoubleTap: _unlockEdit,
+                    child: const SizedBox.expand(),
+                  ),
+                ),
+            ],
           ),
         ),
         _buildBottomActions(context),
@@ -611,20 +629,19 @@ class TradeJournalWorkflowPageState
               ),
             const Spacer(),
             if (_readOnly) ...[
-              if (_currentStep < 2)
+              Text(
+                'Double-click a field to edit',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: colors.textSecondary,
+                    ),
+              ),
+              if (_currentStep < 2) ...[
+                const SizedBox(width: 8),
                 OutlinedButton(
                   onPressed: () => _goToStep(_currentStep + 1),
                   child: const Text('Next'),
                 ),
-              const SizedBox(width: 8),
-              FilledButton.icon(
-                style: FilledButton.styleFrom(
-                  backgroundColor: ModuleColors.trade,
-                ),
-                onPressed: () => setState(() => _readOnly = false),
-                icon: const Icon(Icons.edit_outlined, size: 18),
-                label: const Text('Edit'),
-              ),
+              ],
             ] else ...[
               AppButton(
                 text: 'Save Draft',

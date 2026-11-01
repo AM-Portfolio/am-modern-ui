@@ -442,6 +442,8 @@ class _JournalMobilePageState extends ConsumerState<JournalMobilePage> {
               portfolioId: widget.portfolioId,
               initialEntry: _composerEntry,
               embedded: true,
+              initialReadOnly: _composerEntry != null &&
+                  JournalFolderFilter.isCompletedTradeJournal(_composerEntry!),
               onDone: () => _closeComposer(cubit: cubit, reload: true),
               onCancel: () => _closeComposer(cubit: cubit, reload: false),
             )

@@ -102,7 +102,6 @@ class _TradeDetailJournalSectionState
           initialEntry: entry,
           portfolioId: widget.portfolioId,
           initialReadOnly: completed,
-          startAtStep: completed ? 2 : null,
         ),
       ),
     );

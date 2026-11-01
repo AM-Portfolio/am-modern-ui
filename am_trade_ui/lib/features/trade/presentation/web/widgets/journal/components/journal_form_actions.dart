@@ -37,7 +37,7 @@ class JournalFormActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // View mode: Edit lives in the detail header — no sticky footer chrome.
+    // View mode: double-click a field to edit — no sticky footer chrome.
     if (!isEditMode && !isNewEntry) {
       return const SizedBox.shrink();
     }

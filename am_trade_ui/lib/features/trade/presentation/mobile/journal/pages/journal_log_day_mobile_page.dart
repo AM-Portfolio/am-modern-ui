@@ -86,7 +86,7 @@ class JournalLogDayMobilePage extends StatelessWidget {
           icon: const Icon(Icons.arrow_back),
           onPressed: () => _finish(context, saved: false),
         ),
-        title: Text(initialEntry == null ? 'Log day' : 'Edit Log day'),
+        title: const Text('Log day'),
       ),
       body: SafeArea(child: form),
     );

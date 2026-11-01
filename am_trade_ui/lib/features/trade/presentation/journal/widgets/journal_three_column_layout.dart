@@ -571,7 +571,8 @@ class _JournalThreeColumnLayoutState extends State<JournalThreeColumnLayout> {
         portfolioId: widget.portfolioId,
         embedded: true,
         initialReadOnly: completed && !_forceTradeEdit,
-        startAtStep: _forceTradeEditStep ?? (completed ? 2 : null),
+        // Completed journals open on Pre-Trade; optional override only.
+        startAtStep: _forceTradeEditStep,
         onEmbeddedDone: (entryId, {required bool complete}) {
           setState(() {
             _selectedEntryId = entryId;

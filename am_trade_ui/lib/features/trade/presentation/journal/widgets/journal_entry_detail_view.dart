@@ -225,21 +225,14 @@ class _JournalEntryDetailViewState extends State<JournalEntryDetailView> {
                       onPressed: _showTemplateBrowser,
                     )
                   else
-                    AppButton(
-                      text: 'Edit',
-                      icon: Icons.edit_outlined,
-                      backgroundColor: ModuleColors.trade,
-                      height: 32,
-                      onPressed: () {
-                        // Enter form edit first, then notify parent (avoid
-                        // remount races wiping edit mode on the same frame).
-                        _formKey.currentState?.enterEditMode();
-                        WidgetsBinding.instance.addPostFrameCallback((_) {
-                          if (!mounted) return;
-                          _formKey.currentState?.enterEditMode();
-                          _setFormEditMode(true);
-                        });
-                      },
+                    Padding(
+                      padding: const EdgeInsets.only(right: AppSpacing.sm),
+                      child: Text(
+                        'Double-click a field to edit',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: colors.textSecondary,
+                            ),
+                      ),
                     ),
                   PopupMenuButton<String>(
                     tooltip: 'More',

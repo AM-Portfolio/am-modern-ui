@@ -59,7 +59,7 @@ class JournalEntryForm extends ConsumerStatefulWidget {
   final VoidCallback? onBrowseTemplates;
   /// Dismiss create mode without saving (Log day flow).
   final VoidCallback? onCancelCreate;
-  /// Notifies the detail chrome when view ↔ edit toggles (header Edit button).
+  /// Notifies the detail chrome when view ↔ edit toggles (double-click unlock).
   final ValueChanged<bool>? onEditModeChanged;
   /// When true, enables mobile-optimized compact selectors and actions.
   final bool compact;
@@ -102,7 +102,8 @@ class JournalEntryFormState extends ConsumerState<JournalEntryForm> {
   TradePeriodType _tradePeriod = TradePeriodType.daily;
   List<String> _relatedTradeIds = [];
   List<TradeHoldingViewModel> _availableTrades = [];
-  bool _isEditMode = false; // View mode by default when editing existing entry
+  // View mode by default for existing entries; double-click unlocks edit.
+  bool _isEditMode = false;
   String? _appliedTemplateName;
 
   /// Template checklist / prompts live outside Quill so users don't clear placeholders.
@@ -1427,7 +1428,12 @@ class JournalEntryFormState extends ConsumerState<JournalEntryForm> {
           // sticky paints over the last fields — Stack + scroll inset is the
           // same contract used by template mobile composers.
           if (!showSticky) {
-            return scrollBody(vPad);
+            // Existing entry in view mode: double-click / double-tap unlocks edit.
+            // Wrap the scroll body (not a full-screen overlay) so scrolling still works.
+            return GestureDetector(
+              onDoubleTap: enterEditMode,
+              child: scrollBody(vPad),
+            );
           }
 
           Widget shell(double bottomInset) {

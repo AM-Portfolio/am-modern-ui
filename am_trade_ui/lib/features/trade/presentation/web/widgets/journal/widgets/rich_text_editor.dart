@@ -154,7 +154,7 @@ class _RichTextEditorState extends State<RichTextEditor> {
                     child: Text(
                       widget.compact
                           ? 'No notes yet.'
-                          : 'No notes yet. Tap Edit to write.',
+                          : 'No notes yet. Double-click to write.',
                       style: context.text.body(compact: true).copyWith(
                             color: colors.textSecondary,
                             height: 1.3,
