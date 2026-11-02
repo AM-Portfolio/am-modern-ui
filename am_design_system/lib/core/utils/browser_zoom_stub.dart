@@ -10,6 +10,8 @@ class BrowserZoomPlatform {
 
   static void writeStoredZoom(String value) {}
 
+  static void setPageBackground(String cssColor) {}
+
   static void setChartOwnsCtrlWheel(bool value) {}
 
   static void listen(

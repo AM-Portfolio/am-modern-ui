@@ -43,11 +43,11 @@ class SearchNavigationHandler {
         context.go(AppRoutes.chartWorkspacePath(symbol: sym));
         return;
       case SearchContext.baskets:
-        // Baskets keep portfolio discover navigation (handled via ETF path).
-        context.go('/app/market/$sym');
-        return;
       case SearchContext.portfolio:
-        openHolding(sym);
+        // Market hits remain market results even when search was opened from
+        // Portfolio or Baskets. Holdings have their own explicit callback.
+        ChartSearchBridge.selectSymbol?.call(sym);
+        context.go(AppRoutes.chartWorkspacePath(symbol: sym));
         return;
       case SearchContext.market:
       case SearchContext.trade:

@@ -480,28 +480,6 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
           ),
         ],
         const SizedBox(height: AppSpacing.sm),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'User ID',
-              style: context.text.caption().copyWith(
-                    color: context.textSecondary,
-                  ),
-            ),
-            const SizedBox(width: 4),
-            Tooltip(
-              message: 'Your unique account identifier',
-              child: Icon(
-                Icons.info_outline_rounded,
-                size: 14,
-                color: context.textSecondary,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 6),
         ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 400),
           child: Container(
@@ -530,18 +508,35 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
                   color: ModuleColors.portfolio,
                 ),
                 const SizedBox(width: 8),
+                Text(
+                  'User ID',
+                  style: context.text.caption().copyWith(
+                    color: context.textSecondary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Tooltip(
+                  message: 'Your unique account identifier',
+                  child: Icon(
+                    Icons.info_outline_rounded,
+                    size: 14,
+                    color: context.textSecondary,
+                  ),
+                ),
+                const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     truncateUserId(userId),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: context.text.body(compact: true).copyWith(
-                          color: context.textPrimary,
-                          fontWeight: FontWeight.w500,
-                        ),
+                      color: context.textPrimary,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ),
-                const SizedBox(width: 4),
+                const SizedBox(width: 8),
                 Semantics(
                   button: true,
                   label: 'Copy User ID',
@@ -552,11 +547,11 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
                       borderRadius: BorderRadius.circular(8),
                       onTap: () => _copyUserId(context, userId),
                       child: SizedBox(
-                        width: 44,
-                        height: 44,
+                        width: 36,
+                        height: 36,
                         child: Icon(
                           Icons.copy_rounded,
-                          size: 18,
+                          size: 17,
                           color: ModuleColors.portfolio,
                         ),
                       ),

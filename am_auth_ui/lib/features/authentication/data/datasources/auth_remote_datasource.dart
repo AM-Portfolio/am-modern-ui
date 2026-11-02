@@ -41,6 +41,9 @@ class AuthRemoteDataSource implements AuthDataSource {
           id: userId.toString(),
           email: data['email'] ?? email,
           displayName: data['username'] ?? data['name'] ?? data['full_name'],
+          photoUrl: _photoUrlFromMap(
+            data['user'] is Map ? data['user'] as Map : data,
+          ),
           authMethod: AuthConstants.authMethodEmail,
         );
 
@@ -93,6 +96,15 @@ class AuthRemoteDataSource implements AuthDataSource {
         statusCode: e.response?.statusCode ?? 500,
       );
     }
+  }
+
+  String? _photoUrlFromMap(Map<dynamic, dynamic> data) {
+    final value = data['picture'] ??
+        data['photo_url'] ??
+        data['photoUrl'] ??
+        data['avatar_url'] ??
+        data['avatar'];
+    return value is String && value.trim().isNotEmpty ? value.trim() : null;
   }
 
 

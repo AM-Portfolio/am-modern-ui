@@ -105,7 +105,7 @@ void main() {
     expect(find.textContaining('equity-insider'), findsOneWidget);
   });
 
-  testWidgets('portfolio openSecurity stays on holdings filtered to symbol',
+  testWidgets('portfolio market result opens chart workspace',
       (tester) async {
     final router = GoRouter(
       initialLocation: '/app/portfolio/holdings',
@@ -124,6 +124,14 @@ void main() {
             body: Text('legacy/${state.pathParameters['tab']}'),
           ),
         ),
+        GoRoute(
+          path: '/app/market/:tab',
+          builder: (_, state) => Scaffold(
+            body: Text(
+              '${state.pathParameters['tab']}:${state.uri.queryParameters['symbol']}',
+            ),
+          ),
+        ),
       ],
     );
 
@@ -139,7 +147,7 @@ void main() {
     SearchNavigationHandler(ctx).openSecurity('irfc', SearchContext.portfolio);
     await tester.pumpAndSettle();
 
-    expect(find.text('p1/holdings:IRFC'), findsOneWidget);
-    expect(find.textContaining('chart:'), findsNothing);
+    expect(find.text('chart:IRFC'), findsOneWidget);
+    expect(find.textContaining('p1/holdings:'), findsNothing);
   });
 }
