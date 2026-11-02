@@ -18,6 +18,21 @@ class TopMoverStock {
     required this.volume,
   });
 
+  TopMoverStock copyWith({
+    double? lastPrice,
+    double? change,
+    double? changePercent,
+  }) {
+    return TopMoverStock(
+      symbol: symbol,
+      companyName: companyName,
+      lastPrice: lastPrice ?? this.lastPrice,
+      change: change ?? this.change,
+      changePercent: changePercent ?? this.changePercent,
+      volume: volume,
+    );
+  }
+
   factory TopMoverStock.fromJson(Map<String, dynamic> json) {
     final pctRaw = json['changePercent'] ??
         json['changePercentage'] ??

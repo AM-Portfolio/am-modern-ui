@@ -32,6 +32,7 @@ class TopMoversWidgetV2 extends StatelessWidget {
   final String? error;
   final Widget? headerTrailing;
   final bool scrollEmbedded;
+  final ValueChanged<String>? onSymbolTap;
 
   const TopMoversWidgetV2({
     required this.gainers,
@@ -40,6 +41,7 @@ class TopMoversWidgetV2 extends StatelessWidget {
     this.error,
     this.headerTrailing,
     this.scrollEmbedded = false,
+    this.onSymbolTap,
     super.key,
   });
 
@@ -50,7 +52,7 @@ class TopMoversWidgetV2 extends StatelessWidget {
     // renders with the market UI's exact green/red palette.
     final positiveColor = MarketColors.positive(context);
     final negativeColor = MarketColors.negative(context);
-    final headerAccent  = ModuleColors.market;
+    final headerAccent = ModuleColors.market;
 
     return AmTopMoversPanel(
       gainers: gainers.map(_toAmItem).toList(),
@@ -62,6 +64,8 @@ class TopMoversWidgetV2 extends StatelessWidget {
       headerAccent: headerAccent,
       headerTrailing: headerTrailing,
       scrollEmbedded: scrollEmbedded,
+      onItemTap:
+          onSymbolTap == null ? null : (item) => onSymbolTap!(item.symbol),
       // Market fetches limit:5 — show all five (do not change DS default for Portfolio).
       maxItemsPerColumn: 5,
     );

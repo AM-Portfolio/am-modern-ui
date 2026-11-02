@@ -1,10 +1,12 @@
 import 'package:am_design_system/am_design_system.dart';
 import 'package:am_market_ui/features/ipo/models/ipo_models.dart';
+import 'package:am_market_ui/features/ipo/ipo_subscription_sorting.dart';
 import 'package:am_market_ui/features/ipo/widgets/ipo_board_badge.dart';
 import 'package:flutter/material.dart';
 
 class IpoOverviewHeaderCard extends StatelessWidget {
   final AsraxIpoDetailsDto ipo;
+  final VoidCallback? onListTap;
 
   /// When true, show only the 2-column key-details grid (identity lives in the screen header).
   final bool metricsOnly;
@@ -15,6 +17,7 @@ class IpoOverviewHeaderCard extends StatelessWidget {
   const IpoOverviewHeaderCard({
     super.key,
     required this.ipo,
+    this.onListTap,
     this.metricsOnly = false,
     this.lotSizeOnly = false,
   });
@@ -32,7 +35,7 @@ class IpoOverviewHeaderCard extends StatelessWidget {
       padding: EdgeInsets.all(isCompact ? 14 : 22),
       decoration: BoxDecoration(
         color: context.surfaceColor,
-        borderRadius: BorderRadius.circular(isCompact ? 12 : 16),
+        borderRadius: BorderRadius.circular(isCompact ? AppRadii.md : AppRadii.lg),
         border: Border.all(
           color: context.borderColor,
           width: 1,
@@ -41,10 +44,19 @@ class IpoOverviewHeaderCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          _buildNavigationTrail(context),
+          const SizedBox(height: 18),
           if (!isCompact) ...[
             LayoutBuilder(
               builder: (context, constraints) {
-                final isNarrow = constraints.maxWidth < 650;
+                // The Market secondary sidebar removes approximately 250px
+                // when expanded. Give the scale about 30% more horizontal
+                // room while keeping its right edge anchored beside status.
+                final isNarrow = constraints.maxWidth < 900;
+                final meterWidth =
+                    (constraints.maxWidth * 0.20).clamp(280.0, 340.0) * 1.3;
+                final responsiveMeterWidth =
+                    meterWidth.clamp(364.0, 442.0).toDouble();
 
                 final leftSection = Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -85,6 +97,7 @@ class IpoOverviewHeaderCard extends StatelessWidget {
                               if (ipo.industry != null &&
                                   ipo.industry!.isNotEmpty)
                                 _buildTag(context, ipo.industry!),
+                              ..._buildInvestorTags(context),
                             ],
                           ),
                         ],
@@ -93,7 +106,10 @@ class IpoOverviewHeaderCard extends StatelessWidget {
                   ],
                 );
 
-                final rightSection = _buildCountdownSection(context);
+                final rightSection = _buildHeaderStatus(
+                  context,
+                  meterWidth: responsiveMeterWidth,
+                );
 
                 if (isNarrow) {
                   return Column(
@@ -136,12 +152,75 @@ class IpoOverviewHeaderCard extends StatelessWidget {
     );
   }
 
+  Widget _buildNavigationTrail(BuildContext context) {
+    return AmNavigationTrail(
+      items: [
+        AmNavigationTrailItem(label: 'IPOs', onTap: onListTap),
+        AmNavigationTrailItem(label: ipo.companyName ?? 'IPO Details'),
+      ],
+    );
+  }
+
+  Widget _buildHeaderStatus(
+    BuildContext context, {
+    required double meterWidth,
+  }) {
+    final subscription = _parseSubscription(ipo.totalSubscription);
+
+    return Wrap(
+      alignment: WrapAlignment.end,
+      crossAxisAlignment: WrapCrossAlignment.start,
+      spacing: 14,
+      runSpacing: 12,
+      children: [
+        if (subscription != null)
+          SizedBox(
+            width: meterWidth,
+            child: AmValueMeter(
+              value: subscription,
+              maxValue: ipoSubscriptionMeterMax(subscription),
+              label: 'Overall subscription',
+              suffix: '×',
+              showSurface: false,
+              accentColor: ModuleColorProvider.of(context),
+            ),
+          ),
+        _buildCountdownSection(context),
+      ],
+    );
+  }
+
+  List<Widget> _buildInvestorTags(BuildContext context) {
+    final categories = <String>[];
+    final seen = <String>{};
+    for (final investor in ipo.eligibleInvestors ?? const []) {
+      final category = investor.category.trim();
+      final key = category.toLowerCase();
+      if (category.isNotEmpty && seen.add(key)) categories.add(category);
+    }
+
+    return categories.map((category) => _buildTag(context, category)).toList();
+  }
+
+  double? _parseSubscription(String? raw) {
+    final value = raw?.trim();
+    if (value == null || value.isEmpty) return null;
+    final normalized = value
+        .replaceAll('×', '')
+        .replaceAll('x', '')
+        .replaceAll('X', '')
+        .trim();
+    final parsed = double.tryParse(normalized);
+    if (parsed == null || !parsed.isFinite || parsed < 0) return null;
+    return parsed;
+  }
+
   Widget _buildMetricsCard(BuildContext context, {required bool isCompact}) {
     return Container(
       padding: EdgeInsets.all(isCompact ? 14 : 20),
       decoration: BoxDecoration(
         color: context.surfaceColor,
-        borderRadius: BorderRadius.circular(isCompact ? 12 : 16),
+        borderRadius: BorderRadius.circular(isCompact ? AppRadii.md : AppRadii.lg),
         border: Border.all(color: context.borderColor, width: 1),
       ),
       child: Column(
@@ -291,7 +370,8 @@ class IpoOverviewHeaderCard extends StatelessWidget {
           return Wrap(
             spacing: 16,
             runSpacing: 14,
-            children: widgets.map((w) => SizedBox(width: 140, child: w)).toList(),
+            children:
+                widgets.map((w) => SizedBox(width: 140, child: w)).toList(),
           );
         }
 
@@ -312,7 +392,7 @@ class IpoOverviewHeaderCard extends StatelessWidget {
       height: size,
       decoration: BoxDecoration(
         color: avatarColor.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(size >= 48 ? 12 : 8),
+        borderRadius: BorderRadius.circular(size >= 48 ? AppRadii.md : AppRadii.sm),
       ),
       alignment: Alignment.center,
       child: Text(
@@ -331,7 +411,7 @@ class IpoOverviewHeaderCard extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
         color: context.surfaceColor,
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: BorderRadius.circular(AppRadii.xs),
         border: Border.all(
           color: context.borderColor,
           width: 0.8,
@@ -361,7 +441,7 @@ class IpoOverviewHeaderCard extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
           decoration: BoxDecoration(
             color: statusColor.withValues(alpha: isDark ? 0.18 : 0.12),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(AppRadii.md),
             border: Border.all(
               color: statusColor.withValues(alpha: isDark ? 0.45 : 0.35),
               width: 1,
@@ -440,7 +520,7 @@ class IpoOverviewHeaderCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(icon, size: compact ? 13 : 14, color: ModuleColors.market),
+              Icon(icon, size: compact ? 13 : 14, color: ModuleColorProvider.of(context)),
               const SizedBox(width: 4),
               Flexible(
                 child: Text(

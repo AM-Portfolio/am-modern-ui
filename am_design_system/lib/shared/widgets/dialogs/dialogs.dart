@@ -2,3 +2,4 @@
 export 'add_stock_dialog.dart';
 export 'import_data_dialog.dart';
 export 'confirmation_dialog.dart';
+export 'page_size_dialog.dart';
