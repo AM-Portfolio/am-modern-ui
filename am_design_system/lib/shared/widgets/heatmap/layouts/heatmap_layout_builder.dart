@@ -443,12 +443,23 @@ abstract class HeatmapLayoutBuilder {
   }
 
   /// Contrast text from theme tokens by background luminance.
+  ///
+  /// Picks ink that actually contrasts the fill in both light and dark themes.
+  /// Never uses light [scaffoldBackground] as "dark ink" (was white-on-white).
+  /// Avoids [actionPrimaryFg] — brand FG washes gold/pink themes.
   Color getTextColor(BuildContext context, Color backgroundColor) {
     final colors = themeColors(context);
-    final luminance = backgroundColor.computeLuminance();
-    // Light tiles → dark ink (scaffold); dark tiles → light ink (textPrimary).
-    // Do not use actionPrimaryFg — that is brand FG and washes gold/pink themes.
-    return luminance > 0.5 ? colors.scaffoldBackground : colors.textPrimary;
+    final bgLum = backgroundColor.computeLuminance();
+    final primaryLum = colors.textPrimary.computeLuminance();
+    if (bgLum > 0.52) {
+      if (primaryLum < 0.5) return colors.textPrimary;
+      final scaffoldLum = colors.scaffoldBackground.computeLuminance();
+      return scaffoldLum < 0.5
+          ? colors.scaffoldBackground
+          : const Color(0xFF1C192C);
+    }
+    if (primaryLum > 0.5) return colors.textPrimary;
+    return const Color(0xFFF5F5F7);
   }
 
   /// Builds a unified heatmap tile card that adapts to different layout types
