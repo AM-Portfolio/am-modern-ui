@@ -26,10 +26,17 @@ class OverlaySeries {
 }
 
 class OverlayPortfolioRef {
-  const OverlayPortfolioRef({required this.id, required this.label});
+  const OverlayPortfolioRef({
+    required this.id,
+    required this.label,
+    this.brokerType,
+  });
 
   final String id;
   final String label;
+
+  /// Enum name from history rows (e.g. DHAN) — used when [label] is an opaque id.
+  final String? brokerType;
 }
 
 class PortfolioOverlayHistory {
@@ -273,11 +280,48 @@ Map<String, String> uniquePortfolioLabels(
 final _uuidPattern = RegExp(
   r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
 );
+final _objectIdPattern = RegExp(r'^[0-9a-fA-F]{24}$');
+
+bool looksLikeOpaquePortfolioLabel(String? name) {
+  if (name == null) return true;
+  final trimmed = name.trim();
+  if (trimmed.isEmpty) return true;
+  return _uuidPattern.hasMatch(trimmed) || _objectIdPattern.hasMatch(trimmed);
+}
 
 String _overlayDisplayName(OverlayPortfolioRef p) {
   final name = p.label.trim();
-  if (name.isEmpty || _uuidPattern.hasMatch(name)) return 'Portfolio';
+  if (looksLikeOpaquePortfolioLabel(name)) {
+    final broker = (p.brokerType ?? '').trim();
+    if (broker.isNotEmpty) {
+      return _brokerDisplayLabel(broker);
+    }
+    return 'Portfolio';
+  }
   return name;
+}
+
+String _brokerDisplayLabel(String raw) {
+  switch (raw.trim().toUpperCase()) {
+    case 'DHAN':
+      return 'Dhan';
+    case 'ZERODHA':
+      return 'Zerodha';
+    case 'GROWW':
+    case 'GROW':
+      return 'Groww';
+    case 'ANGEL_ONE':
+    case 'ANGELONE':
+      return 'Angel One';
+    case 'UPSTOX':
+      return 'Upstox';
+    case 'KOTAK':
+      return 'Kotak';
+    case 'MSTOCK':
+      return 'MStock';
+    default:
+      return raw;
+  }
 }
 
 /// Overall + NIFTY 50 by default; optional third line prefers [preferredPortfolioId]

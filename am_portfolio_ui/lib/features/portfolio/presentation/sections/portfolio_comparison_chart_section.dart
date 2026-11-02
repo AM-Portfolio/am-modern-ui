@@ -79,22 +79,30 @@ class _PortfolioComparisonChartSectionState
       }
     });
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        if (overlay.historyBuilding)
-          _SyncingBanner(
-            startedAtIso: overlay.historyStartedAt,
-            phase: overlay.historyPhase,
+    // Keep height fixed — building chip overlays the chart (no outer banner
+    // that overflows / reflows and blinks the series).
+    return SizedBox(
+      height: widget.height,
+      child: Stack(
+        clipBehavior: Clip.hardEdge,
+        children: [
+          Positioned.fill(
+            child: DashboardChartWidget(
+              userId: resolvedUserId,
+              accentColor: ModuleColors.portfolio,
+            ),
           ),
-        SizedBox(
-          height: widget.height,
-          child: DashboardChartWidget(
-            userId: resolvedUserId,
-            accentColor: ModuleColors.portfolio,
-          ),
-        ),
-      ],
+          if (overlay.historyBuilding)
+            Positioned(
+              top: 10,
+              left: 12,
+              child: _BuildingChip(
+                startedAtIso: overlay.historyStartedAt,
+                phase: overlay.historyPhase,
+              ),
+            ),
+        ],
+      ),
     );
   }
 
@@ -105,8 +113,9 @@ class _PortfolioComparisonChartSectionState
   }
 }
 
-class _SyncingBanner extends StatelessWidget {
-  const _SyncingBanner({this.startedAtIso, this.phase});
+/// Minimal in-chart status: icon + tier + elapsed (no full-width banner).
+class _BuildingChip extends StatelessWidget {
+  const _BuildingChip({this.startedAtIso, this.phase});
 
   final String? startedAtIso;
   final String? phase;
@@ -114,47 +123,51 @@ class _SyncingBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final subtitle = switch (phase) {
-      'BUILDING_90D' => 'Preparing last 3 months…',
-      'BUILDING_1Y' => 'Extending to 1 year…',
-      'QUEUED' => 'Queued…',
-      _ => 'Building chart history…',
+    final (IconData icon, String tier) = switch (phase) {
+      'BUILDING_90D' => (Icons.timelapse_rounded, '3M'),
+      'BUILDING_1Y' => (Icons.calendar_month_rounded, '1Y'),
+      'QUEUED' => (Icons.hourglass_top_rounded, 'Queue'),
+      _ => (Icons.sync_rounded, 'Sync'),
     };
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Material(
-        color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.7),
-        borderRadius: BorderRadius.circular(8),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          child: Row(
-            children: [
-              const SizedBox(
-                width: 18,
-                height: 18,
-                child: CircularProgressIndicator(strokeWidth: 2),
+    final elapsed = _elapsedLabel(startedAtIso);
+
+    return Material(
+      elevation: 2,
+      color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.92),
+      borderRadius: BorderRadius.circular(20),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              width: 14,
+              height: 14,
+              child: CircularProgressIndicator(
+                strokeWidth: 1.8,
+                color: ModuleColors.portfolio,
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Syncing portfolio and building chart in the backend…',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      '$subtitle  ${_elapsedLabel(startedAtIso)}',
-                      style: theme.textTheme.bodySmall,
-                    ),
-                  ],
+            ),
+            const SizedBox(width: 8),
+            Icon(icon, size: 14, color: ModuleColors.portfolio),
+            const SizedBox(width: 4),
+            Text(
+              tier,
+              style: theme.textTheme.labelSmall?.copyWith(
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.4,
+              ),
+            ),
+            if (elapsed.isNotEmpty) ...[
+              const SizedBox(width: 6),
+              Text(
+                elapsed,
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
             ],
-          ),
+          ],
         ),
       ),
     );
@@ -168,6 +181,6 @@ class _SyncingBanner extends StatelessWidget {
     if (secs < 0) return '';
     final m = secs ~/ 60;
     final s = secs % 60;
-    return '· ${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
+    return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
   }
 }

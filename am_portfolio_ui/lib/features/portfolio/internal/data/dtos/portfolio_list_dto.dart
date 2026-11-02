@@ -7,21 +7,27 @@ class PortfolioItemDto {
     required this.portfolioId,
     required this.portfolioName,
     this.kind,
+    this.brokerType,
     this.isDummy = false,
   });
 
   /// Create from JSON
   factory PortfolioItemDto.fromJson(Map<String, dynamic> json) =>
       PortfolioItemDto(
-        portfolioId: json['portfolioId'] as String,
-        portfolioName:
-            (json['portfolioName'] as String?) ?? 'Unnamed Portfolio',
-        kind: json['kind'] as String?,
+        portfolioId: (json['portfolioId'] ?? json['id'])?.toString() ?? '',
+        portfolioName: (json['portfolioName'] as String?) ??
+            (json['name'] as String?) ??
+            'Unnamed Portfolio',
+        kind: (json['kind'] as String?) ??
+            (json['portfolioKind'] as String?),
+        brokerType: (json['brokerType'] as String?) ??
+            (json['broker'] as String?),
         isDummy: json['isDummy'] == true || json['dummy'] == true,
       );
   final String portfolioId;
   final String portfolioName;
   final String? kind;
+  final String? brokerType;
   final bool isDummy;
 
   /// Convert to JSON
@@ -29,6 +35,7 @@ class PortfolioItemDto {
     'portfolioId': portfolioId,
     'portfolioName': portfolioName,
     if (kind != null) 'kind': kind,
+    if (brokerType != null) 'brokerType': brokerType,
     'isDummy': isDummy,
   };
 
