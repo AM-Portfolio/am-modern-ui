@@ -557,6 +557,7 @@ class ExecuteTradeStepState extends ConsumerState<ExecuteTradeStep> {
             label: 'Attachments',
           ),
         ],
+        ),
       ),
     );
 
