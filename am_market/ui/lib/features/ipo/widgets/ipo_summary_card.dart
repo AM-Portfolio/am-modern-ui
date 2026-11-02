@@ -326,10 +326,10 @@ class IpoSummaryCard extends StatelessWidget {
     );
   }
 
-  void _openDetails(BuildContext context) {
+  Future<void> _openDetails(BuildContext context) {
     // Nearest navigator is IpoCenterHost when embedded in Market — keeps
     // module pills / sidebar visible. Standalone falls back to root nav.
-    openIpoDetails(context, ipo.id);
+    return openIpoDetailsForSummary(context, ipo);
   }
 
   bool get _hasSubscription => ipo.totalSubscription?.trim().isNotEmpty == true;

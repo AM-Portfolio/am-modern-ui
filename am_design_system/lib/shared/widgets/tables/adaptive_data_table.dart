@@ -9,6 +9,7 @@ class DataTableColumn<T> {
     this.width,
     this.sortable = false,
     this.sortValue,
+    this.nullableSortValue,
     this.textAlign = TextAlign.start,
     this.numeric = false,
   });
@@ -18,6 +19,9 @@ class DataTableColumn<T> {
   final double? width;
   final bool sortable;
   final Comparable Function(T item)? sortValue;
+
+  /// Optional nullable sort value. Null values are always placed last.
+  final Comparable? Function(T item)? nullableSortValue;
   final TextAlign textAlign;
   final bool numeric;
 }
@@ -128,14 +132,36 @@ class _AdaptiveDataTableState<T> extends State<AdaptiveDataTable<T>> {
       orElse: () => widget.columns.first,
     );
 
-    if (column.sortValue != null) {
-      _sortedData.sort((a, b) {
-        final aValue = column.sortValue!(a);
-        final bValue = column.sortValue!(b);
-        final result = aValue.compareTo(bValue);
-        return _sortAscending ? result : -result;
-      });
-    }
+    final indexed = widget.data
+        .asMap()
+        .entries
+        .map((entry) => (index: entry.key, value: entry.value))
+        .toList();
+
+    indexed.sort((a, b) {
+      final aValue = column.nullableSortValue?.call(a.value) ??
+          column.sortValue?.call(a.value);
+      final bValue = column.nullableSortValue?.call(b.value) ??
+          column.sortValue?.call(b.value);
+
+      if (column.nullableSortValue != null) {
+        if (aValue == null && bValue == null) {
+          return a.index.compareTo(b.index);
+        }
+        if (aValue == null) return 1;
+        if (bValue == null) return -1;
+      }
+
+      if (aValue == null || bValue == null) {
+        return a.index.compareTo(b.index);
+      }
+
+      final result = aValue.compareTo(bValue);
+      if (result != 0) return _sortAscending ? result : -result;
+      return a.index.compareTo(b.index);
+    });
+
+    _sortedData = indexed.map((entry) => entry.value).toList();
   }
 
   @override

@@ -13,10 +13,12 @@ import 'package:provider/provider.dart' as legacy_provider;
 class FoHeaderCard extends ConsumerStatefulWidget {
   const FoHeaderCard({
     required this.symbol,
+    this.onBack,
     super.key,
   });
 
   final String symbol;
+  final VoidCallback? onBack;
 
   @override
   ConsumerState<FoHeaderCard> createState() => _FoHeaderCardState();
@@ -35,11 +37,10 @@ class _FoHeaderCardState extends ConsumerState<FoHeaderCard> {
     final statusObj = ref.watch(marketStatusProvider);
     final statusReason = statusObj?.reason ?? '';
     final statusText = isMarketOpen ? 'Open' : 'Closed';
-    final statusTooltip = !isMarketOpen &&
-            statusReason.isNotEmpty &&
-            statusReason != 'UNKNOWN'
-        ? statusReason
-        : null;
+    final statusTooltip =
+        !isMarketOpen && statusReason.isNotEmpty && statusReason != 'UNKNOWN'
+            ? statusReason
+            : null;
     final statusColor =
         isMarketOpen ? context.statusSuccess : context.statusError;
 
@@ -78,14 +79,11 @@ class _FoHeaderCardState extends ConsumerState<FoHeaderCard> {
         ? MarketColors.positive(context)
         : MarketColors.negative(context);
 
-    final exchangeRaw = (chainData?['exchange'] ?? activeContract?['exchange'])
-        ?.toString();
+    final exchangeRaw =
+        (chainData?['exchange'] ?? activeContract?['exchange'])?.toString();
     final exchange = (exchangeRaw == null || exchangeRaw.isEmpty)
         ? 'NSE'
-        : exchangeRaw
-            .toUpperCase()
-            .replaceAll('_FO', '')
-            .replaceAll('_EQ', '');
+        : exchangeRaw.toUpperCase().replaceAll('_FO', '').replaceAll('_EQ', '');
 
     final strikes = (chainData?['strikes'] as List<dynamic>?) ?? [];
     var totalCallOi = 0.0;
@@ -136,8 +134,8 @@ class _FoHeaderCardState extends ConsumerState<FoHeaderCard> {
       final put = first['put'] is Map
           ? Map<String, dynamic>.from(first['put'] as Map)
           : null;
-      firstStrikeLot =
-          (call?['lotSize'] as num?)?.toInt() ?? (put?['lotSize'] as num?)?.toInt();
+      firstStrikeLot = (call?['lotSize'] as num?)?.toInt() ??
+          (put?['lotSize'] as num?)?.toInt();
     }
     final lotSizeStr = (apiLotSize != null && apiLotSize > 0)
         ? '$apiLotSize'
@@ -156,9 +154,7 @@ class _FoHeaderCardState extends ConsumerState<FoHeaderCard> {
         market?.indexSparklines[sparkKey.toUpperCase()] ??
         const <double>[];
     final resolvedMarket = market;
-    if (!_sparkRequested &&
-        resolvedMarket != null &&
-        sparkPoints.length < 2) {
+    if (!_sparkRequested && resolvedMarket != null && sparkPoints.length < 2) {
       _sparkRequested = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         resolvedMarket.ensureIndexSparklines([sparkKey]);
@@ -182,6 +178,20 @@ class _FoHeaderCardState extends ConsumerState<FoHeaderCard> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                if (widget.onBack != null) ...[
+                  AmNavigationTrail(
+                    items: [
+                      AmNavigationTrailItem(
+                        label: 'Futures & Options',
+                        onTap: widget.onBack,
+                      ),
+                      AmNavigationTrailItem(
+                        label: _displayName(widget.symbol),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: isMobile ? AppSpacing.sm : AppSpacing.md),
+                ],
                 _buildIdentityRow(
                   context: context,
                   isMobile: isMobile,

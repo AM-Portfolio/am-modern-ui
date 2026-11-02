@@ -1,4 +1,5 @@
 import 'package:am_market_ui/features/ipo/ipo_sorting.dart';
+import 'package:am_market_ui/features/ipo/ipo_subscription_sorting.dart';
 import 'package:am_market_ui/features/ipo/models/ipo_models.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -65,5 +66,14 @@ void main() {
       'future',
       'tba',
     ]);
+  });
+
+  test('parses subscription multipliers for numeric sorting', () {
+    expect(ipoSubscriptionSortValue('0.87'), 0.87);
+    expect(ipoSubscriptionSortValue('1.13x'), 1.13);
+    expect(ipoSubscriptionSortValue('4.65×'), 4.65);
+    expect(ipoSubscriptionSortValue(''), isNull);
+    expect(ipoSubscriptionSortValue('N/A'), isNull);
+    expect(ipoSubscriptionSortValue('-1.2x'), isNull);
   });
 }

@@ -78,4 +78,46 @@ void main() {
     expect(tester.getTopLeft(find.text('B')).dy,
         lessThan(tester.getTopLeft(find.text('A')).dy));
   });
+
+  testWidgets('nullable sort values remain last in both directions',
+      (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: AdaptiveDataTable<String>(
+            data: const ['missing', 'high', 'low'],
+            resetSortOnThirdTap: true,
+            columns: [
+              DataTableColumn<String>(
+                key: 'value',
+                title: 'VALUE',
+                sortable: true,
+                nullableSortValue: (value) => switch (value) {
+                  'high' => 4.65,
+                  'low' => 0.87,
+                  _ => null,
+                },
+                cellBuilder: (value) => Text(value),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    final header = find.text('VALUE');
+    await tester.tap(header);
+    await tester.pump();
+    expect(tester.getTopLeft(find.text('low')).dy,
+        lessThan(tester.getTopLeft(find.text('high')).dy));
+    expect(tester.getTopLeft(find.text('high')).dy,
+        lessThan(tester.getTopLeft(find.text('missing')).dy));
+
+    await tester.tap(header);
+    await tester.pump();
+    expect(tester.getTopLeft(find.text('high')).dy,
+        lessThan(tester.getTopLeft(find.text('low')).dy));
+    expect(tester.getTopLeft(find.text('low')).dy,
+        lessThan(tester.getTopLeft(find.text('missing')).dy));
+  });
 }

@@ -221,3 +221,5 @@ export 'shared/widgets/search/typewriter_hint_controller.dart';
 
 // --- Dialogs ---
 export 'shared/widgets/dialogs/confirmation_dialog.dart';
+export 'shared/widgets/dialogs/information_dialog.dart';
+export 'shared/widgets/dialogs/page_size_dialog.dart';

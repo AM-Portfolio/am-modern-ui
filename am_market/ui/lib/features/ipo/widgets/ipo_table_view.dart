@@ -1,6 +1,7 @@
 import 'package:am_design_system/am_design_system.dart';
 import 'package:am_market_ui/features/ipo/ipo_navigation.dart';
 import 'package:am_market_ui/features/ipo/models/ipo_models.dart';
+import 'package:am_market_ui/features/ipo/ipo_subscription_sorting.dart';
 import 'package:flutter/material.dart';
 
 class IpoTableView extends StatelessWidget {
@@ -71,6 +72,9 @@ class IpoTableView extends StatelessWidget {
                 DataTableColumn(
                   key: 'subscription',
                   title: 'SUB',
+                  sortable: true,
+                  nullableSortValue: (ipo) =>
+                      ipoSubscriptionSortValue(ipo.totalSubscription),
                   cellBuilder: (ipo) => _TableValue(
                     value: _formatSubscription(ipo.totalSubscription),
                     muted: !_hasSubscription(ipo),
@@ -108,7 +112,7 @@ class IpoTableView extends StatelessWidget {
                     _TableValue(value: _formatDate(ipo.biddingEndDate)),
               ),
             ],
-            onRowTap: (ipo) => openIpoDetails(context, ipo.id),
+            onRowTap: (ipo) => openIpoDetailsForSummary(context, ipo),
           ),
         );
       },

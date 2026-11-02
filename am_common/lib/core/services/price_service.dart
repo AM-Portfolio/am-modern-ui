@@ -9,6 +9,17 @@ import 'package:am_common/core/debug/agent_debug_log.dart';
 import 'package:am_common/am_common.dart';
 import 'package:am_library/core/network/websocket/am_stomp_client.dart';
 
+/// A normalized live-market interest owned by one UI surface.
+class MarketStreamInstrument {
+  const MarketStreamInstrument({
+    required this.symbol,
+    required this.isIndexSymbol,
+  });
+
+  final String symbol;
+  final bool isIndexSymbol;
+}
+
 /// Real-time prices via am-gateway STOMP only:
 /// - `/app/market/subscribe` → gateway proxies am-market upstream connect
 /// - `/topic/stock/{symbol}` → live price relay from Kafka
@@ -25,15 +36,18 @@ class PriceService {
   StreamSubscription<StompStatus>? _statusSub;
 
   final Set<String> _subscribedSymbols = {};
+  final Map<String, Map<String, MarketStreamInstrument>> _scopes = {};
+  final Map<String, MarketStreamInstrument> _activeInstruments = {};
   final Set<String> _upstreamSymbols = {};
-  final Set<String> _pendingGatewaySymbols = {};
+  final Map<String, MarketStreamInstrument> _pendingGatewaySymbols = {};
   Timer? _gatewayConnectDebounce;
   DateTime? _lastTopicResubscribe;
   bool _streamingAllowed = true;
   final Map<String, DateTime> _lastQuoteTimes = {};
+  final Map<String, DateTime> _topicSubscribeSentAt = {};
 
   static const Duration _gatewayConnectDebounceDelay =
-      Duration(milliseconds: 100);
+      Duration(milliseconds: 50);
   static const Duration _topicResubscribeCooldown = Duration(seconds: 3);
 
   final Map<String, QuoteChange> _priceCache = {};
@@ -56,6 +70,11 @@ class PriceService {
 
   Set<String> get subscribedSymbols => Set.unmodifiable(_subscribedSymbols);
 
+  Map<String, Set<String>> get activeScopes => {
+        for (final entry in _scopes.entries)
+          entry.key: Set.unmodifiable(entry.value.keys.toSet()),
+      };
+
   bool get isStreamingAllowed => _streamingAllowed;
 
   /// When false, drop live topics and skip gateway connect; desired symbols kept.
@@ -67,7 +86,7 @@ class PriceService {
       return;
     }
     if (_subscribedSymbols.isNotEmpty) {
-      unawaited(resubscribeAll());
+      unawaited(_replayActiveScopes());
     }
   }
 
@@ -185,11 +204,96 @@ class PriceService {
     _stompSubscribe(newSymbols);
   }
 
+  /// Replaces one owner's complete desired set and applies only the effective
+  /// union across all owners. This is visibility-aware and safe for kept-alive
+  /// pages: inactive pages can retain their cached intent without streaming.
+  Future<void> replaceScope(
+    String owner,
+    Iterable<MarketStreamInstrument> instruments,
+  ) async {
+    final next = <String, MarketStreamInstrument>{};
+    for (final instrument in instruments) {
+      final symbol = instrument.symbol.trim().toUpperCase();
+      if (symbol.isEmpty) continue;
+      next[symbol] = MarketStreamInstrument(
+        symbol: symbol,
+        isIndexSymbol: instrument.isIndexSymbol,
+      );
+    }
+
+    _scopes[owner] = next;
+    final effective = <String, MarketStreamInstrument>{};
+    for (final scope in _scopes.values) {
+      effective.addAll(scope);
+    }
+
+    final previous = Set<String>.from(_subscribedSymbols);
+    final current = effective.keys.toSet();
+    final removed = previous.difference(current).toSet();
+    final added = current.difference(previous).toSet();
+    for (final symbol in previous.intersection(current)) {
+      if (_activeInstruments[symbol]?.isIndexSymbol !=
+          effective[symbol]?.isIndexSymbol) {
+        removed.add(symbol);
+        added.add(symbol);
+      }
+    }
+
+    for (final symbol in removed) {
+      _stompClient?.unsubscribe(stockTopicDestination(symbol));
+      _upstreamSymbols.remove(symbol);
+      _pendingGatewaySymbols.remove(symbol);
+      _activeInstruments.remove(symbol);
+      _topicSubscribeSentAt.remove(symbol.toUpperCase());
+    }
+
+    _subscribedSymbols
+      ..clear()
+      ..addAll(current);
+    _activeInstruments
+      ..clear()
+      ..addAll(effective);
+
+    if (!_streamingAllowed || added.isEmpty) return;
+
+    final addedInstruments = added.map((symbol) => effective[symbol]!).toList();
+    _stompSubscribe(addedInstruments.map((e) => e.symbol).toList());
+    for (final group in <bool>[true, false]) {
+      final batch = addedInstruments
+          .where((instrument) => instrument.isIndexSymbol == group)
+          .map((instrument) => instrument.symbol)
+          .toList();
+      if (batch.isNotEmpty) {
+        _queueGatewayConnect(
+          batch,
+          provider: 'UPSTOX',
+          isIndexSymbol: group,
+          mockMode: false,
+        );
+      }
+    }
+  }
+
+  Future<void> releaseScope(String owner) async {
+    if (!_scopes.containsKey(owner)) return;
+    _scopes.remove(owner);
+    final effective = <MarketStreamInstrument>[];
+    for (final scope in _scopes.values) {
+      effective.addAll(scope.values);
+    }
+    await replaceScope('__effective__', effective);
+    _scopes.remove('__effective__');
+  }
+
   /// Re-bind all active symbol topics and re-send gateway connect (e.g. after tab return).
   Future<void> resubscribeAll({
     bool isIndexSymbol = false,
     bool mockMode = false,
   }) async {
+    if (_scopes.isNotEmpty) {
+      await _replayActiveScopes();
+      return;
+    }
     if (_subscribedSymbols.isEmpty) return;
     await subscribe(
       _subscribedSymbols.toList(),
@@ -197,6 +301,27 @@ class PriceService {
       mockMode: mockMode,
       forceResubscribe: true,
     );
+  }
+
+  Future<void> _replayActiveScopes() async {
+    if (!_streamingAllowed || _activeInstruments.isEmpty) return;
+    final instruments = _activeInstruments.values.toList();
+    _stompSubscribe(instruments.map((e) => e.symbol).toList(),
+        forceResubscribe: true);
+    for (final group in <bool>[true, false]) {
+      final batch = instruments
+          .where((instrument) => instrument.isIndexSymbol == group)
+          .map((instrument) => instrument.symbol)
+          .toList();
+      if (batch.isEmpty) continue;
+      _queueGatewayConnect(
+        batch,
+        provider: 'UPSTOX',
+        isIndexSymbol: group,
+        mockMode: false,
+        force: true,
+      );
+    }
   }
 
   Future<void> unsubscribe(List<String> symbols) async {
@@ -207,6 +332,7 @@ class PriceService {
       }
       _upstreamSymbols.remove(symbol);
       _pendingGatewaySymbols.remove(symbol);
+      _topicSubscribeSentAt.remove(symbol.toUpperCase());
     }
   }
 
@@ -219,7 +345,10 @@ class PriceService {
   }) {
     for (final symbol in symbols) {
       if (force || !_upstreamSymbols.contains(symbol)) {
-        _pendingGatewaySymbols.add(symbol);
+        _pendingGatewaySymbols[symbol] = MarketStreamInstrument(
+          symbol: symbol,
+          isIndexSymbol: isIndexSymbol,
+        );
       }
     }
     if (_pendingGatewaySymbols.isEmpty) return;
@@ -228,7 +357,6 @@ class PriceService {
     _gatewayConnectDebounce = Timer(_gatewayConnectDebounceDelay, () {
       _flushGatewayConnect(
         provider: provider,
-        isIndexSymbol: isIndexSymbol,
         mockMode: mockMode,
       );
     });
@@ -236,20 +364,26 @@ class PriceService {
 
   void _flushGatewayConnect({
     required String provider,
-    required bool isIndexSymbol,
     required bool mockMode,
   }) {
-    final batch = _pendingGatewaySymbols.toList();
+    final pending = _pendingGatewaySymbols.values.toList();
     _pendingGatewaySymbols.clear();
-    if (batch.isEmpty) return;
+    if (pending.isEmpty) return;
 
-    _gatewayConnect(
-      batch,
-      provider: provider,
-      isIndexSymbol: isIndexSymbol,
-      mockMode: mockMode,
-    );
-    _upstreamSymbols.addAll(batch);
+    for (final group in <bool>[true, false]) {
+      final batch = pending
+          .where((instrument) => instrument.isIndexSymbol == group)
+          .map((instrument) => instrument.symbol)
+          .toList();
+      if (batch.isEmpty) continue;
+      _gatewayConnect(
+        batch,
+        provider: provider,
+        isIndexSymbol: group,
+        mockMode: mockMode,
+      );
+      _upstreamSymbols.addAll(batch);
+    }
   }
 
   void _gatewayConnect(
@@ -281,6 +415,10 @@ class PriceService {
       'PriceService: STOMP /app/market/subscribe batch=${symbols.length} '
       '(isIndexSymbol: $isIndexSymbol, server-driven provider)',
     );
+    AppLogger.info(
+      'PriceService: gateway subscribe sent batch=${symbols.length} '
+      'isIndexSymbol=$isIndexSymbol sentAt=${DateTime.now().toUtc().toIso8601String()}',
+    );
     // #region agent log
     agentDebugLog(
       location: 'price_service.dart:_gatewayConnect',
@@ -309,6 +447,7 @@ class PriceService {
     }
 
     for (final symbol in symbols) {
+      _topicSubscribeSentAt[symbol.toUpperCase()] = DateTime.now().toUtc();
       client.subscribe(stockTopicDestination(symbol),
           forceResubscribe: forceResubscribe);
     }
@@ -335,13 +474,20 @@ class PriceService {
     }
 
     if (_upstreamSymbols.isNotEmpty) {
-      _queueGatewayConnect(
-        _upstreamSymbols.toList(),
-        provider: 'UPSTOX',
-        isIndexSymbol: false,
-        mockMode: false,
-        force: true,
-      );
+      for (final group in <bool>[true, false]) {
+        final batch = _upstreamSymbols
+            .where(
+                (symbol) => _activeInstruments[symbol]?.isIndexSymbol == group)
+            .toList();
+        if (batch.isEmpty) continue;
+        _queueGatewayConnect(
+          batch,
+          provider: 'UPSTOX',
+          isIndexSymbol: group,
+          mockMode: false,
+          force: true,
+        );
+      }
     }
   }
 
@@ -353,6 +499,16 @@ class PriceService {
       final json = jsonDecode(body) as Map<String, dynamic>;
       final symbol = json['symbol']?.toString().trim();
       if (symbol == null || symbol.isEmpty) return;
+
+      final sentAt = _topicSubscribeSentAt.remove(symbol.toUpperCase());
+      if (sentAt != null) {
+        final latency =
+            DateTime.now().toUtc().difference(sentAt).inMilliseconds;
+        AppLogger.info(
+          'PriceService: first tick latency symbol=$symbol latencyMs=$latency '
+          'payloadTime=${json['time'] ?? json['timestamp']}',
+        );
+      }
 
       final destination = frame.headers['destination'];
       if (destination != null && destination.startsWith('/topic/stock/')) {
@@ -416,8 +572,11 @@ class PriceService {
   void disconnect() {
     detach();
     _pendingGatewaySymbols.clear();
+    _scopes.clear();
+    _activeInstruments.clear();
     _upstreamSymbols.clear();
     _lastQuoteTimes.clear();
+    _topicSubscribeSentAt.clear();
 
     final client = _stompClient;
     for (final symbol in _subscribedSymbols.toList()) {

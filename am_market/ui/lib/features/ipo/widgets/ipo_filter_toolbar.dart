@@ -339,8 +339,12 @@ class IpoFilterToolbar extends ConsumerWidget {
           borderRadius: 10,
           menuMaxHeight: 220,
           primaryColor: ModuleColors.market,
-          backgroundColor: isDark ? Colors.white.withValues(alpha: 0.06) : null,
-          borderColor: isDark ? Colors.white.withValues(alpha: 0.1) : null,
+          // Keep the trigger subtle, but give the open menu an opaque themed
+          // surface so options remain readable over IPO cards.
+          backgroundColor:
+              isDark ? context.colors.surface.withValues(alpha: 0.72) : null,
+          menuBackgroundColor: context.colors.cardSurface,
+          borderColor: isDark ? context.colors.border : null,
           contentPadding: const EdgeInsets.symmetric(horizontal: 10),
           items: industries.map((ind) {
             // Short closed-button label; full names still clear in the menu.

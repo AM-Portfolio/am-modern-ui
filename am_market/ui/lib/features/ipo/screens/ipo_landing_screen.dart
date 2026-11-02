@@ -21,7 +21,7 @@ class IpoLandingScreen extends ConsumerStatefulWidget {
   /// When true (Market shell host), skip outer Scaffold/SafeArea.
   final bool embedded;
 
-  static const int pageSize = 20;
+  static const int defaultPageSize = 10;
 
   @override
   ConsumerState<IpoLandingScreen> createState() => _IpoLandingScreenState();
@@ -29,6 +29,7 @@ class IpoLandingScreen extends ConsumerStatefulWidget {
 
 class _IpoLandingScreenState extends ConsumerState<IpoLandingScreen> {
   int _page = 0;
+  int _pageSize = IpoLandingScreen.defaultPageSize;
   IpoViewMode _viewMode = IpoViewMode.cards;
 
   @override
@@ -274,7 +275,7 @@ class _IpoLandingScreenState extends ConsumerState<IpoLandingScreen> {
     final window = ipoPageWindow(
       ipos,
       page: _page,
-      pageSize: IpoLandingScreen.pageSize,
+      pageSize: _pageSize,
     );
     if (window.page != _page) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -334,7 +335,7 @@ class _IpoLandingScreenState extends ConsumerState<IpoLandingScreen> {
         padding: EdgeInsets.fromLTRB(hPad, 0, hPad, 8),
         sliver: contentSliver,
       ),
-      if (ipos.length > IpoLandingScreen.pageSize)
+      if (ipos.isNotEmpty)
         SliverToBoxAdapter(
           child: Padding(
             padding: EdgeInsets.fromLTRB(hPad, 4, hPad, 20),
@@ -342,8 +343,10 @@ class _IpoLandingScreenState extends ConsumerState<IpoLandingScreen> {
               from: window.from,
               to: window.to,
               total: ipos.length,
+              pageSize: _pageSize,
               page: window.page,
               totalPages: window.totalPages,
+              onPageSizeTap: () => _openPageSizeDialog(ipos.length),
               onPrev: window.page > 0
                   ? () => setState(() => _page = window.page - 1)
                   : null,
@@ -414,6 +417,20 @@ class _IpoLandingScreenState extends ConsumerState<IpoLandingScreen> {
     if (_viewMode == mode) return;
     setState(() => _viewMode = mode);
   }
+
+  Future<void> _openPageSizeDialog(int totalItems) async {
+    final selected = await PageSizeDialog.show(
+      context: context,
+      currentValue: _pageSize,
+      minValue: 1,
+      maxValue: totalItems > _pageSize ? totalItems : _pageSize,
+    );
+    if (!mounted || selected == null || selected == _pageSize) return;
+    setState(() {
+      _pageSize = selected;
+      _page = 0;
+    });
+  }
 }
 
 class _IpoPaginationFooter extends StatelessWidget {
@@ -421,8 +438,10 @@ class _IpoPaginationFooter extends StatelessWidget {
     required this.from,
     required this.to,
     required this.total,
+    required this.pageSize,
     required this.page,
     required this.totalPages,
+    required this.onPageSizeTap,
     required this.onPrev,
     required this.onNext,
   });
@@ -430,55 +449,125 @@ class _IpoPaginationFooter extends StatelessWidget {
   final int from;
   final int to;
   final int total;
+  final int pageSize;
   final int page;
   final int totalPages;
+  final VoidCallback onPageSizeTap;
   final VoidCallback? onPrev;
   final VoidCallback? onNext;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: context.surfaceColor,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: context.borderColor),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isNarrow = constraints.maxWidth < 520;
+        final range = _buildRange(context);
+        final controls = _buildControls(context);
+
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: context.surfaceColor,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: context.borderColor),
+          ),
+          child: isNarrow
+              ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      children: [
+                        range,
+                        const Spacer(),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Align(
+                        alignment: AlignmentDirectional.centerEnd,
+                        child: controls),
+                  ],
+                )
+              : Row(
+                  children: [
+                    range,
+                    const Spacer(),
+                    controls,
+                  ],
+                ),
+        );
+      },
+    );
+  }
+
+  Widget _buildRange(BuildContext context) {
+    return Text(
+      '$from–$to of $total',
+      style: TextStyle(
+        fontSize: 12,
+        color: context.textSecondary,
+        fontWeight: FontWeight.w500,
       ),
-      child: Row(
-        children: [
-          Text(
-            '$from–$to of $total',
-            style: TextStyle(
-              fontSize: 12,
-              color: context.textSecondary,
-              fontWeight: FontWeight.w500,
+    );
+  }
+
+  Widget _buildControls(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Semantics(
+          button: true,
+          label: 'Rows per page: $pageSize',
+          child: InkWell(
+            onTap: onPageSizeTap,
+            borderRadius: BorderRadius.circular(6),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    '$pageSize / page',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: ModuleColors.market,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Icon(
+                    Icons.edit_outlined,
+                    size: 14,
+                    color: ModuleColors.market,
+                  ),
+                ],
+              ),
             ),
           ),
-          const Spacer(),
-          IconButton(
-            onPressed: onPrev,
-            icon: const Icon(Icons.chevron_left_rounded, size: 22),
-            tooltip: 'Previous',
-            visualDensity: VisualDensity.compact,
-            color: ModuleColors.market,
+        ),
+        const SizedBox(width: 4),
+        IconButton(
+          onPressed: onPrev,
+          icon: const Icon(Icons.chevron_left_rounded, size: 22),
+          tooltip: 'Previous page',
+          visualDensity: VisualDensity.compact,
+          color: ModuleColors.market,
+        ),
+        Text(
+          '${page + 1} / $totalPages',
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: context.textPrimary,
           ),
-          Text(
-            '${page + 1} / $totalPages',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: context.textPrimary,
-            ),
-          ),
-          IconButton(
-            onPressed: onNext,
-            icon: const Icon(Icons.chevron_right_rounded, size: 22),
-            tooltip: 'Next',
-            visualDensity: VisualDensity.compact,
-            color: ModuleColors.market,
-          ),
-        ],
-      ),
+        ),
+        IconButton(
+          onPressed: onNext,
+          icon: const Icon(Icons.chevron_right_rounded, size: 22),
+          tooltip: 'Next page',
+          visualDensity: VisualDensity.compact,
+          color: ModuleColors.market,
+        ),
+      ],
     );
   }
 }

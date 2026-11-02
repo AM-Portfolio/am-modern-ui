@@ -43,6 +43,7 @@ class EquityInsiderHeroBar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final activeExchange = ref.watch(selectedExchangeProvider);
+    final liveQuote = ref.watch(equityLiveQuoteProvider(symbol)).asData?.value;
     final asyncData = ref.watch(fundamentalProfileProvider(
       EquityFundamentalQuery(symbol: symbol, exchange: activeExchange),
     ));
@@ -51,15 +52,19 @@ class EquityInsiderHeroBar extends ConsumerWidget {
       data: (data) {
         if (data == null) return const Text('No profile data');
 
-        final isPos = (data.dayChangePercent ?? 0) >= 0;
+        final livePrice = liveQuote?.lastPrice ?? data.currentPrice;
+        final liveChange = liveQuote?.change ?? data.dayChange;
+        final liveChangePercent =
+            liveQuote?.changePercent ?? data.dayChangePercent;
+        final isPos = (liveChangePercent ?? 0) >= 0;
         final deltaColor =
             isPos ? context.marketTheme.positive : context.marketTheme.negative;
         final arrow = isPos ? '▲' : '▼';
-        final signedChange = data.dayChange != null
-            ? '${data.dayChange! >= 0 ? '+' : ''}${data.dayChange!.toStringAsFixed(2)}'
+        final signedChange = liveChange != null
+            ? '${liveChange >= 0 ? '+' : ''}${liveChange.toStringAsFixed(2)}'
             : '+0.00';
-        final signedPct = data.dayChangePercent != null
-            ? '${data.dayChangePercent! >= 0 ? '+' : ''}${data.dayChangePercent!.toStringAsFixed(2)}'
+        final signedPct = liveChangePercent != null
+            ? '${liveChangePercent >= 0 ? '+' : ''}${liveChangePercent.toStringAsFixed(2)}'
             : '+0.00';
         final companyName = data.companyName ?? data.symbol ?? symbol;
 
@@ -126,7 +131,7 @@ class EquityInsiderHeroBar extends ConsumerWidget {
                     child: Row(
                       children: [
                         Text(
-                          '₹${_formatCurrency(data.currentPrice)}',
+                          '₹${_formatCurrency(livePrice)}',
                           style: TextStyle(
                             fontSize: isCompact ? 18 : 20,
                             fontWeight: FontWeight.w700,
@@ -155,11 +160,11 @@ class EquityInsiderHeroBar extends ConsumerWidget {
               );
             }
 
-            final absChange = data.dayChange != null
-                ? data.dayChange!.abs().toStringAsFixed(2)
+            final absChange = liveChange != null
+                ? liveChange.abs().toStringAsFixed(2)
                 : '0.00';
-            final pctChange = data.dayChangePercent != null
-                ? data.dayChangePercent!.abs().toStringAsFixed(2)
+            final pctChange = liveChangePercent != null
+                ? liveChangePercent.abs().toStringAsFixed(2)
                 : '0.00';
 
             return Row(
@@ -213,7 +218,7 @@ class EquityInsiderHeroBar extends ConsumerWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        '₹${_formatCurrency(data.currentPrice)}',
+                        '₹${_formatCurrency(livePrice)}',
                         style: TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.w700,
@@ -323,14 +328,12 @@ class EquityInsiderHeroBar extends ConsumerWidget {
           tooltip: isAdded ? 'Remove from watchlist' : 'Add to watchlist',
           onPressed: () async {
             if (isAdded) {
-              final name =
-                  statuses.firstWhere((s) => s.containsSymbol).name;
+              final name = statuses.firstWhere((s) => s.containsSymbol).name;
               final confirm = await ConfirmationDialog.show(
                 context: context,
                 title: 'Remove Stock',
                 subtitle: 'Watchlist Management',
-                message:
-                    'Are you sure you want to remove $symbol from $name?',
+                message: 'Are you sure you want to remove $symbol from $name?',
                 icon: Icons.star_rounded,
                 confirmText: 'Remove',
                 isDestructive: true,
