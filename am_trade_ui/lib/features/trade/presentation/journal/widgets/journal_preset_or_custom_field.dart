@@ -92,7 +92,7 @@ class _JournalPresetOrCustomFieldState
           floatingLabel: true,
           hint: widget.hint ?? widget.label,
           height: widget.height,
-          fontSize: 12.5,
+          fontSize: 14,
           items: [
             ...widget.presets.map(
               (p) => DropdownMenuItem(

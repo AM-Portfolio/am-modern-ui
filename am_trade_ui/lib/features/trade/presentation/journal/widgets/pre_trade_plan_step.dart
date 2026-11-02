@@ -226,7 +226,12 @@ class PreTradePlanStepState extends State<PreTradePlanStep> {
     final theme = Theme.of(context);
     return TextFormField(
       controller: controller,
-      style: theme.textTheme.bodySmall?.copyWith(fontSize: 12.5, height: 1.25),
+      style: theme.textTheme.bodyMedium?.copyWith(
+        fontSize: 14,
+        height: 1.3,
+        fontWeight: FontWeight.w500,
+        color: context.colors.textPrimary,
+      ),
       keyboardType: keyboardType,
       validator: validator,
       decoration: journalWorkflowDecoration(
@@ -603,9 +608,11 @@ class PreTradePlanStepState extends State<PreTradePlanStep> {
                 TextFormField(
                   controller: _setupDesc,
                   maxLines: 3,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    fontSize: 12.5,
-                    height: 1.25,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontSize: 14,
+                    height: 1.3,
+                    fontWeight: FontWeight.w500,
+                    color: colors.textPrimary,
                   ),
                   decoration: journalWorkflowDecoration(
                     context,
@@ -620,9 +627,11 @@ class PreTradePlanStepState extends State<PreTradePlanStep> {
                 TextFormField(
                   controller: _rationale,
                   maxLines: 3,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    fontSize: 12.5,
-                    height: 1.25,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontSize: 14,
+                    height: 1.3,
+                    fontWeight: FontWeight.w500,
+                    color: colors.textPrimary,
                   ),
                   decoration: journalWorkflowDecoration(
                     context,

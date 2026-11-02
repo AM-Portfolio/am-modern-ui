@@ -92,7 +92,7 @@ InputDecoration journalWorkflowDecoration(
     filled: true,
     // Match JournalFieldDecoration.borderLabel fill so all journal fields look alike.
     fillColor: colors.surface.withValues(alpha: 0.45),
-    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
     isDense: true,
     labelStyle: labelStyle,
     floatingLabelStyle: floatingStyle,

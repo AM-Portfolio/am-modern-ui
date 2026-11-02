@@ -123,7 +123,12 @@ class ExecuteTradeStepState extends ConsumerState<ExecuteTradeStep> {
     final theme = Theme.of(context);
     return TextFormField(
       controller: controller,
-      style: theme.textTheme.bodySmall?.copyWith(fontSize: 12.5, height: 1.25),
+      style: theme.textTheme.bodyMedium?.copyWith(
+        fontSize: 14,
+        height: 1.3,
+        fontWeight: FontWeight.w500,
+        color: context.colors.textPrimary,
+      ),
       keyboardType: keyboardType,
       maxLines: maxLines,
       validator: validator,
@@ -373,8 +378,10 @@ class ExecuteTradeStepState extends ConsumerState<ExecuteTradeStep> {
                           displaySymbol,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.bodyLarge?.copyWith(
-                            fontWeight: FontWeight.w600,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            fontSize: 14,
+                            height: 1.3,
+                            fontWeight: FontWeight.w500,
                             color: hasSymbol
                                 ? colors.textPrimary
                                 : colors.textTertiary,
@@ -428,7 +435,10 @@ class ExecuteTradeStepState extends ConsumerState<ExecuteTradeStep> {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: theme.textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                      height: 1.3,
+                      fontWeight: FontWeight.w500,
+                      color: colors.textPrimary,
                     ),
                   ),
                 ),

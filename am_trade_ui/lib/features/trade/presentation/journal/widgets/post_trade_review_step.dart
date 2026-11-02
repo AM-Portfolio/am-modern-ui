@@ -157,7 +157,7 @@ class PostTradeReviewStepState extends State<PostTradeReviewStep> {
       items: items,
       onChanged: onChanged,
       height: 42,
-      fontSize: 12.5,
+      fontSize: 14,
     );
   }
 
@@ -167,6 +167,7 @@ class PostTradeReviewStepState extends State<PostTradeReviewStep> {
     Color? valueColor,
   }) {
     final theme = Theme.of(context);
+    final colors = context.colors;
     return InputDecorator(
       decoration: JournalFieldDecoration.borderLabel(
         context,
@@ -176,10 +177,11 @@ class PostTradeReviewStepState extends State<PostTradeReviewStep> {
         value,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
-        style: theme.textTheme.bodySmall?.copyWith(
-          fontSize: 12.5,
-          color: valueColor,
-          fontWeight: FontWeight.w700,
+        style: theme.textTheme.bodyMedium?.copyWith(
+          fontSize: 14,
+          height: 1.3,
+          color: valueColor ?? colors.textPrimary,
+          fontWeight: FontWeight.w500,
         ),
       ),
     );
@@ -199,7 +201,12 @@ class PostTradeReviewStepState extends State<PostTradeReviewStep> {
     final theme = Theme.of(context);
     return TextFormField(
       controller: controller,
-      style: theme.textTheme.bodySmall?.copyWith(fontSize: 12.5, height: 1.25),
+      style: theme.textTheme.bodyMedium?.copyWith(
+        fontSize: 14,
+        height: 1.3,
+        fontWeight: FontWeight.w500,
+        color: context.colors.textPrimary,
+      ),
       keyboardType: keyboardType,
       maxLines: maxLines,
       validator: validator,

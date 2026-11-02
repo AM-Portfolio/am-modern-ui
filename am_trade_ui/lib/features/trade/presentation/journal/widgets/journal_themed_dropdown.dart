@@ -14,7 +14,7 @@ class JournalThemedDropdown<T> extends StatelessWidget {
     this.hint,
     this.label,
     this.height = 42,
-    this.fontSize = 12.5,
+    this.fontSize = 14,
     this.width,
     this.menuMaxWidth,
     this.menuMaxHeight = 280,
