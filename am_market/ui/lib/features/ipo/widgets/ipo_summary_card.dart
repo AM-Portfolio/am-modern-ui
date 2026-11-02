@@ -292,7 +292,7 @@ class IpoSummaryCard extends StatelessWidget {
                 Icon(
                   Icons.assignment_outlined,
                   size: 15,
-                  color: ModuleColors.market,
+                  color: ModuleColorProvider.of(context),
                 ),
                 const SizedBox(width: 6),
                 Text(
@@ -300,14 +300,14 @@ class IpoSummaryCard extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
-                    color: ModuleColors.market,
+                    color: ModuleColorProvider.of(context),
                   ),
                 ),
                 const SizedBox(width: 4),
                 Icon(
                   Icons.arrow_forward_rounded,
                   size: 14,
-                  color: ModuleColors.market,
+                  color: ModuleColorProvider.of(context),
                 ),
               ],
             ),

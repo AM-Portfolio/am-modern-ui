@@ -1,4 +1,9 @@
 import 'package:flutter/material.dart';
+
+import '../../../core/theme/app_radii.dart';
+import '../../../core/theme/app_spacing.dart';
+import '../../../core/theme/app_type_scale.dart';
+import '../../../core/theme/color_extensions.dart';
 import '../../../shared/models/am_mover_item.dart';
 
 // ---------------------------------------------------------------------------
@@ -43,19 +48,17 @@ class _AmMoverTileState extends State<AmMoverTile> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
     final accentColor =
         widget.item.isGainer ? widget.positiveColor : widget.negativeColor;
 
     // Tile background tint — accent at low opacity
     final bgColor = accentColor.withValues(alpha: widget.isDark ? 0.14 : 0.10);
-
-    // ── Primary text color — adapts to theme ──
-    final primaryText = widget.isDark
-        ? Colors.white.withValues(alpha: 0.92)
-        : const Color(0xFF0F172A);
-    final secondaryText = widget.isDark
-        ? Colors.white.withValues(alpha: 0.55)
-        : const Color(0xFF64748B);
+    final primaryText = colors.textPrimary;
+    final secondaryText = colors.textSecondary;
+    final idleSurface = colors.cardSurface.withValues(
+      alpha: widget.isDark ? 0.55 : 0.92,
+    );
 
     final hasDistinctSubtitle = widget.item.subtitle != null &&
         widget.item.subtitle!.trim().isNotEmpty &&
@@ -80,7 +83,7 @@ class _AmMoverTileState extends State<AmMoverTile> {
           type: MaterialType.transparency,
           child: InkWell(
             onTap: widget.onTap,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(AppRadii.md),
             child: LayoutBuilder(
               builder: (context, constraints) {
                 final tileWidth = constraints.maxWidth;
@@ -93,18 +96,14 @@ class _AmMoverTileState extends State<AmMoverTile> {
                       ? Matrix4.diagonal3Values(1.025, 1.025, 1.0)
                       : Matrix4.identity(),
                   transformAlignment: Alignment.center,
-                  margin: const EdgeInsets.only(bottom: 7),
+                  margin: const EdgeInsets.only(bottom: AppSpacing.sm - 1),
                   padding: EdgeInsets.symmetric(
-                    horizontal: isCompact ? 8 : 10,
-                    vertical: isCompact ? 7 : 8,
+                    horizontal: isCompact ? AppSpacing.sm : 10,
+                    vertical: isCompact ? 7 : AppSpacing.sm,
                   ),
                   decoration: BoxDecoration(
-                    color: _isHovered
-                        ? bgColor
-                        : (widget.isDark
-                            ? Colors.white.withValues(alpha: 0.04)
-                            : Colors.black.withValues(alpha: 0.025)),
-                    borderRadius: BorderRadius.circular(12),
+                    color: _isHovered ? bgColor : idleSurface,
+                    borderRadius: BorderRadius.circular(AppRadii.md),
                     border: Border.all(
                       color: _isHovered
                           ? accentColor.withValues(alpha: 0.50)
@@ -130,18 +129,21 @@ class _AmMoverTileState extends State<AmMoverTile> {
                         height: isCompact ? 24 : 28,
                         decoration: BoxDecoration(
                           color: bgColor,
-                          borderRadius:
-                              BorderRadius.circular(isCompact ? 6 : 7),
+                          borderRadius: BorderRadius.circular(
+                            isCompact ? AppRadii.xs + 2 : 7,
+                          ),
                         ),
                         child: Icon(
                           widget.item.isGainer
                               ? Icons.arrow_upward_rounded
                               : Icons.arrow_downward_rounded,
-                          size: isCompact ? 13 : 14,
+                          size: isCompact ? AppTypeScale.md : AppTypeScale.base,
                           color: accentColor,
                         ),
                       ),
-                      SizedBox(width: isCompact ? 6 : 8),
+                      SizedBox(
+                        width: isCompact ? 6 : AppSpacing.sm,
+                      ),
 
                       // ── Symbol + optional subtitle ───────────────────────────────
                       Expanded(
@@ -153,7 +155,9 @@ class _AmMoverTileState extends State<AmMoverTile> {
                               widget.item.symbol,
                               style: TextStyle(
                                 fontWeight: FontWeight.w700,
-                                fontSize: isCompact ? 12 : 13,
+                                fontSize: isCompact
+                                    ? AppTypeScale.sm
+                                    : AppTypeScale.md,
                                 color: primaryText,
                               ),
                               maxLines: 1,
@@ -163,7 +167,7 @@ class _AmMoverTileState extends State<AmMoverTile> {
                               Text(
                                 widget.item.subtitle!,
                                 style: TextStyle(
-                                  fontSize: isCompact ? 9 : 10,
+                                  fontSize: AppTypeScale.xs,
                                   color: secondaryText,
                                 ),
                                 maxLines: 1,
@@ -185,17 +189,17 @@ class _AmMoverTileState extends State<AmMoverTile> {
                               widget.item.priceLabel,
                               style: TextStyle(
                                 fontWeight: FontWeight.w700,
-                                fontSize: 11.5,
+                                fontSize: AppTypeScale.sm,
                                 color: primaryText,
                               ),
                               maxLines: 1,
                             ),
-                            const SizedBox(height: 2),
+                            const SizedBox(height: AppSpacing.xxs),
                             Text(
                               widget.item.formattedChangePercent,
                               style: TextStyle(
                                 color: accentColor,
-                                fontSize: 10.5,
+                                fontSize: AppTypeScale.xs,
                                 fontWeight: FontWeight.w700,
                                 letterSpacing: 0.1,
                               ),
@@ -213,17 +217,17 @@ class _AmMoverTileState extends State<AmMoverTile> {
                               widget.item.priceLabel,
                               style: TextStyle(
                                 fontWeight: FontWeight.w600,
-                                fontSize: 12,
+                                fontSize: AppTypeScale.sm,
                                 color: primaryText,
                               ),
                               maxLines: 1,
                             ),
-                            const SizedBox(width: 8),
+                            const SizedBox(width: AppSpacing.sm),
                             Text(
                               widget.item.formattedChangePercent,
                               style: TextStyle(
                                 color: accentColor,
-                                fontSize: 11,
+                                fontSize: AppTypeScale.sm,
                                 fontWeight: FontWeight.w700,
                                 letterSpacing: 0.1,
                               ),

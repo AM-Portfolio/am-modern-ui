@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/theme/app_radii.dart';
+import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/color_extensions.dart';
 import '../inputs/app_text_field.dart';
 
@@ -85,13 +87,18 @@ class _PageSizeDialogState extends State<PageSizeDialog> {
         vertical: 24,
       ),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadii.lg),
         side: BorderSide(color: colors.border),
       ),
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 360),
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.lg - 4,
+            AppSpacing.lg - 4,
+            AppSpacing.lg - 4,
+            AppSpacing.md,
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -103,7 +110,7 @@ class _PageSizeDialogState extends State<PageSizeDialog> {
                   fontWeight: FontWeight.w700,
                 ),
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: AppSpacing.md - 2),
               AppTextField(
                 controller: _controller,
                 labelText: 'Rows per page',
@@ -120,7 +127,7 @@ class _PageSizeDialogState extends State<PageSizeDialog> {
                 },
                 onSubmitted: (_) => _submit(),
               ),
-              const SizedBox(height: 18),
+              const SizedBox(height: AppSpacing.md + 2),
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
@@ -131,7 +138,7 @@ class _PageSizeDialogState extends State<PageSizeDialog> {
                     ),
                     child: const Text('Cancel'),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: AppSpacing.sm),
                   FilledButton(
                     onPressed: _submit,
                     style: FilledButton.styleFrom(

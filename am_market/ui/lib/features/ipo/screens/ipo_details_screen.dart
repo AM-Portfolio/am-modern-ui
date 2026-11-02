@@ -1,5 +1,6 @@
 import 'package:am_design_system/am_design_system.dart';
 import 'package:am_market_ui/features/ipo/models/ipo_models.dart';
+import 'package:am_market_ui/features/ipo/ipo_subscription_sorting.dart';
 import 'package:am_market_ui/features/ipo/providers/ipo_providers.dart';
 import 'package:am_market_ui/features/ipo/widgets/ipo_board_badge.dart';
 import 'package:am_market_ui/features/ipo/widgets/ipo_documents_card.dart';
@@ -62,7 +63,7 @@ class _IpoDetailsScreenState extends ConsumerState<IpoDetailsScreen>
             Text(
               'Failed to load IPO details',
               style: TextStyle(
-                fontSize: 16,
+                fontSize: AppTypeScale.xl,
                 fontWeight: FontWeight.w600,
                 color: context.textPrimary,
               ),
@@ -130,16 +131,16 @@ class _IpoDetailsScreenState extends ConsumerState<IpoDetailsScreen>
           controller: _tabController,
           isScrollable: true,
           tabAlignment: TabAlignment.start,
-          labelColor: ModuleColors.market,
+          labelColor: ModuleColorProvider.of(context),
           unselectedLabelColor: context.textSecondary,
-          indicatorColor: ModuleColors.market,
+          indicatorColor: ModuleColorProvider.of(context),
           indicatorWeight: 2.5,
           labelStyle: const TextStyle(
-            fontSize: 13.5,
+            fontSize: AppTypeScale.md,
             fontWeight: FontWeight.w700,
           ),
           unselectedLabelStyle: const TextStyle(
-            fontSize: 13.5,
+            fontSize: AppTypeScale.md,
             fontWeight: FontWeight.w500,
           ),
           tabs: const [
@@ -216,13 +217,13 @@ class _IpoDetailsScreenState extends ConsumerState<IpoDetailsScreen>
               height: 40,
               decoration: BoxDecoration(
                 color: avatarColor.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(AppRadii.sm),
               ),
               alignment: Alignment.center,
               child: Text(
                 initials,
                 style: TextStyle(
-                  fontSize: 13,
+                  fontSize: AppTypeScale.md,
                   fontWeight: FontWeight.w800,
                   color: avatarColor,
                 ),
@@ -236,7 +237,7 @@ class _IpoDetailsScreenState extends ConsumerState<IpoDetailsScreen>
                   Text(
                     ipo.companyName ?? 'IPO Details',
                     style: TextStyle(
-                      fontSize: 15,
+                      fontSize: AppTypeScale.lg,
                       fontWeight: FontWeight.w800,
                       color: context.textPrimary,
                       letterSpacing: -0.2,
@@ -252,7 +253,7 @@ class _IpoDetailsScreenState extends ConsumerState<IpoDetailsScreen>
                           child: Text(
                             ipo.symbol!,
                             style: TextStyle(
-                              fontSize: 11,
+                              fontSize: AppTypeScale.sm,
                               fontWeight: FontWeight.w600,
                               color: context.textSecondary,
                             ),
@@ -263,7 +264,7 @@ class _IpoDetailsScreenState extends ConsumerState<IpoDetailsScreen>
                         Text(
                           ' • ',
                           style: TextStyle(
-                            fontSize: 11,
+                            fontSize: AppTypeScale.sm,
                             color: context.textTertiary,
                           ),
                         ),
@@ -279,7 +280,7 @@ class _IpoDetailsScreenState extends ConsumerState<IpoDetailsScreen>
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
                 color: statusColor.withValues(alpha: isDark ? 0.18 : 0.12),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(AppRadii.md),
                 border: Border.all(
                   color: statusColor.withValues(alpha: isDark ? 0.45 : 0.35),
                   width: 0.9,
@@ -288,7 +289,7 @@ class _IpoDetailsScreenState extends ConsumerState<IpoDetailsScreen>
               child: Text(
                 status,
                 style: TextStyle(
-                  fontSize: 10.5,
+                  fontSize: AppTypeScale.xs,
                   fontWeight: FontWeight.w700,
                   color: statusColor,
                   letterSpacing: 0.4,
@@ -311,11 +312,11 @@ class _IpoDetailsScreenState extends ConsumerState<IpoDetailsScreen>
             ],
           ),
         ],
-        if (_parseSubscription(ipo.totalSubscription) != null) ...[
+        if (_parseSubscription(ipo.totalSubscription) case final subscription?) ...[
           const SizedBox(height: 10),
           AmValueMeter(
-            value: _parseSubscription(ipo.totalSubscription)!,
-            maxValue: 100,
+            value: subscription,
+            maxValue: ipoSubscriptionMeterMax(subscription),
             label: 'Overall subscription',
             suffix: '×',
             showSurface: false,
@@ -394,13 +395,13 @@ class _IpoDetailsScreenState extends ConsumerState<IpoDetailsScreen>
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
       decoration: BoxDecoration(
         color: context.surfaceColor,
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: BorderRadius.circular(AppRadii.xs),
         border: Border.all(color: context.borderColor),
       ),
       child: Text(
         label,
         style: TextStyle(
-          fontSize: 10,
+          fontSize: AppTypeScale.xs,
           fontWeight: FontWeight.w600,
           color: context.textSecondary,
         ),

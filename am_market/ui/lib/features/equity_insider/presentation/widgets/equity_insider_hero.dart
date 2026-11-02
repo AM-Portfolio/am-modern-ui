@@ -109,7 +109,7 @@ class EquityInsiderHeroBar extends ConsumerWidget {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
-                                fontSize: isCompact ? 15 : 16,
+                                fontSize: isCompact ? AppTypeScale.lg : AppTypeScale.xl,
                                 fontWeight: FontWeight.w700,
                                 color: context.textPrimary,
                                 letterSpacing: -0.3,
@@ -133,7 +133,7 @@ class EquityInsiderHeroBar extends ConsumerWidget {
                         Text(
                           '₹${_formatCurrency(livePrice)}',
                           style: TextStyle(
-                            fontSize: isCompact ? 18 : 20,
+                            fontSize: isCompact ? AppTypeScale.h5 : AppTypeScale.h4,
                             fontWeight: FontWeight.w700,
                             color: context.textPrimary,
                             height: 1.1,
@@ -148,7 +148,7 @@ class EquityInsiderHeroBar extends ConsumerWidget {
                         Text(
                           '$signedChange ($signedPct%)',
                           style: TextStyle(
-                            fontSize: 12,
+                            fontSize: AppTypeScale.sm,
                             fontWeight: FontWeight.w600,
                             color: deltaColor,
                           ),
@@ -186,7 +186,7 @@ class EquityInsiderHeroBar extends ConsumerWidget {
                             data.symbol ?? symbol,
                             key: const Key('ei-header-ticker'),
                             style: TextStyle(
-                              fontSize: 22,
+                              fontSize: AppTypeScale.h3,
                               fontWeight: FontWeight.w700,
                               color: context.textPrimary,
                               letterSpacing: -0.5,
@@ -199,7 +199,7 @@ class EquityInsiderHeroBar extends ConsumerWidget {
                       Text(
                         '$companyName · ${activeExchange == 'BSE' ? 'Bombay Stock Exchange' : 'National Stock Exchange'} · Live',
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: AppTypeScale.sm,
                           color: context.textSecondary,
                           letterSpacing: 0.1,
                         ),
@@ -220,7 +220,7 @@ class EquityInsiderHeroBar extends ConsumerWidget {
                       Text(
                         '₹${_formatCurrency(livePrice)}',
                         style: TextStyle(
-                          fontSize: 22,
+                          fontSize: AppTypeScale.h3,
                           fontWeight: FontWeight.w700,
                           color: context.textPrimary,
                           letterSpacing: -0.8,
@@ -230,7 +230,7 @@ class EquityInsiderHeroBar extends ConsumerWidget {
                       Text(
                         '$arrow ₹$absChange ($pctChange%)',
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: AppTypeScale.sm,
                           fontWeight: FontWeight.w600,
                           color: deltaColor,
                           height: 1.2,
@@ -306,7 +306,7 @@ class EquityInsiderHeroBar extends ConsumerWidget {
         child: Text(
           label,
           style: TextStyle(
-            fontSize: 10,
+            fontSize: AppTypeScale.xs,
             fontWeight: FontWeight.w700,
             color: selected ? color : context.textSecondary,
           ),
@@ -433,7 +433,7 @@ Widget _buildWatchlistButton(
         label: Text(
           compact ? 'Watchlist' : 'Add to Watchlist',
           style: TextStyle(
-            fontSize: 10,
+            fontSize: AppTypeScale.xs,
             fontWeight: FontWeight.w600,
             color: ModuleColors.market,
           ),
@@ -491,7 +491,7 @@ Widget _buildWatchlistButton(
             label: Text(
               compact ? 'Added' : 'Already Added',
               style: TextStyle(
-                fontSize: 10,
+                fontSize: AppTypeScale.xs,
                 fontWeight: FontWeight.w600,
                 color: onPrimary,
               ),
@@ -601,7 +601,7 @@ class _MobileMetaBadge extends StatelessWidget {
       child: Text(
         text,
         style: TextStyle(
-          fontSize: 10,
+          fontSize: AppTypeScale.xs,
           fontWeight: FontWeight.w600,
           color: fg,
         ),
@@ -630,7 +630,7 @@ class _ExpandableDescriptionState extends State<_ExpandableDescription> {
   Widget build(BuildContext context) {
     final accent = ModuleColors.market;
     final textStyle = TextStyle(
-      fontSize: 12,
+      fontSize: AppTypeScale.sm,
       color: context.textSecondary,
       height: 1.45,
     );
@@ -675,7 +675,7 @@ class _ExpandableDescriptionState extends State<_ExpandableDescription> {
                     Text(
                       _isExpanded ? 'Show less' : 'See more',
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: AppTypeScale.sm,
                         fontWeight: FontWeight.w700,
                         color: accent,
                         letterSpacing: 0.2,

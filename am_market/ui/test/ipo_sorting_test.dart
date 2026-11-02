@@ -76,4 +76,12 @@ void main() {
     expect(ipoSubscriptionSortValue('N/A'), isNull);
     expect(ipoSubscriptionSortValue('-1.2x'), isNull);
   });
+
+  test('scales subscription meter max above 100 for high demand IPOs', () {
+    expect(ipoSubscriptionMeterMax(40), 100);
+    expect(ipoSubscriptionMeterMax(100), 100);
+    expect(ipoSubscriptionMeterMax(101), 150);
+    expect(ipoSubscriptionMeterMax(250), 250);
+    expect(ipoSubscriptionMeterMax(401), 450);
+  });
 }

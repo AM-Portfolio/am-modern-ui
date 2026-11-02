@@ -585,7 +585,7 @@ class _ChartTerminalBodyState extends ConsumerState<_ChartTerminalBody>
                               ? 'No global indices found'
                               : 'No indices found',
                           style:
-                              TextStyle(fontSize: 12, color: theme.hintColor),
+                              TextStyle(fontSize: AppTypeScale.sm, color: context.colors.textMuted),
                         ),
                 )
               : ListView.separated(

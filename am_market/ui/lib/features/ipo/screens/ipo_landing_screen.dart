@@ -85,7 +85,7 @@ class _IpoLandingScreenState extends ConsumerState<IpoLandingScreen> {
                                 Text(
                                   'IPOs',
                                   style: TextStyle(
-                                    fontSize: 24,
+                                    fontSize: AppTypeScale.h2,
                                     fontWeight: FontWeight.w800,
                                     color: context.textPrimary,
                                     letterSpacing: -0.5,
@@ -97,7 +97,7 @@ class _IpoLandingScreenState extends ConsumerState<IpoLandingScreen> {
                                 Text(
                                   'Live & upcoming public issues',
                                   style: TextStyle(
-                                    fontSize: 13,
+                                    fontSize: AppTypeScale.md,
                                     fontWeight: FontWeight.w500,
                                     color: context.textSecondary,
                                   ),
@@ -178,7 +178,7 @@ class _IpoLandingScreenState extends ConsumerState<IpoLandingScreen> {
                       Text(
                         'Failed to load IPO data',
                         style: TextStyle(
-                          fontSize: 15,
+                          fontSize: AppTypeScale.lg,
                           fontWeight: FontWeight.w600,
                           color: context.textPrimary,
                         ),
@@ -244,7 +244,7 @@ class _IpoLandingScreenState extends ConsumerState<IpoLandingScreen> {
                 Text(
                   'No IPOs match your criteria',
                   style: TextStyle(
-                    fontSize: 16,
+                    fontSize: AppTypeScale.xl,
                     fontWeight: FontWeight.w600,
                     color: context.textPrimary,
                   ),
@@ -253,7 +253,7 @@ class _IpoLandingScreenState extends ConsumerState<IpoLandingScreen> {
                 Text(
                   'Try clearing filters or search query',
                   style: TextStyle(
-                    fontSize: 13,
+                    fontSize: AppTypeScale.md,
                     color: context.textSecondary,
                   ),
                 ),
@@ -369,13 +369,13 @@ class _IpoLandingScreenState extends ConsumerState<IpoLandingScreen> {
         onTap: () {
           ref.read(ipoCalendarUiProvider.notifier).toggle();
         },
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppRadii.sm),
         child: Container(
           height: 38,
           padding: EdgeInsets.symmetric(horizontal: compact ? 10 : 14),
           decoration: BoxDecoration(
             color: context.surfaceColor,
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(AppRadii.sm),
             border: Border.all(
               color: context.borderColor,
               width: 1,
@@ -394,7 +394,7 @@ class _IpoLandingScreenState extends ConsumerState<IpoLandingScreen> {
                 Text(
                   'IPO Calendar',
                   style: TextStyle(
-                    fontSize: 13,
+                    fontSize: AppTypeScale.md,
                     fontWeight: FontWeight.w600,
                     color: context.textPrimary,
                   ),
@@ -468,7 +468,7 @@ class _IpoPaginationFooter extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
             color: context.surfaceColor,
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(AppRadii.sm + 2),
             border: Border.all(color: context.borderColor),
           ),
           child: isNarrow
@@ -503,7 +503,7 @@ class _IpoPaginationFooter extends StatelessWidget {
     return Text(
       '$from–$to of $total',
       style: TextStyle(
-        fontSize: 12,
+        fontSize: AppTypeScale.sm,
         color: context.textSecondary,
         fontWeight: FontWeight.w500,
       ),
@@ -519,7 +519,7 @@ class _IpoPaginationFooter extends StatelessWidget {
           label: 'Rows per page: $pageSize',
           child: InkWell(
             onTap: onPageSizeTap,
-            borderRadius: BorderRadius.circular(6),
+            borderRadius: BorderRadius.circular(AppRadii.xs + 2),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
               child: Row(
@@ -528,16 +528,16 @@ class _IpoPaginationFooter extends StatelessWidget {
                   Text(
                     '$pageSize / page',
                     style: TextStyle(
-                      fontSize: 12,
+                      fontSize: AppTypeScale.sm,
                       fontWeight: FontWeight.w600,
-                      color: ModuleColors.market,
+                      color: ModuleColorProvider.of(context),
                     ),
                   ),
                   const SizedBox(width: 4),
                   Icon(
                     Icons.edit_outlined,
                     size: 14,
-                    color: ModuleColors.market,
+                    color: ModuleColorProvider.of(context),
                   ),
                 ],
               ),
@@ -550,12 +550,12 @@ class _IpoPaginationFooter extends StatelessWidget {
           icon: const Icon(Icons.chevron_left_rounded, size: 22),
           tooltip: 'Previous page',
           visualDensity: VisualDensity.compact,
-          color: ModuleColors.market,
+          color: ModuleColorProvider.of(context),
         ),
         Text(
           '${page + 1} / $totalPages',
           style: TextStyle(
-            fontSize: 12,
+            fontSize: AppTypeScale.sm,
             fontWeight: FontWeight.w600,
             color: context.textPrimary,
           ),
@@ -565,7 +565,7 @@ class _IpoPaginationFooter extends StatelessWidget {
           icon: const Icon(Icons.chevron_right_rounded, size: 22),
           tooltip: 'Next page',
           visualDensity: VisualDensity.compact,
-          color: ModuleColors.market,
+          color: ModuleColorProvider.of(context),
         ),
       ],
     );
@@ -581,7 +581,7 @@ class _KpiSkeleton extends StatelessWidget {
       height: 80,
       decoration: BoxDecoration(
         color: context.surfaceColor,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadii.lg),
         border: Border.all(
           color: context.borderColor,
         ),

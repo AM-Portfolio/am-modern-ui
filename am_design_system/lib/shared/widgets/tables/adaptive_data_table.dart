@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/theme/app_radii.dart';
+import '../../../core/theme/app_spacing.dart';
+import '../../../core/theme/app_type_scale.dart';
+import '../../../core/theme/color_extensions.dart';
+
 /// Column configuration for AdaptiveDataTable
 class DataTableColumn<T> {
   const DataTableColumn({
@@ -173,10 +178,13 @@ class _AdaptiveDataTableState<T> extends State<AdaptiveDataTable<T>> {
 
     if (_sortedData.isEmpty) {
       return widget.emptyWidget ??
-          const Center(
+          Center(
             child: Text(
               'No data available',
-              style: TextStyle(fontSize: 16, color: Colors.grey),
+              style: TextStyle(
+                fontSize: AppTypeScale.xl,
+                color: context.colors.textMuted,
+              ),
             ),
           );
     }
@@ -269,14 +277,14 @@ class _AdaptiveDataTableState<T> extends State<AdaptiveDataTable<T>> {
       );
 
   Widget _buildMobileTable() => ListView.builder(
-        padding: widget.contentPadding ?? const EdgeInsets.all(16),
+        padding: widget.contentPadding ?? const EdgeInsets.all(AppSpacing.md),
         itemCount: _sortedData.length,
         itemBuilder: (context, index) {
           final item = _sortedData[index];
           final isSelected = widget.selectedItems?.contains(item) ?? false;
 
           return Card(
-            margin: const EdgeInsets.only(bottom: 8),
+            margin: const EdgeInsets.only(bottom: AppSpacing.sm),
             child: InkWell(
               onTap:
                   widget.onRowTap != null ? () => widget.onRowTap!(item) : null,
@@ -284,13 +292,13 @@ class _AdaptiveDataTableState<T> extends State<AdaptiveDataTable<T>> {
                   ? () => widget.onRowLongPress!(item)
                   : null,
               child: Container(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(AppSpacing.md),
                 decoration: isSelected
                     ? BoxDecoration(
                         color: Theme.of(
                           context,
                         ).colorScheme.primaryContainer.withValues(alpha: 0.3),
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(AppRadii.sm),
                       )
                     : null,
                 child: Column(
@@ -298,7 +306,8 @@ class _AdaptiveDataTableState<T> extends State<AdaptiveDataTable<T>> {
                   children: widget.columns
                       .map(
                         (column) => Padding(
-                          padding: const EdgeInsets.only(bottom: 8),
+                          padding:
+                              const EdgeInsets.only(bottom: AppSpacing.sm),
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -306,9 +315,9 @@ class _AdaptiveDataTableState<T> extends State<AdaptiveDataTable<T>> {
                                 width: 100,
                                 child: Text(
                                   column.title,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontWeight: FontWeight.w500,
-                                    color: Colors.grey,
+                                    color: context.colors.textMuted,
                                   ),
                                 ),
                               ),

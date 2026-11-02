@@ -1,5 +1,6 @@
 import 'package:am_design_system/am_design_system.dart';
 import 'package:am_market_ui/features/ipo/models/ipo_models.dart';
+import 'package:am_market_ui/features/ipo/ipo_subscription_sorting.dart';
 import 'package:am_market_ui/features/ipo/widgets/ipo_board_badge.dart';
 import 'package:flutter/material.dart';
 
@@ -34,7 +35,7 @@ class IpoOverviewHeaderCard extends StatelessWidget {
       padding: EdgeInsets.all(isCompact ? 14 : 22),
       decoration: BoxDecoration(
         color: context.surfaceColor,
-        borderRadius: BorderRadius.circular(isCompact ? 12 : 16),
+        borderRadius: BorderRadius.circular(isCompact ? AppRadii.md : AppRadii.lg),
         border: Border.all(
           color: context.borderColor,
           width: 1,
@@ -177,7 +178,7 @@ class IpoOverviewHeaderCard extends StatelessWidget {
             width: meterWidth,
             child: AmValueMeter(
               value: subscription,
-              maxValue: 100,
+              maxValue: ipoSubscriptionMeterMax(subscription),
               label: 'Overall subscription',
               suffix: '×',
               showSurface: false,
@@ -219,7 +220,7 @@ class IpoOverviewHeaderCard extends StatelessWidget {
       padding: EdgeInsets.all(isCompact ? 14 : 20),
       decoration: BoxDecoration(
         color: context.surfaceColor,
-        borderRadius: BorderRadius.circular(isCompact ? 12 : 16),
+        borderRadius: BorderRadius.circular(isCompact ? AppRadii.md : AppRadii.lg),
         border: Border.all(color: context.borderColor, width: 1),
       ),
       child: Column(
@@ -391,7 +392,7 @@ class IpoOverviewHeaderCard extends StatelessWidget {
       height: size,
       decoration: BoxDecoration(
         color: avatarColor.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(size >= 48 ? 12 : 8),
+        borderRadius: BorderRadius.circular(size >= 48 ? AppRadii.md : AppRadii.sm),
       ),
       alignment: Alignment.center,
       child: Text(
@@ -410,7 +411,7 @@ class IpoOverviewHeaderCard extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
         color: context.surfaceColor,
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: BorderRadius.circular(AppRadii.xs),
         border: Border.all(
           color: context.borderColor,
           width: 0.8,
@@ -440,7 +441,7 @@ class IpoOverviewHeaderCard extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
           decoration: BoxDecoration(
             color: statusColor.withValues(alpha: isDark ? 0.18 : 0.12),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(AppRadii.md),
             border: Border.all(
               color: statusColor.withValues(alpha: isDark ? 0.45 : 0.35),
               width: 1,
@@ -519,7 +520,7 @@ class IpoOverviewHeaderCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(icon, size: compact ? 13 : 14, color: ModuleColors.market),
+              Icon(icon, size: compact ? 13 : 14, color: ModuleColorProvider.of(context)),
               const SizedBox(width: 4),
               Flexible(
                 child: Text(

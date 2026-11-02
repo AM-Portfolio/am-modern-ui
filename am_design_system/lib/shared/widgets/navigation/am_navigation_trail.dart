@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:am_design_system/core/theme/app_radii.dart';
+import 'package:am_design_system/core/theme/app_type_scale.dart';
 import 'package:am_design_system/core/theme/color_extensions.dart';
 
 /// Compact nested navigation for a feature surface.
@@ -69,7 +70,7 @@ class _TrailItem extends StatelessWidget {
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
       style: TextStyle(
-        fontSize: 13,
+        fontSize: AppTypeScale.md,
         fontWeight: isCurrent ? FontWeight.w700 : FontWeight.w600,
         color: isCurrent ? context.textPrimary : context.textSecondary,
       ),

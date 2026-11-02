@@ -131,7 +131,7 @@ class IpoFilterToolbar extends ConsumerWidget {
           IpoViewMode.cards: 'Cards',
           IpoViewMode.table: 'Table',
         },
-        primaryColor: ModuleColors.market,
+        primaryColor: ModuleColorProvider.of(context),
         onValueChanged: onViewModeChanged,
       ),
     );
@@ -204,7 +204,7 @@ class IpoFilterToolbar extends ConsumerWidget {
         onTap: () {
           ref.read(ipoFilterStateProvider.notifier).setStatusFilter(filter);
         },
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(AppRadii.xl),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
@@ -212,10 +212,10 @@ class IpoFilterToolbar extends ConsumerWidget {
             color: isSelected
                 ? (isDark ? context.surfaceColor : context.textPrimary)
                 : context.surfaceColor,
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(AppRadii.xl),
             border: Border.all(
               color: isSelected
-                  ? (isDark ? ModuleColors.market : context.textPrimary)
+                  ? (isDark ? ModuleColorProvider.of(context) : context.textPrimary)
                   : context.borderColor,
               width: isSelected ? 1.2 : 1,
             ),
@@ -223,10 +223,10 @@ class IpoFilterToolbar extends ConsumerWidget {
           child: Text(
             '$label ($count)',
             style: TextStyle(
-              fontSize: 12.5,
+              fontSize: AppTypeScale.sm,
               fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
               color: isSelected
-                  ? (isDark ? ModuleColors.market : context.cardColor)
+                  ? (isDark ? ModuleColorProvider.of(context) : context.cardColor)
                   : context.textSecondary,
             ),
           ),
@@ -246,26 +246,26 @@ class IpoFilterToolbar extends ConsumerWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadii.lg),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 160),
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
           decoration: BoxDecoration(
             color: selected
-                ? ModuleColors.market.withValues(alpha: isDark ? 0.16 : 0.10)
+                ? ModuleColorProvider.of(context).withValues(alpha: isDark ? 0.16 : 0.10)
                 : context.surfaceColor,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(AppRadii.lg),
             border: Border.all(
-              color: selected ? ModuleColors.market : context.borderColor,
+              color: selected ? ModuleColorProvider.of(context) : context.borderColor,
               width: selected ? 1.2 : 1,
             ),
           ),
           child: Text(
             label,
             style: TextStyle(
-              fontSize: 12.5,
+              fontSize: AppTypeScale.sm,
               fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-              color: selected ? ModuleColors.market : context.textSecondary,
+              color: selected ? ModuleColorProvider.of(context) : context.textSecondary,
             ),
           ),
         ),
@@ -281,7 +281,7 @@ class IpoFilterToolbar extends ConsumerWidget {
   }) {
     return InkWell(
       onTap: () => onChanged(!value),
-      borderRadius: BorderRadius.circular(6),
+      borderRadius: BorderRadius.circular(AppRadii.xs + 2),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
         child: Row(
@@ -293,9 +293,9 @@ class IpoFilterToolbar extends ConsumerWidget {
               child: Checkbox(
                 value: value,
                 onChanged: onChanged,
-                activeColor: ModuleColors.market,
+                activeColor: ModuleColorProvider.of(context),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(4),
+                  borderRadius: BorderRadius.circular(AppRadii.xs),
                 ),
                 side: BorderSide(color: context.textTertiary, width: 1.2),
               ),
@@ -306,7 +306,7 @@ class IpoFilterToolbar extends ConsumerWidget {
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: context.textPrimary,
                     fontWeight: FontWeight.w500,
-                    fontSize: 13,
+                    fontSize: AppTypeScale.md,
                   ),
             ),
           ],
@@ -334,11 +334,11 @@ class IpoFilterToolbar extends ConsumerWidget {
           value: currentVal,
           height: 36,
           isExpanded: false,
-          fontSize: 12,
+          fontSize: AppTypeScale.sm,
           iconSize: 16,
           borderRadius: 10,
           menuMaxHeight: 220,
-          primaryColor: ModuleColors.market,
+          primaryColor: ModuleColorProvider.of(context),
           // Keep the trigger subtle, but give the open menu an opaque themed
           // surface so options remain readable over IPO cards.
           backgroundColor:
@@ -356,7 +356,7 @@ class IpoFilterToolbar extends ConsumerWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  fontSize: 12,
+                  fontSize: AppTypeScale.sm,
                   fontWeight: FontWeight.w500,
                   color: context.textPrimary,
                 ),

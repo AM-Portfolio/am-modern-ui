@@ -61,7 +61,7 @@ class _WatchlistsPageState extends ConsumerState<WatchlistsPage> {
           gradient: LinearGradient(
             colors: [
               colors.scaffoldBackground,
-              Color.alphaBlend(ModuleColors.market.withValues(alpha: 0.05),
+              Color.alphaBlend(ModuleColorProvider.of(context).withValues(alpha: 0.05),
                   colors.scaffoldBackground),
               colors.surface,
             ],
@@ -116,7 +116,7 @@ class _WatchlistsPageState extends ConsumerState<WatchlistsPage> {
                           icon: const Icon(Icons.add, size: 18),
                           label: const Text('Create watchlist'),
                           style: FilledButton.styleFrom(
-                            backgroundColor: ModuleColors.market,
+                            backgroundColor: ModuleColorProvider.of(context),
                           ),
                         ),
                       ],
@@ -210,10 +210,10 @@ class _WatchlistsPageState extends ConsumerState<WatchlistsPage> {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
-                    color: ModuleColors.market.withValues(alpha: 0.15),
+                    color: ModuleColorProvider.of(context).withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: ModuleColors.market.withValues(alpha: 0.35),
+                      color: ModuleColorProvider.of(context).withValues(alpha: 0.35),
                     ),
                   ),
                   child: Text(
@@ -221,7 +221,7 @@ class _WatchlistsPageState extends ConsumerState<WatchlistsPage> {
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
-                      color: ModuleColors.market,
+                      color: ModuleColorProvider.of(context),
                     ),
                   ),
                 ),
@@ -246,7 +246,7 @@ class _WatchlistsPageState extends ConsumerState<WatchlistsPage> {
                 ),
               ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: ModuleColors.market,
+                backgroundColor: ModuleColorProvider.of(context),
                 padding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 shape: RoundedRectangleBorder(
@@ -286,7 +286,7 @@ class _WatchlistsPageState extends ConsumerState<WatchlistsPage> {
                           color: colors.surface.withValues(alpha: 0.7),
                           border: Border.all(
                             color: isDefault
-                                ? ModuleColors.market.withValues(alpha: 0.5)
+                                ? ModuleColorProvider.of(context).withValues(alpha: 0.5)
                                 : colors.border.withValues(alpha: 0.4),
                             width: isDefault ? 1.2 : 1,
                           ),
@@ -308,7 +308,7 @@ class _WatchlistsPageState extends ConsumerState<WatchlistsPage> {
                                     ? Icons.star_rounded
                                     : _getIconForIndex(index),
                                 color: isDefault
-                                    ? ModuleColors.market
+                                    ? ModuleColorProvider.of(context)
                                     : colors.textSecondary,
                                 size: 22,
                               ),
@@ -337,7 +337,7 @@ class _WatchlistsPageState extends ConsumerState<WatchlistsPage> {
                                           padding: const EdgeInsets.symmetric(
                                               horizontal: 6, vertical: 2),
                                           decoration: BoxDecoration(
-                                            color: ModuleColors.market
+                                            color: ModuleColorProvider.of(context)
                                                 .withValues(alpha: 0.15),
                                             borderRadius:
                                                 BorderRadius.circular(6),
@@ -347,7 +347,7 @@ class _WatchlistsPageState extends ConsumerState<WatchlistsPage> {
                                             style: TextStyle(
                                               fontSize: 10,
                                               fontWeight: FontWeight.bold,
-                                              color: ModuleColors.market,
+                                              color: ModuleColorProvider.of(context),
                                             ),
                                           ),
                                         ),
@@ -467,10 +467,10 @@ class _WatchlistsPageState extends ConsumerState<WatchlistsPage> {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: ModuleColors.market.withValues(alpha: 0.15),
+                    color: ModuleColorProvider.of(context).withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: ModuleColors.market.withValues(alpha: 0.35),
+                      color: ModuleColorProvider.of(context).withValues(alpha: 0.35),
                     ),
                   ),
                   child: Text(
@@ -478,7 +478,7 @@ class _WatchlistsPageState extends ConsumerState<WatchlistsPage> {
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.bold,
-                      color: ModuleColors.market,
+                      color: ModuleColorProvider.of(context),
                     ),
                   ),
                 ),
@@ -503,7 +503,7 @@ class _WatchlistsPageState extends ConsumerState<WatchlistsPage> {
                 ),
               ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: ModuleColors.market,
+                backgroundColor: ModuleColorProvider.of(context),
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                 shape: RoundedRectangleBorder(
@@ -541,11 +541,11 @@ class _WatchlistsPageState extends ConsumerState<WatchlistsPage> {
                               padding: const EdgeInsets.all(14),
                               decoration: BoxDecoration(
                                 color: isSelected
-                                    ? ModuleColors.market.withValues(alpha: 0.1)
+                                    ? ModuleColorProvider.of(context).withValues(alpha: 0.1)
                                     : colors.surface,
                                 border: Border.all(
                                   color: isSelected
-                                      ? ModuleColors.market
+                                      ? ModuleColorProvider.of(context)
                                       : colors.border,
                                   width: isSelected ? 1.5 : 1,
                                 ),
@@ -558,7 +558,7 @@ class _WatchlistsPageState extends ConsumerState<WatchlistsPage> {
                                         ? Icons.star_rounded
                                         : Icons.list_alt_rounded,
                                     color: isSelected
-                                        ? ModuleColors.market
+                                        ? ModuleColorProvider.of(context)
                                         : colors.textSecondary,
                                   ),
                                   const SizedBox(width: 12),
@@ -593,14 +593,14 @@ class _WatchlistsPageState extends ConsumerState<WatchlistsPage> {
                                       padding: const EdgeInsets.symmetric(
                                           horizontal: 8, vertical: 2),
                                       decoration: BoxDecoration(
-                                        color: ModuleColors.market
+                                        color: ModuleColorProvider.of(context)
                                             .withValues(alpha: 0.15),
                                         borderRadius: BorderRadius.circular(12),
                                       ),
                                       child: Text('Default',
                                           style: TextStyle(
                                               fontSize: 10,
-                                              color: ModuleColors.market,
+                                              color: ModuleColorProvider.of(context),
                                               fontWeight: FontWeight.bold)),
                                     ),
                                 ],

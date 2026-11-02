@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 
 import 'package:am_design_system/core/module/module_color_provider.dart';
 import 'package:am_design_system/core/theme/app_radii.dart';
+import 'package:am_design_system/core/theme/app_spacing.dart';
+import 'package:am_design_system/core/theme/app_type_scale.dart';
 import 'package:am_design_system/core/theme/color_extensions.dart';
 
 typedef AmValueFormatter = String Function(double value);
@@ -114,7 +116,12 @@ class _AmValueMeterState extends State<AmValueMeter>
           : '$displayValue${widget.suffix}',
       child: Container(
         padding: widget.showSurface
-            ? const EdgeInsets.fromLTRB(16, 12, 16, 10)
+            ? const EdgeInsets.fromLTRB(
+                AppSpacing.md,
+                AppSpacing.sm + 4,
+                AppSpacing.md,
+                AppSpacing.sm + 2,
+              )
             : EdgeInsets.zero,
         decoration: widget.showSurface
             ? BoxDecoration(
@@ -136,23 +143,23 @@ class _AmValueMeterState extends State<AmValueMeter>
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       color: colors.textSecondary,
-                      fontSize: 12,
+                      fontSize: AppTypeScale.sm,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: AppSpacing.sm + 4),
                 Text(
                   '$displayValue${widget.suffix}',
                   style: TextStyle(
                     color: colors.textPrimary,
-                    fontSize: 22,
+                    fontSize: AppTypeScale.h3,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 13),
+            const SizedBox(height: AppSpacing.sm + 5),
             LayoutBuilder(
               builder: (context, constraints) {
                 final width = constraints.maxWidth;
@@ -254,7 +261,7 @@ class _AmValueMeterState extends State<AmValueMeter>
                     '${_formatValue(maxValue * index / 5)}${widget.suffix}',
                     style: TextStyle(
                       color: colors.textTertiary,
-                      fontSize: 11,
+                      fontSize: AppTypeScale.sm,
                       fontWeight: FontWeight.w500,
                     ),
                   ),

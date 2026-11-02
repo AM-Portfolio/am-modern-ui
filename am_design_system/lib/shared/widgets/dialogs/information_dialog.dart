@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/theme/app_radii.dart';
+import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/color_extensions.dart';
 
 /// A theme-aware, dismissible informational dialog for non-blocking notices.
@@ -45,13 +47,18 @@ class InformationDialog extends StatelessWidget {
         vertical: 24,
       ),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadii.lg),
         side: BorderSide(color: colors.border),
       ),
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 360),
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.lg - 4,
+            AppSpacing.md + 2,
+            AppSpacing.lg - 4,
+            AppSpacing.lg - 4,
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -63,7 +70,7 @@ class InformationDialog extends StatelessWidget {
                       fontWeight: FontWeight.w700,
                     ),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: AppSpacing.sm + 2),
               Text(
                 message,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(

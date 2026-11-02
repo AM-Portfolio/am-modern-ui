@@ -24,6 +24,8 @@ class MarketStreamInstrument {
 /// - `/app/market/subscribe` → gateway proxies am-market upstream connect
 /// - `/topic/stock/{symbol}` → live price relay from Kafka
 class PriceService {
+  static const String defaultUpstreamProvider = 'UPSTOX';
+
   PriceService({AmStompClient? stompClient})
       : _stompClient = stompClient ??
             (GetIt.instance.isRegistered<AmStompClient>()
@@ -142,7 +144,7 @@ class PriceService {
   /// When [forceResubscribe] is true, re-binds STOMP topics and re-sends gateway connect.
   Future<void> subscribe(
     List<String> symbols, {
-    String provider = 'UPSTOX',
+    String provider = defaultUpstreamProvider,
     bool isIndexSymbol = false,
     bool mockMode = false,
     bool forceResubscribe = false,
@@ -266,7 +268,7 @@ class PriceService {
       if (batch.isNotEmpty) {
         _queueGatewayConnect(
           batch,
-          provider: 'UPSTOX',
+          provider: defaultUpstreamProvider,
           isIndexSymbol: group,
           mockMode: false,
         );
@@ -316,7 +318,7 @@ class PriceService {
       if (batch.isEmpty) continue;
       _queueGatewayConnect(
         batch,
-        provider: 'UPSTOX',
+        provider: defaultUpstreamProvider,
         isIndexSymbol: group,
         mockMode: false,
         force: true,
@@ -482,7 +484,7 @@ class PriceService {
         if (batch.isEmpty) continue;
         _queueGatewayConnect(
           batch,
-          provider: 'UPSTOX',
+          provider: defaultUpstreamProvider,
           isIndexSymbol: group,
           mockMode: false,
           force: true,

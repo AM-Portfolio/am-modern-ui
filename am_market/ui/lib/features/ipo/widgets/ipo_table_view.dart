@@ -25,10 +25,12 @@ class IpoTableView extends StatelessWidget {
         final columnSpacing =
             (constraints.maxWidth * 0.035).clamp(28.0, 56.0).toDouble();
 
+        final accent = ModuleColorProvider.of(context);
+
         return Container(
           decoration: BoxDecoration(
             color: context.surfaceColor,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(AppRadii.md),
             border: Border.all(color: context.borderColor),
           ),
           child: AdaptiveDataTable<AsraxIpoSummaryDto>(
@@ -40,16 +42,16 @@ class IpoTableView extends StatelessWidget {
             rowHeight: 72,
             headerBackgroundColor:
                 colors.marketCardSurface.withValues(alpha: 0.72),
-            rowHoverColor: ModuleColors.market.withValues(alpha: 0.06),
+            rowHoverColor: accent.withValues(alpha: 0.06),
             headerTextStyle: TextStyle(
               color: context.textSecondary,
-              fontSize: 11,
+              fontSize: AppTypeScale.sm,
               fontWeight: FontWeight.w700,
               letterSpacing: 0.35,
             ),
             rowTextStyle: TextStyle(
               color: context.textPrimary,
-              fontSize: 12,
+              fontSize: AppTypeScale.sm,
               fontWeight: FontWeight.w600,
             ),
             columns: [
@@ -127,6 +129,7 @@ class _IpoIdentityCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final accent = ModuleColorProvider.of(context);
     final name = ipo.companyName?.trim().isNotEmpty == true
         ? ipo.companyName!.trim()
         : ipo.symbol?.trim().isNotEmpty == true
@@ -144,19 +147,19 @@ class _IpoIdentityCell extends StatelessWidget {
             height: 34,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: ModuleColors.market.withValues(alpha: 0.14),
-              borderRadius: BorderRadius.circular(9),
+              color: accent.withValues(alpha: 0.14),
+              borderRadius: BorderRadius.circular(AppRadii.sm + 1),
             ),
             child: Text(
               initials,
               style: TextStyle(
-                color: ModuleColors.market,
-                fontSize: 12,
+                color: accent,
+                fontSize: AppTypeScale.sm,
                 fontWeight: FontWeight.w800,
               ),
             ),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: AppSpacing.sm + 2),
           Expanded(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -168,7 +171,7 @@ class _IpoIdentityCell extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: context.textPrimary,
-                    fontSize: 13,
+                    fontSize: AppTypeScale.md,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -179,7 +182,7 @@ class _IpoIdentityCell extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       color: context.textSecondary,
-                      fontSize: 11,
+                      fontSize: AppTypeScale.sm,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -203,8 +206,10 @@ class _BoardLabel extends StatelessWidget {
     return Text(
       isSme ? 'SME' : 'Mainboard',
       style: TextStyle(
-        color: isSme ? ModuleColors.market : context.textSecondary,
-        fontSize: 12,
+        color: isSme
+            ? ModuleColorProvider.of(context)
+            : context.textSecondary,
+        fontSize: AppTypeScale.sm,
         fontWeight: FontWeight.w600,
       ),
     );
@@ -226,17 +231,20 @@ class _StatusBadge extends StatelessWidget {
             : context.colors.statusError;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.sm,
+        vertical: AppSpacing.xs,
+      ),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.13),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppRadii.md),
         border: Border.all(color: color.withValues(alpha: 0.42)),
       ),
       child: Text(
         value,
         style: TextStyle(
           color: color,
-          fontSize: 10,
+          fontSize: AppTypeScale.xs,
           fontWeight: FontWeight.w800,
           letterSpacing: 0.3,
         ),
@@ -257,7 +265,7 @@ class _TableValue extends StatelessWidget {
       value,
       style: TextStyle(
         color: muted ? context.textTertiary : context.textPrimary,
-        fontSize: 12,
+        fontSize: AppTypeScale.sm,
         fontWeight: FontWeight.w600,
       ),
     );
