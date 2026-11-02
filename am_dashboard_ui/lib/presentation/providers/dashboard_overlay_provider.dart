@@ -53,16 +53,21 @@ class DashboardOverlayNotifier extends Notifier<OverlayChartState> {
     return OverlayChartState.initial(ref.read(appTimeFrameProvider).code);
   }
 
-  Future<void> reload() async {
+  Future<void> reload({bool soft = false}) async {
     final timeFrame = ref.read(appTimeFrameProvider).code;
     final selected = List<String>.from(state.selectedIds);
     _generation += 1;
     final gen = _generation;
-    state = OverlayChartState.initial(
-      timeFrame,
-    ).copyWith(selectedIds: selected, pendingIds: {...selected});
-    await _loadPortfolios(gen, timeFrame);
+    // Soft poll while HistoryJob BUILDING: keep drawn series so the chart
+    // does not blink empty every few seconds.
+    if (!soft) {
+      state = OverlayChartState.initial(
+        timeFrame,
+      ).copyWith(selectedIds: selected, pendingIds: {...selected});
+    }
+    await _loadPortfolios(gen, timeFrame, soft: soft);
     if (gen != _generation) return;
+    if (soft) return;
     await _loadIndices(
       gen,
       timeFrame,
@@ -118,11 +123,17 @@ class DashboardOverlayNotifier extends Notifier<OverlayChartState> {
     );
   }
 
-  Future<void> _loadPortfolios(int gen, String timeFrame) async {
-    for (final id in state.selectedIds.where(
-      (id) => !OverlayChartIds.isIndex(id),
-    )) {
-      _markPending(id);
+  Future<void> _loadPortfolios(
+    int gen,
+    String timeFrame, {
+    bool soft = false,
+  }) async {
+    if (!soft) {
+      for (final id in state.selectedIds.where(
+        (id) => !OverlayChartIds.isIndex(id),
+      )) {
+        _markPending(id);
+      }
     }
     try {
       final repo = await ref.read(dashboardRepositoryProvider.future);
@@ -130,6 +141,7 @@ class DashboardOverlayNotifier extends Notifier<OverlayChartState> {
       final history = await repo.getPortfolioHistory(
         client,
         timeFrame: timeFrame,
+        portfolioId: _preferredPortfolioId,
       );
       if (gen != _generation) return;
 
@@ -171,6 +183,13 @@ class DashboardOverlayNotifier extends Notifier<OverlayChartState> {
       // Fresh read — user may have added indices while portfolio history loaded.
       final indicesFromState = Map<String, OverlaySeries>.from(state.series)
         ..removeWhere((id, _) => !OverlayChartIds.isIndex(id));
+      if (soft) {
+        // Keep prior portfolio lines if this soft poll returned a thin slice.
+        for (final e in state.series.entries) {
+          if (OverlayChartIds.isIndex(e.key)) continue;
+          portfolioSeries.putIfAbsent(e.key, () => e.value);
+        }
+      }
       final nextSeries = {...indicesFromState, ...portfolioSeries};
 
       final selected = mergeOverlaySelection(
@@ -214,8 +233,8 @@ class DashboardOverlayNotifier extends Notifier<OverlayChartState> {
       );
 
       if (nowBuilding) {
-        Future<void>.delayed(const Duration(seconds: 3), () {
-          if (gen == _generation) reload();
+        Future<void>.delayed(const Duration(seconds: 5), () {
+          if (gen == _generation) reload(soft: true);
         });
       }
 

@@ -9,13 +9,13 @@ import 'floating_menu_action.dart';
 /// Glassmorphic bottom sheet of quick actions (Sync / more_vert).
 ///
 /// Set [showSubtitles] false on mobile for compact title-only rows.
-void showQuickActionsSheet({
+Future<void> showQuickActionsSheet({
   required BuildContext context,
   required Color triggerColor,
   required List<FloatingMenuAction> actions,
   bool showSubtitles = true,
 }) {
-  showModalBottomSheet<void>(
+  return showModalBottomSheet<void>(
     context: context,
     backgroundColor: Colors.transparent,
     isScrollControlled: true,

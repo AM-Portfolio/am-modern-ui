@@ -98,6 +98,7 @@ class _DashboardMobileScreenState
     }
 
     return DashboardToolbar(
+      userId: widget.userId,
       onSurface: onSurface,
       showDemoBadge: showDemoBadge,
       onOpenPaper: widget.onOpenPaper,

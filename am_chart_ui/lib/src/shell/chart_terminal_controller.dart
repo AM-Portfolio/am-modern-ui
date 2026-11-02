@@ -367,6 +367,7 @@ class ChartTerminalController extends Notifier<ChartTerminalState> {
   Future<void> selectSymbol(
     String symbol, {
     String? exchange,
+    ChartTimeframe? timeframe,
     int? paneIndex,
   }) async {
     final i = paneIndex ?? state.activePaneIndex;
@@ -381,7 +382,7 @@ class ChartTerminalController extends Notifier<ChartTerminalState> {
     panes[i] = currentPane.copyWith(
       symbol: symbol,
       exchange: exchange ?? _exchangeFor(symbol),
-      timeframe: ChartTimeframe.y1,
+      timeframe: timeframe ?? ChartTimeframe.y1,
       comparisonSymbols: filteredComparisons,
       comparisonBars: filteredBars,
       loading: true,
@@ -495,22 +496,29 @@ class ChartTerminalController extends Notifier<ChartTerminalState> {
 
   Future<void> reloadPane(int index) async {
     if (index < 0 || index >= state.panes.length) return;
-    final pane = state.panes[index];
+    // Capture request identity — never apply results if the user switched
+    // symbol/timeframe while this fetch was in flight (would flash INDIA VIX
+    // back over a portfolio selection, etc.).
+    final requestSymbol = state.panes[index].symbol;
+    final requestTf = state.panes[index].timeframe;
+    final requestExchange = state.panes[index].exchange;
+    final requestId = state.panes[index].id;
     final history = ref.read(chartHistoricalProvider);
     final market = ref.read(chartMarketProvider);
     final mock = history.isMock;
     try {
+      final comparisonSymbols = state.panes[index].comparisonSymbols;
       final barsFuture = history.getBars(
-        symbol: pane.symbol,
-        timeframe: pane.timeframe.code,
+        symbol: requestSymbol,
+        timeframe: requestTf.code,
       );
-      final quoteFuture = market.getQuote(pane.symbol);
+      final quoteFuture = market.getQuote(requestSymbol);
 
       final compFutures = <String, Future<List<ChartBar>>>{};
-      for (final sym in pane.comparisonSymbols) {
+      for (final sym in comparisonSymbols) {
         compFutures[sym] = history.getBars(
           symbol: sym,
-          timeframe: pane.timeframe.code,
+          timeframe: requestTf.code,
         );
       }
 
@@ -524,12 +532,21 @@ class ChartTerminalController extends Notifier<ChartTerminalState> {
         } catch (_) {}
       }
 
+      if (!_reloadStillCurrent(
+        index,
+        symbol: requestSymbol,
+        timeframe: requestTf,
+        paneId: requestId,
+      )) {
+        return;
+      }
       final panes = [...state.panes];
-      panes[index] = pane.copyWith(
+      final current = panes[index];
+      panes[index] = current.copyWith(
         bars: bars,
         comparisonBars: compBars,
         quote: quote,
-        exchange: quote?.exchange ?? pane.exchange,
+        exchange: quote?.exchange ?? requestExchange,
         loading: false,
         loadingComparisons: false,
         isMock: mock,
@@ -537,9 +554,18 @@ class ChartTerminalController extends Notifier<ChartTerminalState> {
       );
       state = state.copyWith(panes: panes);
     } catch (_) {
+      if (!_reloadStillCurrent(
+        index,
+        symbol: requestSymbol,
+        timeframe: requestTf,
+        paneId: requestId,
+      )) {
+        return;
+      }
       // Do not fall back to mock bars — surface error with current provider flag.
       final panes = [...state.panes];
-      panes[index] = pane.copyWith(
+      final current = panes[index];
+      panes[index] = current.copyWith(
         bars: const [],
         loading: false,
         loadingComparisons: false,
@@ -548,6 +574,19 @@ class ChartTerminalController extends Notifier<ChartTerminalState> {
       );
       state = state.copyWith(panes: panes);
     }
+  }
+
+  bool _reloadStillCurrent(
+    int index, {
+    required String symbol,
+    required ChartTimeframe timeframe,
+    required String paneId,
+  }) {
+    if (index < 0 || index >= state.panes.length) return false;
+    final p = state.panes[index];
+    return p.id == paneId &&
+        p.symbol == symbol &&
+        p.timeframe == timeframe;
   }
 
   Future<void> toggleComparison(String symbol, {int? paneIndex}) async {
@@ -652,7 +691,11 @@ class ChartTerminalController extends Notifier<ChartTerminalState> {
   }
 
   static String _exchangeFor(String symbol) {
-    final u = symbol.toUpperCase();
+    final raw = symbol.trim();
+    final u = raw.toUpperCase();
+    if (u.startsWith('PORTFOLIO:') || u == 'OVERALL' || raw.toLowerCase() == 'overall') {
+      return 'PORTFOLIO';
+    }
     if (u.contains('SENSEX') || u.startsWith('BSE:')) return 'BSE';
     return 'NSE';
   }

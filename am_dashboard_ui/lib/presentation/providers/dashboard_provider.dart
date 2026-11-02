@@ -10,6 +10,7 @@ import 'package:am_dashboard_ui/domain/models/recent_activity_response.dart';
 import 'package:am_dashboard_ui/presentation/layout/dashboard_layout_provider.dart';
 import 'package:am_dashboard_ui/presentation/layout/dashboard_widget_id.dart';
 import 'package:am_dashboard_ui/presentation/providers/dashboard_overlay_provider.dart';
+import 'package:am_dashboard_ui/presentation/providers/dashboard_portfolio_scope.dart';
 import 'package:am_news_ui/am_news_ui.dart';
 import 'package:am_dashboard_ui/domain/models/top_movers_response.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -173,6 +174,24 @@ Future<DashboardSummary> _resolveDashboardSummary(
   DashboardRepository repository,
   String userId,
 ) async {
+  final portfolioId = ref.watch(dashboardPortfolioScopeProvider);
+  if (portfolioId != null &&
+      portfolioId.isNotEmpty &&
+      portfolioId != 'all') {
+    final client = await ref.watch(portfolioApiClientProvider.future);
+    final raw = await client
+        .get<Map<String, dynamic>>(
+          '/v1/portfolios/summary',
+          queryParams: {'portfolioId': portfolioId},
+          parser: (data) {
+            if (data is Map) return Map<String, dynamic>.from(data);
+            throw const FormatException('Portfolio summary was not an object');
+          },
+        )
+        .timeout(const Duration(seconds: 20));
+    return _dashboardSummaryFromPortfolioRaw(raw);
+  }
+
   final portfolioFallback = _loadPortfolioSummaryFallback(ref)
       .then(_dashboardSummaryFromPortfolioRaw);
 

@@ -11,6 +11,8 @@ const List<ImportBrokerOption> kImportBrokerOptions = [
   ImportBrokerOption(key: 'angelone', label: 'Angel One'),
   ImportBrokerOption(key: 'dhan', label: 'Dhan'),
   ImportBrokerOption(key: 'mstock', label: 'mStock'),
+  ImportBrokerOption(key: 'upstox', label: 'Upstox'),
+  ImportBrokerOption(key: 'kotak', label: 'Kotak'),
 ];
 
 class ImportBrokerOption {
@@ -31,6 +33,8 @@ String? brokerKeyToEmailId(String? key) {
     case 'zerodha':
     case 'dhan':
     case 'mstock':
+    case 'upstox':
+    case 'kotak':
       return key.toLowerCase();
     default:
       return key.toLowerCase();
@@ -53,6 +57,10 @@ String? brokerKeyToDocCode(String? key) {
       return 'DHAN';
     case 'mstock':
       return 'MSTOCK';
+    case 'upstox':
+      return 'UPSTOX';
+    case 'kotak':
+      return 'KOTAK';
     default:
       return key.toUpperCase();
   }
@@ -74,6 +82,10 @@ String? normalizeBrokerKey(String? raw) {
       return 'dhan';
     case 'mstock':
       return 'mstock';
+    case 'upstox':
+      return 'upstox';
+    case 'kotak':
+      return 'kotak';
     default:
       final upper = raw.toUpperCase();
       switch (upper) {
@@ -88,6 +100,10 @@ String? normalizeBrokerKey(String? raw) {
           return 'dhan';
         case 'MSTOCK':
           return 'mstock';
+        case 'UPSTOX':
+          return 'upstox';
+        case 'KOTAK':
+          return 'kotak';
         default:
           return null;
       }
@@ -304,20 +320,19 @@ class _ImportHoldingsSharedControlsState
             const SizedBox(height: 8),
             LayoutBuilder(
               builder: (context, constraints) {
-                final cols = constraints.maxWidth < 360
-                    ? 3
-                    : (constraints.maxWidth < 520 ? 4 : 5);
-                // Narrow widths: slightly wider-than-tall tiles to avoid tall
-                // empty row gaps when the 5th broker wraps.
-                final aspect = constraints.maxWidth < 520 ? 1.35 : 1.15;
+                // Fixed 4-up grid → first row 4, second row 3 (7 brokers).
+                // Narrow phones: 3 columns.
+                final brokerCount = kImportBrokerOptions.length;
+                final cols = constraints.maxWidth < 360 ? 3 : 4;
+                final aspect = constraints.maxWidth < 360 ? 1.3 : 1.45;
                 return GridView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
-                  itemCount: kImportBrokerOptions.length,
+                  itemCount: brokerCount,
                   gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: cols,
-                    mainAxisSpacing: 8,
-                    crossAxisSpacing: 8,
+                    mainAxisSpacing: 6,
+                    crossAxisSpacing: 6,
                     childAspectRatio: aspect,
                   ),
                   itemBuilder: (context, i) {
@@ -345,22 +360,26 @@ class _ImportHoldingsSharedControlsState
                                 width: selected ? 3 : 1,
                               ),
                             ),
-                            padding: const EdgeInsets.all(8),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 10,
+                            ),
                             child: logoPath != null
                                 ? Image.asset(
                                     logoPath,
                                     package: 'am_doc_intelligence_ui',
                                     fit: BoxFit.contain,
+                                    filterQuality: FilterQuality.high,
                                     errorBuilder: (_, __, ___) =>
                                         brokerLetterAvatar(
                                       opt.key,
-                                      size: 28,
+                                      size: 24,
                                       color: accent,
                                     ),
                                   )
                                 : brokerLetterAvatar(
                                     opt.key,
-                                    size: 28,
+                                    size: 24,
                                     color: accent,
                                   ),
                           ),
@@ -376,6 +395,7 @@ class _ImportHoldingsSharedControlsState
               controller: widget.portfolioNameController,
               labelText: 'Portfolio name (optional)',
               hintText: widget.portfolioNameHint,
+              focusedBorderColor: accent,
             ),
             if (widget.showPassword) ...[
               const SizedBox(height: 10),
@@ -391,6 +411,7 @@ class _ImportHoldingsSharedControlsState
                     : 'PDF / file password (optional)',
                 hintText: 'PAN / PDF password',
                 obscureText: !_passwordVisible,
+                focusedBorderColor: accent,
                 suffix: IconButton(
                   tooltip: _passwordVisible ? 'Hide' : 'Show',
                   icon: Icon(
@@ -431,6 +452,7 @@ class _ImportHoldingsSharedControlsState
               else
                 CustomDropdown<String>(
                   height: 40,
+                  primaryColor: accent,
                   value: currentDoc,
                   items: filtered
                       .map(

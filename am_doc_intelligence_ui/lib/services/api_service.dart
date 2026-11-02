@@ -70,6 +70,7 @@ class ApiService {
     'DHAN',
     'MSTOCK',
     'ANGEL_ONE',
+    'KOTAK',
   ];
 
   // --- Document Processor endpoints ---
@@ -201,8 +202,11 @@ class ApiService {
 
     final client = _makeClient();
     try {
-      final streamedResponse = await client.send(request);
-      final response = await http.Response.fromStream(streamedResponse);
+      final streamedResponse = await client
+          .send(request)
+          .timeout(const Duration(seconds: 90));
+      final response = await http.Response.fromStream(streamedResponse)
+          .timeout(const Duration(seconds: 90));
       debugPrint('[ApiService] sync: ${response.statusCode}');
       if (response.statusCode == 202 || response.statusCode == 200) {
         return BatchSyncStatus.fromJson(
@@ -255,6 +259,57 @@ class ApiService {
       }
       throw Exception(
           'Status failed: ${response.statusCode}\n${response.body}');
+    } finally {
+      client.close();
+    }
+  }
+
+  /// Lists batch sync history for the signed-in user (newest first).
+  Future<BatchSyncHistoryResponse> listBatchSyncHistory({int limit = 50}) async {
+    final capped = limit.clamp(1, 100);
+    final url = '$_docBase/documents/sync?limit=$capped';
+    debugPrint('[ApiService] GET $url');
+    final client = _makeClient();
+    try {
+      final headers = await _getHeaders();
+      final response = await client
+          .get(Uri.parse(url), headers: headers)
+          .timeout(const Duration(seconds: 20));
+      if (response.statusCode == 200) {
+        return BatchSyncHistoryResponse.fromJson(
+          Map<String, dynamic>.from(jsonDecode(response.body) as Map),
+        );
+      }
+      throw Exception(
+          'Batch history failed: ${response.statusCode}\n${response.body}');
+    } finally {
+      client.close();
+    }
+  }
+
+  /// Lists Gmail/upload extract history for the signed-in user.
+  Future<List<ExtractHistoryItem>> listExtractHistory({int limit = 50}) async {
+    final capped = limit.clamp(1, 100);
+    final url = '$_emailBase/extract/history?limit=$capped';
+    debugPrint('[ApiService] GET $url');
+    final client = _makeClient();
+    try {
+      final headers = await _getHeaders();
+      final response = await client
+          .get(Uri.parse(url), headers: headers)
+          .timeout(const Duration(seconds: 20));
+      if (response.statusCode == 200) {
+        final body = jsonDecode(response.body);
+        final items = body is Map ? body['items'] : null;
+        if (items is! List) return const [];
+        return items
+            .whereType<Map>()
+            .map((e) =>
+                ExtractHistoryItem.fromJson(Map<String, dynamic>.from(e)))
+            .toList();
+      }
+      throw Exception(
+          'Extract history failed: ${response.statusCode}\n${response.body}');
     } finally {
       client.close();
     }

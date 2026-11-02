@@ -56,6 +56,9 @@ class PortfolioHeatmapUiConfig {
   );
 
   /// Space so the treemap sits above the floating global bottom nav.
+  ///
+  /// Scales reserve by [navFactor] (e.g. [GlobalBottomNavVisibility.factor]) so
+  /// tiles are not painted under the bar when the nav returns after scroll-hide.
   static double mobileBottomInset(
     BuildContext context, {
     double navFactor = 1,
@@ -109,7 +112,6 @@ class _PortfolioHeatmapWidgetState
       ValueNotifier<HeatmapTileData?>(null);
   Timer? _hoverClearTimer;
   int _heatmapLoadGeneration = 0;
-
   /// Full nested tiles before compact budget — used for sector drill-down.
   List<HeatmapTileData> _fullOverviewTiles = const [];
 
@@ -584,19 +586,19 @@ class _PortfolioHeatmapWidgetState
         );
 
     // Mobile only: scroll past KPIs → filters pin → mosaic fills the rest of
-    // the mobile screen, covering the full page height with a clean bottom margin.
+    // the tab. Taps inside filters/mosaic must not reveal the floating bottom nav.
     if (widget.config.compactMode) {
       final scheme = Theme.of(context).colorScheme;
       final screenH = MediaQuery.sizeOf(context).height;
       final topSafe = MediaQuery.paddingOf(context).top;
       final bottomSafe = MediaQuery.paddingOf(context).bottom;
       final navReserve = PlatformConstants.globalBottomNavReserve(context);
-      // When scrolled down, sticky header (~44px) and pinned filters (46px) remain at top.
       const stickyHeaderH = 44.0;
       final topChromeWhenPinned =
           topSafe + stickyHeaderH + _mobilePinnedFiltersH;
       final bottomMargin =
-          (bottomSafe > 0 ? bottomSafe : 8.0) + (navReserve > 0 ? navReserve : 20.0);
+          (bottomSafe > 0 ? bottomSafe : 8.0) +
+          (navReserve > 0 ? navReserve : 20.0);
       final fullMobileScreenH = screenH - topChromeWhenPinned - bottomMargin;
       final mapH =
           (fullMobileScreenH > (mobileViewportH - _mobilePinnedFiltersH)
@@ -604,39 +606,46 @@ class _PortfolioHeatmapWidgetState
                   : (mobileViewportH - _mobilePinnedFiltersH))
               .clamp(540.0, 4000.0);
 
-      return Listener(
-        behavior: HitTestBehavior.translucent,
-        onPointerDown: (_) {
-          GlobalBottomNavVisibility.suppressChromeTapReveal = true;
-          GlobalBottomNavVisibility.requestHide();
-        },
-        child: CustomScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          slivers: [
-            SliverToBoxAdapter(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [_buildSummaryCardsRow(), const SizedBox(height: 8)],
-              ),
+      return CustomScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        slivers: [
+          SliverToBoxAdapter(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _buildSummaryCardsRow(),
+                const SizedBox(height: 8),
+              ],
             ),
-            SliverPersistentHeader(
-              pinned: true,
-              delegate: _PinnedHeatmapFiltersDelegate(
-                height: _mobilePinnedFiltersH,
-                background: scheme.surface,
+          ),
+          SliverPersistentHeader(
+            pinned: true,
+            delegate: _PinnedHeatmapFiltersDelegate(
+              height: _mobilePinnedFiltersH,
+              background: scheme.surface,
+              child: Listener(
+                behavior: HitTestBehavior.opaque,
+                onPointerDown: (_) => _suppressBottomNavOnHeatmapTap(),
                 child: _buildMobilePinnedFilters(context),
               ),
             ),
-            SliverToBoxAdapter(
-              child: SizedBox(
-                height: mapH,
-                width: double.infinity,
-                child: heatmapBody(showSelectors: false),
+          ),
+          SliverToBoxAdapter(
+            child: SizedBox(
+              height: mapH,
+              width: double.infinity,
+              child: Listener(
+                behavior: HitTestBehavior.opaque,
+                onPointerDown: (_) => _suppressBottomNavOnHeatmapTap(),
+                child: _padAboveBottomNav(
+                  context,
+                  child: heatmapBody(showSelectors: false),
+                ),
               ),
             ),
-            SliverToBoxAdapter(child: SizedBox(height: bottomMargin)),
-          ],
-        ),
+          ),
+          SliverToBoxAdapter(child: SizedBox(height: bottomMargin)),
+        ],
       );
     }
 
@@ -1227,8 +1236,11 @@ class _PortfolioHeatmapWidgetState
     );
   }
 
-  /// Retained for compatibility. Heatmap interactions allow the global nav to remain interactive.
-  void _suppressBottomNavOnHeatmapTap() {}
+  /// Heatmap taps must not flash the floating company bottom nav.
+  void _suppressBottomNavOnHeatmapTap() {
+    GlobalBottomNavVisibility.suppressChromeTapReveal = true;
+    GlobalBottomNavVisibility.requestHide();
+  }
 
   /// Handles filter changes from heatmap selectors
   void _onFiltersChanged({

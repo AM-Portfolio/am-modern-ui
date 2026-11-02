@@ -171,9 +171,11 @@ class _CustomDropdownState<T> extends State<CustomDropdown<T>> {
       builder: (context) => Stack(
         children: [
           Positioned.fill(
-            child: GestureDetector(
-              onTap: _closeDropdown,
-              behavior: HitTestBehavior.translucent,
+            // pointerDown — onTap can lose the arena while the overlay still
+            // blocks the whole app (Flutter web).
+            child: Listener(
+              behavior: HitTestBehavior.opaque,
+              onPointerDown: (_) => _closeDropdown(),
             ),
           ),
           CompositedTransformFollower(

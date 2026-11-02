@@ -38,7 +38,9 @@ class SyncQuickActionsControl extends StatelessWidget {
       triggerColor: accentColor,
       actions: actions,
       showSubtitles: showSubtitles,
-    );
+    ).whenComplete(() {
+      GlobalBottomNavVisibility.suppressChromeTapReveal = false;
+    });
   }
 
   @override
