@@ -888,8 +888,11 @@ class SectorHeatmapConverter {
             weightage: t.weightage,
             performance: t.performance,
             value: t.value,
-            children: t.children,
-            metadata: t.metadata,
+            children: null,
+            metadata: {
+              ...?t.metadata,
+              'type': 'stock',
+            },
           ),
         )
         .toList();

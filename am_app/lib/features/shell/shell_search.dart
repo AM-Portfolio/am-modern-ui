@@ -21,6 +21,14 @@ mixin ShellSearchOps on State<AppShell> {
         onSelected: () => context.go('/app/trade/journal'),
       ),
       common.CommandItem(
+        title: 'Portfolio Overview',
+        subtitle: 'View your portfolios and holdings',
+        category: 'Portfolio',
+        icon: Icons.account_balance_wallet_outlined,
+        onSelected: () =>
+            context.go(AppRoutes.portfolioPath(portfolioId, 'overview')),
+      ),
+      common.CommandItem(
         title: 'Equity Insider',
         subtitle: 'Fundamental analysis',
         category: 'Action',
@@ -52,8 +60,8 @@ mixin ShellSearchOps on State<AppShell> {
         onSelected: () => context.go('/app/trade'),
       ),
       common.CommandItem(
-        title: 'News',
-        subtitle: 'Market headlines',
+        title: 'Market News',
+        subtitle: 'Open market headlines on Dashboard',
         category: 'News',
         icon: Icons.article,
         onSelected: () => context.go(AppRoutes.dashboard),

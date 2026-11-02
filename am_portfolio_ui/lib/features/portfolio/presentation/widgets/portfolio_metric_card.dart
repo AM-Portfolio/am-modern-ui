@@ -177,8 +177,11 @@ class PortfolioMetricCard extends StatelessWidget {
                               style: textTheme.bodySmall?.copyWith(
                                 fontSize: compact ? 10 : 11,
                                 color: isHighlight
-                                    ? context.colors.actionPrimaryFg.withValues(alpha: 0.85)
-                                    : context.glassOverlay(context.isDark ? 0.5 : 0.45),
+                                    ? context.colors.actionPrimaryFg
+                                        .withValues(alpha: 0.85)
+                                    : (context.isDark
+                                        ? context.glassOverlay(0.5)
+                                        : context.textSecondary),
                                 fontWeight: FontWeight.w600,
                                 letterSpacing: 0.4,
                               ),
@@ -236,11 +239,13 @@ class PortfolioMetricCard extends StatelessWidget {
                                     style: textTheme.bodySmall?.copyWith(
                                       fontSize: compact ? 9 : 11,
                                       color: isHighlight
-                                          ? context.colors.actionPrimaryFg.withValues(alpha: 0.75)
+                                          ? context.colors.actionPrimaryFg
+                                              .withValues(alpha: 0.75)
                                           : (isPositive != null
-                                              ? accent
-                                                  .withValues(alpha: 0.9)
-                                              : context.glassOverlay(0.4)),
+                                              ? accent.withValues(alpha: 0.9)
+                                              : (context.isDark
+                                                  ? context.glassOverlay(0.4)
+                                                  : context.textTertiary)),
                                       fontWeight:
                                           (isPositive != null && isPositive!)
                                               ? FontWeight.w600

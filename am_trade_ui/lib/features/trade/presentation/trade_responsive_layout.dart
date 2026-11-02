@@ -183,8 +183,8 @@ class TradeResponsiveLayoutState extends ConsumerState<TradeResponsiveLayout> {
   void _onTabChanged(int index) {
     if (_currentTabIndex != index) {
       setState(() => _currentTabIndex = index);
+      widget.onTabChanged?.call(TradeResponsiveLayout.slugFromIndex(index));
     }
-    widget.onTabChanged?.call(TradeResponsiveLayout.slugFromIndex(index));
   }
 
   void _onPortfolioChanged(String id, String name) {
@@ -193,9 +193,9 @@ class TradeResponsiveLayoutState extends ConsumerState<TradeResponsiveLayout> {
         _currentPortfolioId = id;
         _currentPortfolioName = name;
       });
+      context.selectPortfolio(id, name);
+      widget.onPortfolioChanged?.call(id, name);
     }
-    context.selectPortfolio(id, name);
-    widget.onPortfolioChanged?.call(id, name);
   }
 
   @override

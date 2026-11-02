@@ -1,1 +1,1 @@
-void openUrlInNewTab(String url) {}
+bool openUrlInNewTab(String url) => false;

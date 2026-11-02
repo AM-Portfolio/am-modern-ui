@@ -379,7 +379,9 @@ class _UnifiedSidebarScaffoldState extends State<UnifiedSidebarScaffold>
     const segmentHeight = 50.0;
     final manyTabs = items.length >= 6;
 
-    if (selectedIndex >= 0 && selectedIndex != _lastEnsuredMobileTabIndex) {
+    if (!fillTrack &&
+        selectedIndex >= 0 &&
+        selectedIndex != _lastEnsuredMobileTabIndex) {
       _lastEnsuredMobileTabIndex = selectedIndex;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         final selectedContext = selectedKey.currentContext;

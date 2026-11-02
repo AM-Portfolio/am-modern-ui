@@ -97,4 +97,56 @@ class HoldingsSearchAdapter {
           0;
     }).toList();
   }
+
+  /// Searches the user's aggregate holdings so Global Search works from every
+  /// app section, not only after the Portfolio page has loaded its cache.
+  Future<List<HoldingsHit>> search({
+    required String query,
+    ProviderContainer? container,
+    BuildContext? navContext,
+  }) async {
+    if (query.trim().length < SearchRelevance.minHoldingsQueryLength) {
+      return const [];
+    }
+    if (_debugHoldings != null || container == null) {
+      return matching(
+        query: query,
+        container: container,
+        navContext: navContext,
+      );
+    }
+
+    try {
+      final holdings = await container.read(
+        portfolioHoldingsProvider('all').future,
+      );
+      return holdings.holdings
+          .map(
+            (h) => HoldingsHit(
+              symbol: h.symbol.trim().toUpperCase(),
+              name: h.name,
+              companyName: h.companyName,
+            ),
+          )
+          .where(
+            (h) =>
+                h.symbol.isNotEmpty &&
+                SearchRelevance.matchScore(
+                      query: query,
+                      title: h.symbol,
+                      subtitle: '${h.name} ${h.companyName}',
+                      context: SearchContext.portfolio,
+                    ) >
+                    0,
+          )
+          .toList();
+    } catch (_) {
+      // A transient API failure should not hide holdings already in cache.
+      return matching(
+        query: query,
+        container: container,
+        navContext: navContext,
+      );
+    }
+  }
 }

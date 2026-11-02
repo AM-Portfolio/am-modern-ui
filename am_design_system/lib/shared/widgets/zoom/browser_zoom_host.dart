@@ -35,7 +35,7 @@ class _BrowserZoomScope extends InheritedWidget {
   }
 }
 
-/// Unzoomed width for chrome breakpoints (sidebar / desktop vs mobile).
+/// CSS viewport size for responsive breakpoints.
 class BrowserZoomScope {
   BrowserZoomScope._();
 
@@ -45,7 +45,7 @@ class BrowserZoomScope {
         ?.data;
   }
 
-  /// Layout width as if Chrome zoom were 100%. Falls back to CSS size.
+  /// Real CSS viewport width. Falls back to [MediaQuery] when unavailable.
   static double layoutWidthOf(BuildContext context) {
     return maybeOf(context)?.layoutSize.width ??
         MediaQuery.sizeOf(context).width;
@@ -57,9 +57,8 @@ class BrowserZoomScope {
   }
 }
 
-/// Re-reads Chrome zoom on resize/maximize and keeps desktop chrome from
-/// collapsing. Does not intercept Ctrl+/− — the browser owns zoom and the
-/// address-bar percent indicator.
+/// Re-reads Chrome zoom on resize/maximize without overriding Flutter's real
+/// viewport constraints. The browser owns zoom and its address-bar indicator.
 class BrowserZoomHost extends StatefulWidget {
   const BrowserZoomHost({
     required this.child,
