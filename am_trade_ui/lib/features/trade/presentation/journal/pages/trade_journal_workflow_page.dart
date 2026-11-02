@@ -198,6 +198,36 @@ class TradeJournalWorkflowPageState
     return true;
   }
 
+  bool _validateCurrentStep() {
+    if (_readOnly) return true;
+    final ok = switch (_currentStep) {
+      0 => widget.useMobileLayout
+          ? (_preStepMobileKey.currentState?.validate() ?? true)
+          : (_preStepKey.currentState?.validate() ?? true),
+      1 => _execStepKey.currentState?.validate() ?? true,
+      2 => _postStepKey.currentState?.validate() ?? true,
+      _ => true,
+    };
+    if (ok) return true;
+    final message = switch (_currentStep) {
+          0 => widget.useMobileLayout
+              ? _preStepMobileKey.currentState?.validationMessage()
+              : _preStepKey.currentState?.validationMessage(),
+          1 => _execStepKey.currentState?.validationMessage(),
+          2 => _postStepKey.currentState?.validationMessage(),
+          _ => null,
+        } ??
+        JournalEntryValidation.validateTradeStep(_entry, _currentStep) ??
+        'Please fix the highlighted fields';
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: context.colors.statusWarning,
+      ),
+    );
+    return false;
+  }
+
   @override
   void didUpdateWidget(covariant TradeJournalWorkflowPage oldWidget) {
     super.didUpdateWidget(oldWidget);

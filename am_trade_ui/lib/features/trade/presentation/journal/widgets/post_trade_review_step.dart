@@ -375,6 +375,7 @@ class PostTradeReviewStepState extends State<PostTradeReviewStep> {
                 _updateReview(review.copyWith(lessonLearned: v)),
           ),
         ],
+        ),
       ),
     );
 

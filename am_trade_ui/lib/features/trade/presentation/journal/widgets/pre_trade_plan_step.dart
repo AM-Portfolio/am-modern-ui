@@ -646,6 +646,7 @@ class PreTradePlanStepState extends State<PreTradePlanStep> {
             ),
           ),
         ],
+        ),
       ),
     );
 
