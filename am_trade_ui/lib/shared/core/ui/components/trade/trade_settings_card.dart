@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../../features/trade/internal/domain/enums/broker_types.dart';
-import '../../../../../features/trade/internal/domain/enums/enum_extensions.dart';
 import '../../../../../features/trade/internal/domain/enums/order_types.dart';
-import '../../../../../features/trade/internal/domain/enums/enum_extensions.dart';
 import 'package:am_design_system/am_design_system.dart';
 
 /// Trade settings card (Broker & Order Type)
@@ -51,9 +49,10 @@ class TradeSettingsCard extends StatelessWidget {
           Expanded(
             child: CustomDropdown<BrokerTypes>(
               value: selectedBroker,
-              hint: isMobile ? 'Broker' : 'Select Broker',
+              hint: isMobile ? 'Broker *' : 'Select Broker *',
               items: BrokerTypes.values
-                  .map((broker) => broker.toSimpleDropdownItem(text: broker.toString().split('.').last.toUpperCase()))
+                  .map((broker) =>
+                      broker.toSimpleDropdownItem(text: broker.displayName))
                   .toList(),
               onChanged: onBrokerChanged,
               icon: isMobile ? null : Icons.business_center,
@@ -65,7 +64,8 @@ class TradeSettingsCard extends StatelessWidget {
               value: selectedOrderType,
               hint: isMobile ? 'Order' : 'Select Order Type',
               items: OrderTypes.values
-                  .map((type) => type.toSimpleDropdownItem(text: type.toString().split('.').last.toUpperCase()))
+                  .map((type) =>
+                      type.toSimpleDropdownItem(text: type.displayName))
                   .toList(),
               onChanged: onOrderTypeChanged,
               icon: isMobile ? null : Icons.receipt_long,

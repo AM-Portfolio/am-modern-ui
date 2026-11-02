@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../../../internal/domain/entities/journal_entry.dart';
 import '../utils/journal_calc_helper.dart';
+import '../utils/journal_entry_validation.dart';
 import 'journal_form_surface.dart';
 import 'journal_preset_or_custom_field.dart';
 import 'journal_risk_amount_field.dart';
@@ -26,10 +27,22 @@ class PreTradePlanStep extends StatefulWidget {
   final bool compactLayout;
 
   @override
-  State<PreTradePlanStep> createState() => _PreTradePlanStepState();
+  State<PreTradePlanStep> createState() => PreTradePlanStepState();
 }
 
-class _PreTradePlanStepState extends State<PreTradePlanStep> {
+class PreTradePlanStepState extends State<PreTradePlanStep> {
+  final _formKey = GlobalKey<FormState>();
+
+  /// Field validators + plan semantics (stop/target vs direction).
+  bool validate() {
+    final fieldsOk = _formKey.currentState?.validate() ?? true;
+    if (!fieldsOk) return false;
+    final semantic = JournalEntryValidation.validatePreTrade(widget.entry);
+    return semantic == null;
+  }
+
+  String? validationMessage() =>
+      JournalEntryValidation.validatePreTrade(widget.entry);
   static const _defaultChecklist = [
     'Trend aligned with setup',
     'Key level identified',
@@ -195,19 +208,25 @@ class _PreTradePlanStepState extends State<PreTradePlanStep> {
 
   Widget _field({
     required TextEditingController controller,
-    required String placeholder,
+    required String label,
     required ValueChanged<String> onChanged,
+    String? hintText,
     String? prefixText,
     TextInputType? keyboardType,
+    FormFieldValidator<String>? validator,
+    bool required = false,
   }) {
     final theme = Theme.of(context);
     return TextFormField(
       controller: controller,
       style: theme.textTheme.bodyLarge,
       keyboardType: keyboardType,
+      validator: validator,
       decoration: journalWorkflowDecoration(
         context,
-        hintText: placeholder,
+        label: label,
+        required: required,
+        hintText: hintText,
         prefixText: prefixText,
       ),
       onChanged: onChanged,
@@ -267,13 +286,24 @@ class _PreTradePlanStepState extends State<PreTradePlanStep> {
 
     final symbolField = JournalSymbolSuggestField(
       controller: _symbol,
-      hintText: 'Symbol * — search stocks, ETFs…',
+      hintText: 'Search stocks, ETFs…',
+      decoration: journalWorkflowDecoration(
+        context,
+        label: 'Symbol',
+        required: true,
+        hintText: 'Search stocks, ETFs…',
+      ),
+      validator: (v) =>
+          JournalEntryValidation.requiredText(v, label: 'Symbol'),
       onChanged: (v) => _updatePlan(_plan, symbol: v),
       onSelected: (hit) => _updatePlan(_plan, symbol: hit.symbol),
     );
 
     return JournalFormSurface(
-      child: Column(
+      child: Form(
+        key: _formKey,
+        autovalidateMode: AutovalidateMode.disabled,
+        child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // Web: Symbol | Long/Short (deployed). Mobile compact: stacked.
@@ -309,20 +339,30 @@ class _PreTradePlanStepState extends State<PreTradePlanStep> {
           _row(
             _field(
               controller: _entryPrice,
-              placeholder: 'Planned entry',
+              label: 'Planned entry',
+              required: true,
               prefixText: '₹ ',
               keyboardType:
                   const TextInputType.numberWithOptions(decimal: true),
+              validator: (v) => JournalEntryValidation.positiveNumber(
+                v,
+                label: 'Planned entry',
+              ),
               onChanged: (v) => _updatePlan(
                 plan.copyWith(plannedEntryPrice: double.tryParse(v)),
               ),
             ),
             _field(
               controller: _stop,
-              placeholder: 'Planned stop',
+              label: 'Planned stop',
+              required: true,
               prefixText: '₹ ',
               keyboardType:
                   const TextInputType.numberWithOptions(decimal: true),
+              validator: (v) => JournalEntryValidation.positiveNumber(
+                v,
+                label: 'Planned stop',
+              ),
               onChanged: (v) => _updatePlan(
                 plan.copyWith(plannedStopLoss: double.tryParse(v)),
               ),
@@ -332,19 +372,29 @@ class _PreTradePlanStepState extends State<PreTradePlanStep> {
           _row(
             _field(
               controller: _target,
-              placeholder: 'Planned target',
+              label: 'Planned target',
+              required: true,
               prefixText: '₹ ',
               keyboardType:
                   const TextInputType.numberWithOptions(decimal: true),
+              validator: (v) => JournalEntryValidation.positiveNumber(
+                v,
+                label: 'Planned target',
+              ),
               onChanged: (v) => _updatePlan(
                 plan.copyWith(plannedTarget: double.tryParse(v)),
               ),
             ),
             _field(
               controller: _qty,
-              placeholder: 'Quantity',
+              label: 'Quantity',
+              required: true,
               keyboardType:
                   const TextInputType.numberWithOptions(decimal: true),
+              validator: (v) => JournalEntryValidation.positiveNumber(
+                v,
+                label: 'Quantity',
+              ),
               onChanged: (v) => _updatePlan(
                 plan.copyWith(plannedQuantity: double.tryParse(v)),
               ),
@@ -467,6 +517,7 @@ class _PreTradePlanStepState extends State<PreTradePlanStep> {
             ),
           ],
         ],
+        ),
       ),
     );
   }

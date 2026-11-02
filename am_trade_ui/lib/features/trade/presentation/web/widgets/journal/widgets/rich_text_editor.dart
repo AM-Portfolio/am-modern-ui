@@ -13,6 +13,7 @@ class RichTextEditor extends StatefulWidget {
     this.minHeight = 360,
     this.compact = false,
     this.label,
+    this.required = false,
     this.header,
     this.editorLeading,
     this.footer,
@@ -25,6 +26,7 @@ class RichTextEditor extends StatefulWidget {
   final double minHeight;
   final bool compact;
   final String? label;
+  final bool required;
 
   /// Above the toolbar (e.g. template chip / fields).
   final Widget? header;
@@ -243,13 +245,32 @@ class _RichTextEditorState extends State<RichTextEditor> {
             color: fill,
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
-              child: Text(
-                widget.label!,
-                style: context.text.label(compact: true).copyWith(
-                      color: colors.textSecondary,
-                      fontWeight: FontWeight.w600,
+              child: widget.required
+                  ? Text.rich(
+                      TextSpan(
+                        style: context.text.label(compact: true).copyWith(
+                              color: colors.textSecondary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                        children: [
+                          TextSpan(text: widget.label!),
+                          TextSpan(
+                            text: ' *',
+                            style: context.text.label(compact: true).copyWith(
+                                  color: colors.statusError,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                          ),
+                        ],
+                      ),
+                    )
+                  : Text(
+                      widget.label!,
+                      style: context.text.label(compact: true).copyWith(
+                            color: colors.textSecondary,
+                            fontWeight: FontWeight.w600,
+                          ),
                     ),
-              ),
             ),
           ),
         ),

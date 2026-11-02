@@ -8,9 +8,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../favorite_filter_providers.dart';
 import '../../../internal/domain/entities/metrics_filter_config.dart';
+import '../../../internal/domain/entities/trade_controller_entities.dart';
 import '../../../providers/trade_controller_providers.dart';
 import '../../../providers/trade_internal_providers.dart';
 import '../../cubit/trade_controller_cubit.dart';
+import '../../cubit/trade_controller_state.dart';
 import '../../holdings/components/trade_holdings_template.dart';
 import '../../models/trade_holding_edit_mapper.dart';
 import '../../models/trade_holding_view_model.dart';
@@ -210,7 +212,25 @@ class _TradeHoldingsDashboardMobilePageState
       return;
     }
 
-    final trade = tradeHoldingToEditableDetails(holding);
+    List<TradeDetails>? knownTrades;
+    cubit.state.mapOrNull(loaded: (state) => knownTrades = state.trades);
+
+    TradeDetails? fetched;
+    try {
+      final repo = await ref.read(tradeControllerRepositoryProvider.future);
+      final list =
+          await repo.getTradeDetailsByTradeIds([holding.tradeId]);
+      if (list.isNotEmpty) fetched = list.first;
+    } catch (_) {
+      // Fall back to cubit + holdings merge below.
+    }
+
+    final trade = resolveTradeForEdit(
+      holding: holding,
+      knownTrades: knownTrades,
+      fetchedTrade: fetched,
+      portfolioNameHint: widget.portfolioName,
+    );
     if (!context.mounted) return;
 
     await Navigator.of(context).push(

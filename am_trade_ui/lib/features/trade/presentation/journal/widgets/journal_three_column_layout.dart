@@ -87,9 +87,11 @@ class _JournalThreeColumnLayoutState extends State<JournalThreeColumnLayout> {
       GlobalKey<TradeJournalWorkflowPageState>();
   final GlobalKey<TradeJournalWorkflowPageState> _editTradeWorkflowKey =
       GlobalKey<TradeJournalWorkflowPageState>();
+  final GlobalKey<JournalEntryDetailViewState> _detailViewKey =
+      GlobalKey<JournalEntryDetailViewState>();
   JournalTemplateSelection? _composerTemplate;
 
-  /// Blocks list taps / mode switches while create/edit has unsaved work.
+  /// Auto-flushes drafts before list taps / mode switches leave the composer.
   Future<bool> _guardUnsavedLeave() async {
     if (_isCreatingNew && _useTradeWorkflow) {
       final state = _newTradeWorkflowKey.currentState;
@@ -109,6 +111,10 @@ class _JournalThreeColumnLayoutState extends State<JournalThreeColumnLayout> {
       if (state != null && state.hasUnsavedChanges) {
         return state.confirmLeaveIfUnsaved();
       }
+      return true;
+    }
+    if (_isEditingEntry) {
+      return _detailViewKey.currentState?.confirmLeaveIfUnsaved() ?? true;
     }
     return true;
   }
@@ -629,7 +635,7 @@ class _JournalThreeColumnLayoutState extends State<JournalThreeColumnLayout> {
     }
 
     return JournalEntryDetailView(
-      key: ValueKey(selectedEntry?.id ?? 'none'),
+      key: _detailViewKey,
       entry: selectedEntry,
       cubit: widget.journalCubit,
       portfolioId: widget.portfolioId,

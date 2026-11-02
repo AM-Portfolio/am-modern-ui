@@ -11,7 +11,6 @@ import '../../../journal_template_providers.dart';
 import '../widgets/template_card.dart';
 import '../widgets/template_category_filter.dart';
 import '../widgets/template_detail_dialog.dart';
-import '../widgets/template_form_builder.dart';
 import '../widgets/create_template_dialog.dart';
 
 /// Modern template browser page with glassmorphism design
@@ -485,30 +484,16 @@ class TemplateBrowserPageState extends ConsumerState<TemplateBrowserPage>
     );
   }
 
+  /// One editable dialog — no second "Fill in the template fields" page.
   Future<void> _showTemplateDetail(
     BuildContext context,
     JournalTemplate template,
   ) async {
-    final use = await showDialog<bool>(
+    await showDialog<bool>(
       context: context,
       builder: (dialogContext) => TemplateDetailDialog(
         template: template,
         onUseTemplate: widget.onTemplateSelected,
-      ),
-    );
-    if (use != true || !mounted) return;
-    await _showUseTemplateForm(template);
-  }
-
-  Future<void> _showUseTemplateForm(JournalTemplate template) async {
-    if (!mounted) return;
-    await showDialog<void>(
-      context: this.context,
-      builder: (dialogContext) => TemplateFormBuilder(
-        template: template,
-        onSubmit: (_) {
-          widget.onTemplateSelected?.call(template);
-        },
       ),
     );
   }

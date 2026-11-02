@@ -30,6 +30,23 @@ class _AddTradeWebPageState extends State<AddTradeWebPage> {
   bool _isLoading = false;
   bool _isSaving = false; // Guard against double-tap / double-submission
 
+  String _editFormKey(TradeDetails? trade) {
+    if (trade == null || trade.tradeId.isEmpty) return 'new-trade';
+    final broker = trade.tradeExecutions
+        ?.map((e) => e.basicInfo?.brokerType?.name)
+        .whereType<String>()
+        .join(',');
+    final order = trade.tradeExecutions
+        ?.map((e) => e.executionInfo?.orderType?.name)
+        .whereType<String>()
+        .join(',');
+    return 'edit-${trade.tradeId}'
+        '-${trade.instrumentInfo.exchange?.name}'
+        '-${trade.instrumentInfo.segment?.name}'
+        '-${trade.entryInfo.price}'
+        '-$broker-$order';
+  }
+
   @override
   void initState() {
     super.initState();
@@ -253,6 +270,9 @@ class _AddTradeWebPageState extends State<AddTradeWebPage> {
             // Form
             Expanded(
               child: AddTradeForm(
+                // Remount when switching New ↔ Edit, between trades, or when
+                // richer edit payload arrives (exchange/broker backfill).
+                key: ValueKey(_editFormKey(widget.existingTrade)),
                 onSave: _handleSave,
                 onCancel: _handleCancel,
                 isLoading: _isLoading,

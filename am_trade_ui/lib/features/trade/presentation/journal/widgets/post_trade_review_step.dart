@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../../../internal/domain/entities/journal_entry.dart';
 import '../utils/journal_calc_helper.dart';
+import '../utils/journal_entry_validation.dart';
 import 'journal_form_surface.dart';
 import 'journal_themed_dropdown.dart';
 import 'journal_workflow_field_theme.dart';
@@ -18,10 +19,20 @@ class PostTradeReviewStep extends StatefulWidget {
   final ValueChanged<JournalEntry> onUpdate;
 
   @override
-  State<PostTradeReviewStep> createState() => _PostTradeReviewStepState();
+  State<PostTradeReviewStep> createState() => PostTradeReviewStepState();
 }
 
-class _PostTradeReviewStepState extends State<PostTradeReviewStep> {
+class PostTradeReviewStepState extends State<PostTradeReviewStep> {
+  final _formKey = GlobalKey<FormState>();
+
+  bool validate() {
+    final fieldsOk = _formKey.currentState?.validate() ?? true;
+    if (!fieldsOk) return false;
+    return JournalEntryValidation.validatePostTrade(widget.entry) == null;
+  }
+
+  String? validationMessage() =>
+      JournalEntryValidation.validatePostTrade(widget.entry);
   static const _mistakes = [
     'NONE',
     'FOMO',
@@ -162,11 +173,14 @@ class _PostTradeReviewStepState extends State<PostTradeReviewStep> {
 
   Widget _field({
     required TextEditingController controller,
-    required String placeholder,
+    required String label,
     required ValueChanged<String> onChanged,
+    String? hintText,
     String? prefixText,
     TextInputType? keyboardType,
     int maxLines = 1,
+    FormFieldValidator<String>? validator,
+    bool required = false,
   }) {
     final theme = Theme.of(context);
     return TextFormField(
@@ -174,9 +188,12 @@ class _PostTradeReviewStepState extends State<PostTradeReviewStep> {
       style: theme.textTheme.bodyLarge,
       keyboardType: keyboardType,
       maxLines: maxLines,
+      validator: validator,
       decoration: journalWorkflowDecoration(
         context,
-        hintText: placeholder,
+        label: label,
+        required: required,
+        hintText: hintText,
         prefixText: prefixText,
         alignLabelWithHint: maxLines > 1,
       ),
@@ -191,13 +208,20 @@ class _PostTradeReviewStepState extends State<PostTradeReviewStep> {
     final theme = Theme.of(context);
 
     return JournalFormSurface(
-      child: Column(
+      child: Form(
+        key: _formKey,
+        child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _row(
             _field(
               controller: _exit,
-              placeholder: 'Actual exit price',
+              label: 'Actual exit price',
+              required: true,
+              validator: (v) => JournalEntryValidation.positiveNumber(
+                v,
+                label: 'Actual exit price',
+              ),
               prefixText: '₹ ',
               keyboardType:
                   const TextInputType.numberWithOptions(decimal: true),
@@ -299,14 +323,14 @@ class _PostTradeReviewStepState extends State<PostTradeReviewStep> {
           _row(
             _field(
               controller: _wentWell,
-              placeholder: 'What went well?',
+              label: 'What went well?',
               maxLines: 3,
               onChanged: (v) =>
                   _updateReview(review.copyWith(whatWentWell: v)),
             ),
             _field(
               controller: _improve,
-              placeholder: 'What could be improved?',
+              label: 'What could be improved?',
               maxLines: 3,
               onChanged: (v) =>
                   _updateReview(review.copyWith(whatCouldBeImproved: v)),
@@ -315,8 +339,20 @@ class _PostTradeReviewStepState extends State<PostTradeReviewStep> {
           _gap(),
           _field(
             controller: _lesson,
-            placeholder: 'Lesson learned',
+            label: 'Lesson learned',
+            required: true,
             maxLines: 3,
+            validator: (v) {
+              final lesson = v?.trim() ?? '';
+              final wentWell = _wentWell.text.trim();
+              final improve = _improve.text.trim();
+              if (lesson.isNotEmpty ||
+                  wentWell.isNotEmpty ||
+                  improve.isNotEmpty) {
+                return null;
+              }
+              return 'Add a lesson or review notes';
+            },
             onChanged: (v) =>
                 _updateReview(review.copyWith(lessonLearned: v)),
           ),
@@ -328,6 +364,7 @@ class _PostTradeReviewStepState extends State<PostTradeReviewStep> {
             ),
           ),
         ],
+        ),
       ),
     );
   }

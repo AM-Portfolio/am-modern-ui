@@ -24,13 +24,18 @@ class JournalEntryDetailView extends StatefulWidget {
   final ValueChanged<bool>? onEditModeChanged;
 
   @override
-  State<JournalEntryDetailView> createState() => _JournalEntryDetailViewState();
+  State<JournalEntryDetailView> createState() => JournalEntryDetailViewState();
 }
 
-class _JournalEntryDetailViewState extends State<JournalEntryDetailView> {
+class JournalEntryDetailViewState extends State<JournalEntryDetailView> {
   GlobalKey<JournalEntryFormState> _formKey =
       GlobalKey<JournalEntryFormState>();
   var _formEditMode = false;
+
+  /// Flush autosave draft before the parent leaves this entry.
+  Future<bool> confirmLeaveIfUnsaved({bool force = false}) async {
+    return _formKey.currentState?.confirmLeaveIfUnsaved(force: force) ?? true;
+  }
 
   void _setFormEditMode(bool editing) {
     if (_formEditMode == editing) return;

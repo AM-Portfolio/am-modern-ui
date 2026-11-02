@@ -6,7 +6,7 @@ import '../../../cubit/journal/journal_cubit.dart';
 import '../../../web/widgets/journal/journal_entry_form.dart';
 
 /// Log day composer for mobile — full route or inline body inside Entries.
-class JournalLogDayMobilePage extends StatelessWidget {
+class JournalLogDayMobilePage extends StatefulWidget {
   const JournalLogDayMobilePage({
     required this.journalCubit,
     required this.portfolioId,
@@ -47,12 +47,24 @@ class JournalLogDayMobilePage extends StatelessWidget {
     );
   }
 
-  void _finish(BuildContext context, {required bool saved}) {
-    if (embedded) {
+  @override
+  State<JournalLogDayMobilePage> createState() =>
+      JournalLogDayMobilePageState();
+}
+
+class JournalLogDayMobilePageState extends State<JournalLogDayMobilePage> {
+  final _formKey = GlobalKey<JournalEntryFormState>();
+
+  Future<bool> confirmLeaveIfUnsaved({bool force = false}) async {
+    return _formKey.currentState?.confirmLeaveIfUnsaved(force: force) ?? true;
+  }
+
+  void _finish({required bool saved}) {
+    if (widget.embedded) {
       if (saved) {
-        onDone?.call();
+        widget.onDone?.call();
       } else {
-        onCancel?.call();
+        widget.onCancel?.call();
       }
       return;
     }
@@ -63,16 +75,17 @@ class JournalLogDayMobilePage extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.colors;
     final form = JournalEntryForm(
-      cubit: journalCubit,
-      portfolioId: portfolioId ?? '',
-      entry: initialEntry,
-      defaultEntryType: defaultEntryType,
+      key: _formKey,
+      cubit: widget.journalCubit,
+      portfolioId: widget.portfolioId ?? '',
+      entry: widget.initialEntry,
+      defaultEntryType: widget.defaultEntryType,
       compact: true,
-      onCreated: (_) => _finish(context, saved: true),
-      onCancelCreate: () => _finish(context, saved: false),
+      onCreated: (_) => _finish(saved: true),
+      onCancelCreate: () => _finish(saved: false),
     );
 
-    if (embedded) {
+    if (widget.embedded) {
       return ColoredBox(color: colors.surface, child: form);
     }
 
@@ -84,7 +97,10 @@ class JournalLogDayMobilePage extends StatelessWidget {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => _finish(context, saved: false),
+          onPressed: () async {
+            final leave = await confirmLeaveIfUnsaved();
+            if (leave && mounted) _finish(saved: false);
+          },
         ),
         title: const Text('Log day'),
       ),

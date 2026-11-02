@@ -24,19 +24,10 @@ import '../pages/trade_unified_view_page.dart';
 import '../trade_navigation.dart';
 import '../../providers/trade_controller_providers.dart';
 import '../../trade_calendar_providers.dart';
-import '../../internal/domain/enums/exchange_types.dart';
-import '../../internal/domain/enums/market_segments.dart';
-import '../../internal/domain/enums/series_types.dart';
-import '../../internal/domain/enums/index_types.dart';
-import '../../internal/domain/enums/derivative_types.dart';
-import '../../internal/domain/enums/option_types.dart';
-import '../../internal/domain/enums/trade_statuses.dart';
-import '../../internal/domain/enums/trade_directions.dart';
-import '../../internal/domain/enums/broker_types.dart';
-import '../../internal/domain/enums/order_types.dart';
 import '../cubit/trade_controller_cubit.dart';
 import '../cubit/trade_controller_state.dart';
 import '../models/trade_holding_view_model.dart';
+import '../models/trade_holding_edit_mapper.dart';
 import '../add_trade/pages/add_trade_web_page.dart';
 import '../paper/paper_wallet_banner.dart';
 import '../paper/paper_portfolio.dart';
@@ -461,6 +452,74 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
     ];
   }
 
+  Future<void> _openEditOrAddTrade(Object? existingTrade) async {
+    List<TradeDetails>? knownTrades;
+    final cubitAsync = ref.read(tradeControllerCubitProvider);
+    if (cubitAsync is AsyncData<TradeControllerCubit>) {
+      cubitAsync.value.state.mapOrNull(
+        loaded: (state) => knownTrades = state.trades,
+      );
+    }
+
+    TradeDetails? tradeToEdit;
+    TradeHoldingViewModel? holding;
+    String? tradeIdForFetch;
+
+    if (existingTrade is TradeDetails) {
+      tradeToEdit = existingTrade;
+      tradeIdForFetch = existingTrade.tradeId;
+    } else if (existingTrade is TradeHoldingViewModel) {
+      holding = existingTrade;
+      tradeIdForFetch = holding.tradeId;
+    } else if (existingTrade is String) {
+      tradeIdForFetch = existingTrade;
+      try {
+        tradeToEdit = knownTrades?.firstWhere((t) => t.tradeId == existingTrade);
+      } catch (_) {
+        AppLogger.warning('Trade $existingTrade not found in cubit list',
+            tag: 'TradeWebScreen');
+      }
+    }
+
+    TradeDetails? fetched;
+    if (tradeIdForFetch != null && tradeIdForFetch.isNotEmpty) {
+      try {
+        final repo =
+            await ref.read(tradeControllerRepositoryProvider.future);
+        final list =
+            await repo.getTradeDetailsByTradeIds([tradeIdForFetch]);
+        if (list.isNotEmpty) fetched = list.first;
+      } catch (e, st) {
+        AppLogger.warning(
+          'Failed to fetch trade $tradeIdForFetch for edit — using local merge',
+          tag: 'TradeWebScreen',
+          error: e,
+          stackTrace: st,
+        );
+      }
+    }
+
+    if (holding != null) {
+      tradeToEdit = resolveTradeForEdit(
+        holding: holding,
+        knownTrades: knownTrades,
+        fetchedTrade: fetched,
+        portfolioNameHint: _currentPortfolioName,
+      );
+    } else if (fetched != null) {
+      tradeToEdit = fetched;
+    }
+
+    if (!mounted) return;
+    setState(() => _existingTradeToEdit = tradeToEdit);
+
+    final addTradeIndex = _swipeController.items
+        .indexWhere((item) => item.title == addTradeTitle);
+    if (addTradeIndex != -1) {
+      _swipeController.navigateTo(addTradeIndex);
+    }
+  }
+
   void _onPortfolioSelected(String portfolioId, String portfolioName,
       {bool autoSelect = false}) {
     final currentIndex = _swipeController.currentIndex;
@@ -526,138 +585,7 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
     return NotificationListener<OpenAddTradeNotification>(
       onNotification: (notification) {
         notification.handled = true;
-
-        TradeDetails? tradeToEdit;
-        if (notification.existingTrade is TradeDetails) {
-          tradeToEdit = notification.existingTrade as TradeDetails;
-        } else if (notification.existingTrade is TradeHoldingViewModel) {
-          final holding = notification.existingTrade as TradeHoldingViewModel;
-
-          T? parseEnum<T extends Enum>(Iterable<T> values, String? str) {
-            if (str == null) return null;
-            final normalized = str.toLowerCase().replaceAll('_', '');
-            for (final v in values) {
-              if (v.name.toLowerCase() == normalized) return v;
-            }
-            return null;
-          }
-
-          tradeToEdit = TradeDetails(
-            tradeId: holding.tradeId,
-            portfolioId: holding.portfolioId,
-            instrumentInfo: InstrumentInfo(
-              symbol: holding.symbol,
-              rawSymbol: holding.rawSymbol,
-              exchange: parseEnum(ExchangeTypes.values, holding.exchange),
-              segment: parseEnum(MarketSegments.values, holding.marketSegment),
-              series: parseEnum(SeriesTypes.values, holding.series),
-              indexType: parseEnum(IndexTypes.values, holding.indexType),
-              derivativeInfo: holding.strikePrice != null
-                  ? DerivativeInfo(
-                      strikePrice: holding.strikePrice,
-                      expiryDate: holding.expiryDate,
-                      optionType:
-                          parseEnum(OptionTypes.values, holding.optionType),
-                      underlyingSymbol: holding.underlyingSymbol,
-                      derivativeType: parseEnum(
-                          DerivativeTypes.values, holding.derivativeType),
-                    )
-                  : null,
-              description: holding.description,
-              currency: holding.currency,
-              lotSize: holding.lotSize,
-              isin: holding.isin,
-            ),
-            status: parseEnum(TradeStatuses.values, holding.status) ??
-                TradeStatuses.open,
-            tradePositionType:
-                parseEnum(TradeDirections.values, holding.tradePositionType) ??
-                    TradeDirections.long,
-            entryInfo: EntryExitInfo(
-              timestamp: holding.entryTimestamp,
-              price: holding.entryPrice,
-              quantity: holding.quantity,
-              totalValue: holding.entryTotalValue,
-              fees: holding.entryFees,
-              reason: holding.entryReason,
-            ),
-            symbol: holding.symbol,
-            strategy: holding.strategy,
-            exitInfo:
-                (holding.exitTimestamp != null || holding.exitPrice != null)
-                    ? EntryExitInfo(
-                        timestamp: holding.exitTimestamp,
-                        price: holding.exitPrice,
-                        quantity: holding.quantity,
-                        totalValue: holding.exitTotalValue,
-                        fees: holding.exitFees,
-                        reason: holding.exitReason,
-                      )
-                    : null,
-            metrics: TradeMetrics(
-              profitLoss: holding.profitLoss,
-              profitLossPercentage: holding.profitLossPercentage,
-              returnOnEquity: holding.returnOnEquity,
-              riskAmount: holding.riskAmount,
-              rewardAmount: holding.rewardAmount,
-              riskRewardRatio: holding.riskRewardRatio,
-              holdingTimeDays: holding.holdingDays,
-              maxAdverseExcursion: holding.maxAdverseExcursion,
-              maxFavorableExcursion: holding.maxFavorableExcursion,
-            ),
-            tradeExecutions: (holding.broker != null ||
-                    holding.orderType != null)
-                ? [
-                    TradeModel(
-                      basicInfo: holding.broker != null
-                          ? BasicInfo(
-                              brokerType:
-                                  parseEnum(BrokerTypes.values, holding.broker),
-                            )
-                          : null,
-                      executionInfo: holding.orderType != null
-                          ? ExecutionInfo(
-                              orderType: parseEnum(
-                                  OrderTypes.values, holding.orderType),
-                            )
-                          : null,
-                    )
-                  ]
-                : null,
-            notes: holding.notes,
-            tags: holding.tags,
-            userId: holding.userId,
-            psychologyData: holding.psychologyData,
-          );
-        } else if (notification.existingTrade is String) {
-          final String tradeId = notification.existingTrade as String;
-          final cubitAsync = ref.read(tradeControllerCubitProvider);
-          if (cubitAsync is AsyncData<TradeControllerCubit>) {
-            final cubit = cubitAsync.value;
-            cubit.state.mapOrNull(
-              loaded: (state) {
-                try {
-                  tradeToEdit =
-                      state.trades.firstWhere((t) => t.tradeId == tradeId);
-                } catch (e) {
-                  AppLogger.warning('Trade $tradeId not found for edit',
-                      tag: 'TradeWebScreen');
-                }
-              },
-            );
-          }
-        }
-
-        setState(() {
-          // Pass it to AddTradeWebPage by adding a state variable (will define shortly)
-          _existingTradeToEdit = tradeToEdit;
-        });
-
-        final addTradeIndex = _swipeController.items
-            .indexWhere((item) => item.title == addTradeTitle);
-        if (addTradeIndex != -1) {
-          _swipeController.navigateTo(addTradeIndex);
-        }
+        _openEditOrAddTrade(notification.existingTrade);
         return true;
       },
       child: UnifiedSidebarScaffold(

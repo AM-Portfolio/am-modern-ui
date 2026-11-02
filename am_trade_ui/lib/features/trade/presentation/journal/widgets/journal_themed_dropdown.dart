@@ -87,10 +87,12 @@ class JournalThemedDropdown<T> extends StatelessWidget {
           decoration: JournalFieldDecoration.borderLabel(
             context,
             label: label!,
-            // Keep inner trigger flush so hint/value stay vertically centered.
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.xs,
-              vertical: AppSpacing.xxs,
+            // Room for floating label without crushing the value row.
+            contentPadding: const EdgeInsets.fromLTRB(
+              AppSpacing.sm,
+              AppSpacing.sm,
+              AppSpacing.sm,
+              AppSpacing.sm,
             ),
           ),
           child: dropdown,

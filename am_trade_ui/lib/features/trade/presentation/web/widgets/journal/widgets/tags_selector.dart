@@ -71,8 +71,7 @@ class TagsSelector extends StatelessWidget {
           child: InputDecorator(
             decoration: JournalFieldDecoration.outlined(
               context,
-              labelText: 'Tags',
-              floatingLabel: true,
+              hintText: 'Tags',
               dense: true,
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: AppSpacing.sm + AppSpacing.xs,
@@ -87,7 +86,7 @@ class TagsSelector extends StatelessWidget {
             ),
             child: Text(
               count == 0
-                  ? 'Select tags'
+                  ? 'Tags'
                   : '$count tag${count == 1 ? '' : 's'} selected',
               style: theme.textTheme.bodyMedium?.copyWith(
                 color:

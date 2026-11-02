@@ -7,6 +7,7 @@ import '../../../presentation/models/trade_holding_view_model.dart';
 import '../../../providers/trade_internal_providers.dart';
 import '../../web/widgets/journal/components/journal_attachment_section.dart';
 import '../../web/widgets/journal/utils/journal_form_helpers.dart';
+import '../utils/journal_entry_validation.dart';
 import 'journal_form_surface.dart';
 import 'journal_preset_or_custom_field.dart';
 import 'journal_workflow_field_theme.dart';
@@ -26,10 +27,20 @@ class ExecuteTradeStep extends ConsumerStatefulWidget {
   final Future<void> Function(String tradeId)? onLinkTrade;
 
   @override
-  ConsumerState<ExecuteTradeStep> createState() => _ExecuteTradeStepState();
+  ConsumerState<ExecuteTradeStep> createState() => ExecuteTradeStepState();
 }
 
-class _ExecuteTradeStepState extends ConsumerState<ExecuteTradeStep> {
+class ExecuteTradeStepState extends ConsumerState<ExecuteTradeStep> {
+  final _formKey = GlobalKey<FormState>();
+
+  bool validate() {
+    final fieldsOk = _formKey.currentState?.validate() ?? true;
+    if (!fieldsOk) return false;
+    return JournalEntryValidation.validateExecute(widget.entry) == null;
+  }
+
+  String? validationMessage() =>
+      JournalEntryValidation.validateExecute(widget.entry);
   List<TradeHoldingViewModel> _availableTrades = [];
   var _loadingTrades = false;
   String? _loadError;
@@ -94,11 +105,14 @@ class _ExecuteTradeStepState extends ConsumerState<ExecuteTradeStep> {
 
   Widget _field({
     required TextEditingController controller,
-    required String placeholder,
+    required String label,
     required ValueChanged<String> onChanged,
+    String? hintText,
     String? prefixText,
     TextInputType? keyboardType,
     int maxLines = 1,
+    FormFieldValidator<String>? validator,
+    bool required = false,
   }) {
     final theme = Theme.of(context);
     return TextFormField(
@@ -106,9 +120,12 @@ class _ExecuteTradeStepState extends ConsumerState<ExecuteTradeStep> {
       style: theme.textTheme.bodyLarge,
       keyboardType: keyboardType,
       maxLines: maxLines,
+      validator: validator,
       decoration: journalWorkflowDecoration(
         context,
-        hintText: placeholder,
+        label: label,
+        required: required,
+        hintText: hintText,
         prefixText: prefixText,
         alignLabelWithHint: maxLines > 1,
       ),
@@ -312,8 +329,11 @@ class _ExecuteTradeStepState extends ConsumerState<ExecuteTradeStep> {
     final colors = context.colors;
     final imageUrls = entry.attachments.map((a) => a.fileUrl).toList();
 
+    final plan = entry.preTradePlan;
     return JournalFormSurface(
-      child: Column(
+      child: Form(
+        key: _formKey,
+        child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // Instrument | linked-trade card on one row.
@@ -452,19 +472,43 @@ class _ExecuteTradeStepState extends ConsumerState<ExecuteTradeStep> {
           _row(
             _field(
               controller: _entryPrice,
-              placeholder: 'Actual entry price',
+              label: 'Actual entry price',
+              required: true,
               prefixText: '₹ ',
               keyboardType:
                   const TextInputType.numberWithOptions(decimal: true),
+              validator: (v) {
+                if ((v ?? '').trim().isNotEmpty) {
+                  return JournalEntryValidation.positiveNumber(
+                    v,
+                    label: 'Actual entry price',
+                  );
+                }
+                final planned = plan?.plannedEntryPrice;
+                if (planned != null && planned > 0) return null;
+                return 'Actual entry price is required';
+              },
               onChanged: (v) => _updateExec(
                 exec.copyWith(actualEntryPrice: double.tryParse(v)),
               ),
             ),
             _field(
               controller: _qty,
-              placeholder: 'Quantity',
+              label: 'Quantity',
+              required: true,
               keyboardType:
                   const TextInputType.numberWithOptions(decimal: true),
+              validator: (v) {
+                if ((v ?? '').trim().isNotEmpty) {
+                  return JournalEntryValidation.positiveNumber(
+                    v,
+                    label: 'Quantity',
+                  );
+                }
+                final planned = plan?.plannedQuantity;
+                if (planned != null && planned > 0) return null;
+                return 'Quantity is required';
+              },
               onChanged: (v) =>
                   _updateExec(exec.copyWith(quantity: double.tryParse(v))),
             ),
@@ -487,14 +531,14 @@ class _ExecuteTradeStepState extends ConsumerState<ExecuteTradeStep> {
           _gap(),
           _field(
             controller: _externalId,
-            placeholder: 'Order / trade ID',
+            label: 'Order / trade ID',
             onChanged: (v) =>
                 _updateExec(exec.copyWith(externalOrderId: v)),
           ),
           _gap(),
           _field(
             controller: _notes,
-            placeholder: 'Live trade notes',
+            label: 'Live trade notes',
             maxLines: 4,
             onChanged: (v) =>
                 _updateExec(exec.copyWith(notes: v), content: v),
@@ -509,6 +553,7 @@ class _ExecuteTradeStepState extends ConsumerState<ExecuteTradeStep> {
             label: 'Attachments',
           ),
         ],
+        ),
       ),
     );
   }

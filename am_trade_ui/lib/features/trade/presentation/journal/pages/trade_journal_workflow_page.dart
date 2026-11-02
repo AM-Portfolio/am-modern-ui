@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:am_design_system/am_design_system.dart';
 import 'package:am_design_system/shared/widgets/navigation/step_indicator.dart';
 import 'package:flutter/material.dart';
@@ -6,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../internal/domain/entities/journal_entry.dart';
 import '../../cubit/journal/journal_cubit.dart';
 import '../utils/journal_calc_helper.dart';
+import '../utils/journal_entry_validation.dart';
 import '../widgets/execute_trade_step.dart';
 import '../widgets/journal_trade_header.dart';
 import '../widgets/post_trade_review_step.dart';
@@ -64,6 +67,15 @@ class TradeJournalWorkflowPageState
   /// True after local edits since last successful Save Draft / Save Journal.
   var _dirty = false;
   final _stepScrollController = ScrollController();
+  final _preStepKey = GlobalKey<PreTradePlanStepState>();
+  final _preStepMobileKey = GlobalKey<PreTradePlanStepMobileState>();
+  final _execStepKey = GlobalKey<ExecuteTradeStepState>();
+  final _postStepKey = GlobalKey<PostTradeReviewStepState>();
+  static const _autosaveDelay = Duration(seconds: 20);
+  Timer? _autosaveTimer;
+  Future<void>? _autosaveFuture;
+  DateTime? _lastDraftSavedAt;
+  String _lastSavedFingerprint = '';
 
   static const _stepLabels = ['Pre-Trade', 'Execute', 'Post-Trade'];
 
@@ -105,6 +117,7 @@ class TradeJournalWorkflowPageState
 
   @override
   void dispose() {
+    _autosaveTimer?.cancel();
     _stepScrollController.dispose();
     super.dispose();
   }
@@ -118,6 +131,36 @@ class TradeJournalWorkflowPageState
     });
   }
 
+  bool _validateCurrentStep() {
+    if (_readOnly) return true;
+    final ok = switch (_currentStep) {
+      0 => widget.useMobileLayout
+          ? (_preStepMobileKey.currentState?.validate() ?? true)
+          : (_preStepKey.currentState?.validate() ?? true),
+      1 => _execStepKey.currentState?.validate() ?? true,
+      2 => _postStepKey.currentState?.validate() ?? true,
+      _ => true,
+    };
+    if (ok) return true;
+    final message = switch (_currentStep) {
+          0 => widget.useMobileLayout
+              ? _preStepMobileKey.currentState?.validationMessage()
+              : _preStepKey.currentState?.validationMessage(),
+          1 => _execStepKey.currentState?.validationMessage(),
+          2 => _postStepKey.currentState?.validationMessage(),
+          _ => null,
+        } ??
+        JournalEntryValidation.validateTradeStep(_entry, _currentStep) ??
+        'Please fix the highlighted fields';
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: context.colors.statusWarning,
+      ),
+    );
+    return false;
+  }
+
   @override
   void didUpdateWidget(covariant TradeJournalWorkflowPage oldWidget) {
     super.didUpdateWidget(oldWidget);
@@ -128,11 +171,15 @@ class TradeJournalWorkflowPageState
     final next = widget.initialEntry;
     final prev = oldWidget.initialEntry;
     if (next == null) return;
+    // Don't clobber in-progress edits when the list reloads after autosave.
+    if (_dirty && prev?.id == next.id) return;
     if (prev == null ||
         prev.id != next.id ||
         prev.updatedAt != next.updatedAt) {
       _readOnly = widget.initialReadOnly;
       _hydrateFrom(next, isNew: false, keepStep: prev?.id == next.id);
+      _lastSavedFingerprint = _entryFingerprint(_entry);
+      _dirty = false;
     }
   }
 
@@ -158,13 +205,14 @@ class TradeJournalWorkflowPageState
       );
     }
     _entry = entry;
+    _lastSavedFingerprint = _entryFingerprint(entry);
     if (!keepStep) {
       _currentStep = widget.startAtStep ?? stepFromStatus(entry.journalStatus);
     }
   }
 
   JournalEntry _createNewEntry() {
-    return JournalEntry(
+    final entry = JournalEntry(
       id: 'temp-${DateTime.now().millisecondsSinceEpoch}',
       userId: '',
       title: 'New Trade',
@@ -178,6 +226,8 @@ class TradeJournalWorkflowPageState
       tradeExecution: const TradeExecution(),
       postTradeReview: const PostTradeReview(),
     );
+    _lastSavedFingerprint = _entryFingerprint(entry);
+    return entry;
   }
 
   void _updateEntry(JournalEntry updated) {
@@ -185,85 +235,97 @@ class TradeJournalWorkflowPageState
       _entry = _recalc(updated);
       _dirty = true;
     });
+    _scheduleAutosave();
   }
 
   bool get hasUnsavedChanges => !_readOnly && _dirty && !_saving;
 
-  /// Public for parent shell (list selection / mode toggle) leave guards.
-  ///
-  /// [force] — Cancel always warns; system back only when dirty.
+  String _entryFingerprint(JournalEntry e) {
+    final plan = e.preTradePlan;
+    final exec = e.tradeExecution;
+    final review = e.postTradeReview;
+    return [
+      e.title,
+      e.symbol,
+      e.setup,
+      e.content,
+      e.tradeDirection,
+      plan?.strategy,
+      plan?.setup,
+      plan?.plannedEntryPrice,
+      plan?.plannedStopLoss,
+      plan?.plannedTarget,
+      plan?.plannedQuantity,
+      plan?.setupDescription,
+      plan?.entryRationale,
+      plan?.marketContext,
+      plan?.setupChecklist.join(','),
+      exec?.actualEntryPrice,
+      exec?.quantity,
+      exec?.notes,
+      exec?.broker,
+      review?.actualExitPrice,
+      review?.whatWentWell,
+      review?.whatCouldBeImproved,
+      review?.lessonLearned,
+      review?.followedStopLoss,
+      review?.followedTarget,
+      review?.mistakeCategory,
+      review?.emotionalState,
+      review?.executionScore,
+      e.attachments.map((a) => a.fileUrl).join(','),
+    ].join('\u241F');
+  }
+
+  bool get _hasMeaningfulContent {
+    final e = _entry;
+    final plan = e.preTradePlan;
+    final exec = e.tradeExecution;
+    final review = e.postTradeReview;
+    return (e.symbol?.trim().isNotEmpty ?? false) ||
+        (e.setup?.trim().isNotEmpty ?? false) ||
+        (e.content?.trim().isNotEmpty ?? false) ||
+        (e.title.trim().isNotEmpty && e.title.trim() != 'New Trade') ||
+        plan?.plannedEntryPrice != null ||
+        plan?.plannedStopLoss != null ||
+        plan?.plannedTarget != null ||
+        plan?.plannedQuantity != null ||
+        (plan?.setupDescription?.trim().isNotEmpty ?? false) ||
+        (plan?.entryRationale?.trim().isNotEmpty ?? false) ||
+        (plan?.strategy?.trim().isNotEmpty ?? false) ||
+        exec?.actualEntryPrice != null ||
+        (exec?.notes?.trim().isNotEmpty ?? false) ||
+        review?.actualExitPrice != null ||
+        (review?.whatWentWell?.trim().isNotEmpty ?? false) ||
+        (review?.whatCouldBeImproved?.trim().isNotEmpty ?? false) ||
+        (review?.lessonLearned?.trim().isNotEmpty ?? false) ||
+        e.attachments.isNotEmpty;
+  }
+
+  void _scheduleAutosave() {
+    if (_readOnly || _saving || !mounted) return;
+    if (!_hasMeaningfulContent) return;
+    if (_entryFingerprint(_entry) == _lastSavedFingerprint) return;
+    _autosaveTimer?.cancel();
+    _autosaveTimer = Timer(_autosaveDelay, () {
+      _autosaveFuture = _save(complete: false, silent: true);
+    });
+  }
+
+  /// Auto-saves a draft when leaving with unsaved work. Empty journals leave
+  /// without creating a row. Returns false only if the flush fails.
   Future<bool> confirmLeaveIfUnsaved({bool force = false}) async {
+    if (_saving) return true;
     if (!force && !hasUnsavedChanges) return true;
-
-    if (!hasUnsavedChanges) {
-      final discard = await showDialog<bool>(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: const Text('Leave journal?'),
-          content: const Text('Leave without saving this trade journal?'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Keep editing'),
-            ),
-            FilledButton(
-              style: FilledButton.styleFrom(
-                backgroundColor: ModuleColors.trade,
-              ),
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Leave'),
-            ),
-          ],
-        ),
-      );
-      return discard == true;
-    }
-
-    final action = await showDialog<String>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Unsaved journal'),
-        content: const Text(
-          'Your journal may be lost if you leave now. '
-          'Save it as a draft, or save completely.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, 'stay'),
-            child: const Text('Keep editing'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, 'discard'),
-            child: const Text('Discard'),
-          ),
-          OutlinedButton(
-            onPressed: () => Navigator.pop(ctx, 'draft'),
-            child: const Text('Save draft'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: ModuleColors.trade,
-            ),
-            onPressed: () => Navigator.pop(ctx, 'complete'),
-            child: const Text('Save completely'),
-          ),
-        ],
-      ),
-    );
-    if (!mounted) return false;
-    switch (action) {
-      case 'discard':
-        return true;
-      case 'draft':
-        await _save(complete: false);
-        return !_dirty;
-      case 'complete':
-        await _save(complete: true);
-        return !_dirty;
-      case 'stay':
-      default:
-        return false;
-    }
+    if (!hasUnsavedChanges) return true;
+    if (!_hasMeaningfulContent) return true;
+    _autosaveTimer?.cancel();
+    try {
+      await _autosaveFuture;
+    } catch (_) {}
+    if (!hasUnsavedChanges) return true;
+    await _save(complete: false, silent: true);
+    return !hasUnsavedChanges;
   }
 
   JournalEntry _recalc(JournalEntry e) {
@@ -309,17 +371,25 @@ class TradeJournalWorkflowPageState
     );
   }
 
-  Future<void> _save({required bool complete}) async {
+  Future<void> _save({required bool complete, bool silent = false}) async {
+    if (_saving) return;
+    if (complete && !silent && !_validateCurrentStep()) return;
+    final fingerprintAtStart = _entryFingerprint(_entry);
     setState(() => _saving = true);
     try {
-      var status = _entry.journalStatus ?? 'DRAFT';
+      var status = (_entry.journalStatus ?? 'DRAFT').toUpperCase();
       if (complete) {
         status = 'COMPLETED';
-      } else if (_currentStep == 0 && status == 'DRAFT') {
-        status = 'PLANNED';
-      } else if (_currentStep == 1 &&
-          (status == 'DRAFT' || status == 'PLANNED')) {
-        status = 'OPEN';
+      } else if (!silent) {
+        // Explicit Save Draft advances lifecycle; silent autosave stays DRAFT.
+        if (_currentStep == 0 && status == 'DRAFT') {
+          status = 'PLANNED';
+        } else if (_currentStep == 1 &&
+            (status == 'DRAFT' || status == 'PLANNED')) {
+          status = 'OPEN';
+        }
+      } else if (status.isEmpty) {
+        status = 'DRAFT';
       }
 
       final plan = _entry.preTradePlan;
@@ -329,7 +399,7 @@ class TradeJournalWorkflowPageState
       final setup = (_entry.setup ?? plan?.setup)?.trim();
       final title = (symbol != null && symbol.isNotEmpty)
           ? '$symbol ${setup?.isNotEmpty == true ? setup : 'Trade'}'
-          : (_entry.title.trim().isNotEmpty ? _entry.title : 'New Trade');
+          : (_entry.title.trim().isNotEmpty ? _entry.title : 'Untitled draft');
 
       final localAttachments = List<JournalAttachment>.from(_entry.attachments);
       var saved = await widget.journalCubit.saveEntryFull(
@@ -367,22 +437,36 @@ class TradeJournalWorkflowPageState
         saved = saved.copyWith(attachments: localAttachments);
       }
       if (!mounted) return;
+      final stillSame = _entryFingerprint(_entry) == fingerprintAtStart;
       setState(() {
-        _entry = saved;
+        if (stillSame) {
+          _entry = saved;
+          _dirty = false;
+          _lastSavedFingerprint = _entryFingerprint(saved);
+        } else {
+          // Keep local edits; adopt server id so later saves update.
+          _entry = _entry.copyWith(
+            id: saved.id,
+            journalStatus: saved.journalStatus,
+            updatedAt: saved.updatedAt,
+          );
+          _dirty = true;
+          _lastSavedFingerprint = fingerprintAtStart;
+        }
         _isNew = false;
         _saving = false;
-        _dirty = false;
+        if (silent) _lastDraftSavedAt = DateTime.now();
       });
-      if (widget.embedded) {
+      if (!silent && widget.embedded) {
         widget.onEmbeddedDone?.call(saved.id, complete: complete);
-      } else if (complete) {
+      } else if (!silent && complete) {
         Navigator.of(context).pop();
       }
-      if (!complete && mounted) {
+      if (!silent && !complete && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Draft saved')),
         );
-      } else if (complete && widget.embedded && mounted) {
+      } else if (!silent && complete && widget.embedded && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Journal saved')),
         );
@@ -390,9 +474,11 @@ class TradeJournalWorkflowPageState
     } catch (e) {
       if (!mounted) return;
       setState(() => _saving = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Save failed: $e')),
-      );
+      if (!silent) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Save failed: $e')),
+        );
+      }
     }
   }
 
@@ -487,27 +573,27 @@ class TradeJournalWorkflowPageState
                     child: _currentStep == 0
                         ? (widget.useMobileLayout
                             ? PreTradePlanStepMobile(
-                                key: const ValueKey('pre-step-mobile'),
+                                key: _preStepMobileKey,
                                 entry: _entry,
                                 onUpdate: _updateEntry,
                                 applyDefaultChecklist: _isNew && !_readOnly,
                               )
                             : PreTradePlanStep(
-                                key: const ValueKey('pre-step'),
+                                key: _preStepKey,
                                 entry: _entry,
                                 onUpdate: _updateEntry,
                                 applyDefaultChecklist: _isNew && !_readOnly,
                               ))
                         : _currentStep == 1
                             ? ExecuteTradeStep(
-                                key: const ValueKey('exec-step'),
+                                key: _execStepKey,
                                 entry: _entry,
                                 onUpdate: _updateEntry,
                                 portfolioId: widget.portfolioId,
                                 onLinkTrade: _readOnly ? null : _linkTrade,
                               )
                             : PostTradeReviewStep(
-                                key: const ValueKey('post-step'),
+                                key: _postStepKey,
                                 entry: _entry,
                                 onUpdate: _updateEntry,
                               ),
@@ -643,6 +729,15 @@ class TradeJournalWorkflowPageState
                 ),
               ],
             ] else ...[
+              if (_lastDraftSavedAt != null) ...[
+                Text(
+                  'Draft saved',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: colors.textSecondary,
+                      ),
+                ),
+                const SizedBox(width: 8),
+              ],
               AppButton(
                 text: 'Save Draft',
                 type: AppButtonType.secondary,
@@ -663,6 +758,7 @@ class TradeJournalWorkflowPageState
                 onPressed: _saving
                     ? null
                     : () {
+                        if (!_validateCurrentStep()) return;
                         if (_currentStep < 2) {
                           _goToStep(_currentStep + 1);
                         } else {

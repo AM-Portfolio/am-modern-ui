@@ -38,6 +38,7 @@ class JournalSymbolSuggestField extends StatefulWidget {
     this.decoration,
     this.onChanged,
     this.onSelected,
+    this.validator,
     this.clearOnSelect = false,
     this.textCapitalization = TextCapitalization.characters,
   });
@@ -51,6 +52,9 @@ class JournalSymbolSuggestField extends StatefulWidget {
 
   /// Called when the user picks a suggestion (symbol is uppercased).
   final ValueChanged<JournalSymbolSuggestion>? onSelected;
+
+  /// Optional Form validator (Pre-Trade required symbol).
+  final FormFieldValidator<String>? validator;
 
   /// When true (watchlist), clear the field after a pick.
   final bool clearOnSelect;
@@ -467,11 +471,12 @@ class _JournalSymbolSuggestFieldState extends State<JournalSymbolSuggestField> {
       child: OverlayPortal(
         controller: _overlayController,
         overlayChildBuilder: (context) => _buildOverlayMenu(),
-        child: TextField(
+        child: TextFormField(
           controller: widget.controller,
           focusNode: _focusNode,
           enabled: widget.enabled,
           textCapitalization: widget.textCapitalization,
+          validator: widget.validator,
           style: context.text.body(compact: true).copyWith(
                 color: colors.textPrimary,
               ),
@@ -496,7 +501,7 @@ class _JournalSymbolSuggestFieldState extends State<JournalSymbolSuggestField> {
                   )
                 : baseDecoration.suffixIcon,
           ),
-          onSubmitted: (_) {
+          onFieldSubmitted: (_) {
             final t = widget.controller.text.trim();
             if (t.isNotEmpty) {
               _pick(
