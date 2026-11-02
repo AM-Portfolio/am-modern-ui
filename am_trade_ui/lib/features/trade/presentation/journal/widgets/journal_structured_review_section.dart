@@ -191,7 +191,7 @@ class _MiniReviewRowTile extends StatelessWidget {
                   key: ValueKey('outcome-${row.tradeId}-${row.outcome}'),
                   label: 'Outcome',
                   value: row.outcome,
-                  hint: 'Select',
+                  hint: 'Outcome',
                   enabled: isEditMode,
                   items: JournalStructuredReviewSection.outcomes
                       .map((o) => DropdownMenuItem(value: o, child: Text(o)))

@@ -7,6 +7,7 @@ import '../../../internal/domain/repositories/journal_repository.dart';
 import '../../../internal/domain/usecases/create_journal_entry_usecase.dart';
 import '../../../internal/domain/usecases/delete_journal_entry_usecase.dart';
 import '../../../internal/domain/usecases/get_journal_entries_usecase.dart';
+import '../../../internal/domain/usecases/seed_demo_journal_entries_usecase.dart';
 import '../../../internal/domain/usecases/update_journal_entry_usecase.dart';
 import 'journal_state.dart';
 
@@ -16,6 +17,7 @@ class JournalCubit extends Cubit<JournalState> {
     required this.createJournalEntry,
     required this.updateJournalEntry,
     required this.deleteJournalEntry,
+    required this.seedDemoJournalEntries,
     required this.repository,
   }) : super(const JournalState.initial());
 
@@ -23,7 +25,11 @@ class JournalCubit extends Cubit<JournalState> {
   final CreateJournalEntryUseCase createJournalEntry;
   final UpdateJournalEntryUseCase updateJournalEntry;
   final DeleteJournalEntryUseCase deleteJournalEntry;
+  final SeedDemoJournalEntriesUseCase seedDemoJournalEntries;
   final JournalRepository repository;
+
+  /// Avoids repeated seed calls in one cubit lifetime (session).
+  bool _demoSeedAttempted = false;
 
   String _statusFilter = '';
   String? _folderId;
@@ -72,6 +78,51 @@ class JournalCubit extends Cubit<JournalState> {
       DateTime.now().subtract(const Duration(days: 90));
   DateTime get _defaultEnd => DateTime.now().add(const Duration(days: 1));
 
+  static bool _isDemoEntry(JournalEntry entry) {
+    final raw = entry.customFields['demo'];
+    return raw == true || raw?.toString().toLowerCase() == 'true';
+  }
+
+  /// Ask the API once per session for educational demos (idempotent server-side).
+  Future<List<JournalEntry>> _seedDemoIfEmpty(
+    List<JournalEntry> entries, {
+    Map<String, dynamic>? query,
+  }) async {
+    if (_demoSeedAttempted) return entries;
+    // Folder/status search views are not the place to trigger onboarding seed.
+    final hasActiveFilters = (_statusFilter.isNotEmpty &&
+            _statusFilter != 'ALL') ||
+        (_folderId != null && _folderId!.isNotEmpty) ||
+        _tagIds.isNotEmpty ||
+        _searchQuery.trim().isNotEmpty ||
+        (_setupFilter != null && _setupFilter!.isNotEmpty);
+    if (hasActiveFilters) return entries;
+    // Already have demos in this page load — nothing to do.
+    if (entries.any(_isDemoEntry)) {
+      _demoSeedAttempted = true;
+      return entries;
+    }
+
+    _demoSeedAttempted = true;
+    try {
+      final created = await seedDemoJournalEntries();
+      if (created.isEmpty) return entries;
+      AppLogger.info(
+        'Seeded ${created.length} demo journal entries',
+        tag: 'JournalCubit',
+      );
+      return getJournalEntries.getByUser(
+        query: query == null || query.isEmpty ? null : query,
+      );
+    } catch (e) {
+      AppLogger.warning(
+        'Demo journal seed skipped: $e',
+        tag: 'JournalCubit',
+      );
+      return entries;
+    }
+  }
+
   Future<void> loadJournalEntries() async {
     AppLogger.methodEntry('loadJournalEntries', tag: 'JournalCubit');
     // Keep previous loaded entries visible — bare `loading` makes the page treat
@@ -86,9 +137,10 @@ class JournalCubit extends Cubit<JournalState> {
     }
     try {
       final query = _buildQuery();
-      final entries = await getJournalEntries.getByUser(
+      var entries = await getJournalEntries.getByUser(
         query: query.isEmpty ? null : query,
       );
+      entries = await _seedDemoIfEmpty(entries, query: query);
       final rangeStart = _startDate ?? _defaultStart;
       final rangeEnd = _endDate ?? _defaultEnd;
       try {

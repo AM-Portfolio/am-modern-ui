@@ -18,6 +18,8 @@ class TradeHoldingsDashboardWebPage extends ConsumerStatefulWidget {
   const TradeHoldingsDashboardWebPage({
     required this.portfolioId,
     this.onNavigateToChart,
+    this.onSelectTrade,
+    this.onJournalThis,
     this.embedded = false,
     this.accentColor,
     super.key,
@@ -25,6 +27,8 @@ class TradeHoldingsDashboardWebPage extends ConsumerStatefulWidget {
 
   final String portfolioId;
   final Function(String symbol)? onNavigateToChart;
+  final void Function(TradeHoldingViewModel holding)? onSelectTrade;
+  final void Function(TradeHoldingViewModel holding)? onJournalThis;
 
   /// When true, omit outer [Scaffold] (e.g. hosted under Portfolio sidebar).
   final bool embedded;
@@ -75,7 +79,7 @@ class _TradeHoldingsDashboardWebPageState
       children: [
         if (!widget.embedded) ...[
           Padding(
-            padding: const EdgeInsets.fromLTRB(16.0, 0.0, 16.0, 0.0),
+            padding: const EdgeInsets.fromLTRB(AppSpacing.md, 0, AppSpacing.md, 0),
             child: ref.watch(favoriteFilterCubitProvider).when(
                   data: (cubit) => BlocProvider.value(
                     value: cubit,
@@ -125,6 +129,7 @@ class _TradeHoldingsDashboardWebPageState
                 onHoldingSelected: widget.embedded
                     ? null
                     : (holding) => _showHoldingDetails(context, holding),
+                onJournalThis: widget.embedded ? null : widget.onJournalThis,
                 onSymbolTap: widget.onNavigateToChart,
                 onRefresh: () {
                   ref.invalidate(tradeHoldingsStreamProvider(portfolioId));
@@ -290,65 +295,43 @@ class _TradeHoldingsDashboardWebPageState
   }
 
   void _showHoldingDetails(BuildContext context, TradeHoldingViewModel holding) {
-    setState(() {
-      _selectedTrade = holding;
-    });
+    if (widget.onSelectTrade != null) {
+      widget.onSelectTrade!(holding);
+    } else {
+      setState(() {
+        _selectedTrade = holding;
+      });
+    }
   }
 
   Widget _buildDetailView() {
     if (_selectedTrade == null) return const SizedBox.shrink();
 
-    return Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Back button sidebar
-        Container(
-          width: 60,
-          color: Theme.of(context).colorScheme.surfaceContainerHighest,
-          child: Column(
-            children: [
-              SizedBox(
-                height: 60,
-                child: Center(
-                  child: IconButton(
-                    icon: const Icon(Icons.arrow_back),
-                    onPressed: () {
-                      setState(() {
-                        _selectedTrade = null;
-                      });
-                    },
-                    tooltip: 'Back to Holdings',
-                  ),
-                ),
-              ),
-              const Divider(height: 1),
-              Expanded(child: Container()),
-            ],
+        Expanded(
+          child: TradeDetailViewPage(
+            trade: _selectedTrade!,
+            portfolioId: widget.portfolioId,
+            onNavigateToChart: widget.onNavigateToChart,
+            onClose: () {
+              setState(() {
+                _selectedTrade = null;
+              });
+            },
           ),
         ),
-        // Detail view content
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Expanded(
-                child: TradeDetailViewPage(
-                  trade: _selectedTrade!,
-                  portfolioId: widget.portfolioId,
-                  onClose: () {
-                    setState(() {
-                      _selectedTrade = null;
-                    });
-                  },
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                child: SymbolNewsSection(
-                  symbol: _selectedTrade!.symbol,
-                  surface: NewsUiSurface.tradeHoldings,
-                ),
-              ),
-            ],
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.md,
+            0,
+            AppSpacing.md,
+            AppSpacing.sm + AppSpacing.xs,
+          ),
+          child: SymbolNewsSection(
+            symbol: _selectedTrade!.symbol,
+            surface: NewsUiSurface.tradeHoldings,
           ),
         ),
       ],

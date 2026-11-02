@@ -1,4 +1,5 @@
 import 'package:am_common/am_common.dart';
+import 'package:am_design_system/am_design_system.dart';
 import 'package:am_news_ui/am_news_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -14,9 +15,15 @@ import '../widgets/mobile_trade_list_view.dart';
 
 /// Web page for displaying all trades in a list view
 class TradeListWebPage extends ConsumerStatefulWidget {
-  const TradeListWebPage({ required this.portfolioId, this.onNavigateToChart, super.key});
+  const TradeListWebPage({
+    required this.portfolioId,
+    this.initialTradeId,
+    this.onNavigateToChart,
+    super.key,
+  });
 
-    final String portfolioId;
+  final String portfolioId;
+  final String? initialTradeId;
   final Function(String symbol)? onNavigateToChart;
 
   @override
@@ -28,6 +35,30 @@ class _TradeListWebPageState extends ConsumerState<TradeListWebPage> {
   bool _isListVisible = true;
   bool _hasInitializedSelection = false;
   String? _journalingTradeId;
+  String _sidebarSearchQuery = '';
+
+  @override
+  void didUpdateWidget(TradeListWebPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialTradeId != null &&
+        widget.initialTradeId != oldWidget.initialTradeId) {
+      final holdingsAsync =
+          ref.read(tradeHoldingsStreamProvider(widget.portfolioId));
+      holdingsAsync.whenData((tradeHoldings) {
+        final match = tradeHoldings.holdings
+            .cast<TradeHoldingViewModel?>()
+            .firstWhere(
+              (h) => h?.tradeId == widget.initialTradeId,
+              orElse: () => null,
+            );
+        if (match != null && mounted) {
+          setState(() {
+            _selectedTrade = match;
+          });
+        }
+      });
+    }
+  }
 
   Future<void> _journalThis(TradeHoldingViewModel holding) async {
     if (_journalingTradeId != null) return;
@@ -72,13 +103,19 @@ class _TradeListWebPageState extends ConsumerState<TradeListWebPage> {
             ).animate().fadeIn(duration: 600.ms).scale();
           }
 
-          // Auto-select the first trade on initial load
+          // Auto-select initial trade or the first trade on initial load
           if (!_hasInitializedSelection && holdings.isNotEmpty) {
             _hasInitializedSelection = true;
+            final initialTrade = widget.initialTradeId != null
+                ? holdings.firstWhere(
+                    (h) => h.tradeId == widget.initialTradeId,
+                    orElse: () => holdings.first,
+                  )
+                : holdings.first;
             WidgetsBinding.instance.addPostFrameCallback((_) {
               if (mounted) {
                 setState(() {
-                  _selectedTrade = holdings.first;
+                  _selectedTrade = initialTrade;
                 });
               }
             });
@@ -114,7 +151,12 @@ class _TradeListWebPageState extends ConsumerState<TradeListWebPage> {
                               Expanded(child: _buildTradeDetailView()),
                               Padding(
                                 padding:
-                                    const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                                    const EdgeInsets.fromLTRB(
+                                      AppSpacing.md,
+                                      0,
+                                      AppSpacing.md,
+                                      AppSpacing.sm + AppSpacing.xs,
+                                    ),
                                 child: SymbolNewsSection(
                                   symbol: _selectedTrade!.symbol,
                                   surface: NewsUiSurface.tradeTrades,
@@ -129,29 +171,53 @@ class _TradeListWebPageState extends ConsumerState<TradeListWebPage> {
             },
           );
         },
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => Center(
+          child: CircularProgressIndicator(color: ModuleColors.trade),
+        ),
         error: (error, stack) => Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.error_outline, size: 64, color: Theme.of(context).colorScheme.error),
-              const SizedBox(height: 16),
-              Text('Error loading trades', style: Theme.of(context).textTheme.titleLarge),
-              const SizedBox(height: 8),
-              Text(error.toString(), style: Theme.of(context).textTheme.bodyMedium),
-              const SizedBox(height: 16),
-              ElevatedButton.icon(
+              Icon(Icons.error_outline, size: 64, color: context.statusError),
+              const SizedBox(height: AppSpacing.md),
+              Text(
+                'Error loading trades',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      color: context.colors.textPrimary,
+                    ),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              Text(
+                error.toString(),
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: context.textSecondary,
+                    ),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              AppButton(
+                text: 'Retry',
+                icon: Icons.refresh,
                 onPressed: () {
                   ref.invalidate(tradeHoldingsStreamProvider(portfolioId));
                 },
-                icon: const Icon(Icons.refresh),
-                label: const Text('Retry'),
               ),
             ],
           ),
         ),
       ),
     );
+  }
+
+  List<TradeHoldingViewModel> _filterSidebarHoldings(
+    List<TradeHoldingViewModel> holdings,
+  ) {
+    final q = _sidebarSearchQuery.trim().toLowerCase();
+    if (q.isEmpty) return holdings;
+    return holdings.where((h) {
+      return h.displaySymbol.toLowerCase().contains(q) ||
+          h.displayCompanyName.toLowerCase().contains(q) ||
+          h.symbol.toLowerCase().contains(q);
+    }).toList();
   }
 
   // Trade sidebar - expanded or collapsed
@@ -161,14 +227,14 @@ class _TradeListWebPageState extends ConsumerState<TradeListWebPage> {
       return Container(
         width: 56,
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surfaceContainerHighest,
-          border: Border(right: BorderSide(color: Theme.of(context).dividerColor)),
+          color: context.colors.surface,
+          border: Border(right: BorderSide(color: context.colors.divider)),
         ),
         child: Column(
           children: [
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.sm),
             IconButton(
-              icon: const Icon(Icons.menu),
+              icon: Icon(Icons.menu, color: ModuleColors.trade),
               onPressed: () {
                 setState(() {
                   _isListVisible = true;
@@ -176,15 +242,15 @@ class _TradeListWebPageState extends ConsumerState<TradeListWebPage> {
               },
               tooltip: 'Show trade list',
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.sm),
             RotatedBox(
               quarterTurns: 3,
               child: Text(
                 'All Trades (${holdings.length})',
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
+                      fontWeight: FontWeight.bold,
+                      color: ModuleColors.trade,
+                    ),
               ),
             ),
           ],
@@ -193,33 +259,33 @@ class _TradeListWebPageState extends ConsumerState<TradeListWebPage> {
     }
 
     // Full sidebar with trade list
+    final colors = context.colors;
     return Container(
       width: 350,
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        border: Border(right: BorderSide(color: Theme.of(context).dividerColor)),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(2, 0))],
+        color: colors.surface,
+        border: Border(right: BorderSide(color: colors.divider)),
+        boxShadow: [
+          BoxShadow(
+            color: context.shadow(0.05),
+            blurRadius: 8,
+            offset: const Offset(2, 0),
+          ),
+        ],
       ),
       child: Column(
         children: [
           // Sidebar Header
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(AppSpacing.md),
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Theme.of(context).colorScheme.primaryContainer,
-                  Theme.of(context).colorScheme.primaryContainer.withOpacity(0.7),
-                ],
-              ),
-              border: Border(bottom: BorderSide(color: Theme.of(context).dividerColor)),
+              color: ModuleColors.trade.withValues(alpha: 0.08),
+              border: Border(bottom: BorderSide(color: colors.divider)),
             ),
             child: Row(
               children: [
-                Icon(Icons.receipt_long, color: Theme.of(context).colorScheme.primary),
-                const SizedBox(width: 12),
+                Icon(Icons.receipt_long, color: ModuleColors.trade),
+                const SizedBox(width: AppSpacing.sm + AppSpacing.xs),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -227,22 +293,22 @@ class _TradeListWebPageState extends ConsumerState<TradeListWebPage> {
                       Text(
                         'All Trades',
                         style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: Theme.of(context).colorScheme.onPrimaryContainer,
-                        ),
+                              fontWeight: FontWeight.bold,
+                              color: colors.textPrimary,
+                            ),
                       ),
                       Text(
                         '${holdings.length} trades',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onPrimaryContainer.withOpacity(0.7),
-                        ),
+                              color: context.textSecondary,
+                            ),
                       ),
                     ],
                   ),
                 ),
                 if (_selectedTrade != null)
                   IconButton(
-                    icon: const Icon(Icons.close),
+                    icon: Icon(Icons.close, color: context.textSecondary),
                     onPressed: () {
                       setState(() {
                         _isListVisible = false;
@@ -254,16 +320,104 @@ class _TradeListWebPageState extends ConsumerState<TradeListWebPage> {
             ),
           ),
 
+          // Search within All Trades
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.md,
+              AppSpacing.sm,
+              AppSpacing.md,
+              AppSpacing.sm,
+            ),
+            child: SizedBox(
+              height: 36,
+              child: TextField(
+                onChanged: (value) => setState(() => _sidebarSearchQuery = value),
+                decoration: InputDecoration(
+                  hintText: 'Search symbol or company...',
+                  hintStyle: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: context.textSecondary,
+                      ),
+                  prefixIcon: Icon(
+                    Icons.search,
+                    size: 16,
+                    color: context.textSecondary,
+                  ),
+                  suffixIcon: _sidebarSearchQuery.isNotEmpty
+                      ? IconButton(
+                          tooltip: 'Clear',
+                          icon: Icon(
+                            Icons.clear,
+                            size: 16,
+                            color: context.textSecondary,
+                          ),
+                          onPressed: () =>
+                              setState(() => _sidebarSearchQuery = ''),
+                        )
+                      : null,
+                  contentPadding: const EdgeInsets.symmetric(
+                    vertical: 0,
+                    horizontal: AppSpacing.md,
+                  ),
+                  filled: true,
+                  fillColor: context.colors.border.withValues(alpha: 0.12),
+                  border: OutlineInputBorder(
+                    borderRadius: AppRadii.button,
+                    borderSide: BorderSide(color: context.colors.border),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: AppRadii.button,
+                    borderSide: BorderSide(color: context.colors.border),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: AppRadii.button,
+                    borderSide: BorderSide(
+                      color: ModuleColors.trade,
+                      width: 1.5,
+                    ),
+                  ),
+                  isDense: true,
+                ),
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontSize: AppTypeScale.md,
+                    ),
+              ),
+            ),
+          ),
+
           // Trade list
           Expanded(
-            child: ListView.builder(
-              itemCount: holdings.length,
-              itemBuilder: (context, index) {
-                final holding = holdings[index];
-                final isSelected = _selectedTrade?.tradeId == holding.tradeId;
+            child: Builder(
+              builder: (context) {
+                final filtered = _filterSidebarHoldings(holdings);
+                if (filtered.isEmpty) {
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(AppSpacing.md),
+                      child: Text(
+                        _sidebarSearchQuery.trim().isEmpty
+                            ? 'No trades'
+                            : 'No trades match your search',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: context.textSecondary,
+                            ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  );
+                }
+                return ListView.builder(
+                  itemCount: filtered.length,
+                  itemBuilder: (context, index) {
+                    final holding = filtered[index];
+                    final isSelected =
+                        _selectedTrade?.tradeId == holding.tradeId;
 
-                return _buildTradeSidebarItem(holding, isSelected)
-                    .animate().fadeIn(delay: (30 * index).ms).slideX(begin: -0.1, end: 0);
+                    return _buildTradeSidebarItem(holding, isSelected)
+                        .animate()
+                        .fadeIn(delay: (30 * index).ms)
+                        .slideX(begin: -0.1, end: 0);
+                  },
+                );
               },
             ),
           ),
@@ -275,13 +429,23 @@ class _TradeListWebPageState extends ConsumerState<TradeListWebPage> {
   Widget _buildTradeSidebarItem(TradeHoldingViewModel holding, bool isSelected) {
     final isProfit = holding.isProfit;
     final statusColor = _getStatusColor(holding.status);
+    final colors = context.colors;
+    final muted = context.textSecondary;
+    final pnlColor =
+        isProfit ? context.marketPositive : context.marketNegative;
+    final accent = ModuleColors.trade;
 
     return Container(
       decoration: BoxDecoration(
-        color: isSelected ? Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3) : Colors.transparent,
+        color: isSelected
+            ? accent.withValues(alpha: 0.12)
+            : Colors.transparent,
         border: Border(
-          left: BorderSide(color: isSelected ? Theme.of(context).colorScheme.primary : Colors.transparent, width: 4),
-          bottom: BorderSide(color: Theme.of(context).dividerColor.withOpacity(0.3)),
+          left: BorderSide(
+            color: isSelected ? accent : Colors.transparent,
+            width: 4,
+          ),
+          bottom: BorderSide(color: colors.divider.withValues(alpha: 0.5)),
         ),
       ),
       child: Material(
@@ -293,37 +457,56 @@ class _TradeListWebPageState extends ConsumerState<TradeListWebPage> {
             });
           },
           child: Padding(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(AppSpacing.sm + AppSpacing.xs),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Symbol and Status
                 Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.sm,
+                        vertical: AppSpacing.xs,
+                      ),
                       decoration: BoxDecoration(
-                        color: statusColor.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: statusColor.withOpacity(0.5)),
+                        color: statusColor.withValues(alpha: 0.15),
+                        borderRadius: AppRadii.button,
+                        border: Border.all(
+                          color: statusColor.withValues(alpha: 0.45),
+                        ),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(_getStatusIcon(holding.status), size: 12, color: statusColor),
-                          const SizedBox(width: 4),
+                          Icon(
+                            _getStatusIcon(holding.status),
+                            size: 12,
+                            color: statusColor,
+                          ),
+                          const SizedBox(width: AppSpacing.xs),
                           Text(
                             holding.displaySymbol,
-                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: statusColor),
+                            style: Theme.of(context)
+                                .textTheme
+                                .labelMedium
+                                ?.copyWith(
+                                  fontSize: AppTypeScale.sm,
+                                  fontWeight: FontWeight.bold,
+                                  color: statusColor,
+                                ),
                           ),
                         ],
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: AppSpacing.sm),
                     Expanded(
                       child: Text(
                         holding.displayStatus.toUpperCase(),
-                        style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: statusColor.withOpacity(0.7)),
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                              fontSize: AppTypeScale.xs - 1,
+                              fontWeight: FontWeight.bold,
+                              color: statusColor.withValues(alpha: 0.75),
+                            ),
                       ),
                     ),
                     SizedBox(
@@ -332,80 +515,88 @@ class _TradeListWebPageState extends ConsumerState<TradeListWebPage> {
                       child: IconButton(
                         padding: EdgeInsets.zero,
                         icon: _journalingTradeId == holding.tradeId
-                            ? const SizedBox(
+                            ? SizedBox(
                                 width: 12,
                                 height: 12,
-                                child: CircularProgressIndicator(strokeWidth: 2),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: accent,
+                                ),
                               )
-                            : const Icon(Icons.menu_book_outlined, size: 16),
+                            : Icon(
+                                Icons.menu_book_outlined,
+                                size: 16,
+                                color: muted,
+                              ),
                         tooltip: 'Journal this',
-                        color: statusColor.withOpacity(0.7),
+                        color: muted,
                         onPressed: _journalingTradeId != null
                             ? null
                             : () => _journalThis(holding),
                       ),
                     ),
                     if (widget.onNavigateToChart != null) ...[
-                      const SizedBox(width: 4),
+                      const SizedBox(width: AppSpacing.xs),
                       SizedBox(
                         height: 24,
                         width: 24,
                         child: IconButton(
                           padding: EdgeInsets.zero,
-                          icon: const Icon(Icons.show_chart, size: 16),
+                          icon: Icon(
+                            Icons.show_chart,
+                            size: 16,
+                            color: muted,
+                          ),
                           tooltip: 'View Chart',
-                          color: statusColor.withOpacity(0.7),
-                          onPressed: () => widget.onNavigateToChart!(holding.displaySymbol),
+                          color: muted,
+                          onPressed: () => widget
+                              .onNavigateToChart!(holding.displaySymbol),
                         ),
                       ),
                     ],
                   ],
                 ),
-                const SizedBox(height: 8),
-
-                // Company Name
+                const SizedBox(height: AppSpacing.sm),
                 Text(
                   holding.displayCompanyName,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w500,
+                        color: colors.textPrimary,
+                      ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 4),
-
-                // Quantity
+                const SizedBox(height: AppSpacing.xs),
                 Text(
                   'Qty: ${holding.displayQuantity}',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: muted,
+                      ),
                 ),
-                const SizedBox(height: 8),
-
-                // P&L
+                const SizedBox(height: AppSpacing.sm),
                 Row(
                   children: [
                     Icon(
                       isProfit ? Icons.trending_up : Icons.trending_down,
-                      color: isProfit ? Colors.green : Colors.red,
+                      color: pnlColor,
                       size: 16,
                     ),
-                    const SizedBox(width: 4),
+                    const SizedBox(width: AppSpacing.xs),
                     Text(
                       holding.displayProfitLossPercentage,
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: isProfit ? Colors.green : Colors.red,
-                      ),
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: pnlColor,
+                          ),
                     ),
                     const Spacer(),
                     Text(
                       holding.displayProfitLoss,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: isProfit ? Colors.green : Colors.red,
-                      ),
+                      style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                            fontSize: AppTypeScale.sm,
+                            fontWeight: FontWeight.w600,
+                            color: pnlColor,
+                          ),
                     ),
                   ],
                 ),
@@ -421,15 +612,25 @@ class _TradeListWebPageState extends ConsumerState<TradeListWebPage> {
     child: Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Icon(Icons.touch_app, size: 64, color: Theme.of(context).colorScheme.primary.withOpacity(0.5)),
-        const SizedBox(height: 16),
-        Text('Select a Trade', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
-        const SizedBox(height: 8),
+        Icon(
+          Icons.touch_app,
+          size: 64,
+          color: ModuleColors.trade.withValues(alpha: 0.5),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        Text(
+          'Select a Trade',
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: context.colors.textPrimary,
+              ),
+        ),
+        const SizedBox(height: AppSpacing.sm),
         Text(
           'Choose a trade from the sidebar to view details',
-          style: Theme.of(
-            context,
-          ).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: context.textSecondary,
+              ),
         ),
       ],
     ),
@@ -469,15 +670,16 @@ class _TradeListWebPageState extends ConsumerState<TradeListWebPage> {
   Color _getStatusColor(String? status) {
     switch (status?.toUpperCase()) {
       case 'WIN':
-        return Colors.green;
+        return context.marketPositive;
       case 'LOSS':
-        return Colors.red;
+        return context.marketNegative;
       case 'BREAK_EVEN':
-        return Colors.orange;
+        return context.statusWarning;
       case 'OPEN':
-        return Colors.blue;
+      case 'ACTIVE':
+        return ModuleColors.trade;
       default:
-        return Colors.grey;
+        return context.statusNeutral;
     }
   }
 }

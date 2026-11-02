@@ -9,6 +9,7 @@ import 'internal/domain/repositories/journal_repository.dart';
 import 'internal/domain/usecases/create_journal_entry_usecase.dart';
 import 'internal/domain/usecases/delete_journal_entry_usecase.dart';
 import 'internal/domain/usecases/get_journal_entries_usecase.dart';
+import 'internal/domain/usecases/seed_demo_journal_entries_usecase.dart';
 import 'internal/domain/usecases/update_journal_entry_usecase.dart';
 import 'presentation/cubit/journal/journal_cubit.dart';
 import 'package:am_common/core/di/network_providers.dart';
@@ -80,6 +81,13 @@ final _deleteJournalEntryUseCaseProvider = FutureProvider<DeleteJournalEntryUseC
   return DeleteJournalEntryUseCase(repository);
 });
 
+/// Provider for SeedDemoJournalEntriesUseCase
+final _seedDemoJournalEntriesUseCaseProvider =
+    FutureProvider<SeedDemoJournalEntriesUseCase>((ref) async {
+  final repository = await ref.watch(_journalRepositoryProvider.future);
+  return SeedDemoJournalEntriesUseCase(repository);
+});
+
 // Cubit Provider
 
 /// Provider for JournalCubit
@@ -89,6 +97,8 @@ final journalCubitProvider = FutureProvider<JournalCubit>(
     createJournalEntry: await ref.watch(_createJournalEntryUseCaseProvider.future),
     updateJournalEntry: await ref.watch(_updateJournalEntryUseCaseProvider.future),
     deleteJournalEntry: await ref.watch(_deleteJournalEntryUseCaseProvider.future),
+    seedDemoJournalEntries:
+        await ref.watch(_seedDemoJournalEntriesUseCaseProvider.future),
     repository: await ref.watch(_journalRepositoryProvider.future),
   ),
 );

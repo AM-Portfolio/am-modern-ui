@@ -23,12 +23,9 @@ class SentimentSelector extends StatelessWidget {
 
     if (compact) {
       final colors = context.colors;
-      // Floating label already says "Sentiment" — keep hint short for half-width row.
       return JournalThemedDropdown<String>(
         value: selectedSentiment,
-        label: 'Sentiment',
-        floatingLabel: true,
-        hint: 'Select',
+        hint: 'Sentiment',
         compact: true,
         height: AppSpacing.xl + AppSpacing.md,
         fontSize: AppTypeScale.md,
