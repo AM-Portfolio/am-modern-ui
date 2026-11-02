@@ -22,25 +22,22 @@ class PortfolioTabContentWidget extends ConsumerWidget {
   final TabController tabController;
   final String currentPortfolioId;
   @override
-  Widget build(
-    BuildContext context,
-    WidgetRef ref,
-  ) => TabBarView(
-      controller: tabController,
-      // Local page swipe disabled — cross-section swipe is owned by AppShell.
-      physics: const NeverScrollableScrollPhysics(),
-      children: [
-        _OverviewTab(currentPortfolioId: currentPortfolioId, ),
-        _HoldingsTab(currentPortfolioId: currentPortfolioId, ),
-        _HeatmapTab(currentPortfolioId: currentPortfolioId, ),
-        _BasketsTab(ref: ref, currentPortfolioId: currentPortfolioId),
-      ],
-    );
+  Widget build(BuildContext context, WidgetRef ref) => TabBarView(
+    controller: tabController,
+    // Local page swipe disabled — cross-section swipe is owned by AppShell.
+    physics: const NeverScrollableScrollPhysics(),
+    children: [
+      _OverviewTab(currentPortfolioId: currentPortfolioId),
+      _HoldingsTab(currentPortfolioId: currentPortfolioId),
+      _HeatmapTab(currentPortfolioId: currentPortfolioId),
+      _BasketsTab(ref: ref, currentPortfolioId: currentPortfolioId),
+    ],
+  );
 }
 
 /// Overview tab widget
 class _OverviewTab extends StatefulWidget {
-  const _OverviewTab({required this.currentPortfolioId, });
+  const _OverviewTab({required this.currentPortfolioId});
   final String currentPortfolioId;
   @override
   State<_OverviewTab> createState() => _OverviewTabState();
@@ -55,26 +52,26 @@ class _OverviewTabState extends State<_OverviewTab>
   Widget build(BuildContext context) {
     super.build(context);
     return BlocBuilder<PortfolioCubit, PortfolioState>(
-        builder: (context, state) {
-          if (state is PortfolioLoading) {
-            return const Center(child: CircularProgressIndicator());
-          }
+      builder: (context, state) {
+        if (state is PortfolioLoading) {
+          return const Center(child: CircularProgressIndicator());
+        }
 
-          if (state is PortfolioError) {
-            return _buildErrorWithRefresh(
-              context,
-              state.message,
-              'Pull to Refresh Portfolio',
-            );
-          }
+        if (state is PortfolioError) {
+          return _buildErrorWithRefresh(
+            context,
+            state.message,
+            'Pull to Refresh Portfolio',
+          );
+        }
 
-          if (state is PortfolioLoaded) {
-            return _buildOverviewContent(context);
-          }
+        if (state is PortfolioLoaded) {
+          return _buildOverviewContent(context);
+        }
 
-          return _buildLoadingWithRefresh(context, 'Pull to Refresh Portfolio');
-        },
-      );
+        return _buildLoadingWithRefresh(context, 'Pull to Refresh Portfolio');
+      },
+    );
   }
 
   Widget _buildOverviewContent(BuildContext context) {
@@ -121,44 +118,56 @@ class _OverviewTabState extends State<_OverviewTab>
     CommonLogger.userAction(
       action,
       tag: 'PortfolioOverviewTab',
-      metadata: {
-        'portfolioId': widget.currentPortfolioId,
-      },
+      metadata: {'portfolioId': widget.currentPortfolioId},
     );
-    context.read<PortfolioCubit>().refreshPortfolioById(widget.currentPortfolioId);
+    context.read<PortfolioCubit>().refreshPortfolioById(
+      widget.currentPortfolioId,
+    );
   }
 }
 
 /// Holdings tab widget
-class _HoldingsTab extends StatelessWidget {
-  const _HoldingsTab({required this.currentPortfolioId, });
+class _HoldingsTab extends StatefulWidget {
+  const _HoldingsTab({required this.currentPortfolioId, super.key});
   final String currentPortfolioId;
+
   @override
-  Widget build(BuildContext context) =>
-      BlocBuilder<PortfolioCubit, PortfolioState>(
-        buildWhen: (previous, current) {
-          if (previous.runtimeType != current.runtimeType) return true;
-          if (previous is PortfolioLoaded && current is PortfolioLoaded) {
-            return previous.portfolioId != current.portfolioId ||
-                previous.isRefreshing != current.isRefreshing;
-          }
-          return true;
-        },
-        builder: (context, state) {
-          if (state is PortfolioLoading) {
-            return const Center(child: CircularProgressIndicator());
-          }
+  State<_HoldingsTab> createState() => _HoldingsTabState();
+}
 
-          if (state is PortfolioError) {
-            return _buildErrorWithRefresh(context, state.message);
-          }
+class _HoldingsTabState extends State<_HoldingsTab>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
 
-          return PortfolioHoldingsWidget(
-            key: ValueKey('holdings_$currentPortfolioId'),
-            portfolioId: currentPortfolioId,
-          );
-        },
-      );
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    return BlocBuilder<PortfolioCubit, PortfolioState>(
+      buildWhen: (previous, current) {
+        if (previous.runtimeType != current.runtimeType) return true;
+        if (previous is PortfolioLoaded && current is PortfolioLoaded) {
+          return previous.portfolioId != current.portfolioId ||
+              previous.isRefreshing != current.isRefreshing;
+        }
+        return true;
+      },
+      builder: (context, state) {
+        if (state is PortfolioLoading) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (state is PortfolioError) {
+          return _buildErrorWithRefresh(context, state.message);
+        }
+
+        return PortfolioHoldingsWidget(
+          key: ValueKey('holdings_${widget.currentPortfolioId}'),
+          portfolioId: widget.currentPortfolioId,
+        );
+      },
+    );
+  }
 
   Widget _buildErrorWithRefresh(BuildContext context, String message) =>
       RefreshIndicator(
@@ -179,19 +188,46 @@ class _HoldingsTab extends StatelessWidget {
     CommonLogger.userAction(
       'Pull to Refresh Holdings',
       tag: 'PortfolioHoldingsTab',
-      metadata: {'portfolioId': currentPortfolioId},
+      metadata: {'portfolioId': widget.currentPortfolioId},
     );
-    context.read<PortfolioCubit>().refreshPortfolioById(currentPortfolioId);
+    context.read<PortfolioCubit>().refreshPortfolioById(
+      widget.currentPortfolioId,
+    );
   }
 }
 
 /// Heatmap tab widget using the new mobile heatmap page
-class _HeatmapTab extends StatelessWidget {
-  const _HeatmapTab({required this.currentPortfolioId, });
+class _HeatmapTab extends StatefulWidget {
+  const _HeatmapTab({required this.currentPortfolioId, super.key});
   final String currentPortfolioId;
+
+  @override
+  State<_HeatmapTab> createState() => _HeatmapTabState();
+}
+
+class _HeatmapTabState extends State<_HeatmapTab>
+    with AutomaticKeepAliveClientMixin {
+  late final PortfolioHeatmapCubit _heatmapCubit;
+
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  void initState() {
+    super.initState();
+    _heatmapCubit = PortfolioHeatmapCubit();
+  }
+
+  @override
+  void dispose() {
+    _heatmapCubit.close();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
-    if (currentPortfolioId == 'all') {
+    super.build(context);
+    if (widget.currentPortfolioId == 'all') {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -206,10 +242,11 @@ class _HeatmapTab extends StatelessWidget {
         ),
       );
     }
-    return BlocProvider<PortfolioHeatmapCubit>(
-      create: (context) => PortfolioHeatmapCubit(),
+    return BlocProvider<PortfolioHeatmapCubit>.value(
+      value: _heatmapCubit,
       child: PortfolioHeatmapMobilePage(
-        portfolioId: currentPortfolioId,
+        key: ValueKey(widget.currentPortfolioId),
+        portfolioId: widget.currentPortfolioId,
         portfolioName: _getPortfolioName(context),
       ),
     );
@@ -231,7 +268,9 @@ class _BasketsTab extends StatelessWidget {
     final userId = authState is Authenticated ? authState.user.id : '';
     if (userId.isEmpty) {
       return const Scaffold(
-        body: Center(child: Text('Please sign in to view basket opportunities')),
+        body: Center(
+          child: Text('Please sign in to view basket opportunities'),
+        ),
       );
     }
     return Scaffold(

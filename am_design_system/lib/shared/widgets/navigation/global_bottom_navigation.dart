@@ -1,4 +1,3 @@
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:am_design_system/core/navigation/app_web_navigation.dart';
 import 'package:am_design_system/core/theme/app_colors.dart';
@@ -58,7 +57,8 @@ class _GlobalBottomNavigationState extends State<GlobalBottomNavigation> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _scrollActiveIntoView());
+    WidgetsBinding.instance
+        .addPostFrameCallback((_) => _scrollActiveIntoView());
   }
 
   @override
@@ -66,7 +66,8 @@ class _GlobalBottomNavigationState extends State<GlobalBottomNavigation> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.activeNavItem != widget.activeNavItem ||
         oldWidget.items.length != widget.items.length) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => _scrollActiveIntoView());
+      WidgetsBinding.instance
+          .addPostFrameCallback((_) => _scrollActiveIntoView());
     }
   }
 
@@ -93,8 +94,8 @@ class _GlobalBottomNavigationState extends State<GlobalBottomNavigation> {
 
   @override
   Widget build(BuildContext context) {
-    final visibleCount =
-        widget.visibleCount.clamp(1, widget.items.isEmpty ? 1 : widget.items.length);
+    final visibleCount = widget.visibleCount
+        .clamp(1, widget.items.isEmpty ? 1 : widget.items.length);
     final bottomInset = MediaQuery.paddingOf(context).bottom;
 
     // Safe-area lives outside the chrome box so the icon+label column fits.
@@ -105,14 +106,13 @@ class _GlobalBottomNavigationState extends State<GlobalBottomNavigation> {
         isDark: widget.isDarkMode,
         borderRadius: 28,
         child: SizedBox(
-          height: 58,
+          height: 62,
           child: LayoutBuilder(
             builder: (context, constraints) {
               final hasSearch = widget.onSearchTap != null;
               final searchSlot = hasSearch ? 48.0 : 0.0;
-              final viewportWidth = constraints.maxWidth -
-                  (_horizontalPadding * 2) -
-                  searchSlot;
+              final viewportWidth =
+                  constraints.maxWidth - (_horizontalPadding * 2) - searchSlot;
               final itemWidth = viewportWidth / visibleCount;
               final accent = widget.accentColor ??
                   _getIconColor(widget.activeNavItem) ??
@@ -170,45 +170,18 @@ class _GlobalBottomNavigationState extends State<GlobalBottomNavigation> {
 
                         return KeyedSubtree(
                           key: _keyFor(item.title),
-                          child: Listener(
-                            onPointerDown: (event) {
-                              final path = widget.moduleShareUrls?[item.title];
-                              if (path == null) return;
-                              if (event.buttons == kMiddleMouseButton) {
-                                AppWebNavigation.navigate(
-                                  context: context,
-                                  path: path,
-                                  onSameTab: () =>
-                                      widget.onNavigate(item.title),
-                                  pointerDown: event,
-                                );
-                              }
-                            },
-                            child: GestureDetector(
-                              onTap: () {
-                                final path =
-                                    widget.moduleShareUrls?[item.title];
-                                if (path == null) {
-                                  widget.onNavigate(item.title);
-                                  return;
-                                }
-                                AppWebNavigation.navigate(
-                                  context: context,
-                                  path: path,
-                                  onSameTab: () =>
-                                      widget.onNavigate(item.title),
-                                );
-                              },
-                              behavior: HitTestBehavior.opaque,
-                              child: SizedBox(
-                                width: itemWidth,
-                                child: _NavItem(
-                                  icon: item.icon,
-                                  label: item.title,
-                                  isActive: isActive,
-                                  accentColor: accentColor,
-                                  isDarkMode: widget.isDarkMode,
-                                ),
+                          child: AppNavigationGesture(
+                            path: widget.moduleShareUrls?[item.title],
+                            onSameTab: () => widget.onNavigate(item.title),
+                            behavior: HitTestBehavior.opaque,
+                            child: SizedBox(
+                              width: itemWidth,
+                              child: _NavItem(
+                                icon: item.icon,
+                                label: item.title,
+                                isActive: isActive,
+                                accentColor: accentColor,
+                                isDarkMode: widget.isDarkMode,
                               ),
                             ),
                           ),
@@ -276,61 +249,64 @@ class _NavItem extends StatelessWidget {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 250),
       curve: Curves.easeOutCubic,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 250),
-            curve: Curves.easeOutCubic,
-            height: 3,
-            width: isActive ? 20 : 0,
-            margin: const EdgeInsets.only(bottom: 4),
-            decoration: BoxDecoration(
-              color: isActive ? accentColor : Colors.transparent,
-              borderRadius: BorderRadius.circular(2),
-              boxShadow: isActive
-                  ? [
-                      BoxShadow(
-                        color: accentColor.withValues(alpha: 0.5),
-                        blurRadius: 6,
-                      ),
-                    ]
-                  : [],
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 250),
+              curve: Curves.easeOutCubic,
+              height: 3,
+              width: isActive ? 20 : 0,
+              margin: const EdgeInsets.only(bottom: 3),
+              decoration: BoxDecoration(
+                color: isActive ? accentColor : Colors.transparent,
+                borderRadius: BorderRadius.circular(2),
+                boxShadow: isActive
+                    ? [
+                        BoxShadow(
+                          color: accentColor.withValues(alpha: 0.5),
+                          blurRadius: 6,
+                        ),
+                      ]
+                    : [],
+              ),
             ),
-          ),
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 250),
-            curve: Curves.easeOutCubic,
-            padding: const EdgeInsets.all(4),
-            decoration: BoxDecoration(
-              color: isActive
-                  ? accentColor.withValues(alpha: isDarkMode ? 0.15 : 0.1)
-                  : Colors.transparent,
-              borderRadius: BorderRadius.circular(12),
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 250),
+              curve: Curves.easeOutCubic,
+              padding: const EdgeInsets.all(3),
+              decoration: BoxDecoration(
+                color: isActive
+                    ? accentColor.withValues(alpha: isDarkMode ? 0.15 : 0.1)
+                    : Colors.transparent,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                icon,
+                color: isActive ? accentColor : inactiveColor,
+                size: isActive ? 24 : 22,
+              ),
             ),
-            child: Icon(
-              icon,
-              color: isActive ? accentColor : inactiveColor,
-              size: isActive ? 24 : 22,
+            const SizedBox(height: 2),
+            AnimatedDefaultTextStyle(
+              duration: const Duration(milliseconds: 200),
+              style: TextStyle(
+                fontSize: isActive ? 10 : 9,
+                fontWeight: isActive ? FontWeight.w700 : FontWeight.w400,
+                color: isActive ? accentColor : inactiveColor,
+                letterSpacing: isActive ? 0.3 : 0,
+              ),
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
-          ),
-          const SizedBox(height: 2),
-          AnimatedDefaultTextStyle(
-            duration: const Duration(milliseconds: 200),
-            style: TextStyle(
-              fontSize: isActive ? 10 : 9,
-              fontWeight: isActive ? FontWeight.w700 : FontWeight.w400,
-              color: isActive ? accentColor : inactiveColor,
-              letterSpacing: isActive ? 0.3 : 0,
-            ),
-            child: Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

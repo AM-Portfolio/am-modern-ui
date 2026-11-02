@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -14,7 +16,6 @@ import '../cubit/portfolio_heatmap_state.dart';
 import '../cubit/portfolio_state.dart';
 import '../mappers/sector_heatmap_converter.dart';
 import 'portfolio_metric_card.dart';
-
 
 /// Platform UI settings for the portfolio heatmap page widget
 /// (distinct from presentation/config/portfolio_heatmap_config.dart).
@@ -55,12 +56,12 @@ class PortfolioHeatmapUiConfig {
   );
 
   /// Space so the treemap sits above the floating global bottom nav.
-  ///
-  /// Always reserves the full nav height on compact — tying inset to
-  /// [GlobalBottomNavVisibility.factor] collapsed padding when the nav hid on
-  /// scroll, so sector tiles painted under the bar when it returned.
-  static double mobileBottomInset(BuildContext context) {
-    return 8.0 + PlatformConstants.globalBottomNavReserve(context);
+  static double mobileBottomInset(
+    BuildContext context, {
+    double navFactor = 1,
+  }) {
+    final reserve = PlatformConstants.globalBottomNavReserve(context);
+    return 8.0 + reserve * navFactor.clamp(0.0, 1.0);
   }
 
   /// Web configuration — tight padding so the treemap uses the page width/height.
@@ -106,7 +107,9 @@ class _PortfolioHeatmapWidgetState
   HeatmapTileData? _drillDownTile;
   final ValueNotifier<HeatmapTileData?> _inspectedTile =
       ValueNotifier<HeatmapTileData?>(null);
+  Timer? _hoverClearTimer;
   int _heatmapLoadGeneration = 0;
+
   /// Full nested tiles before compact budget — used for sector drill-down.
   List<HeatmapTileData> _fullOverviewTiles = const [];
 
@@ -143,6 +146,7 @@ class _PortfolioHeatmapWidgetState
 
   @override
   void dispose() {
+    _hoverClearTimer?.cancel();
     _inspectedTile.dispose();
     super.dispose();
   }
@@ -150,10 +154,17 @@ class _PortfolioHeatmapWidgetState
   void _handleTileHover(HeatmapTileData? tile) {
     if (!mounted) return;
     if (tile == null) {
-      if (_inspectedTile.value != null) _inspectedTile.value = null;
+      _hoverClearTimer?.cancel();
+      _hoverClearTimer = Timer(const Duration(milliseconds: 180), () {
+        if (!mounted) return;
+        if (_inspectedTile.value != null) _inspectedTile.value = null;
+      });
       return;
     }
     if (tile.metadata?['type'] != 'stock') return;
+    _hoverClearTimer?.cancel();
+    _hoverClearTimer = null;
+    if (_inspectedTile.value?.id == tile.id) return;
     _inspectedTile.value = tile;
   }
 
@@ -192,6 +203,11 @@ class _PortfolioHeatmapWidgetState
         _selectedLayout == oldWidget.config.defaultLayout) {
       setState(() => _selectedLayout = widget.config.defaultLayout);
     }
+    if (oldWidget.portfolioId != widget.portfolioId) {
+      _drillDownTile = null;
+      _inspectedTile.value = null;
+      _loadHeatmapData();
+    }
   }
 
   void _loadHeatmapData() {
@@ -224,7 +240,9 @@ class _PortfolioHeatmapWidgetState
               'Analytics failed, skipping heatmap data load',
               tag: '${widget.config.logTag}.Data',
             );
-            portfolioHeatmapCubit.showError('Failed to load portfolio data. Please retry.');
+            portfolioHeatmapCubit.showError(
+              'Failed to load portfolio data. Please retry.',
+            );
             return;
           }
 
@@ -393,21 +411,19 @@ class _PortfolioHeatmapWidgetState
     final convertedHeatmapData = state.heatmapData;
 
     // Create configuration with selected layout
-    final baseSelectors = convertedHeatmapData.configuration.selectors ??
-        const SelectorConfig();
-    final baseLayout = convertedHeatmapData.configuration.layout ??
-        const LayoutConfig();
+    final baseSelectors =
+        convertedHeatmapData.configuration.selectors ?? const SelectorConfig();
+    final baseLayout =
+        convertedHeatmapData.configuration.layout ?? const LayoutConfig();
     final useNested =
         _drillDownTile == null && _selectedLayout == HeatmapLayoutType.treemap;
-    final baseInteractions = convertedHeatmapData.configuration.interactions ??
+    final baseInteractions =
+        convertedHeatmapData.configuration.interactions ??
         const InteractionConfig();
     final customConfig = convertedHeatmapData.configuration.copyWith(
-      display: (convertedHeatmapData.configuration.display ??
-              const DisplayConfig())
-          .copyWith(
-        showPerformance: true,
-        showLegend: true,
-      ),
+      display:
+          (convertedHeatmapData.configuration.display ?? const DisplayConfig())
+              .copyWith(showPerformance: true, showLegend: true),
       layout: baseLayout.copyWith(
         layoutType: _selectedLayout,
         showLayoutSelector: widget.config.compactMode ? true : null,
@@ -417,12 +433,14 @@ class _PortfolioHeatmapWidgetState
         solidFills: widget.config.compactMode || useNested,
       ),
       interactions: baseInteractions.copyWith(
-        // Hover on every nested leaf is expensive; keep for flat/drill only.
-        enableHoverEffects: !widget.config.compactMode && !useNested,
+        // Web: hover opens docked inspector via ValueNotifier (no mosaic rebuild).
+        // Compact/mobile: tap / long-press pin only.
+        enableHoverEffects: !widget.config.compactMode,
       ),
       selectors: baseSelectors.copyWith(
-        selectorLayout:
-            widget.config.compactMode ? SelectorLayoutType.compact : null,
+        selectorLayout: widget.config.compactMode
+            ? SelectorLayoutType.compact
+            : null,
         showSectorSelector: widget.config.compactMode ? true : null,
         showMarketCapSelector: widget.config.compactMode ? true : null,
         showTimeFrameSelector: widget.config.compactMode ? false : null,
@@ -485,7 +503,8 @@ class _PortfolioHeatmapWidgetState
       configuration: customConfig,
     );
 
-    Widget heatmapBody({required bool showSelectors}) => HeatmapInteractionScope(
+    Widget heatmapBody({required bool showSelectors}) =>
+        HeatmapInteractionScope(
           onTileHover: _onTileHover,
           onTileSelect: _onTileSelect,
           onSectorDrill: _onSectorDrill,
@@ -519,21 +538,16 @@ class _PortfolioHeatmapWidgetState
                       tag: '${widget.config.logTag}.Action',
                     );
                   },
-                  onFiltersChanged: ({
-                    timeFrame,
-                    metric,
-                    sector,
-                    marketCap,
-                    layout,
-                  }) {
-                    _onFiltersChanged(
-                      timeFrame: timeFrame,
-                      metric: metric,
-                      sector: sector,
-                      marketCap: marketCap,
-                      layout: layout,
-                    );
-                  },
+                  onFiltersChanged:
+                      ({timeFrame, metric, sector, marketCap, layout}) {
+                        _onFiltersChanged(
+                          timeFrame: timeFrame,
+                          metric: metric,
+                          sector: sector,
+                          marketCap: marketCap,
+                          layout: layout,
+                        );
+                      },
                   templateType: widget.config.templateType,
                 ),
               ),
@@ -547,12 +561,19 @@ class _PortfolioHeatmapWidgetState
                     valueListenable: _inspectedTile,
                     builder: (context, tile, _) {
                       if (tile == null) return const SizedBox.shrink();
-                      return ConstrainedBox(
-                        constraints: const BoxConstraints(
-                          maxWidth: 460,
-                          maxHeight: 44,
+                      final screenW = MediaQuery.sizeOf(context).width;
+                      // Compact pill: phone ~92% width capped 360; web capped 420.
+                      final maxW = widget.config.compactMode
+                          ? (screenW - 24).clamp(240.0, 360.0)
+                          : (screenW * 0.42).clamp(280.0, 420.0);
+                      return IgnorePointer(
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(
+                            maxWidth: maxW,
+                            maxHeight: 44,
+                          ),
+                          child: HeatmapTileInspector(tile: tile),
                         ),
-                        child: HeatmapTileInspector(tile: tile),
                       );
                     },
                   ),
@@ -563,53 +584,59 @@ class _PortfolioHeatmapWidgetState
         );
 
     // Mobile only: scroll past KPIs → filters pin → mosaic fills the rest of
-    // the tab (exactly one screen — not a second full-viewport stack).
-    // Taps inside filters/mosaic must not reveal the floating bottom nav.
+    // the mobile screen, covering the full page height with a clean bottom margin.
     if (widget.config.compactMode) {
       final scheme = Theme.of(context).colorScheme;
-      // Pinned filters + mosaic == one tab. Using full viewportH here used to
-      // stack a second screen under the filters after KPIs scrolled away.
+      final screenH = MediaQuery.sizeOf(context).height;
+      final topSafe = MediaQuery.paddingOf(context).top;
+      final bottomSafe = MediaQuery.paddingOf(context).bottom;
+      final navReserve = PlatformConstants.globalBottomNavReserve(context);
+      // When scrolled down, sticky header (~44px) and pinned filters (46px) remain at top.
+      const stickyHeaderH = 44.0;
+      final topChromeWhenPinned =
+          topSafe + stickyHeaderH + _mobilePinnedFiltersH;
+      final bottomMargin =
+          (bottomSafe > 0 ? bottomSafe : 8.0) + (navReserve > 0 ? navReserve : 20.0);
+      final fullMobileScreenH = screenH - topChromeWhenPinned - bottomMargin;
       final mapH =
-          (mobileViewportH - _mobilePinnedFiltersH).clamp(240.0, 4000.0);
-      return CustomScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        slivers: [
-          SliverToBoxAdapter(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _buildSummaryCardsRow(),
-                const SizedBox(height: 8),
-              ],
+          (fullMobileScreenH > (mobileViewportH - _mobilePinnedFiltersH)
+                  ? fullMobileScreenH
+                  : (mobileViewportH - _mobilePinnedFiltersH))
+              .clamp(540.0, 4000.0);
+
+      return Listener(
+        behavior: HitTestBehavior.translucent,
+        onPointerDown: (_) {
+          GlobalBottomNavVisibility.suppressChromeTapReveal = true;
+          GlobalBottomNavVisibility.requestHide();
+        },
+        child: CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          slivers: [
+            SliverToBoxAdapter(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [_buildSummaryCardsRow(), const SizedBox(height: 8)],
+              ),
             ),
-          ),
-          SliverPersistentHeader(
-            pinned: true,
-            delegate: _PinnedHeatmapFiltersDelegate(
-              height: _mobilePinnedFiltersH,
-              background: scheme.surface,
-              child: Listener(
-                behavior: HitTestBehavior.opaque,
-                onPointerDown: (_) => _suppressBottomNavOnHeatmapTap(),
+            SliverPersistentHeader(
+              pinned: true,
+              delegate: _PinnedHeatmapFiltersDelegate(
+                height: _mobilePinnedFiltersH,
+                background: scheme.surface,
                 child: _buildMobilePinnedFilters(context),
               ),
             ),
-          ),
-          SliverToBoxAdapter(
-            child: SizedBox(
-              height: mapH,
-              width: double.infinity,
-              child: Listener(
-                behavior: HitTestBehavior.opaque,
-                onPointerDown: (_) => _suppressBottomNavOnHeatmapTap(),
-                child: _padAboveBottomNav(
-                  context,
-                  child: heatmapBody(showSelectors: false),
-                ),
+            SliverToBoxAdapter(
+              child: SizedBox(
+                height: mapH,
+                width: double.infinity,
+                child: heatmapBody(showSelectors: false),
               ),
             ),
-          ),
-        ],
+            SliverToBoxAdapter(child: SizedBox(height: bottomMargin)),
+          ],
+        ),
       );
     }
 
@@ -636,8 +663,9 @@ class _PortfolioHeatmapWidgetState
   /// Drill chrome inside the Heatmap Overview card (back + sector + stats).
   Widget _buildDrillInCardHeader(BuildContext context) {
     final tile = _drillDownTile!;
-    final sectorLabel =
-        tile.name.trim().isNotEmpty ? tile.name : tile.displayName;
+    final sectorLabel = tile.name.trim().isNotEmpty
+        ? tile.name
+        : tile.displayName;
     final meta = tile.metadata ?? const <String, dynamic>{};
     final holdings = meta['holdingsCount'] ?? meta['stockCount'];
     final compact = widget.config.compactMode;
@@ -656,10 +684,10 @@ class _PortfolioHeatmapWidgetState
         ? context.marketPositive
         : (pct < 0 ? context.marketNegative : scheme.onSurfaceVariant);
     final metaStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
-          color: scheme.onSurfaceVariant,
-          fontSize: compact ? 11 : 12,
-          fontWeight: FontWeight.w500,
-        );
+      color: scheme.onSurfaceVariant,
+      fontSize: compact ? 11 : 12,
+      fontWeight: FontWeight.w500,
+    );
 
     final titleBlock = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -669,10 +697,14 @@ class _PortfolioHeatmapWidgetState
           sectorLabel,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: (compact
-                  ? Theme.of(context).textTheme.titleMedium
-                  : Theme.of(context).textTheme.titleLarge)
-              ?.copyWith(fontWeight: FontWeight.w700, fontSize: compact ? 15 : 17),
+          style:
+              (compact
+                      ? Theme.of(context).textTheme.titleMedium
+                      : Theme.of(context).textTheme.titleLarge)
+                  ?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    fontSize: compact ? 15 : 17,
+                  ),
         ),
         if (metaBits.isNotEmpty || pct != 0) ...[
           const SizedBox(height: 2),
@@ -680,8 +712,7 @@ class _PortfolioHeatmapWidgetState
             TextSpan(
               style: metaStyle,
               children: [
-                if (metaBits.isNotEmpty)
-                  TextSpan(text: metaBits.join(' · ')),
+                if (metaBits.isNotEmpty) TextSpan(text: metaBits.join(' · ')),
                 if (metaBits.isNotEmpty)
                   TextSpan(text: ' · ', style: metaStyle),
                 TextSpan(
@@ -744,22 +775,14 @@ class _PortfolioHeatmapWidgetState
         Text('Performance: ', style: Theme.of(context).textTheme.bodySmall),
         _drillLegendSwatch(context, 'Loss', context.marketNegative),
         const SizedBox(width: 16),
-        _drillLegendSwatch(
-          context,
-          'Neutral',
-          context.colors.statusNeutral,
-        ),
+        _drillLegendSwatch(context, 'Neutral', context.colors.statusNeutral),
         const SizedBox(width: 16),
         _drillLegendSwatch(context, 'Gain', context.marketPositive),
       ],
     );
   }
 
-  Widget _drillLegendSwatch(
-    BuildContext context,
-    String label,
-    Color color,
-  ) =>
+  Widget _drillLegendSwatch(BuildContext context, String label, Color color) =>
       Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -843,13 +866,13 @@ class _PortfolioHeatmapWidgetState
                     subtitle: todayChange == '—'
                         ? 'Unavailable'
                         : (todayChangePct.abs() < 0.005
-                            ? '0.00%'
-                            : '${isTodayPositive ? '+' : ''}${todayChangePct.toStringAsFixed(2)}%'),
+                              ? '0.00%'
+                              : '${isTodayPositive ? '+' : ''}${todayChangePct.toStringAsFixed(2)}%'),
                     accentColor: todayChange == '—'
                         ? context.statusNeutral
                         : (isTodayPositive
-                            ? context.marketPositive
-                            : context.marketNegative),
+                              ? context.marketPositive
+                              : context.marketNegative),
                     chromeColor: ModuleColors.portfolio,
                     isPositive: todayChange == '—' ? null : isTodayPositive,
                     compact: isSmallMobile,
@@ -874,8 +897,8 @@ class _PortfolioHeatmapWidgetState
                     accentColor: worstSectorChange.isEmpty
                         ? ModuleColors.portfolio
                         : (worstSectorChange.startsWith('-')
-                            ? context.marketNegative
-                            : context.marketPositive),
+                              ? context.marketNegative
+                              : context.marketPositive),
                     chromeColor: ModuleColors.portfolio,
                     isPositive: worstSectorChange.isEmpty
                         ? null
@@ -887,12 +910,13 @@ class _PortfolioHeatmapWidgetState
 
                 if (isWide) {
                   return Row(
-                    children: cards
-                        .map((c) => Expanded(child: c))
-                        .toList()
-                        .expand((w) => [w, const SizedBox(width: 12)])
-                        .toList()
-                      ..removeLast(),
+                    children:
+                        cards
+                            .map((c) => Expanded(child: c))
+                            .toList()
+                            .expand((w) => [w, const SizedBox(width: 12)])
+                            .toList()
+                          ..removeLast(),
                   );
                 } else {
                   return Wrap(
@@ -956,11 +980,7 @@ class _PortfolioHeatmapWidgetState
             runSpacing: 10,
             crossAxisAlignment: WrapCrossAlignment.center,
             alignment: WrapAlignment.spaceBetween,
-            children: [
-              titleWidget,
-              filterRow,
-              timeframeBar,
-            ],
+            children: [titleWidget, filterRow, timeframeBar],
           );
         }
 
@@ -969,14 +989,14 @@ class _PortfolioHeatmapWidgetState
           children: [
             // Left: Title
             titleWidget,
-            
+
             const SizedBox(width: 20),
-            
+
             // Center-left: Filters grouped beside title
             filterRow,
-            
+
             const Spacer(),
-            
+
             // Right: Timeframe Pills
             timeframeBar,
           ],
@@ -997,8 +1017,12 @@ class _PortfolioHeatmapWidgetState
           child: CustomDropdown<SectorType>(
             value: _selectedSector ?? SectorType.all,
             items: SectorType.values
-                .map((item) => item.toDropdownItem(
-                    text: item.displayName, icon: Icons.category_outlined))
+                .map(
+                  (item) => item.toDropdownItem(
+                    text: item.displayName,
+                    icon: Icons.category_outlined,
+                  ),
+                )
                 .toList(),
             onChanged: (val) {
               if (val != null) _onFiltersChanged(sector: val);
@@ -1014,8 +1038,12 @@ class _PortfolioHeatmapWidgetState
           child: CustomDropdown<MarketCapType>(
             value: _selectedMarketCap ?? MarketCapType.all,
             items: MarketCapType.values
-                .map((item) => item.toDropdownItem(
-                    text: item.displayName, icon: Icons.pie_chart_outline))
+                .map(
+                  (item) => item.toDropdownItem(
+                    text: item.displayName,
+                    icon: Icons.pie_chart_outline,
+                  ),
+                )
                 .toList(),
             onChanged: (val) {
               if (val != null) _onFiltersChanged(marketCap: val);
@@ -1031,8 +1059,12 @@ class _PortfolioHeatmapWidgetState
           child: CustomDropdown<HeatmapLayoutType>(
             value: _selectedLayout,
             items: HeatmapLayoutType.values
-                .map((item) => item.toDropdownItem(
-                    text: item.displayName, icon: Icons.grid_view_outlined))
+                .map(
+                  (item) => item.toDropdownItem(
+                    text: item.displayName,
+                    icon: Icons.grid_view_outlined,
+                  ),
+                )
                 .toList(),
             onChanged: (val) {
               if (val != null) _onFiltersChanged(layout: val);
@@ -1055,10 +1087,12 @@ class _PortfolioHeatmapWidgetState
             child: CustomDropdown<SectorType>(
               value: _selectedSector ?? SectorType.all,
               items: SectorType.values
-                  .map((item) => item.toDropdownItem(
-                        text: item.displayName,
-                        icon: Icons.category_outlined,
-                      ))
+                  .map(
+                    (item) => item.toDropdownItem(
+                      text: item.displayName,
+                      icon: Icons.category_outlined,
+                    ),
+                  )
                   .toList(),
               onChanged: (val) {
                 if (val != null) _onFiltersChanged(sector: val);
@@ -1072,10 +1106,12 @@ class _PortfolioHeatmapWidgetState
             child: CustomDropdown<MarketCapType>(
               value: _selectedMarketCap ?? MarketCapType.all,
               items: MarketCapType.values
-                  .map((item) => item.toDropdownItem(
-                        text: item.displayName,
-                        icon: Icons.pie_chart_outline,
-                      ))
+                  .map(
+                    (item) => item.toDropdownItem(
+                      text: item.displayName,
+                      icon: Icons.pie_chart_outline,
+                    ),
+                  )
                   .toList(),
               onChanged: (val) {
                 if (val != null) _onFiltersChanged(marketCap: val);
@@ -1089,10 +1125,12 @@ class _PortfolioHeatmapWidgetState
             child: CustomDropdown<HeatmapLayoutType>(
               value: _selectedLayout,
               items: HeatmapLayoutType.values
-                  .map((item) => item.toDropdownItem(
-                        text: item.displayName,
-                        icon: Icons.grid_view_outlined,
-                      ))
+                  .map(
+                    (item) => item.toDropdownItem(
+                      text: item.displayName,
+                      icon: Icons.grid_view_outlined,
+                    ),
+                  )
                   .toList(),
               onChanged: (val) {
                 if (val != null) _onFiltersChanged(layout: val);
@@ -1105,8 +1143,6 @@ class _PortfolioHeatmapWidgetState
       ),
     );
   }
-
-
 
   /// Builds empty state UI
   Widget _buildEmptyWidget(PortfolioHeatmapEmpty state) {
@@ -1124,7 +1160,11 @@ class _PortfolioHeatmapWidgetState
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.folder_open, size: iconSize, color: context.statusNeutral),
+            Icon(
+              Icons.folder_open,
+              size: iconSize,
+              color: context.statusNeutral,
+            ),
             const SizedBox(height: 24),
             Text(
               state.message,
@@ -1156,7 +1196,11 @@ class _PortfolioHeatmapWidgetState
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.bar_chart_outlined, size: iconSize, color: context.statusNeutral),
+          Icon(
+            Icons.bar_chart_outlined,
+            size: iconSize,
+            color: context.statusNeutral,
+          ),
           const SizedBox(height: 16),
           Text(
             'Loading ${widget.config.compactMode ? '' : 'portfolio '}data...',
@@ -1183,11 +1227,8 @@ class _PortfolioHeatmapWidgetState
     );
   }
 
-  /// Heatmap taps must not flash the floating company bottom nav.
-  void _suppressBottomNavOnHeatmapTap() {
-    GlobalBottomNavVisibility.suppressChromeTapReveal = true;
-    GlobalBottomNavVisibility.requestHide();
-  }
+  /// Retained for compatibility. Heatmap interactions allow the global nav to remain interactive.
+  void _suppressBottomNavOnHeatmapTap() {}
 
   /// Handles filter changes from heatmap selectors
   void _onFiltersChanged({

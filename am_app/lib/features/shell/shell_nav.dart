@@ -13,18 +13,14 @@ mixin ShellNav on State<AppShell> {
   }
 
   List<SidebarItem> _sidebarItemsFor({required bool isAdmin}) => [
+        const SidebarItem(title: 'Dashboard', icon: Icons.dashboard_rounded),
         const SidebarItem(
-            title: 'Dashboard', icon: Icons.dashboard_rounded),
-        const SidebarItem(
-            title: 'Portfolio',
-            icon: Icons.account_balance_wallet_rounded),
+            title: 'Portfolio', icon: Icons.account_balance_wallet_rounded),
         const SidebarItem(title: 'Trade', icon: Icons.swap_horiz_rounded),
         const SidebarItem(title: 'Market', icon: Icons.show_chart_rounded),
-        const SidebarItem(
-            title: 'AI Chat', icon: Icons.auto_awesome_rounded),
+        const SidebarItem(title: 'AI Chat', icon: Icons.auto_awesome_rounded),
         if (isAdmin)
-          const SidebarItem(
-              title: 'Analysis', icon: Icons.analytics_outlined),
+          const SidebarItem(title: 'Analysis', icon: Icons.analytics_outlined),
       ];
 
   Color _moduleAccentFor(String title) {
@@ -92,17 +88,27 @@ mixin ShellNav on State<AppShell> {
       metadata: {'title': title},
     );
     _showBottomNavWithIdleHide();
-    _applyStreamingTabCoordinator(title);
     context.go(path);
+    _coordinateStreamingAfterNavigation(title);
     common.SessionPersistenceService.instance.patch(
       userId,
       (s) => s.copyWith(globalNav: title, clearBasket: title != 'Portfolio'),
     );
   }
 
+  void _coordinateStreamingAfterNavigation(String title) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _activeNavItem != title) return;
+      try {
+        _applyStreamingTabCoordinator(title);
+      } catch (error) {
+        common.AppLogger.warning('Streaming coordination failed: $error');
+      }
+    });
+  }
+
   String? _resolveSwipePortfolioId() {
-    final fromUrl =
-        ShareUrlBuilder.portfolioIdFromLocation(_currentLocation);
+    final fromUrl = ShareUrlBuilder.portfolioIdFromLocation(_currentLocation);
     if (fromUrl != null &&
         fromUrl.isNotEmpty &&
         fromUrl != 'all' &&
@@ -116,7 +122,8 @@ mixin ShellNav on State<AppShell> {
         !_isDevMockPortfolioId(scopeId)) {
       return scopeId;
     }
-    final cached = common.SessionPersistenceService.instance.cached?.portfolioId;
+    final cached =
+        common.SessionPersistenceService.instance.cached?.portfolioId;
     if (cached != null &&
         cached.isNotEmpty &&
         cached != 'all' &&
@@ -129,8 +136,8 @@ mixin ShellNav on State<AppShell> {
   void _goSwipePath(String path, String userId) {
     _showBottomNavWithIdleHide();
     final navTitle = AppRoutes.activeNavTitleForLocation(path);
-    _applyStreamingTabCoordinator(navTitle);
     context.go(path);
+    _coordinateStreamingAfterNavigation(navTitle);
     common.SessionPersistenceService.instance.patch(
       userId,
       (s) => s.copyWith(

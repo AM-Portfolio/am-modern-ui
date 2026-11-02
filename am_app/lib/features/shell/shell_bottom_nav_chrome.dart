@@ -18,6 +18,30 @@ mixin ShellBottomNavChrome on State<AppShell>, TickerProvider {
   bool _chromePointerMoved = false;
   bool _chromeScrollSessionActive = false;
   Timer? _bottomNavHideTimer;
+  final Set<int> _bottomNavPointers = {};
+  bool _bottomNavHovered = false;
+
+  void _onBottomNavPointerDown(PointerDownEvent event) {
+    _bottomNavPointers.add(event.pointer);
+    _bottomNavHideTimer?.cancel();
+    _setBottomNavVisible(true);
+  }
+
+  void _onBottomNavPointerEnd(PointerEvent event) {
+    _bottomNavPointers.remove(event.pointer);
+    _showBottomNavWithIdleHide();
+  }
+
+  void _onBottomNavEnter(PointerEnterEvent event) {
+    _bottomNavHovered = true;
+    _bottomNavHideTimer?.cancel();
+    _setBottomNavVisible(true);
+  }
+
+  void _onBottomNavExit(PointerExitEvent event) {
+    _bottomNavHovered = false;
+    _showBottomNavWithIdleHide();
+  }
 
   void _initBottomNavChrome() {
     _bottomNavController = AnimationController(
@@ -98,6 +122,8 @@ mixin ShellBottomNavChrome on State<AppShell>, TickerProvider {
     }
     _bottomNavHideTimer?.cancel();
     _setBottomNavVisible(true);
+    // Never animate the target out from under an active click or touch.
+    if (_bottomNavHovered || _bottomNavPointers.isNotEmpty) return;
     _bottomNavHideTimer = Timer(_bottomNavIdleHide, () {
       if (mounted) _setBottomNavVisible(false);
     });

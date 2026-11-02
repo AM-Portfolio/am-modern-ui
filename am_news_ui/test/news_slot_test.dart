@@ -172,6 +172,86 @@ void main() {
     expect(find.textContaining('No recent news for these symbols'), findsOneWidget);
   });
 
+  testWidgets('holdings news opens collapsed with featured preview',
+      (tester) async {
+    final news = InsightNews.fromJson({
+      'current_affairs': <Map<String, dynamic>>[],
+      'holdings': [
+        {
+          'heading': 'Bajaj Auto sales growth',
+          'summary':
+              'Featured summary stays hidden until expanded.',
+          'article_link': 'https://example.com/bajaj',
+          'published_at': '2026-11-02T10:00:00.000Z',
+          'symbols': ['BAJAJ-AUTO'],
+        },
+        {
+          'heading': 'Second holdings story',
+          'summary': 'Compact rows do not show summary',
+          'article_link': 'https://example.com/second',
+          'published_at': '2026-11-01T10:00:00.000Z',
+          'symbols': ['BAJAJ-AUTO'],
+        },
+      ],
+    });
+    final key = newsSymbolsProviderKey(['BAJAJ-AUTO']);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          newsUiEnabledProvider.overrideWith((ref) => true),
+          newsUiSurfaceEnabledProvider(NewsUiSurface.portfolioHoldings)
+              .overrideWith((ref) => true),
+          newsInsightForSymbolsProvider(key).overrideWith((ref) async => news),
+          priceStreamProvider.overrideWith(
+            (ref) => Stream<Map<String, QuoteChange>>.value(const {}),
+          ),
+        ],
+        child: const MaterialApp(
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: HoldingsNewsSection(
+                symbols: ['BAJAJ-AUTO'],
+                surface: NewsUiSurface.portfolioHoldings,
+                embedInScroll: true,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+
+    expect(find.text('News'), findsOneWidget);
+    expect(find.textContaining('Bajaj Auto sales growth'), findsOneWidget);
+    expect(
+      find.textContaining('Featured summary stays hidden until expanded.'),
+      findsNothing,
+    );
+    expect(find.textContaining('Second holdings story'), findsNothing);
+
+    await tester.tap(find.text('News'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+
+    expect(
+      find.textContaining('Featured summary stays hidden until expanded.'),
+      findsOneWidget,
+    );
+    expect(find.textContaining('Second holdings story'), findsOneWidget);
+
+    await tester.tap(find.text('News'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+
+    expect(
+      find.textContaining('Featured summary stays hidden until expanded.'),
+      findsNothing,
+    );
+    expect(find.textContaining('Second holdings story'), findsNothing);
+    expect(find.textContaining('Bajaj Auto sales growth'), findsOneWidget);
+  });
+
   testWidgets('flag off hides dashboard news section', (tester) async {
     await tester.pumpWidget(
       ProviderScope(

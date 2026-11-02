@@ -23,7 +23,13 @@ class DeferredModuleLoader extends StatefulWidget {
 }
 
 class _DeferredModuleLoaderState extends State<DeferredModuleLoader> {
-  late final Future<void> _loadFuture = widget.load();
+  late Future<void> _loadFuture = widget.load();
+
+  void _retry() {
+    setState(() {
+      _loadFuture = widget.load();
+    });
+  }
 
   Widget _defaultLoading() {
     return Center(
@@ -54,9 +60,21 @@ class _DeferredModuleLoaderState extends State<DeferredModuleLoader> {
           return Center(
             child: Padding(
               padding: const EdgeInsets.all(24),
-              child: SelectableText(
-                'Failed to load module:\n${snapshot.error}',
-                style: const TextStyle(color: Colors.redAccent),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SelectableText(
+                    'Failed to load module:\n${snapshot.error}',
+                    style: const TextStyle(color: Colors.redAccent),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 16),
+                  FilledButton.icon(
+                    onPressed: _retry,
+                    icon: const Icon(Icons.refresh),
+                    label: const Text('Retry'),
+                  ),
+                ],
               ),
             ),
           );
@@ -67,4 +85,3 @@ class _DeferredModuleLoaderState extends State<DeferredModuleLoader> {
     );
   }
 }
-
