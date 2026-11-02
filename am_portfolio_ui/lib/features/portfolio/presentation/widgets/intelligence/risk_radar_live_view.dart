@@ -103,7 +103,9 @@ class _RiskRadarLiveViewState extends State<RiskRadarLiveView>
   }
 
   /// Keep labels readable while maximizing plot radius inside the card.
-  static double _labelPad(double side) => (side * 0.18).clamp(44.0, 58.0);
+  /// Left/right names need more pad than top/bottom so clamp-to-edge does
+  /// not pull "Liquidity" / "Sector" back onto the diamond tips.
+  static double _labelPad(double side) => (side * 0.22).clamp(52.0, 70.0);
 
   void _onTapUp(TapUpDetails d) {
     final box = context.findRenderObject() as RenderBox?;
@@ -462,15 +464,16 @@ class _RiskRadarLivePainter extends CustomPainter {
       )..layout(maxWidth: math.max(96, labelPad + 28));
 
       // Push the text block fully past the tip so half the label does not
-      // sit back on the spider. Uses existing labelPad / corner slack —
-      // does not grow the card or shrink plot radius.
-      const tipClearance = 8.0;
+      // sit back on the spider. Horizontal axes get extra clearance — those
+      // long names otherwise collide with the diamond corners.
+      final isHorizontal = i % 4 == 1 || i % 4 == 3;
+      final tipClearance = isHorizontal ? 14.0 : 8.0;
       final extentAlong =
           tp.width * unit.dx.abs() * 0.5 + tp.height * unit.dy.abs() * 0.5;
       // Prefer empty corners for left/right tips (slight upward bias).
       final cornerBias = switch (i % 4) {
-        1 => const Offset(2, -5), // right
-        3 => const Offset(-2, -5), // left
+        1 => const Offset(6, -5), // right
+        3 => const Offset(-6, -5), // left
         0 => const Offset(0, -2), // top
         _ => const Offset(0, 2), // bottom
       };

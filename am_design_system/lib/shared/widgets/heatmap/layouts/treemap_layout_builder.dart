@@ -445,9 +445,8 @@ class _NestedSectorPanelState extends State<_NestedSectorPanel> {
         : (widget.tile.displayName.isNotEmpty
             ? widget.tile.displayName
             : widget.tile.name);
-    final meta = widget.tile.metadata ?? const <String, dynamic>{};
     final amount = widget.tile.value;
-    final quantity = _asDouble(meta['totalQuantity']);
+    final weightage = widget.tile.weightage;
     final wide = widget.width >= 150;
     // Border is inside the Positioned box — size chrome from the inner area.
     const borderW = 1.0;
@@ -538,14 +537,14 @@ class _NestedSectorPanelState extends State<_NestedSectorPanel> {
                                   ? _buildWideHeader(
                                       label,
                                       amount,
-                                      quantity,
+                                      weightage,
                                       titleColor,
                                       metaColor,
                                     )
                                   : _buildCompactHeader(
                                       label,
                                       amount,
-                                      quantity,
+                                      weightage,
                                       titleColor,
                                       metaColor,
                                       showMeta: headerH >= 28,
@@ -657,11 +656,14 @@ class _NestedSectorPanelState extends State<_NestedSectorPanel> {
   Widget _buildWideHeader(
     String label,
     double? amount,
-    double? quantity,
+    double weightage,
     Color titleColor,
     Color metaColor,
   ) {
-    final stats = _sectorStats(amount, quantity);
+    final stats = formatHeatmapSectorHeaderStats(
+      amount: amount,
+      weightage: weightage,
+    );
     return Row(
       children: [
         Expanded(
@@ -681,7 +683,7 @@ class _NestedSectorPanelState extends State<_NestedSectorPanel> {
             ),
           ),
         ),
-        // Value / qty / chevron stay flush on the right of the header.
+        // Value / weightage / chevron stay flush on the right of the header.
         if (stats.isNotEmpty) ...[
           const SizedBox(width: 8),
           FittedBox(
@@ -710,12 +712,17 @@ class _NestedSectorPanelState extends State<_NestedSectorPanel> {
   Widget _buildCompactHeader(
     String label,
     double? amount,
-    double? quantity,
+    double weightage,
     Color titleColor,
     Color metaColor, {
     bool showMeta = true,
   }) {
-    final stats = showMeta ? _sectorStats(amount, quantity) : '';
+    final stats = showMeta
+        ? formatHeatmapSectorHeaderStats(
+            amount: amount,
+            weightage: weightage,
+          )
+        : '';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisAlignment: MainAxisAlignment.center,
@@ -764,26 +771,21 @@ class _NestedSectorPanelState extends State<_NestedSectorPanel> {
     );
   }
 
-  /// Value + qty only — holdings count is redundant with the tiles below.
-  static String _sectorStats(double? amount, double? quantity) {
-    final parts = <String>[];
-    if (amount != null && amount > 0) {
-      parts.add(StringUtils.formatCurrency(amount));
-    }
-    if (quantity != null && quantity > 0) {
-      final qtyLabel = quantity == quantity.roundToDouble()
-          ? quantity.toInt().toString()
-          : quantity.toStringAsFixed(1);
-      parts.add('Qty $qtyLabel');
-    }
-    return parts.join(' · ');
-  }
+}
 
-  static double? _asDouble(dynamic v) {
-    if (v is num) return v.toDouble();
-    if (v is String) return double.tryParse(v);
-    return null;
+/// Sector header trailing meta: compact amount · portfolio weightage %.
+String formatHeatmapSectorHeaderStats({
+  double? amount,
+  double? weightage,
+}) {
+  final parts = <String>[];
+  if (amount != null && amount > 0) {
+    parts.add(StringUtils.formatCurrency(amount));
   }
+  if (weightage != null && weightage > 0) {
+    parts.add('${weightage.toStringAsFixed(1)}%');
+  }
+  return parts.join(' · ');
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -931,8 +933,8 @@ class _HoverTileState extends State<_HoverTile> {
               ]
             : [
                 Color.lerp(tileColor, sheen, isDark ? 0.10 : 0.06)!
-                    .withValues(alpha: isDark ? 0.78 : 0.55),
-                tileColor.withValues(alpha: isDark ? 0.48 : 0.30),
+                    .withValues(alpha: isDark ? 0.78 : 0.72),
+                tileColor.withValues(alpha: isDark ? 0.48 : 0.48),
               ],
       ),
       borderRadius: BorderRadius.circular(radius),

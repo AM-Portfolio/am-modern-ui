@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 
-/// Caps News section height so siblings in a [Column] (e.g. holdings lists)
+/// Caps News feed height so siblings in a [Column] (e.g. holdings lists)
 /// are not crushed when many story cards load.
+///
+/// Put sticky chrome (title / hide toggle) *outside* this widget so it stays
+/// visible while [child] scrolls.
 class NewsSectionViewport extends StatelessWidget {
   const NewsSectionViewport({
     super.key,
