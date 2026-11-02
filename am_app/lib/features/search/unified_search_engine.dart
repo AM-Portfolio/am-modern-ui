@@ -476,9 +476,11 @@ class UnifiedSearchEngine {
         final bb = SearchContextRegistry.boost(context, b.category);
         return bb.compareTo(ba);
       });
-    out.addAll(ranked.take(6));
+    // Keep every module destination available so category chips (especially
+    // Trade and Market) don't disappear based on the page that opened search.
+    out.addAll(ranked);
 
     final seen = <String>{};
-    return out.where((i) => seen.add(i.title.toLowerCase())).take(12).toList();
+    return out.where((i) => seen.add(i.title.toLowerCase())).toList();
   }
 }
