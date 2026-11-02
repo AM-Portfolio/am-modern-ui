@@ -22,8 +22,10 @@ final _tradeControllerRemoteDataSourceProvider = FutureProvider<TradeControllerR
 });
 
 /// Provider for trade controller repository
-final _tradeControllerRepositoryProvider = FutureProvider<TradeControllerRepository>((ref) async {
-  final remoteDataSource = await ref.watch(_tradeControllerRemoteDataSourceProvider.future);
+final tradeControllerRepositoryProvider =
+    FutureProvider<TradeControllerRepository>((ref) async {
+  final remoteDataSource =
+      await ref.watch(_tradeControllerRemoteDataSourceProvider.future);
   final stompClient =
       GetIt.instance.isRegistered<AmStompClient>() ? GetIt.instance<AmStompClient>() : null;
 
@@ -32,6 +34,9 @@ final _tradeControllerRepositoryProvider = FutureProvider<TradeControllerReposit
     stompClient: stompClient,
   );
 });
+
+/// @nodoc kept for existing private watchers
+final _tradeControllerRepositoryProvider = tradeControllerRepositoryProvider;
 
 
 /// Provider for AddTrade use case

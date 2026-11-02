@@ -5,7 +5,7 @@ import '../../../../internal/domain/entities/journal_entry.dart';
 import '../../../cubit/journal/journal_cubit.dart';
 import '../../../journal/pages/trade_journal_workflow_page.dart';
 
-/// Trade journal Pre → Execute → Post for mobile — full route or inline Entries.
+/// Trade journal single-page (stacked Pre / Execute / Post) for mobile.
 class JournalTradeWorkflowMobilePage extends StatefulWidget {
   const JournalTradeWorkflowMobilePage({
     required this.journalCubit,
@@ -53,16 +53,21 @@ class JournalTradeWorkflowMobilePage extends StatefulWidget {
 
   @override
   State<JournalTradeWorkflowMobilePage> createState() =>
-      _JournalTradeWorkflowMobilePageState();
+      JournalTradeWorkflowMobilePageState();
 }
 
-class _JournalTradeWorkflowMobilePageState
+class JournalTradeWorkflowMobilePageState
     extends State<JournalTradeWorkflowMobilePage> {
   final _workflowKey = GlobalKey<TradeJournalWorkflowPageState>();
 
+  Future<bool> confirmLeaveIfUnsaved({bool force = false}) async {
+    return _workflowKey.currentState
+            ?.confirmLeaveIfUnsaved(force: force) ??
+        true;
+  }
+
   Future<void> _handleBack() async {
-    final leave =
-        await _workflowKey.currentState?.confirmLeaveIfUnsaved() ?? true;
+    final leave = await confirmLeaveIfUnsaved();
     if (!leave || !mounted) return;
     if (widget.embedded) {
       widget.onCancel?.call();

@@ -56,7 +56,7 @@ JournalEntry _preferEntry(List<JournalEntry> entries) {
 }
 
 /// Creates/opens journal for [tradeId] and navigates to the workflow template
-/// (read-only when completed until Edit).
+/// (read-only when completed until double-click edit).
 Future<JournalEntry?> openJournalThisTrade(
   BuildContext context, {
   required JournalCubit cubit,
@@ -85,7 +85,6 @@ Future<JournalEntry?> openJournalThisTrade(
           initialEntry: entry,
           portfolioId: resolvedPortfolio,
           initialReadOnly: completed,
-          startAtStep: completed ? 2 : null,
         ),
       ),
     );

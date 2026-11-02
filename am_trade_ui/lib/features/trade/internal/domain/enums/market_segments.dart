@@ -31,6 +31,8 @@ class MarketSegmentsConverter implements JsonConverter<MarketSegments?, String?>
 
     switch (normalized) {
       case 'EQUITY':
+      case 'EQ':
+      case 'CASH':
         return MarketSegments.equity;
       case 'INDEX_SEGMENT':
       case 'INDEX':

@@ -10,6 +10,8 @@ class JournalFormSurface extends StatelessWidget {
     this.leading,
     this.trailing,
     this.padding,
+    this.fillHeight = false,
+    this.centerHeader = false,
     super.key,
   });
 
@@ -20,59 +22,93 @@ class JournalFormSurface extends StatelessWidget {
   final Widget? trailing;
   final EdgeInsetsGeometry? padding;
 
+  /// Stretch to a bounded parent (e.g. [Expanded]) so column cards match height.
+  final bool fillHeight;
+
+  /// Center badge + title as a group (journal Pre/Execute/Post cards).
+  final bool centerHeader;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = context.colors;
 
+    final titleBlock = Column(
+      crossAxisAlignment:
+          centerHeader ? CrossAxisAlignment.center : CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (title != null)
+          Text(
+            title!,
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+              color: colors.textPrimary,
+            ),
+          ),
+        if (subtitle != null) ...[
+          const SizedBox(height: 2),
+          Text(
+            subtitle!,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: colors.textSecondary,
+            ),
+          ),
+        ],
+      ],
+    );
+
+    final header = (title != null || trailing != null || leading != null)
+        ? Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                mainAxisAlignment: centerHeader
+                    ? MainAxisAlignment.center
+                    : MainAxisAlignment.start,
+                children: [
+                  if (leading != null) ...[
+                    leading!,
+                    const SizedBox(width: AppSpacing.sm),
+                  ],
+                  if (centerHeader)
+                    titleBlock
+                  else
+                    Expanded(child: titleBlock),
+                  if (trailing != null) trailing!,
+                ],
+              ),
+              // Extra room so the first field's floating border label is not tight.
+              const SizedBox(height: AppSpacing.md + AppSpacing.xs),
+            ],
+          )
+        : null;
+
+    // Design-system card on hub background (mockup: white card / themed surface).
+    // clipBehavior keeps tall form content from painting outside rounded edges.
     return Container(
       width: double.infinity,
+      height: fillHeight ? double.infinity : null,
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        color: colors.cardSurface.withValues(alpha: 0.65),
+        color: colors.cardSurface,
         borderRadius: AppRadii.card,
-        border: Border.all(color: colors.border.withValues(alpha: 0.35)),
+        border: Border.all(color: colors.border.withValues(alpha: 0.4)),
+        boxShadow: [
+          BoxShadow(
+            color: colors.textPrimary.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
-      padding: padding ??
-          const EdgeInsets.all(AppSpacing.md + AppSpacing.xs),
+      padding: padding ?? const EdgeInsets.all(AppSpacing.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (title != null || trailing != null) ...[
-            Row(
-              children: [
-                if (leading != null) ...[
-                  leading!,
-                  const SizedBox(width: AppSpacing.sm),
-                ],
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (title != null)
-                        Text(
-                          title!,
-                          style: theme.textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      if (subtitle != null) ...[
-                        const SizedBox(height: 2),
-                        Text(
-                          subtitle!,
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: colors.textSecondary,
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-                if (trailing != null) trailing!,
-              ],
-            ),
-            const SizedBox(height: AppSpacing.md),
-          ],
-          child,
+          if (header != null) header,
+          // Scrollables must be Expanded when [fillHeight] stretches this card.
+          if (fillHeight) Expanded(child: child) else child,
         ],
       ),
     );

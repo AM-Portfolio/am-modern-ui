@@ -13,7 +13,7 @@ class JournalThemedDropdown<T> extends StatelessWidget {
     this.value,
     this.hint,
     this.label,
-    this.height = 44,
+    this.height = 42,
     this.fontSize = 14,
     this.width,
     this.menuMaxWidth,
@@ -55,6 +55,7 @@ class JournalThemedDropdown<T> extends StatelessWidget {
     Widget buildDropdown({double? resolvedMenuWidth}) {
       return CustomDropdown<T>(
         value: value,
+        // Keep a one-line inner hint even with border labels (narrow columns).
         hint: hint,
         items: items,
         onChanged: enabled ? onChanged : null,
@@ -87,10 +88,12 @@ class JournalThemedDropdown<T> extends StatelessWidget {
           decoration: JournalFieldDecoration.borderLabel(
             context,
             label: label!,
-            // Keep inner trigger flush so hint/value stay vertically centered.
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.xs,
-              vertical: AppSpacing.xxs,
+            // Room for floating label without crushing the value row.
+            contentPadding: const EdgeInsets.fromLTRB(
+              AppSpacing.sm,
+              AppSpacing.sm,
+              AppSpacing.sm,
+              AppSpacing.sm,
             ),
           ),
           child: dropdown,

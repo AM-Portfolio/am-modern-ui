@@ -16,7 +16,7 @@ class JournalPresetOrCustomField extends StatefulWidget {
     required this.onChanged,
     this.hint,
     this.customHint = 'Type your own…',
-    this.height = 48,
+    this.height = 42,
   });
 
   final String label;
@@ -88,10 +88,11 @@ class _JournalPresetOrCustomFieldState
       children: [
         JournalThemedDropdown<String>(
           value: _dropdownValue,
-          // Title lives in the field as the hint (no external label).
+          label: widget.label,
+          floatingLabel: true,
           hint: widget.hint ?? widget.label,
           height: widget.height,
-          fontSize: 15,
+          fontSize: 14,
           items: [
             ...widget.presets.map(
               (p) => DropdownMenuItem(

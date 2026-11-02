@@ -24,13 +24,18 @@ class JournalEntryDetailView extends StatefulWidget {
   final ValueChanged<bool>? onEditModeChanged;
 
   @override
-  State<JournalEntryDetailView> createState() => _JournalEntryDetailViewState();
+  State<JournalEntryDetailView> createState() => JournalEntryDetailViewState();
 }
 
-class _JournalEntryDetailViewState extends State<JournalEntryDetailView> {
+class JournalEntryDetailViewState extends State<JournalEntryDetailView> {
   GlobalKey<JournalEntryFormState> _formKey =
       GlobalKey<JournalEntryFormState>();
   var _formEditMode = false;
+
+  /// Flush autosave draft before the parent leaves this entry.
+  Future<bool> confirmLeaveIfUnsaved({bool force = false}) async {
+    return _formKey.currentState?.confirmLeaveIfUnsaved(force: force) ?? true;
+  }
 
   void _setFormEditMode(bool editing) {
     if (_formEditMode == editing) return;
@@ -225,21 +230,14 @@ class _JournalEntryDetailViewState extends State<JournalEntryDetailView> {
                       onPressed: _showTemplateBrowser,
                     )
                   else
-                    AppButton(
-                      text: 'Edit',
-                      icon: Icons.edit_outlined,
-                      backgroundColor: ModuleColors.trade,
-                      height: 32,
-                      onPressed: () {
-                        // Enter form edit first, then notify parent (avoid
-                        // remount races wiping edit mode on the same frame).
-                        _formKey.currentState?.enterEditMode();
-                        WidgetsBinding.instance.addPostFrameCallback((_) {
-                          if (!mounted) return;
-                          _formKey.currentState?.enterEditMode();
-                          _setFormEditMode(true);
-                        });
-                      },
+                    Padding(
+                      padding: const EdgeInsets.only(right: AppSpacing.sm),
+                      child: Text(
+                        'Double-click a field to edit',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: colors.textSecondary,
+                            ),
+                      ),
                     ),
                   PopupMenuButton<String>(
                     tooltip: 'More',

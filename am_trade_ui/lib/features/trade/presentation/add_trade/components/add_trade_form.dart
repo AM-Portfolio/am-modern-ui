@@ -81,10 +81,7 @@ class _AddTradeFormState extends State<AddTradeForm> {
   @override
   void initState() {
     super.initState();
-    
-    if (widget.initialData != null) {
-      _loadInitialData();
-    }
+    _hydrateFromInitialData();
     for (final c in [
       _symbolController,
       _isinController,
@@ -99,6 +96,106 @@ class _AddTradeFormState extends State<AddTradeForm> {
     ]) {
       c.addListener(_emitDirty);
     }
+  }
+
+  @override
+  void didUpdateWidget(covariant AddTradeForm oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final oldId = oldWidget.initialData?.tradeId;
+    final newId = widget.initialData?.tradeId;
+    final oldSig = _hydrateSignature(oldWidget.initialData);
+    final newSig = _hydrateSignature(widget.initialData);
+    // Parent swipe tab reuses this State — reload when edit target or
+    // enriched fields (broker/exchange/price) change.
+    if (oldId != newId || oldSig != newSig) {
+      _resetFormFields();
+      _hydrateFromInitialData();
+      setState(() {});
+    }
+  }
+
+  String _hydrateSignature(TradeDetails? trade) {
+    if (trade == null) return '';
+    final broker = trade.tradeExecutions
+        ?.map((e) => e.basicInfo?.brokerType?.name)
+        .whereType<String>()
+        .join(',');
+    final order = trade.tradeExecutions
+        ?.map((e) => e.executionInfo?.orderType?.name)
+        .whereType<String>()
+        .join(',');
+    return '${trade.instrumentInfo.exchange?.name}|'
+        '${trade.instrumentInfo.segment?.name}|'
+        '${trade.entryInfo.price}|$broker|$order';
+  }
+
+  void _hydrateFromInitialData() {
+    final data = widget.initialData;
+    if (data != null &&
+        (data.tradeId.isNotEmpty || _hasUsableInstrument(data))) {
+      _loadInitialData();
+    } else {
+      // Sync with ModernDateTimePicker default so Save/Next don't fail
+      // while the UI already shows "now".
+      _entryDate ??= DateTime.now();
+    }
+  }
+
+  bool _hasUsableInstrument(TradeDetails trade) {
+    final fromInstrument = trade.instrumentInfo.symbol?.trim() ?? '';
+    if (fromInstrument.isNotEmpty) return true;
+    return (trade.symbol?.trim() ?? '').isNotEmpty;
+  }
+
+  void _resetFormFields() {
+    _symbolController.clear();
+    _isinController.clear();
+    _descriptionController.clear();
+    _selectedExchange = null;
+    _selectedSegment = null;
+    _selectedDerivativeType = null;
+    _selectedOptionType = null;
+    _strikePriceController.clear();
+    _expiryDate = null;
+    _selectedDirection = TradeDirections.long;
+    _selectedStatus = TradeStatuses.open;
+    _entryDate = null;
+    _entryPriceController.clear();
+    _entryQuantityController.clear();
+    _exitDate = null;
+    _exitPriceController.clear();
+    _exitQuantityController.clear();
+    _selectedBroker = null;
+    _selectedOrderType = null;
+    _attachments = [];
+    _strategyController.clear();
+    _selectedEntryPsychology = [];
+    _selectedExitPsychology = [];
+    _selectedTechnicalReasons = [];
+    _selectedFundamentalReasons = [];
+    _notesController.clear();
+  }
+
+  String? _validateDetailsStep() {
+    return TradeFormValidator.validateTradeDetails(
+      symbol: _symbolController.text.trim().toUpperCase(),
+      selectedExchange: _selectedExchange,
+      selectedSegment: _selectedSegment,
+      entryDate: _entryDate,
+      entryPrice: _entryPriceController.text,
+      entryQuantity: _entryQuantityController.text,
+      selectedBroker: _selectedBroker,
+      status: _selectedStatus,
+      exitDate: _exitDate,
+      exitPrice: _exitPriceController.text,
+      exitQuantity: _exitQuantityController.text,
+    );
+  }
+
+  void _showValidationError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: Colors.red),
+    );
   }
 
   void _setAndDirty(VoidCallback update) {
@@ -123,7 +220,7 @@ class _AddTradeFormState extends State<AddTradeForm> {
     if (_selectedDerivativeType != null) return true;
     if (_selectedOptionType != null) return true;
     if (_expiryDate != null) return true;
-    if (_entryDate != null) return true;
+    // Entry date defaults to DateTime.now() for new trades — not dirty by itself.
     if (_exitDate != null) return true;
     if (_selectedBroker != null) return true;
     if (_selectedOrderType != null) return true;
@@ -147,26 +244,47 @@ class _AddTradeFormState extends State<AddTradeForm> {
 
   void _loadInitialData() {
     final trade = widget.initialData!;
-    _symbolController.text = trade.instrumentInfo.symbol ?? '';
-    _isinController.text = trade.instrumentInfo.isin ?? '';
-    _descriptionController.text = trade.instrumentInfo.description ?? '';
-    _selectedExchange = trade.instrumentInfo.exchange;
-    _selectedSegment = trade.instrumentInfo.segment;
+    final instrument = trade.instrumentInfo;
+    final symbol = instrument.symbol?.trim();
+    _symbolController.text =
+        (symbol != null && symbol.isNotEmpty) ? symbol : (trade.symbol ?? '');
+    _isinController.text = instrument.isin ?? '';
+    _descriptionController.text = instrument.description ?? '';
+    _selectedExchange = instrument.exchange;
+    final seg = instrument.segment;
+    _selectedSegment =
+        (seg == null || seg == MarketSegments.unknown) ? null : seg;
 
-    if (trade.instrumentInfo.derivativeInfo != null) {
-      _selectedDerivativeType = trade.instrumentInfo.derivativeInfo!.derivativeType;
-      _selectedOptionType = trade.instrumentInfo.derivativeInfo!.optionType;
-      _strikePriceController.text = trade.instrumentInfo.derivativeInfo!.strikePrice?.toString() ?? '';
-      _expiryDate = trade.instrumentInfo.derivativeInfo!.expiryDate;
+    if (instrument.derivativeInfo != null) {
+      final d = instrument.derivativeInfo!;
+      _selectedDerivativeType = d.derivativeType;
+      _selectedOptionType = d.optionType;
+      _strikePriceController.text = d.strikePrice?.toString() ?? '';
+      _expiryDate = d.expiryDate;
     }
 
     _selectedDirection = trade.tradePositionType;
     _selectedStatus = trade.status;
-    _selectedBroker = trade.tradeExecutions?.isNotEmpty == true ? trade.tradeExecutions!.first.basicInfo?.brokerType : null;
-    _selectedOrderType = trade.tradeExecutions?.isNotEmpty == true ? trade.tradeExecutions!.first.executionInfo?.orderType : null;
-    
-    _entryDate = trade.entryInfo.timestamp;
-    _entryPriceController.text = trade.entryInfo.price?.toString() ?? '';
+
+    // Prefer first execution that actually carries broker / order type.
+    BrokerTypes? broker;
+    OrderTypes? orderType;
+    for (final exec in trade.tradeExecutions ?? const <TradeModel>[]) {
+      broker ??= exec.basicInfo?.brokerType;
+      orderType ??= exec.executionInfo?.orderType;
+      if (broker != null && orderType != null) break;
+    }
+    _selectedBroker = broker;
+    _selectedOrderType = orderType;
+
+    _entryDate = trade.entryInfo.timestamp ?? DateTime.now();
+    final entryPx = trade.entryInfo.price;
+    final fallbackPx = trade.currentPrice;
+    final resolvedPx = (entryPx != null && entryPx > 0)
+        ? entryPx
+        : (fallbackPx != null && fallbackPx > 0 ? fallbackPx : entryPx);
+    _entryPriceController.text =
+        resolvedPx != null && resolvedPx > 0 ? resolvedPx.toString() : '';
     _entryQuantityController.text = trade.entryInfo.quantity?.toString() ?? '';
 
     if (trade.exitInfo != null) {
@@ -175,18 +293,28 @@ class _AddTradeFormState extends State<AddTradeForm> {
       _exitQuantityController.text = trade.exitInfo!.quantity?.toString() ?? '';
     }
 
-    _strategyController.text = trade.strategy ?? '';
+    _strategyController.text = trade.strategy ??
+        trade.entryReasoning?.strategy ??
+        '';
     _notesController.text = trade.notes ?? '';
-    _attachments = trade.attachments?.map((a) => a.fileUrl ?? '').toList() ?? [];
-    
+    _attachments = trade.attachments
+            ?.map((a) => a.fileUrl ?? '')
+            .where((u) => u.isNotEmpty)
+            .toList() ??
+        [];
+
     if (trade.psychologyData != null) {
-      _selectedEntryPsychology = trade.psychologyData!.entryPsychologyFactors ?? [];
-      _selectedExitPsychology = trade.psychologyData!.exitPsychologyFactors ?? [];
+      _selectedEntryPsychology =
+          trade.psychologyData!.entryPsychologyFactors ?? [];
+      _selectedExitPsychology =
+          trade.psychologyData!.exitPsychologyFactors ?? [];
     }
 
     if (trade.entryReasoning != null) {
-      _selectedTechnicalReasons = trade.entryReasoning!.technicalReasons ?? [];
-      _selectedFundamentalReasons = trade.entryReasoning!.fundamentalReasons ?? [];
+      _selectedTechnicalReasons =
+          trade.entryReasoning!.technicalReasons ?? [];
+      _selectedFundamentalReasons =
+          trade.entryReasoning!.fundamentalReasons ?? [];
     }
   }
 
@@ -222,6 +350,14 @@ class _AddTradeFormState extends State<AddTradeForm> {
 
   void _nextStep() {
     if (_currentStep < _totalSteps - 1) {
+      // Gate leaving Trade Details until required fields pass.
+      if (_currentStep == 0) {
+        final error = _validateDetailsStep();
+        if (error != null) {
+          _showValidationError(error);
+          return;
+        }
+      }
       setState(() => _currentStep++);
       _pageController.animateToPage(_currentStep, duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
     }
@@ -236,57 +372,28 @@ class _AddTradeFormState extends State<AddTradeForm> {
 
   void _saveTrade() {
     AppLogger.methodEntry('_saveTrade', tag: 'AddTradeForm');
-    AppLogger.info('💾 User clicked Save Trade button', tag: 'AddTradeForm');
+    AppLogger.info('User clicked Save Trade button', tag: 'AddTradeForm');
+
+    final validationError = _validateDetailsStep();
+    if (validationError != null) {
+      _showValidationError(validationError);
+      return;
+    }
 
     try {
-      AppLogger.debug('🔍 Validating required fields...', tag: 'AddTradeForm');
       final cleanSymbol = _symbolController.text.trim().toUpperCase();
-
-      // Validate required fields
-      TradeFormValidator.validateRequiredFields(
-        symbol: cleanSymbol,
-        selectedExchange: _selectedExchange,
-        selectedSegment: _selectedSegment,
-        entryDate: _entryDate,
-        entryPrice: _entryPriceController.text,
-        entryQuantity: _entryQuantityController.text,
-        selectedBroker: _selectedBroker,
-      );
-
-      AppLogger.info('Required fields validation passed', tag: 'AddTradeForm');
-      AppLogger.debug('Parsing numeric values...', tag: 'AddTradeForm');
-
-      // Parse numeric values
-      final entryPrice = double.tryParse(_entryPriceController.text);
-      final entryQuantity = double.tryParse(_entryQuantityController.text);
-      final exitPrice = _exitPriceController.text.isNotEmpty ? double.tryParse(_exitPriceController.text) : null;
-      final exitQuantity = _exitQuantityController.text.isNotEmpty
-          ? double.tryParse(_exitQuantityController.text)
+      final entryPrice = double.parse(_entryPriceController.text.trim());
+      final entryQuantity = double.parse(_entryQuantityController.text.trim());
+      final exitPrice = _exitPriceController.text.trim().isNotEmpty
+          ? double.tryParse(_exitPriceController.text.trim())
           : null;
-      final strikePrice = _strikePriceController.text.isNotEmpty ? double.tryParse(_strikePriceController.text) : null;
+      final exitQuantity = _exitQuantityController.text.trim().isNotEmpty
+          ? double.tryParse(_exitQuantityController.text.trim())
+          : null;
+      final strikePrice = _strikePriceController.text.trim().isNotEmpty
+          ? double.tryParse(_strikePriceController.text.trim())
+          : null;
 
-      AppLogger.debug(
-        'Parsed values - entryPrice: $entryPrice, entryQuantity: $entryQuantity, exitPrice: $exitPrice',
-        tag: 'AddTradeForm',
-      );
-
-      // Validate numeric values
-      TradeFormValidator.validateNumericValues(entryPrice: entryPrice, entryQuantity: entryQuantity);
-
-      AppLogger.info('Numeric validation passed', tag: 'AddTradeForm');
-
-      // Validate closed trade data
-      TradeFormValidator.validateClosedTrade(
-        status: _selectedStatus,
-        exitDate: _exitDate,
-        exitPrice: exitPrice,
-        exitQuantity: exitQuantity,
-      );
-
-      AppLogger.info('Closed trade validation passed', tag: 'AddTradeForm');
-      AppLogger.debug('Building TradeDetails entity...', tag: 'AddTradeForm');
-
-      // Map form data to TradeDetails entity
       final tradeDetails = TradeFormMapper.mapToTradeDetails(
         symbol: cleanSymbol,
         exchange: _selectedExchange,
@@ -298,8 +405,8 @@ class _AddTradeFormState extends State<AddTradeForm> {
         optionType: _selectedOptionType,
         expiryDate: _expiryDate,
         entryDate: _entryDate,
-        entryPrice: entryPrice!,
-        entryQuantity: entryQuantity!,
+        entryPrice: entryPrice,
+        entryQuantity: entryQuantity,
         exitDate: _exitDate,
         exitPrice: exitPrice,
         exitQuantity: exitQuantity,
@@ -317,14 +424,7 @@ class _AddTradeFormState extends State<AddTradeForm> {
         selectedOrderType: _selectedOrderType,
       );
 
-      AppLogger.info(
-        'TradeDetails entity created - symbol: $cleanSymbol, portfolioId: ${widget.initialData?.portfolioId}',
-        tag: 'AddTradeForm',
-      );
-
-      // Call the parent's onSave callback
       if (widget.onSave != null) {
-        AppLogger.info('📤 Calling onSave callback to parent', tag: 'AddTradeForm');
         widget.onSave!(tradeDetails);
       } else {
         AppLogger.warning('No onSave callback provided!', tag: 'AddTradeForm');
@@ -333,13 +433,8 @@ class _AddTradeFormState extends State<AddTradeForm> {
       AppLogger.methodExit('_saveTrade', tag: 'AddTradeForm', result: 'success');
     } catch (e) {
       AppLogger.error('Trade save failed', tag: 'AddTradeForm', error: e, stackTrace: StackTrace.current);
-
-      // Show error if validation or construction fails
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Failed to save trade: ${e.toString()}'), backgroundColor: Colors.red));
+      _showValidationError('Failed to save trade: $e');
     }
-    
   }
 
   void _onInstrumentSelected(Map<String, dynamic> instrument) {

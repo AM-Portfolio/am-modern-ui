@@ -24,6 +24,7 @@ import 'widgets/rich_text_editor.dart';
 import 'widgets/trade_overview_selector.dart';
 import 'widgets/trade_preview_dialog.dart';
 import '../../../journal/pages/trade_journal_workflow_page.dart';
+import '../../../journal/utils/journal_entry_validation.dart';
 import '../../../journal/widgets/journal_structured_review_section.dart';
 import '../../../journal/widgets/simple_template_dialog.dart';
 
@@ -59,7 +60,7 @@ class JournalEntryForm extends ConsumerStatefulWidget {
   final VoidCallback? onBrowseTemplates;
   /// Dismiss create mode without saving (Log day flow).
   final VoidCallback? onCancelCreate;
-  /// Notifies the detail chrome when view ↔ edit toggles (header Edit button).
+  /// Notifies the detail chrome when view ↔ edit toggles (double-click unlock).
   final ValueChanged<bool>? onEditModeChanged;
   /// When true, enables mobile-optimized compact selectors and actions.
   final bool compact;
@@ -102,7 +103,8 @@ class JournalEntryFormState extends ConsumerState<JournalEntryForm> {
   TradePeriodType _tradePeriod = TradePeriodType.daily;
   List<String> _relatedTradeIds = [];
   List<TradeHoldingViewModel> _availableTrades = [];
-  bool _isEditMode = false; // View mode by default when editing existing entry
+  // View mode by default for existing entries; double-click unlocks edit.
+  bool _isEditMode = false;
   String? _appliedTemplateName;
 
   /// Template checklist / prompts live outside Quill so users don't clear placeholders.
@@ -692,9 +694,29 @@ class JournalEntryFormState extends ConsumerState<JournalEntryForm> {
   /// Public for parent shell (list selection / mode toggle) leave guards.
   bool get hasUnsavedChanges => _hasUnsavedChanges;
 
-  /// Debounced (~20s) silent DRAFT save while composing a new entry.
+  /// Status to persist on autosave / leave-flush (never demotes COMPLETED).
+  String _autosaveJournalStatus() {
+    final existing = widget.entry;
+    if (existing == null) return 'DRAFT';
+    final status = (existing.journalStatus ?? 'DRAFT').toUpperCase();
+    if (status == 'COMPLETED' ||
+        status == 'ARCHIVED' ||
+        status == 'OPEN' ||
+        status == 'MISSED') {
+      return status;
+    }
+    return 'DRAFT';
+  }
+
+  bool get _canAutosave =>
+      mounted &&
+      !_isSubmitting &&
+      (widget.entry == null || _isEditMode) &&
+      _draftHasContent;
+
+  /// Debounced (~20s) silent save while composing or editing.
   void _scheduleAutosave() {
-    if (widget.entry != null || !mounted || _isSubmitting) return;
+    if (!_canAutosave) return;
     if (_draftFingerprint() == _lastSavedFingerprint) return;
     _autosaveTimer?.cancel();
     _autosaveTimer = Timer(_autosaveDelay, () {
@@ -703,141 +725,64 @@ class JournalEntryFormState extends ConsumerState<JournalEntryForm> {
   }
 
   Future<void> _autosaveDraft() async {
-    if (!mounted || widget.entry != null || _isSubmitting) return;
-    if (!_draftHasContent) return;
+    if (!_canAutosave) return;
     final fingerprint = _draftFingerprint();
     if (fingerprint == _lastSavedFingerprint) return;
     try {
-      final id = await _persistDayEntry(journalStatus: 'DRAFT');
+      final id = await _persistDayEntry(journalStatus: _autosaveJournalStatus());
       _draftEntryId = id;
       try {
         await _syncNewAttachments(id);
       } catch (_) {
         // Attachment retry happens on explicit Save.
       }
-      _lastSavedFingerprint = fingerprint;
+      if (_draftFingerprint() == fingerprint) {
+        _lastSavedFingerprint = fingerprint;
+      }
       if (mounted) setState(() => _lastDraftSavedAt = DateTime.now());
     } catch (_) {
       // Silent: the explicit Save surfaces real errors.
     }
   }
 
-  Future<void> _saveDraftExplicit() async {
-    if (_isSubmitting) return;
-    setState(() => _isSubmitting = true);
+  /// Flush pending draft before navigating away. Returns false only on hard failure.
+  Future<bool> _flushDraftOnLeave() async {
+    _autosaveTimer?.cancel();
+    if (!_draftHasContent) return true;
+    if (_draftFingerprint() == _lastSavedFingerprint) return true;
     try {
       try {
         await _autosaveFuture;
       } catch (_) {}
-      final id = await _persistDayEntry(journalStatus: 'DRAFT');
+      if (_draftFingerprint() == _lastSavedFingerprint) return true;
+      final id = await _persistDayEntry(journalStatus: _autosaveJournalStatus());
       _draftEntryId = id;
-      await _syncNewAttachments(id);
+      try {
+        await _syncNewAttachments(id);
+      } catch (_) {}
       _lastSavedFingerprint = _draftFingerprint();
-      if (mounted) {
-        setState(() => _lastDraftSavedAt = DateTime.now());
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Draft saved')),
-        );
-      }
+      if (mounted) setState(() => _lastDraftSavedAt = DateTime.now());
+      return true;
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to save draft: $e'),
+            content: Text('Could not auto-save draft: $e'),
             backgroundColor: context.statusError,
           ),
         );
       }
-      rethrow;
-    } finally {
-      if (mounted) setState(() => _isSubmitting = false);
+      return false;
     }
   }
 
-  /// Warn before discarding journal work.
-  /// Returns true if the caller should proceed with leave/discard.
-  ///
-  /// [force] — Cancel always warns; system back only when dirty.
+  /// Auto-saves a draft when leaving with unsaved work (sidebar / Cancel / back).
+  /// Empty composers leave without creating a row. Returns false if flush fails.
   Future<bool> confirmLeaveIfUnsaved({bool force = false}) async {
     if (_isSubmitting) return true;
     if (!force && !_hasUnsavedChanges) return true;
-
-    if (!_hasUnsavedChanges) {
-      final discard = await showDialog<bool>(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: const Text('Leave journal?'),
-          content: const Text('Leave without saving this journal entry?'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Keep editing'),
-            ),
-            FilledButton(
-              style: FilledButton.styleFrom(
-                backgroundColor: ModuleColorProvider.maybeOf(ctx) ??
-                    ModuleColors.trade,
-              ),
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Leave'),
-            ),
-          ],
-        ),
-      );
-      return discard == true;
-    }
-
-    final action = await showDialog<String>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Unsaved journal'),
-        content: const Text(
-          'Your journal may be lost if you leave now. '
-          'Save it as a draft, or save completely.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, 'stay'),
-            child: const Text('Keep editing'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, 'discard'),
-            child: const Text('Discard'),
-          ),
-          OutlinedButton(
-            onPressed: () => Navigator.pop(ctx, 'draft'),
-            child: const Text('Save draft'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: ModuleColorProvider.maybeOf(ctx) ??
-                  ModuleColors.trade,
-            ),
-            onPressed: () => Navigator.pop(ctx, 'complete'),
-            child: const Text('Save completely'),
-          ),
-        ],
-      ),
-    );
-    if (!mounted) return false;
-    switch (action) {
-      case 'discard':
-        return true;
-      case 'draft':
-        try {
-          await _saveDraftExplicit();
-          return true;
-        } catch (_) {
-          return false;
-        }
-      case 'complete':
-        await _submit();
-        // Leave only if save cleared unsaved state.
-        return !_hasUnsavedChanges;
-      case 'stay':
-      default:
-        return false;
-    }
+    if (!_hasUnsavedChanges) return true;
+    return _flushDraftOnLeave();
   }
 
   // ---------------------------------------------------------------------------
@@ -1170,7 +1115,30 @@ class JournalEntryFormState extends ConsumerState<JournalEntryForm> {
   }
 
   Future<void> _submit() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Please fix the highlighted fields'),
+          backgroundColor: context.colors.statusWarning,
+        ),
+      );
+      return;
+    }
+
+    final notesPlain = _quillController.document.toPlainText().trim();
+    final logError = JournalEntryValidation.validateLogDayComplete(
+      title: _titleController.text,
+      notesPlain: notesPlain,
+    );
+    if (logError != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(logError),
+          backgroundColor: context.colors.statusWarning,
+        ),
+      );
+      return;
+    }
 
     final rows = _linkedReviewRows;
     if (rows.any((r) => !r.hasOutcome)) {
@@ -1389,7 +1357,7 @@ class JournalEntryFormState extends ConsumerState<JournalEntryForm> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   _buildLeftColumn(context, isCompact: true),
-                  const SizedBox(height: AppSpacing.xs + AppSpacing.xxs),
+                  const SizedBox(height: AppSpacing.lg),
                   _buildRightColumn(isCompact: true),
                 ],
               );
@@ -1427,7 +1395,12 @@ class JournalEntryFormState extends ConsumerState<JournalEntryForm> {
           // sticky paints over the last fields — Stack + scroll inset is the
           // same contract used by template mobile composers.
           if (!showSticky) {
-            return scrollBody(vPad);
+            // Existing entry in view mode: double-click / double-tap unlocks edit.
+            // Wrap the scroll body (not a full-screen overlay) so scrolling still works.
+            return GestureDetector(
+              onDoubleTap: enterEditMode,
+              child: scrollBody(vPad),
+            );
           }
 
           Widget shell(double bottomInset) {
@@ -1625,7 +1598,8 @@ class JournalEntryFormState extends ConsumerState<JournalEntryForm> {
   }
 
   Widget _buildLeftColumn(BuildContext context, {bool isCompact = false}) {
-    final sectionGap = isCompact ? AppSpacing.sm : AppSpacing.md;
+    // Room for floating labels + bordered panels — sm/md was too tight.
+    final sectionGap = isCompact ? AppSpacing.md : AppSpacing.lg;
     // Same field chrome as Trade journal — border labels / surface tint (no white cards).
     // Template banner + checklist + custom fields live inside Notes (not above it).
     return Column(
@@ -1749,6 +1723,7 @@ class JournalEntryFormState extends ConsumerState<JournalEntryForm> {
           : AppSpacing.xxl * 5,
       compact: isCompact,
       label: 'Notes',
+      required: true,
       header: header,
       editorLeading: hasChecklist
           ? _buildChecklistEditor(enabled: _isEditMode)
@@ -1895,15 +1870,17 @@ class JournalEntryFormState extends ConsumerState<JournalEntryForm> {
         hintText: 'e.g. Pre-market plan — Nifty bias',
         floatingLabel: floatingLabel,
         dense: floatingLabel,
+        required: true,
       ),
-      validator: (value) => value?.isEmpty ?? true ? 'Required' : null,
+      validator: (value) =>
+          JournalEntryValidation.requiredText(value, label: 'Title'),
     );
   }
 
   Widget _buildRightColumn({bool isCompact = false}) {
     final accent =
         ModuleColorProvider.maybeOf(context) ?? ModuleColors.trade;
-    final sectionGap = isCompact ? AppSpacing.sm : AppSpacing.md;
+    final sectionGap = isCompact ? AppSpacing.md : AppSpacing.lg;
     // Same chrome as Trade journal / left column — border labels, no white cards.
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
