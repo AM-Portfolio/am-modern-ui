@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 import '../../../internal/domain/entities/journal_entry.dart';
 import 'pre_trade_plan_step.dart';
 
-/// Mobile Pre-Trade layout — stacked Symbol then Long/Short.
+/// Mobile Pre-Trade layout — stacked Symbol then Long/Short via `compactLayout`.
 ///
-/// Web keeps [PreTradePlanStep] with `compactLayout: false` (Symbol | Long/Short row).
+/// Web [PreTradePlanStep] keeps Symbol | Long/Short on one row (incl. 3-col).
 class PreTradePlanStepMobile extends StatefulWidget {
   const PreTradePlanStepMobile({
     super.key,

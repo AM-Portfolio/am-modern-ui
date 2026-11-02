@@ -5,7 +5,7 @@ import '../../../../internal/domain/entities/journal_entry.dart';
 import '../../../cubit/journal/journal_cubit.dart';
 import '../../../journal/pages/trade_journal_workflow_page.dart';
 
-/// Trade journal Pre → Execute → Post for mobile — full route or inline Entries.
+/// Trade journal single-page (stacked Pre / Execute / Post) for mobile.
 class JournalTradeWorkflowMobilePage extends StatefulWidget {
   const JournalTradeWorkflowMobilePage({
     required this.journalCubit,

@@ -116,6 +116,8 @@ abstract final class JournalFieldDecoration {
     final focusedColor =
         ModuleColorProvider.maybeOf(context) ?? ModuleColors.trade;
     final labelStyle = context.text.label(compact: true).copyWith(
+          fontSize: 12,
+          height: 1.2,
           color: colors.textSecondary,
           fontWeight: FontWeight.w600,
         );
@@ -135,8 +137,17 @@ abstract final class JournalFieldDecoration {
                   ),
                 ],
               ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              softWrap: false,
             )
-          : Text(label, style: labelStyle),
+          : Text(
+              label,
+              maxLines: 1,
+              softWrap: false,
+              overflow: TextOverflow.ellipsis,
+              style: labelStyle,
+            ),
       floatingLabelBehavior: FloatingLabelBehavior.always,
       floatingLabelStyle: labelStyle,
       filled: true,

@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:am_design_system/am_design_system.dart';
-import 'package:am_design_system/shared/widgets/navigation/step_indicator.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -10,6 +9,7 @@ import '../../cubit/journal/journal_cubit.dart';
 import '../utils/journal_calc_helper.dart';
 import '../utils/journal_entry_validation.dart';
 import '../widgets/execute_trade_step.dart';
+import '../widgets/journal_form_surface.dart';
 import '../widgets/journal_trade_header.dart';
 import '../widgets/post_trade_review_step.dart';
 import '../widgets/pre_trade_plan_step.dart';
@@ -67,17 +67,22 @@ class TradeJournalWorkflowPageState
   /// True after local edits since last successful Save Draft / Save Journal.
   var _dirty = false;
   final _stepScrollController = ScrollController();
+  final _preColScrollController = ScrollController();
+  final _execColScrollController = ScrollController();
+  final _postColScrollController = ScrollController();
   final _preStepKey = GlobalKey<PreTradePlanStepState>();
   final _preStepMobileKey = GlobalKey<PreTradePlanStepMobileState>();
   final _execStepKey = GlobalKey<ExecuteTradeStepState>();
   final _postStepKey = GlobalKey<PostTradeReviewStepState>();
+  final _preSectionKey = GlobalKey();
+  final _execSectionKey = GlobalKey();
+  final _postSectionKey = GlobalKey();
+  static const _threeColBreakpoint = 900.0;
   static const _autosaveDelay = Duration(seconds: 20);
   Timer? _autosaveTimer;
   Future<void>? _autosaveFuture;
   DateTime? _lastDraftSavedAt;
   String _lastSavedFingerprint = '';
-
-  static const _stepLabels = ['Pre-Trade', 'Execute', 'Post-Trade'];
 
   static const _defaultChecklist = [
     'Trend aligned with setup',
@@ -119,46 +124,78 @@ class TradeJournalWorkflowPageState
   void dispose() {
     _autosaveTimer?.cancel();
     _stepScrollController.dispose();
+    _preColScrollController.dispose();
+    _execColScrollController.dispose();
+    _postColScrollController.dispose();
     super.dispose();
   }
 
-  void _goToStep(int step) {
-    final next = step.clamp(0, 2);
-    setState(() => _currentStep = next);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!_stepScrollController.hasClients) return;
-      _stepScrollController.jumpTo(0);
-    });
+  void _scrollToSection(int step) {
+    final key = switch (step.clamp(0, 2)) {
+      0 => _preSectionKey,
+      1 => _execSectionKey,
+      _ => _postSectionKey,
+    };
+    final colScroll = switch (step.clamp(0, 2)) {
+      0 => _preColScrollController,
+      1 => _execColScrollController,
+      _ => _postColScrollController,
+    };
+    if (colScroll.hasClients) {
+      colScroll.animateTo(
+        0,
+        duration: const Duration(milliseconds: 280),
+        curve: Curves.easeOutCubic,
+      );
+    }
+    final ctx = key.currentContext;
+    if (ctx == null) return;
+    Scrollable.ensureVisible(
+      ctx,
+      duration: const Duration(milliseconds: 280),
+      curve: Curves.easeOutCubic,
+      alignment: 0.05,
+    );
   }
 
-  bool _validateCurrentStep() {
+  bool _validateAllStepsForSave() {
     if (_readOnly) return true;
-    final ok = switch (_currentStep) {
-      0 => widget.useMobileLayout
-          ? (_preStepMobileKey.currentState?.validate() ?? true)
-          : (_preStepKey.currentState?.validate() ?? true),
-      1 => _execStepKey.currentState?.validate() ?? true,
-      2 => _postStepKey.currentState?.validate() ?? true,
-      _ => true,
-    };
-    if (ok) return true;
-    final message = switch (_currentStep) {
-          0 => widget.useMobileLayout
-              ? _preStepMobileKey.currentState?.validationMessage()
-              : _preStepKey.currentState?.validationMessage(),
-          1 => _execStepKey.currentState?.validationMessage(),
-          2 => _postStepKey.currentState?.validationMessage(),
-          _ => null,
-        } ??
-        JournalEntryValidation.validateTradeStep(_entry, _currentStep) ??
-        'Please fix the highlighted fields';
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: context.colors.statusWarning,
-      ),
-    );
-    return false;
+    for (var step = 0; step <= 2; step++) {
+      final ok = switch (step) {
+        0 => widget.useMobileLayout
+            ? (_preStepMobileKey.currentState?.validate() ?? true)
+            : (_preStepKey.currentState?.validate() ?? true),
+        1 => _execStepKey.currentState?.validate() ?? true,
+        2 => _postStepKey.currentState?.validate() ?? true,
+        _ => true,
+      };
+      final message = ok
+          ? JournalEntryValidation.validateTradeStep(_entry, step)
+          : (switch (step) {
+                0 => widget.useMobileLayout
+                    ? _preStepMobileKey.currentState?.validationMessage()
+                    : _preStepKey.currentState?.validationMessage(),
+                1 => _execStepKey.currentState?.validationMessage(),
+                2 => _postStepKey.currentState?.validationMessage(),
+                _ => null,
+              } ??
+              JournalEntryValidation.validateTradeStep(_entry, step) ??
+              'Please fix the highlighted fields');
+      if (!ok || message != null) {
+        setState(() => _currentStep = step);
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _scrollToSection(step);
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(message ?? 'Please fix the highlighted fields'),
+            backgroundColor: context.colors.statusWarning,
+          ),
+        );
+        return false;
+      }
+    }
+    return true;
   }
 
   @override
@@ -373,7 +410,7 @@ class TradeJournalWorkflowPageState
 
   Future<void> _save({required bool complete, bool silent = false}) async {
     if (_saving) return;
-    if (complete && !silent && !_validateCurrentStep()) return;
+    if (complete && !silent && !_validateAllStepsForSave()) return;
     final fingerprintAtStart = _entryFingerprint(_entry);
     setState(() => _saving = true);
     try {
@@ -381,12 +418,13 @@ class TradeJournalWorkflowPageState
       if (complete) {
         status = 'COMPLETED';
       } else if (!silent) {
-        // Explicit Save Draft advances lifecycle; silent autosave stays DRAFT.
-        if (_currentStep == 0 && status == 'DRAFT') {
-          status = 'PLANNED';
-        } else if (_currentStep == 1 &&
-            (status == 'DRAFT' || status == 'PLANNED')) {
+        // Explicit Save Draft advances from filled sections (not wizard index).
+        final hasExec =
+            (_entry.tradeExecution?.actualEntryPrice ?? 0) > 0;
+        if (hasExec && (status == 'DRAFT' || status == 'PLANNED')) {
           status = 'OPEN';
+        } else if (status == 'DRAFT') {
+          status = 'PLANNED';
         }
       } else if (status.isEmpty) {
         status = 'DRAFT';
@@ -531,91 +569,257 @@ class TradeJournalWorkflowPageState
     }
   }
 
+  static const _columnTitles = [
+    'Pre-Trade',
+    'Execute',
+    'Post-Trade',
+  ];
+
+  Widget _preStep({bool omitSurface = false}) {
+    if (widget.useMobileLayout) {
+      return PreTradePlanStepMobile(
+        key: _preStepMobileKey,
+        entry: _entry,
+        onUpdate: _updateEntry,
+        applyDefaultChecklist: _isNew && !_readOnly,
+      );
+    }
+    return PreTradePlanStep(
+      key: _preStepKey,
+      entry: _entry,
+      onUpdate: _updateEntry,
+      applyDefaultChecklist: _isNew && !_readOnly,
+      // Web Pre always uses Symbol | Long/Short row (mockup); mobile uses Mobile step.
+      omitSurface: omitSurface,
+    );
+  }
+
+  Widget _execStep({bool omitSurface = false}) => ExecuteTradeStep(
+        key: _execStepKey,
+        entry: _entry,
+        onUpdate: _updateEntry,
+        portfolioId: widget.portfolioId,
+        onLinkTrade: _readOnly ? null : _linkTrade,
+        omitSurface: omitSurface,
+      );
+
+  Widget _postStep({bool omitSurface = false}) => PostTradeReviewStep(
+        key: _postStepKey,
+        entry: _entry,
+        onUpdate: _updateEntry,
+        omitSurface: omitSurface,
+      );
+
+  Widget _stepBadge(BuildContext context, int stepIndex, {required bool active}) {
+    final colors = context.colors;
+    final accent = ModuleColors.trade;
+    const size = 28.0;
+    return Container(
+      width: size,
+      height: size,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: active ? accent : colors.border.withValues(alpha: 0.35),
+        shape: BoxShape.circle,
+      ),
+      child: Text(
+        '${stepIndex + 1}',
+        style: Theme.of(context).textTheme.labelLarge?.copyWith(
+              color: active ? colors.actionPrimaryFg : colors.textSecondary,
+              fontWeight: FontWeight.w700,
+            ),
+      ),
+    );
+  }
+
+  /// Equal-height design-system cards; scroll only when content overflows.
+  Widget _columnScroll({
+    required Key sectionKey,
+    required ScrollController controller,
+    required int stepIndex,
+    required Widget child,
+  }) {
+    final active = stepIndex == _currentStep;
+    return KeyedSubtree(
+      key: sectionKey,
+      child: Padding(
+        // Right-only gap between columns; flush to entries-rail toggle on the left.
+        padding: const EdgeInsets.only(right: AppSpacing.sm),
+        // Listener so clicking an input still updates the active card badge.
+        child: Listener(
+          behavior: HitTestBehavior.translucent,
+          onPointerDown: (_) {
+            if (_currentStep != stepIndex) {
+              setState(() => _currentStep = stepIndex);
+            }
+          },
+          child: JournalFormSurface(
+            fillHeight: true,
+            centerHeader: true,
+            title: _columnTitles[stepIndex],
+            leading: _stepBadge(context, stepIndex, active: active),
+            // Clip scroll to the card; top pad keeps floating border labels inside.
+            child: ClipRect(
+              child: SingleChildScrollView(
+                controller: controller,
+                primary: false,
+                physics: const ClampingScrollPhysics(),
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 10, bottom: 8),
+                  child: child,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildThreeColumns(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Expanded(
+          child: _columnScroll(
+            sectionKey: _preSectionKey,
+            controller: _preColScrollController,
+            stepIndex: 0,
+            child: _preStep(omitSurface: true),
+          ),
+        ),
+        Expanded(
+          child: _columnScroll(
+            sectionKey: _execSectionKey,
+            controller: _execColScrollController,
+            stepIndex: 1,
+            child: _execStep(omitSurface: true),
+          ),
+        ),
+        Expanded(
+          child: _columnScroll(
+            sectionKey: _postSectionKey,
+            controller: _postColScrollController,
+            stepIndex: 2,
+            child: _postStep(omitSurface: true),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStackedSections(BuildContext context) {
+    Widget section({
+      required Key key,
+      required int stepIndex,
+      required Widget child,
+    }) {
+      return KeyedSubtree(
+        key: key,
+        child: Listener(
+          behavior: HitTestBehavior.translucent,
+          onPointerDown: (_) {
+            if (_currentStep != stepIndex) {
+              setState(() => _currentStep = stepIndex);
+            }
+          },
+          child: JournalFormSurface(
+            centerHeader: true,
+            title: _columnTitles[stepIndex],
+            leading: _stepBadge(
+              context,
+              stepIndex,
+              active: stepIndex == _currentStep,
+            ),
+            child: child,
+          ),
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        section(
+          key: _preSectionKey,
+          stepIndex: 0,
+          child: _preStep(omitSurface: true),
+        ),
+        const SizedBox(height: AppSpacing.lg),
+        section(
+          key: _execSectionKey,
+          stepIndex: 1,
+          child: _execStep(omitSurface: true),
+        ),
+        const SizedBox(height: AppSpacing.lg),
+        section(
+          key: _postSectionKey,
+          stepIndex: 2,
+          child: _postStep(omitSurface: true),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
 
-    final body = Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(
-            AppSpacing.lg,
-            AppSpacing.sm,
-            AppSpacing.lg,
-            AppSpacing.xs,
-          ),
-          child: StepIndicator(
-            currentStep: _currentStep,
-            stepLabels: _stepLabels,
-            activeColor: ModuleColors.trade,
-            inactiveColor: colors.textSecondary,
-            compact: true,
-          ),
-        ),
-        Expanded(
-          child: Stack(
-            children: [
-              IgnorePointer(
-                ignoring: _readOnly,
-                child: Opacity(
-                  opacity: _readOnly ? 0.92 : 1,
-                  child: SingleChildScrollView(
-                    controller: _stepScrollController,
-                    // Extra bottom inset so last fields clear the sticky action row.
-                    padding: const EdgeInsets.fromLTRB(
-                      AppSpacing.md,
-                      AppSpacing.sm,
-                      AppSpacing.md,
-                      AppSpacing.xxl + AppSpacing.lg,
-                    ),
-                    // Stable step keys — remounting on entry id change (temp→real)
-                    // disposed AttachmentPicker and wiped visible uploads.
-                    child: _currentStep == 0
-                        ? (widget.useMobileLayout
-                            ? PreTradePlanStepMobile(
-                                key: _preStepMobileKey,
-                                entry: _entry,
-                                onUpdate: _updateEntry,
-                                applyDefaultChecklist: _isNew && !_readOnly,
-                              )
-                            : PreTradePlanStep(
-                                key: _preStepKey,
-                                entry: _entry,
-                                onUpdate: _updateEntry,
-                                applyDefaultChecklist: _isNew && !_readOnly,
-                              ))
-                        : _currentStep == 1
-                            ? ExecuteTradeStep(
-                                key: _execStepKey,
-                                entry: _entry,
-                                onUpdate: _updateEntry,
-                                portfolioId: widget.portfolioId,
-                                onLinkTrade: _readOnly ? null : _linkTrade,
-                              )
-                            : PostTradeReviewStep(
-                                key: _postStepKey,
-                                entry: _entry,
-                                onUpdate: _updateEntry,
+    final body = LayoutBuilder(
+      builder: (context, constraints) {
+        final threeCol = !widget.useMobileLayout &&
+            constraints.maxWidth >= _threeColBreakpoint;
+
+        return Column(
+          children: [
+            Expanded(
+              child: Stack(
+                children: [
+                  IgnorePointer(
+                    ignoring: _readOnly,
+                    child: Opacity(
+                      opacity: _readOnly ? 0.92 : 1,
+                      child: threeCol
+                          ? Padding(
+                              // Flush to entries-rail toggle; keep right/top breathing room.
+                              padding: const EdgeInsets.fromLTRB(
+                                0,
+                                AppSpacing.sm,
+                                AppSpacing.sm,
+                                AppSpacing.xs,
                               ),
+                              child: _buildThreeColumns(context),
+                            )
+                          : SingleChildScrollView(
+                              controller: _stepScrollController,
+                              physics: const ClampingScrollPhysics(),
+                              padding: const EdgeInsets.fromLTRB(
+                                AppSpacing.md,
+                                AppSpacing.sm,
+                                AppSpacing.md,
+                                AppSpacing.xxl + AppSpacing.lg,
+                              ),
+                              child: _buildStackedSections(context),
+                            ),
+                    ),
                   ),
-                ),
+                  if (_readOnly)
+                    Positioned.fill(
+                      child: GestureDetector(
+                        behavior: HitTestBehavior.translucent,
+                        onDoubleTap: _unlockEdit,
+                        child: const SizedBox.expand(),
+                      ),
+                    ),
+                ],
               ),
-              if (_readOnly)
-                Positioned.fill(
-                  child: GestureDetector(
-                    behavior: HitTestBehavior.translucent,
-                    onDoubleTap: _unlockEdit,
-                    child: const SizedBox.expand(),
-                  ),
-                ),
-            ],
-          ),
-        ),
-        _buildBottomActions(context),
-      ],
+            ),
+            _buildBottomActions(context),
+          ],
+        );
+      },
     );
 
-    // Mobile/embedded: form scroll must not collapse Trade module pill tabs.
     final scrollIsolated = widget.useMobileLayout
         ? NotificationListener<ScrollNotification>(
             onNotification: (notification) =>
@@ -640,8 +844,9 @@ class TradeJournalWorkflowPageState
     );
 
     if (widget.embedded) {
-      return ColoredBox(
-        color: colors.surface,
+      // Let the hub background show through — no solid white slab.
+      return Material(
+        type: MaterialType.transparency,
         child: wrapped,
       );
     }
@@ -677,11 +882,12 @@ class TradeJournalWorkflowPageState
         child: Row(
           children: [
             AppButton(
-              text: _readOnly ? 'Close' : 'Cancel',
+              text: 'Close',
               type: AppButtonType.secondary,
               isOutlined: true,
-              height: 36,
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              textColor: ModuleColors.trade,
+              height: 40,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               onPressed: () async {
                 if (_readOnly) {
                   if (widget.embedded) {
@@ -700,11 +906,6 @@ class TradeJournalWorkflowPageState
                 }
               },
             ),
-            if (_currentStep > 0)
-              TextButton(
-                onPressed: () => _goToStep(_currentStep - 1),
-                child: const Text('Back'),
-              ),
             if (!_readOnly && !_isNew && !_entry.id.startsWith('temp-'))
               TextButton(
                 onPressed: _saving ? null : _confirmDelete,
@@ -721,13 +922,6 @@ class TradeJournalWorkflowPageState
                       color: colors.textSecondary,
                     ),
               ),
-              if (_currentStep < 2) ...[
-                const SizedBox(width: 8),
-                OutlinedButton(
-                  onPressed: () => _goToStep(_currentStep + 1),
-                  child: const Text('Next'),
-                ),
-              ],
             ] else ...[
               if (_lastDraftSavedAt != null) ...[
                 Text(
@@ -742,31 +936,22 @@ class TradeJournalWorkflowPageState
                 text: 'Save Draft',
                 type: AppButtonType.secondary,
                 isOutlined: true,
-                backgroundColor: ModuleColors.trade,
+                textColor: ModuleColors.trade,
                 onPressed: _saving ? null : () => _save(complete: false),
-                height: 36,
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                height: 40,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               ),
               const SizedBox(width: AppSpacing.sm),
               AppButton(
-                text: _currentStep == 2 ? 'Save' : 'Next',
-                icon: _currentStep == 2
-                    ? Icons.check_rounded
-                    : Icons.arrow_forward_rounded,
+                text: 'Save',
+                icon: Icons.check_rounded,
                 backgroundColor: ModuleColors.trade,
                 isLoading: _saving,
-                onPressed: _saving
-                    ? null
-                    : () {
-                        if (!_validateCurrentStep()) return;
-                        if (_currentStep < 2) {
-                          _goToStep(_currentStep + 1);
-                        } else {
-                          _save(complete: true);
-                        }
-                      },
-                height: 36,
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                onPressed: _saving ? null : () => _save(complete: true),
+                height: 40,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               ),
             ],
           ],
@@ -774,12 +959,14 @@ class TradeJournalWorkflowPageState
       );
     }
 
+    final hPad = widget.embedded ? AppSpacing.sm : AppSpacing.md;
+
     if (navReserveFull <= 0) {
       return buildRow(
         EdgeInsets.fromLTRB(
-          AppSpacing.md,
+          hPad,
           AppSpacing.sm,
-          AppSpacing.md,
+          hPad,
           AppSpacing.md + keyboardInset,
         ),
       );
@@ -794,9 +981,9 @@ class TradeJournalWorkflowPageState
             : AppSpacing.sm + (navReserveFull * t);
         return buildRow(
           EdgeInsets.fromLTRB(
-            AppSpacing.md,
+            hPad,
             AppSpacing.sm,
-            AppSpacing.md,
+            hPad,
             bottomPad,
           ),
         );

@@ -6,6 +6,7 @@ import '../../../internal/domain/entities/journal_entry.dart';
 import '../../../presentation/models/trade_holding_view_model.dart';
 import '../../../providers/trade_internal_providers.dart';
 import '../../web/widgets/journal/components/journal_attachment_section.dart';
+import '../../web/widgets/journal/utils/journal_field_decoration.dart';
 import '../../web/widgets/journal/utils/journal_form_helpers.dart';
 import '../utils/journal_entry_validation.dart';
 import 'journal_form_surface.dart';
@@ -19,12 +20,16 @@ class ExecuteTradeStep extends ConsumerStatefulWidget {
     required this.onUpdate,
     this.portfolioId,
     this.onLinkTrade,
+    this.fillHeight = false,
+    this.omitSurface = false,
   });
 
   final JournalEntry entry;
   final ValueChanged<JournalEntry> onUpdate;
   final String? portfolioId;
   final Future<void> Function(String tradeId)? onLinkTrade;
+  final bool fillHeight;
+  final bool omitSurface;
 
   @override
   ConsumerState<ExecuteTradeStep> createState() => ExecuteTradeStepState();
@@ -90,7 +95,8 @@ class ExecuteTradeStepState extends ConsumerState<ExecuteTradeStep> {
     super.dispose();
   }
 
-  Widget _gap() => const SizedBox(height: 14);
+  /// Room between border-labeled fields so floating titles are not cramped.
+  Widget _gap() => const SizedBox(height: AppSpacing.md + 4);
 
   Widget _row(Widget left, Widget right) {
     return Row(
@@ -117,7 +123,7 @@ class ExecuteTradeStepState extends ConsumerState<ExecuteTradeStep> {
     final theme = Theme.of(context);
     return TextFormField(
       controller: controller,
-      style: theme.textTheme.bodyLarge,
+      style: theme.textTheme.bodySmall?.copyWith(fontSize: 12.5, height: 1.25),
       keyboardType: keyboardType,
       maxLines: maxLines,
       validator: validator,
@@ -330,144 +336,132 @@ class ExecuteTradeStepState extends ConsumerState<ExecuteTradeStep> {
     final imageUrls = entry.attachments.map((a) => a.fileUrl).toList();
 
     final plan = entry.preTradePlan;
-    return JournalFormSurface(
-      child: Form(
+    final form = Form(
         key: _formKey,
         child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Instrument | linked-trade card on one row.
-          _row(
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  'Instrument',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: colors.textSecondary,
-                    fontWeight: FontWeight.w600,
+          // Full-width stacked — border labels match Pre/Post field chrome.
+          Builder(
+            builder: (context) {
+              final symbol = entry.symbol?.trim() ?? '';
+              final hasSymbol = symbol.isNotEmpty;
+              final displaySymbol = hasSymbol ? symbol : 'No symbol yet';
+              return InputDecorator(
+                decoration: JournalFieldDecoration.borderLabel(
+                  context,
+                  label: 'Instrument',
+                  contentPadding: const EdgeInsets.fromLTRB(
+                    AppSpacing.sm,
+                    AppSpacing.sm,
+                    AppSpacing.sm,
+                    AppSpacing.sm,
                   ),
                 ),
-                const SizedBox(height: 6),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 12,
-                  ),
-                  decoration: BoxDecoration(
-                    color: colors.cardSurface,
-                    borderRadius: BorderRadius.circular(AppRadii.md),
-                    border: Border.all(
-                      color: colors.border.withValues(alpha: 0.4),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.search_rounded,
+                      size: 18,
+                      color: colors.textSecondary,
                     ),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.search_rounded,
-                        size: 18,
-                        color: colors.textSecondary,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Tooltip(
+                        message: displaySymbol,
                         child: Text(
-                          (entry.symbol?.trim().isNotEmpty == true)
-                              ? entry.symbol!.trim()
-                              : 'No symbol yet',
-                          style: theme.textTheme.bodyLarge?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: ModuleColors.trade.withValues(alpha: 0.18),
-                          borderRadius: BorderRadius.circular(999),
-                        ),
-                        child: Text(
-                          (entry.tradeDirection ?? 'LONG').toUpperCase(),
-                          style: theme.textTheme.labelMedium?.copyWith(
-                            color: ModuleColors.trade,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  'Linked to',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: colors.textSecondary,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: ModuleColors.trade.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(AppRadii.md),
-                    border: Border.all(
-                      color: ModuleColors.trade.withValues(alpha: 0.35),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(Icons.link, color: ModuleColors.trade, size: 18),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          entry.tradeId == null
-                              ? 'No fill linked'
-                              : entry.tradeId!,
+                          displaySymbol,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.bodyMedium?.copyWith(
+                          style: theme.textTheme.bodyLarge?.copyWith(
                             fontWeight: FontWeight.w600,
+                            color: hasSymbol
+                                ? colors.textPrimary
+                                : colors.textTertiary,
                           ),
                         ),
                       ),
-                      TextButton(
-                        onPressed: () => _showLinkDialog(context),
-                        style: TextButton.styleFrom(
-                          foregroundColor: ModuleColors.trade,
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
-                          minimumSize: Size.zero,
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        ),
-                        child: Text(
-                          entry.tradeId == null ? 'Link' : 'Change',
-                          style: const TextStyle(fontWeight: FontWeight.w700),
-                        ),
+                    ),
+                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
                       ),
-                    ],
-                  ),
-                ),
-                if (portfolioId != null && portfolioId!.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: Text(
-                      _loadingTrades
-                          ? 'Loading fills…'
-                          : '${_availableTrades.length} recent in portfolio',
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: colors.textTertiary,
+                      decoration: BoxDecoration(
+                        color: ModuleColors.trade.withValues(alpha: 0.18),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Text(
+                        (entry.tradeDirection ?? 'LONG').toUpperCase(),
+                        style: theme.textTheme.labelMedium?.copyWith(
+                          color: ModuleColors.trade,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
+                  ],
+                ),
+              );
+            },
+          ),
+          // Extra gap so "Linked to" border label clears Instrument below.
+          const SizedBox(height: AppSpacing.lg),
+          InputDecorator(
+            decoration: JournalFieldDecoration.borderLabel(
+              context,
+              label: 'Linked to',
+              contentPadding: const EdgeInsets.fromLTRB(
+                AppSpacing.sm,
+                AppSpacing.sm,
+                AppSpacing.sm,
+                AppSpacing.sm,
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.link, color: ModuleColors.trade, size: 18),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    entry.tradeId == null ? 'No fill linked' : entry.tradeId!,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
+                ),
+                TextButton(
+                  onPressed: () => _showLinkDialog(context),
+                  style: TextButton.styleFrom(
+                    foregroundColor: ModuleColors.trade,
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  child: Text(
+                    entry.tradeId == null ? 'Link' : 'Change',
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                ),
               ],
             ),
           ),
+          if (portfolioId != null &&
+              portfolioId!.isNotEmpty &&
+              (_loadingTrades || _availableTrades.isNotEmpty))
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                _loadingTrades
+                    ? 'Loading fills…'
+                    : '${_availableTrades.length} recent in portfolio',
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: colors.textTertiary,
+                ),
+              ),
+            ),
           _gap(),
           _row(
             _field(
@@ -539,7 +533,7 @@ class ExecuteTradeStepState extends ConsumerState<ExecuteTradeStep> {
           _field(
             controller: _notes,
             label: 'Live trade notes',
-            maxLines: 4,
+            maxLines: 3,
             onChanged: (v) =>
                 _updateExec(exec.copyWith(notes: v), content: v),
           ),
@@ -553,8 +547,13 @@ class ExecuteTradeStepState extends ConsumerState<ExecuteTradeStep> {
             label: 'Attachments',
           ),
         ],
-        ),
       ),
+    );
+
+    if (widget.omitSurface) return form;
+    return JournalFormSurface(
+      fillHeight: widget.fillHeight,
+      child: form,
     );
   }
 }

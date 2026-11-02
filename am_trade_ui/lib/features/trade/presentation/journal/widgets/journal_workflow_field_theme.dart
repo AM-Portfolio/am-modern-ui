@@ -33,6 +33,9 @@ Widget journalRequiredLabel(
         ),
       ],
     ),
+    maxLines: 1,
+    softWrap: false,
+    overflow: TextOverflow.ellipsis,
   );
 }
 
@@ -53,32 +56,49 @@ InputDecoration journalWorkflowDecoration(
   final theme = Theme.of(context);
   final radius = BorderRadius.circular(AppRadii.md);
   final hasFloatingLabel = label != null && label.trim().isNotEmpty;
-  final labelStyle = theme.textTheme.bodyMedium?.copyWith(
+  // Compact type for narrow 3-col cards — keeps labels/hints on one line.
+  final compactStyle = theme.textTheme.bodySmall?.copyWith(
+    fontSize: 12.5,
+    height: 1.2,
     color: colors.textSecondary,
   );
-  final floatingStyle = theme.textTheme.bodyMedium?.copyWith(
+  final labelStyle = compactStyle;
+  final floatingStyle = compactStyle?.copyWith(
     color: ModuleColors.trade,
     fontWeight: FontWeight.w600,
   );
+  // Inner hint when empty/focused (border label alone leaves the box blank).
+  final effectiveHint =
+      hintText ?? (hasFloatingLabel ? label : null);
   return InputDecoration(
     label: hasFloatingLabel
         ? (required
             ? journalRequiredLabel(context, label!, style: labelStyle)
-            : Text(label, style: labelStyle))
+            : Text(
+                label,
+                maxLines: 1,
+                softWrap: false,
+                overflow: TextOverflow.ellipsis,
+                style: labelStyle,
+              ))
         : null,
     prefixText: prefixText,
-    hintText: hintText,
+    hintText: effectiveHint,
+    hintMaxLines: 1,
     alignLabelWithHint: alignLabelWithHint,
     floatingLabelBehavior: hasFloatingLabel
         ? FloatingLabelBehavior.auto
         : FloatingLabelBehavior.never,
     filled: true,
-    fillColor: colors.cardSurface,
-    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+    // Match JournalFieldDecoration.borderLabel fill so all journal fields look alike.
+    fillColor: colors.surface.withValues(alpha: 0.45),
+    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+    isDense: true,
     labelStyle: labelStyle,
     floatingLabelStyle: floatingStyle,
-    hintStyle: theme.textTheme.bodyMedium?.copyWith(
+    hintStyle: compactStyle?.copyWith(
       color: colors.textTertiary,
+      overflow: TextOverflow.ellipsis,
     ),
     errorStyle: theme.textTheme.bodySmall?.copyWith(
       color: colors.statusError,

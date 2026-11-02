@@ -19,12 +19,17 @@ class PreTradePlanStep extends StatefulWidget {
     this.applyDefaultChecklist = false,
     /// Mobile only — stack Symbol above Long/Short. Web default keeps one row.
     this.compactLayout = false,
+    this.fillHeight = false,
+    this.omitSurface = false,
   });
 
   final JournalEntry entry;
   final ValueChanged<JournalEntry> onUpdate;
   final bool applyDefaultChecklist;
   final bool compactLayout;
+  final bool fillHeight;
+  /// When true, skip [JournalFormSurface] (parent column owns the card).
+  final bool omitSurface;
 
   @override
   State<PreTradePlanStep> createState() => PreTradePlanStepState();
@@ -67,6 +72,7 @@ class PreTradePlanStepState extends State<PreTradePlanStep> {
   var _riskManual = false;
   var _rrManual = false;
   double? _rrValue;
+  var _checklistExpanded = false;
 
   @override
   void initState() {
@@ -193,7 +199,8 @@ class PreTradePlanStepState extends State<PreTradePlanStep> {
   PreTradePlan get _plan =>
       widget.entry.preTradePlan ?? const PreTradePlan();
 
-  Widget _gap() => const SizedBox(height: 14);
+  /// Room between border-labeled fields so floating titles are not cramped.
+  Widget _gap() => const SizedBox(height: AppSpacing.md + 4);
 
   Widget _row(Widget left, Widget right) {
     return Row(
@@ -219,7 +226,7 @@ class PreTradePlanStepState extends State<PreTradePlanStep> {
     final theme = Theme.of(context);
     return TextFormField(
       controller: controller,
-      style: theme.textTheme.bodyLarge,
+      style: theme.textTheme.bodySmall?.copyWith(fontSize: 12.5, height: 1.25),
       keyboardType: keyboardType,
       validator: validator,
       decoration: journalWorkflowDecoration(
@@ -230,6 +237,110 @@ class PreTradePlanStepState extends State<PreTradePlanStep> {
         prefixText: prefixText,
       ),
       onChanged: onChanged,
+    );
+  }
+
+  /// Inline expandable checklist — stays inside the Pre card (no Overlay).
+  Widget _buildInlineChecklist(
+    BuildContext context, {
+    required List<String> catalog,
+    required List<String> confirmed,
+    required ValueChanged<List<String>> onChanged,
+  }) {
+    final colors = context.colors;
+    final theme = Theme.of(context);
+    final accent = ModuleColors.trade;
+    final label = confirmed.isEmpty
+        ? 'Setup checklist'
+        : 'Setup checklist (${confirmed.length})';
+
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: colors.surface.withValues(alpha: 0.45),
+        borderRadius: BorderRadius.circular(AppRadii.md),
+        border: Border.all(color: colors.border.withValues(alpha: 0.4)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          InkWell(
+            onTap: () => setState(() => _checklistExpanded = !_checklistExpanded),
+            borderRadius: BorderRadius.circular(AppRadii.md),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.sm + AppSpacing.xs,
+                vertical: 14,
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      label,
+                      style: theme.textTheme.bodyLarge?.copyWith(
+                        color: confirmed.isEmpty
+                            ? colors.textSecondary
+                            : colors.textPrimary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                  Icon(
+                    _checklistExpanded
+                        ? Icons.expand_less_rounded
+                        : Icons.expand_more_rounded,
+                    color: accent,
+                    size: 22,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          if (_checklistExpanded) ...[
+            Divider(
+              height: 1,
+              thickness: 1,
+              color: colors.border.withValues(alpha: 0.35),
+            ),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 180),
+              child: ListView.builder(
+                shrinkWrap: true,
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                itemCount: catalog.length,
+                itemBuilder: (context, index) {
+                  final item = catalog[index];
+                  final selected = confirmed.contains(item);
+                  return CheckboxListTile(
+                    dense: true,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.sm,
+                    ),
+                    controlAffinity: ListTileControlAffinity.leading,
+                    activeColor: accent,
+                    value: selected,
+                    title: Text(
+                      item,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: colors.textPrimary,
+                      ),
+                    ),
+                    onChanged: (checked) {
+                      final next = [...confirmed];
+                      if (checked == true) {
+                        if (!next.contains(item)) next.add(item);
+                      } else {
+                        next.remove(item);
+                      }
+                      onChanged(next);
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
+        ],
+      ),
     );
   }
 
@@ -299,14 +410,14 @@ class PreTradePlanStepState extends State<PreTradePlanStep> {
       onSelected: (hit) => _updatePlan(_plan, symbol: hit.symbol),
     );
 
-    return JournalFormSurface(
-      child: Form(
+    final form = Form(
         key: _formKey,
         autovalidateMode: AutovalidateMode.disabled,
         child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Web: Symbol | Long/Short (deployed). Mobile compact: stacked.
+          // Web (incl. 3-col): Symbol | Long/Short one row.
+          // Mobile [PreTradePlanStepMobile] sets compactLayout to stack.
           if (widget.compactLayout) ...[
             symbolField,
             _gap(),
@@ -401,124 +512,138 @@ class PreTradePlanStepState extends State<PreTradePlanStep> {
             ),
           ),
           const SizedBox(height: 10),
-          Wrap(
-            spacing: 10,
-            runSpacing: 8,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              JournalRiskAmountField(
-                controller: _risk,
-                onChanged: (v) {
-                  _riskManual = true;
-                  _updatePlan(
-                    plan.copyWith(plannedRiskAmount: double.tryParse(v)),
-                  );
-                },
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md,
+              vertical: AppSpacing.sm,
+            ),
+            decoration: BoxDecoration(
+              color: ModuleColors.trade.withValues(alpha: 0.08),
+              borderRadius: AppRadii.input,
+              border: Border.all(
+                color: ModuleColors.trade.withValues(alpha: 0.2),
               ),
-              JournalRrRatioTaker(
-                value: _rrValue ?? plan.plannedRRRatio,
-                onChanged: (v) {
-                  setState(() {
-                    _rrManual = true;
-                    _rrValue = v;
-                  });
-                  _updatePlan(plan.copyWith(plannedRRRatio: v));
-                },
-              ),
-            ],
+            ),
+            // Always one row — Flexible + FittedBox keeps pills on a line without overflow.
+            child: Row(
+              children: [
+                Flexible(
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: JournalRiskAmountField(
+                        controller: _risk,
+                        onChanged: (v) {
+                          _riskManual = true;
+                          _updatePlan(
+                            plan.copyWith(
+                              plannedRiskAmount: double.tryParse(v),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: JournalRrRatioTaker(
+                        value: _rrValue ?? plan.plannedRRRatio,
+                        onChanged: (v) {
+                          setState(() {
+                            _rrManual = true;
+                            _rrValue = v;
+                          });
+                          _updatePlan(plan.copyWith(plannedRRRatio: v));
+                        },
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          _gap(),
+          _buildInlineChecklist(
+            context,
+            catalog: checklist.isNotEmpty ? checklist : _defaultChecklist,
+            confirmed: confirmed,
+            onChanged: (selected) {
+              final catalog =
+                  checklist.isNotEmpty ? checklist : _defaultChecklist;
+              _updatePlan(
+                plan.copyWith(
+                  setupChecklist: catalog,
+                  confirmedChecklistItems: selected,
+                ),
+              );
+            },
           ),
           Theme(
             data: theme.copyWith(dividerColor: Colors.transparent),
             child: ExpansionTile(
               initiallyExpanded: hasNotes,
               tilePadding: EdgeInsets.zero,
-              childrenPadding: const EdgeInsets.only(bottom: 4),
+              childrenPadding: const EdgeInsets.only(top: AppSpacing.sm),
               title: Text(
-                'Notes (optional)',
+                'Notes',
                 style: theme.textTheme.titleSmall?.copyWith(
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              subtitle: Text(
-                'Setup description & rationale',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: colors.textSecondary,
-                ),
-              ),
               children: [
-                _row(
-                  TextFormField(
-                    controller: _setupDesc,
-                    maxLines: 3,
-                    style: theme.textTheme.bodyLarge,
-                    decoration: journalWorkflowDecoration(
-                      context,
-                      hintText: 'Setup description',
-                      alignLabelWithHint: true,
-                    ),
-                    onChanged: (v) =>
-                        _updatePlan(plan.copyWith(setupDescription: v)),
+                TextFormField(
+                  controller: _setupDesc,
+                  maxLines: 3,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    fontSize: 12.5,
+                    height: 1.25,
                   ),
-                  TextFormField(
-                    controller: _rationale,
-                    maxLines: 3,
-                    style: theme.textTheme.bodyLarge,
-                    decoration: journalWorkflowDecoration(
-                      context,
-                      hintText: 'Entry rationale',
-                      alignLabelWithHint: true,
-                    ),
-                    onChanged: (v) =>
-                        _updatePlan(plan.copyWith(entryRationale: v)),
+                  decoration: journalWorkflowDecoration(
+                    context,
+                    label: 'Setup description',
+                    hintText: 'Describe the setup',
+                    alignLabelWithHint: true,
                   ),
+                  onChanged: (v) =>
+                      _updatePlan(plan.copyWith(setupDescription: v)),
+                ),
+                _gap(),
+                TextFormField(
+                  controller: _rationale,
+                  maxLines: 3,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    fontSize: 12.5,
+                    height: 1.25,
+                  ),
+                  decoration: journalWorkflowDecoration(
+                    context,
+                    label: 'Entry rationale',
+                    hintText: 'Why take this trade?',
+                    alignLabelWithHint: true,
+                  ),
+                  onChanged: (v) =>
+                      _updatePlan(plan.copyWith(entryRationale: v)),
                 ),
               ],
             ),
           ),
-          if (checklist.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            Text(
-              'Setup checklist',
-              style: theme.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 4),
-            ...checklist.map((item) {
-              final checked = confirmed.contains(item);
-              return CheckboxListTile(
-                value: checked,
-                title: Text(item, style: theme.textTheme.bodyMedium),
-                controlAffinity: ListTileControlAffinity.leading,
-                contentPadding: EdgeInsets.zero,
-                onChanged: (v) {
-                  final next = [...confirmed];
-                  if (v == true) {
-                    if (!next.contains(item)) next.add(item);
-                  } else {
-                    next.remove(item);
-                  }
-                  _updatePlan(
-                    plan.copyWith(
-                      setupChecklist: checklist,
-                      confirmedChecklistItems: next,
-                    ),
-                  );
-                },
-              );
-            }),
-          ] else if (!widget.applyDefaultChecklist) ...[
-            const SizedBox(height: 8),
-            Text(
-              'No checklist saved for this plan.',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: colors.textSecondary,
-              ),
-            ),
-          ],
         ],
-        ),
       ),
+    );
+
+    if (widget.omitSurface) return form;
+    return JournalFormSurface(
+      fillHeight: widget.fillHeight,
+      child: form,
     );
   }
 }

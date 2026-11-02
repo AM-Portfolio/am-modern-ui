@@ -74,6 +74,9 @@ class _JournalThreeColumnLayoutState extends State<JournalThreeColumnLayout> {
   bool _forceTradeEdit = false;
   int? _forceTradeEditStep;
 
+  /// User toggle: hide/show the entries list rail (saved logs / journals).
+  bool _entriesRailCollapsed = false;
+
   /// Fresh entity from getById — preferred over list row until list catches up.
   JournalEntry? _hydratedEntry;
 
@@ -275,9 +278,13 @@ class _JournalThreeColumnLayoutState extends State<JournalThreeColumnLayout> {
     await _hydrateSelectedEntry();
   }
 
-  /// Always keep the entries rail (same as Log Day). Trade Pre/Execute/Post
-  /// shares the right pane; collapsing the list felt like the sidebar vanished.
-  bool get _focusFullPage => false;
+  /// Parent uses this for vertical chrome; also true when the user collapses the list.
+  bool get _focusFullPage => _entriesRailCollapsed;
+
+  void _toggleEntriesRail() {
+    setState(() => _entriesRailCollapsed = !_entriesRailCollapsed);
+    _notifyComposerOpen();
+  }
 
   /// Which create-mode pill is highlighted (`false` Log day, `true` Trade).
   /// Always non-null so one segment stays selected in the rail.
@@ -464,8 +471,9 @@ class _JournalThreeColumnLayoutState extends State<JournalThreeColumnLayout> {
       color: colors.surface,
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final railWidth =
-              focusFullPage ? 0.0 : _entriesRailWidth(constraints.maxWidth);
+          final railWidth = focusFullPage
+              ? 0.0
+              : _entriesRailWidth(constraints.maxWidth);
           return Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -503,6 +511,7 @@ class _JournalThreeColumnLayoutState extends State<JournalThreeColumnLayout> {
                         ),
                       ),
               ),
+              _buildEntriesRailToggle(colors),
               Expanded(
                 child: ClipRect(
                   child: AnimatedSwitcher(
@@ -537,6 +546,46 @@ class _JournalThreeColumnLayoutState extends State<JournalThreeColumnLayout> {
             ],
           );
         },
+      ),
+    );
+  }
+
+  /// Thin strip to collapse/expand the entries list without leaving the page.
+  Widget _buildEntriesRailToggle(dynamic colors) {
+    final collapsed = _entriesRailCollapsed;
+    return Material(
+      color: colors.surface,
+      child: InkWell(
+        onTap: _toggleEntriesRail,
+        child: Tooltip(
+          message: collapsed ? 'Show entries' : 'Hide entries',
+          child: SizedBox(
+            width: 16,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                border: Border(
+                  right: BorderSide(
+                    color: colors.border.withValues(alpha: 0.35),
+                  ),
+                  left: collapsed
+                      ? BorderSide.none
+                      : BorderSide(
+                          color: colors.border.withValues(alpha: 0.35),
+                        ),
+                ),
+              ),
+              child: Center(
+                child: Icon(
+                  collapsed
+                      ? Icons.chevron_right_rounded
+                      : Icons.chevron_left_rounded,
+                  size: 16,
+                  color: colors.textSecondary,
+                ),
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }

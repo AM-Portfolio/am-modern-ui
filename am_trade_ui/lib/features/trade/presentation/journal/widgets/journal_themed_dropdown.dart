@@ -13,8 +13,8 @@ class JournalThemedDropdown<T> extends StatelessWidget {
     this.value,
     this.hint,
     this.label,
-    this.height = 44,
-    this.fontSize = 14,
+    this.height = 42,
+    this.fontSize = 12.5,
     this.width,
     this.menuMaxWidth,
     this.menuMaxHeight = 280,
@@ -55,6 +55,7 @@ class JournalThemedDropdown<T> extends StatelessWidget {
     Widget buildDropdown({double? resolvedMenuWidth}) {
       return CustomDropdown<T>(
         value: value,
+        // Keep a one-line inner hint even with border labels (narrow columns).
         hint: hint,
         items: items,
         onChanged: enabled ? onChanged : null,

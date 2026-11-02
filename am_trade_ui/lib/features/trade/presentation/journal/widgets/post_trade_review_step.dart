@@ -2,6 +2,7 @@ import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 
 import '../../../internal/domain/entities/journal_entry.dart';
+import '../../web/widgets/journal/utils/journal_field_decoration.dart';
 import '../utils/journal_calc_helper.dart';
 import '../utils/journal_entry_validation.dart';
 import 'journal_form_surface.dart';
@@ -13,10 +14,14 @@ class PostTradeReviewStep extends StatefulWidget {
     super.key,
     required this.entry,
     required this.onUpdate,
+    this.fillHeight = false,
+    this.omitSurface = false,
   });
 
   final JournalEntry entry;
   final ValueChanged<JournalEntry> onUpdate;
+  final bool fillHeight;
+  final bool omitSurface;
 
   @override
   State<PostTradeReviewStep> createState() => PostTradeReviewStepState();
@@ -124,7 +129,8 @@ class PostTradeReviewStepState extends State<PostTradeReviewStep> {
     );
   }
 
-  Widget _gap() => const SizedBox(height: 14);
+  /// Room between border-labeled fields so floating titles are not cramped.
+  Widget _gap() => const SizedBox(height: AppSpacing.md + 4);
 
   Widget _row(Widget left, Widget right) {
     return Row(
@@ -144,12 +150,14 @@ class PostTradeReviewStepState extends State<PostTradeReviewStep> {
     required ValueChanged<T?> onChanged,
   }) {
     return JournalThemedDropdown<T>(
+      label: placeholder,
+      floatingLabel: true,
       hint: placeholder,
       value: value,
       items: items,
       onChanged: onChanged,
-      height: 48,
-      fontSize: 15,
+      height: 42,
+      fontSize: 12.5,
     );
   }
 
@@ -160,10 +168,16 @@ class PostTradeReviewStepState extends State<PostTradeReviewStep> {
   }) {
     final theme = Theme.of(context);
     return InputDecorator(
-      decoration: journalWorkflowDecoration(context, hintText: placeholder),
+      decoration: JournalFieldDecoration.borderLabel(
+        context,
+        label: placeholder,
+      ),
       child: Text(
         value,
-        style: theme.textTheme.bodyLarge?.copyWith(
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: theme.textTheme.bodySmall?.copyWith(
+          fontSize: 12.5,
           color: valueColor,
           fontWeight: FontWeight.w700,
         ),
@@ -185,7 +199,7 @@ class PostTradeReviewStepState extends State<PostTradeReviewStep> {
     final theme = Theme.of(context);
     return TextFormField(
       controller: controller,
-      style: theme.textTheme.bodyLarge,
+      style: theme.textTheme.bodySmall?.copyWith(fontSize: 12.5, height: 1.25),
       keyboardType: keyboardType,
       maxLines: maxLines,
       validator: validator,
@@ -204,11 +218,8 @@ class PostTradeReviewStepState extends State<PostTradeReviewStep> {
   @override
   Widget build(BuildContext context) {
     final review = widget.entry.postTradeReview ?? const PostTradeReview();
-    final colors = context.colors;
-    final theme = Theme.of(context);
 
-    return JournalFormSurface(
-      child: Form(
+    final form = Form(
         key: _formKey,
         child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -356,16 +367,14 @@ class PostTradeReviewStepState extends State<PostTradeReviewStep> {
             onChanged: (v) =>
                 _updateReview(review.copyWith(lessonLearned: v)),
           ),
-          const SizedBox(height: 8),
-          Text(
-            'Saving the journal on this step marks it Completed.',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: colors.textSecondary,
-            ),
-          ),
         ],
-        ),
       ),
+    );
+
+    if (widget.omitSurface) return form;
+    return JournalFormSurface(
+      fillHeight: widget.fillHeight,
+      child: form,
     );
   }
 }
