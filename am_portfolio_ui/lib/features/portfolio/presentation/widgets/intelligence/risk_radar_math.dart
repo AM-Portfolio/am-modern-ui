@@ -79,6 +79,104 @@ String riskRadarScoreLabel(num score) => '${score.round()} / 100';
 /// Compact chart tip score; full `n / 100` stays on the right-hand list.
 String riskRadarChartScoreLabel(num score) => '(${score.round()})';
 
+/// Gap between diamond tip and the inner edge of left/right labels.
+const double kRiskRadarTipClearanceH = 10.0;
+
+/// Gap between diamond tip and the inner edge of top/bottom labels.
+const double kRiskRadarTipClearanceV = 8.0;
+
+/// Extra canvas slack so soft clamp does not erase tip clearance.
+const double kRiskRadarLabelEdgeSlack = 4.0;
+
+/// Absolute floor so a huge label cannot collapse the spider to nothing.
+const double kRiskRadarMinPlotRadius = 24.0;
+
+/// Two-line chart tip copy used by the live painter and layout helpers.
+String riskRadarChartLabelText(RiskAxis axis) {
+  final compact = riskRadarChartScoreLabel(axis.riskScore);
+  final lines = riskRadarChartNameLines(axis);
+  if (lines.line2.isEmpty) return '${lines.line1} $compact';
+  return '${lines.line1}\n${lines.line2} $compact';
+}
+
+/// Measured tip label size for gutter / radius planning.
+Size riskRadarMeasureChartLabel(RiskAxis axis, TextStyle style) {
+  final painter = TextPainter(
+    text: TextSpan(text: riskRadarChartLabelText(axis), style: style),
+    textAlign: TextAlign.center,
+    textDirection: TextDirection.ltr,
+    maxLines: 2,
+  )..layout(maxWidth: 120);
+  return Size(painter.width, painter.height);
+}
+
+/// Plot radius that leaves room for measured tip labels (esp. left/right).
+double riskRadarPlotRadius({
+  required Size canvasSize,
+  required List<Size> labelSizes,
+}) {
+  if (labelSizes.isEmpty) {
+    return math.min(canvasSize.width, canvasSize.height) / 2 * 0.55;
+  }
+  var maxHWidth = 0.0;
+  var maxVHeight = 0.0;
+  for (var i = 0; i < labelSizes.length; i++) {
+    final s = labelSizes[i];
+    if (i % 4 == 1 || i % 4 == 3) {
+      maxHWidth = math.max(maxHWidth, s.width);
+    } else {
+      maxVHeight = math.max(maxVHeight, s.height);
+    }
+  }
+  final hGutter =
+      maxHWidth + kRiskRadarTipClearanceH + kRiskRadarLabelEdgeSlack;
+  final vGutter =
+      maxVHeight + kRiskRadarTipClearanceV + kRiskRadarLabelEdgeSlack;
+  final halfW = canvasSize.width / 2;
+  final halfH = canvasSize.height / 2;
+  // Prefer label gutters over a large spider — a high floor re-triggers
+  // edge clamp and puts Sector/Liquidity back on the tips.
+  final radius = math.min(halfW - hGutter, halfH - vGutter);
+  return math.max(kRiskRadarMinPlotRadius, radius);
+}
+
+/// Top-left of a tip label; left/right use inner-edge anchoring.
+Offset riskRadarLabelTopLeft({
+  required int axisIndex,
+  required Offset tip,
+  required Size labelSize,
+  required Size canvasSize,
+}) {
+  late Offset origin;
+  switch (axisIndex % 4) {
+    case 1: // right
+      origin = Offset(
+        tip.dx + kRiskRadarTipClearanceH,
+        tip.dy - labelSize.height / 2 - 5,
+      );
+    case 3: // left
+      origin = Offset(
+        tip.dx - kRiskRadarTipClearanceH - labelSize.width,
+        tip.dy - labelSize.height / 2 - 5,
+      );
+    case 0: // top
+      origin = Offset(
+        tip.dx - labelSize.width / 2,
+        tip.dy - kRiskRadarTipClearanceV - labelSize.height,
+      );
+    default: // bottom
+      origin = Offset(
+        tip.dx - labelSize.width / 2,
+        tip.dy + kRiskRadarTipClearanceV,
+      );
+  }
+  const edge = 2.0;
+  final dx = origin.dx.clamp(edge, canvasSize.width - labelSize.width - edge);
+  final dy =
+      origin.dy.clamp(edge, canvasSize.height - labelSize.height - edge);
+  return Offset(dx.toDouble(), dy.toDouble());
+}
+
 String riskRadarBandLabel(double riskScore) {
   if (riskScore >= 70) return 'High';
   if (riskScore >= 40) return 'Medium';

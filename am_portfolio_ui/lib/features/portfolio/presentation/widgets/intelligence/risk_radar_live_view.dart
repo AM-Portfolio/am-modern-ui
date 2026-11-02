@@ -102,18 +102,34 @@ class _RiskRadarLiveViewState extends State<RiskRadarLiveView>
     return -math.pi / 2 + _sweep.value * 2 * math.pi;
   }
 
-  /// Keep labels readable while maximizing plot radius inside the card.
-  /// Left/right names need more pad than top/bottom so clamp-to-edge does
-  /// not pull "Liquidity" / "Sector" back onto the diamond tips.
-  static double _labelPad(double side) => (side * 0.22).clamp(52.0, 70.0);
+  TextStyle get _labelStyle =>
+      Theme.of(context).textTheme.labelSmall?.copyWith(
+            color: Theme.of(context).hintColor,
+            fontWeight: FontWeight.w700,
+            fontSize: 11,
+            height: 1.12,
+          ) ??
+      TextStyle(
+        color: widget.color.withValues(alpha: 0.9),
+        fontSize: 11,
+        fontWeight: FontWeight.w700,
+        height: 1.12,
+      );
+
+  double _plotRadius(Size size) {
+    final style = _labelStyle;
+    final labels = [
+      for (final axis in widget.axes) riskRadarMeasureChartLabel(axis, style),
+    ];
+    return riskRadarPlotRadius(canvasSize: size, labelSizes: labels);
+  }
 
   void _onTapUp(TapUpDetails d) {
     final box = context.findRenderObject() as RenderBox?;
     if (box == null) return;
     final size = box.size;
     final center = Offset(size.width / 2, size.height / 2);
-    final radius =
-        math.min(size.width, size.height) / 2 - _labelPad(size.shortestSide);
+    final radius = _plotRadius(size);
     final idx = riskRadarHitTestFlat(
       local: d.localPosition,
       axes: widget.axes,
@@ -133,12 +149,7 @@ class _RiskRadarLiveViewState extends State<RiskRadarLiveView>
   @override
   Widget build(BuildContext context) {
     _syncSweep();
-    final labelStyle = Theme.of(context).textTheme.labelSmall?.copyWith(
-          color: Theme.of(context).hintColor,
-          fontWeight: FontWeight.w700,
-          fontSize: 11,
-          height: 1.12,
-        );
+    final labelStyle = _labelStyle;
 
     return Semantics(
       label: widget.semanticsLabel ?? 'Risk radar chart',
@@ -173,7 +184,6 @@ class _RiskRadarLiveViewState extends State<RiskRadarLiveView>
                           sweepAngle: _sweepAngle,
                           selectedAxisId: widget.selectedAxisId,
                           focusAxisId: widget.focusAxisId,
-                          labelPad: _labelPad(side),
                           labelStyle: labelStyle,
                           reduceMotion: _reduceMotion,
                           selectedDotColor: context.colors.actionPrimaryFg,
@@ -198,7 +208,6 @@ class _RiskRadarLivePainter extends CustomPainter {
     required this.sweepAngle,
     required this.selectedAxisId,
     required this.focusAxisId,
-    required this.labelPad,
     required this.reduceMotion,
     required this.selectedDotColor,
     this.labelStyle,
@@ -209,7 +218,6 @@ class _RiskRadarLivePainter extends CustomPainter {
   final double sweepAngle;
   final String? selectedAxisId;
   final String? focusAxisId;
-  final double labelPad;
   final bool reduceMotion;
   final Color selectedDotColor;
   final TextStyle? labelStyle;
@@ -224,8 +232,40 @@ class _RiskRadarLivePainter extends CustomPainter {
     final n = axes.length;
     if (n < 3) return;
 
+    final style = labelStyle ??
+        TextStyle(
+          color: color.withValues(alpha: 0.9),
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          height: 1.12,
+        );
+
+    final labelPainters = <TextPainter>[];
+    final labelSizes = <Size>[];
+    for (var i = 0; i < n; i++) {
+      final ac = _axisColor(i);
+      final selected = _idMatch(selectedAxisId, axes[i].id);
+      final focused = !selected && _idMatch(focusAxisId, axes[i].id);
+      final tp = TextPainter(
+        text: TextSpan(
+          text: riskRadarChartLabelText(axes[i]),
+          style: style.copyWith(
+            color: ac.withValues(
+              alpha: selected ? 1.0 : (focused ? 0.95 : 0.85),
+            ),
+            fontWeight: selected ? FontWeight.w800 : FontWeight.w700,
+          ),
+        ),
+        textAlign: TextAlign.center,
+        textDirection: TextDirection.ltr,
+        maxLines: 2,
+      )..layout(maxWidth: 120);
+      labelPainters.add(tp);
+      labelSizes.add(Size(tp.width, tp.height));
+    }
+
     final center = Offset(size.width / 2, size.height / 2);
-    final radius = math.min(size.width, size.height) / 2 - labelPad;
+    final radius = riskRadarPlotRadius(canvasSize: size, labelSizes: labelSizes);
     const gold = kRiskRadarPolygonGold;
 
     // Foreshortened pedestal stage (elliptical rings below plot center).
@@ -424,67 +464,16 @@ class _RiskRadarLivePainter extends CustomPainter {
       }
     }
 
-    final style = labelStyle ??
-        TextStyle(
-          color: color.withValues(alpha: 0.9),
-          fontSize: 11,
-          fontWeight: FontWeight.w700,
-          height: 1.12,
-        );
-
     for (var i = 0; i < n; i++) {
-      final ac = _axisColor(i);
-      final selected = _idMatch(selectedAxisId, axes[i].id);
-      final focused = !selected && _idMatch(focusAxisId, axes[i].id);
       final tipPt = pt(i, 1);
-      final dir = Offset(tipPt.dx - center.dx, tipPt.dy - center.dy);
-      final len = dir.distance;
-      final unit = len > 0.1
-          ? Offset(dir.dx / len, dir.dy / len)
-          : const Offset(0, -1);
-
-      final compact = riskRadarChartScoreLabel(axes[i].riskScore);
-      final lines = riskRadarChartNameLines(axes[i]);
-      final nameText = lines.line2.isEmpty
-          ? '${lines.line1} $compact'
-          : '${lines.line1}\n${lines.line2} $compact';
-      final tp = TextPainter(
-        text: TextSpan(
-          text: nameText,
-          style: style.copyWith(
-            color: ac.withValues(
-              alpha: selected ? 1.0 : (focused ? 0.95 : 0.85),
-            ),
-            fontWeight: selected ? FontWeight.w800 : FontWeight.w700,
-          ),
-        ),
-        textAlign: TextAlign.center,
-        textDirection: TextDirection.ltr,
-        maxLines: 2,
-      )..layout(maxWidth: math.max(96, labelPad + 28));
-
-      // Push the text block fully past the tip so half the label does not
-      // sit back on the spider. Horizontal axes get extra clearance — those
-      // long names otherwise collide with the diamond corners.
-      final isHorizontal = i % 4 == 1 || i % 4 == 3;
-      final tipClearance = isHorizontal ? 14.0 : 8.0;
-      final extentAlong =
-          tp.width * unit.dx.abs() * 0.5 + tp.height * unit.dy.abs() * 0.5;
-      // Prefer empty corners for left/right tips (slight upward bias).
-      final cornerBias = switch (i % 4) {
-        1 => const Offset(6, -5), // right
-        3 => const Offset(-6, -5), // left
-        0 => const Offset(0, -2), // top
-        _ => const Offset(0, 2), // bottom
-      };
-      final anchor =
-          tipPt + unit * (tipClearance + extentAlong) + cornerBias;
-      var dx = anchor.dx - tp.width / 2;
-      var dy = anchor.dy - tp.height / 2;
-      const edge = 2.0;
-      dx = dx.clamp(edge, size.width - tp.width - edge);
-      dy = dy.clamp(edge, size.height - tp.height - edge);
-      tp.paint(canvas, Offset(dx, dy));
+      final tp = labelPainters[i];
+      final origin = riskRadarLabelTopLeft(
+        axisIndex: i,
+        tip: tipPt,
+        labelSize: labelSizes[i],
+        canvasSize: size,
+      );
+      tp.paint(canvas, origin);
     }
   }
 
@@ -494,7 +483,6 @@ class _RiskRadarLivePainter extends CustomPainter {
         oldDelegate.sweepAngle != sweepAngle ||
         oldDelegate.selectedAxisId != selectedAxisId ||
         oldDelegate.focusAxisId != focusAxisId ||
-        oldDelegate.labelPad != labelPad ||
         oldDelegate.labelStyle != labelStyle ||
         oldDelegate.reduceMotion != reduceMotion ||
         oldDelegate.selectedDotColor != selectedDotColor ||
