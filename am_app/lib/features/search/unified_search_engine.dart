@@ -87,8 +87,9 @@ class UnifiedSearchEngine {
     _timer?.cancel();
     final query = rawQuery.trim();
     final id = ++_requestId;
-    final wantBaskets = context == SearchContext.baskets ||
-        context == SearchContext.portfolio;
+    // OmniSearch searches every supported data source regardless of which
+    // section opened it. Context controls ranking and result destinations.
+    const wantBaskets = true;
 
     if (query.isEmpty) {
       onResult(
@@ -103,7 +104,7 @@ class UnifiedSearchEngine {
           requestId: id,
         ),
       );
-      if (wantBaskets) {
+      if (context == SearchContext.baskets) {
         _catalog.ensureLoaded().then((_) {
           if (id != _requestId) return;
           if (!navContext.mounted) return;
@@ -149,29 +150,7 @@ class UnifiedSearchEngine {
       var basketsDone = !wantBaskets;
       String? lastError;
 
-      if (context == SearchContext.portfolio) {
-        holdingItems = _holdings
-            .matching(
-              query: query,
-              container: container,
-              navContext: navContext,
-            )
-            .map(
-              (h) => CommandItem(
-                title: h.symbol,
-                subtitle: h.companyName.trim().isEmpty
-                    ? 'Holding'
-                    : 'Holding · ${h.companyName}',
-                icon: Icons.account_balance_wallet_outlined,
-                category: 'Portfolio',
-                onSelected: () {
-                  rememberSymbol(h.symbol);
-                  nav.openSecurity(h.symbol, context);
-                },
-              ),
-            )
-            .toList();
-      }
+      var holdingsDone = false;
 
       void emit({required bool loading, String? error}) {
         if (id != _requestId) return;
@@ -192,7 +171,7 @@ class UnifiedSearchEngine {
                 title: hit.title,
                 subtitle: hit.subtitle,
                 icon: Icons.menu_book_outlined,
-                category: 'Journal',
+                category: 'Trade',
                 onSelected: () {
                   JournalSearchBridge.tryApply(query);
                   JournalSearchBridge.focusEntry?.call(hit.id);
@@ -265,7 +244,7 @@ class UnifiedSearchEngine {
             securitiesItems = const [];
           } finally {
             securitiesDone = true;
-            emit(loading: !(securitiesDone && basketsDone));
+            emit(loading: !(securitiesDone && basketsDone && holdingsDone));
           }
         }();
 
@@ -318,12 +297,42 @@ class UnifiedSearchEngine {
                   lastError = 'Baskets search unavailable';
                 } finally {
                   basketsDone = true;
-                  emit(loading: !(securitiesDone && basketsDone));
+                  emit(loading: !(securitiesDone && basketsDone && holdingsDone));
                 }
               }()
             : Future<void>.value();
 
-        await Future.wait([securitiesFuture, basketsFuture]);
+        final holdingsFuture = () async {
+          try {
+            final hits = await _holdings.search(
+              query: query,
+              container: container,
+              navContext: navContext,
+            );
+            if (id != _requestId) return;
+            holdingItems = hits
+                .map(
+                  (h) => CommandItem(
+                    title: h.symbol,
+                    subtitle: h.companyName.trim().isEmpty
+                        ? 'Holding'
+                        : 'Holding · ${h.companyName}',
+                    icon: Icons.account_balance_wallet_outlined,
+                    category: 'Portfolio',
+                    onSelected: () {
+                      rememberSymbol(h.symbol);
+                      nav.openHolding(h.symbol);
+                    },
+                  ),
+                )
+                .toList();
+          } finally {
+            holdingsDone = true;
+            emit(loading: !(securitiesDone && basketsDone && holdingsDone));
+          }
+        }();
+
+        await Future.wait([securitiesFuture, basketsFuture, holdingsFuture]);
         if (id != _requestId) return;
         emit(loading: false);
       } catch (e) {
@@ -436,7 +445,7 @@ class UnifiedSearchEngine {
                 : 'Holding · ${h.companyName}',
             icon: Icons.account_balance_wallet_outlined,
             category: 'Portfolio',
-            onSelected: () => nav.openSecurity(h.symbol, context),
+            onSelected: () => nav.openHolding(h.symbol),
           ),
         );
       }
