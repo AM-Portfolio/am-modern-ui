@@ -527,6 +527,55 @@ void main() {
     engine.dispose();
   });
 
+  testWidgets('empty omni search keeps all module categories available',
+      (tester) async {
+    final engine = UnifiedSearchEngine(
+      debounce: Duration.zero,
+      securities: _FakeSecurities((_) async => const []),
+      etfBasket: _FakeEtf((_) async => const []),
+      catalog: _catalogWithGold(),
+    );
+    final navKey = GlobalKey<NavigatorState>();
+    await tester.pumpWidget(
+      MaterialApp(
+        navigatorKey: navKey,
+        home: const Scaffold(body: SizedBox()),
+      ),
+    );
+
+    final destinations = List.generate(
+      18,
+      (index) => CommandItem(
+        title: 'Destination $index',
+        subtitle: 'Module destination',
+        icon: Icons.dashboard_outlined,
+        category: switch (index % 3) {
+          0 => 'Portfolio',
+          1 => 'Trade',
+          _ => 'Market',
+        },
+        onSelected: () {},
+      ),
+    );
+    List<CommandItem>? items;
+    engine.query(
+      rawQuery: '',
+      context: SearchContext.other,
+      navContext: navKey.currentContext!,
+      seedActions: destinations,
+      onResult: (snapshot) => items = snapshot.items,
+    );
+    await tester.pump();
+
+    expect(items, hasLength(18));
+    expect(items!.map((item) => item.category).toSet(), {
+      'Portfolio',
+      'Trade',
+      'Market',
+    });
+    engine.dispose();
+  });
+
   testWidgets('equity insider omni search includes portfolio holdings', (tester) async {
     final engine = UnifiedSearchEngine(
       debounce: Duration.zero,
