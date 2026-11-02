@@ -112,6 +112,7 @@ Future<void> _pumpHeader(
   MarketProvider? market,
   String symbol = 'NIFTY',
   ThemeData? theme,
+  VoidCallback? onBack,
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
@@ -128,6 +129,7 @@ Future<void> _pumpHeader(
           height: size.height,
           child: FoHeaderCard(
             symbol: symbol,
+            onBack: onBack,
           ),
         ),
       ),
@@ -147,6 +149,23 @@ Future<void> _pumpHeader(
 
 void main() {
   group('FoHeaderCard geometry', () {
+    testWidgets('renders the shared navigation trail and invokes its parent',
+        (tester) async {
+      var tapped = false;
+      await _pumpHeader(
+        tester,
+        size: const Size(1100, 800),
+        chain: _chain(),
+        onBack: () => tapped = true,
+      );
+
+      expect(find.text('Futures & Options'), findsOneWidget);
+      expect(find.byKey(const Key('fo-header-name')), findsOneWidget);
+
+      await tester.tap(find.text('Futures & Options'));
+      expect(tapped, isTrue);
+    });
+
     testWidgets('desktop places chart right of LTP with live metrics',
         (tester) async {
       final market = await _marketWithSpark();
@@ -226,7 +245,8 @@ void main() {
       expect(find.text('—'), findsWidgets);
     });
 
-    testWidgets('empty sparkline keeps inset without RNG series', (tester) async {
+    testWidgets('empty sparkline keeps inset without RNG series',
+        (tester) async {
       await _pumpHeader(
         tester,
         size: const Size(1100, 800),
@@ -262,7 +282,8 @@ void main() {
       expect(tooltip.message, 'OUTSIDE_SESSION');
     });
 
-    testWidgets('header glass follows Imperial Gold cardSurface', (tester) async {
+    testWidgets('header glass follows Imperial Gold cardSurface',
+        (tester) async {
       const palette = AppColorsTheme.imperialGold;
       await _pumpHeader(
         tester,

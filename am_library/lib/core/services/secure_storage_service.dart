@@ -20,6 +20,7 @@ class SecureStorageService {
   static String? _cachedUserId;
   static String? _cachedUserEmail;
   static String? _cachedUserDisplayName;
+  static String? _cachedUserPhotoUrl;
 
   // Keys
   static const String _accessTokenKey = 'access_token';
@@ -27,6 +28,7 @@ class SecureStorageService {
   static const String _userIdKey = 'user_id';
   static const String _userEmailKey = 'user_email';
   static const String _userDisplayNameKey = 'user_display_name';
+  static const String _userPhotoUrlKey = 'user_photo_url';
   static const String _tokenExpiryKey = 'token_expiry';
   static const String _lastAppUnlockAtKey = 'last_app_unlock_at';
 
@@ -177,6 +179,23 @@ class SecureStorageService {
     return name;
   }
 
+  /// Save the auth-provider profile photo URL for session restore.
+  Future<void> saveUserPhotoUrl(String photoUrl) async {
+    _cachedUserPhotoUrl = photoUrl;
+    await _storage.write(key: _userPhotoUrlKey, value: photoUrl);
+  }
+
+  /// Get the auth-provider profile photo URL saved at login.
+  Future<String?> getUserPhotoUrl() async {
+    if (_cachedUserPhotoUrl != null && _cachedUserPhotoUrl!.isNotEmpty) {
+      return _cachedUserPhotoUrl;
+    }
+    final photoUrl = await _storage.read(key: _userPhotoUrlKey);
+    if (photoUrl == null || photoUrl.isEmpty) return null;
+    _cachedUserPhotoUrl = photoUrl;
+    return photoUrl;
+  }
+
   // ── App lock (mobile) ────────────────────────────────────────────────────
 
   Future<void> saveLastAppUnlockAt(DateTime unlockedAt) async {
@@ -259,6 +278,7 @@ class SecureStorageService {
     _cachedUserId = null;
     _cachedUserEmail = null;
     _cachedUserDisplayName = null;
+    _cachedUserPhotoUrl = null;
   }
 
   Future<void> saveCookieSessionUser({
@@ -291,6 +311,7 @@ class SecureStorageService {
     await _storage.delete(key: _userIdKey);
     await _storage.delete(key: _userEmailKey);
     await _storage.delete(key: _userDisplayNameKey);
+    await _storage.delete(key: _userPhotoUrlKey);
     await _storage.delete(key: _tokenExpiryKey);
     await _storage.delete(key: _lastAppUnlockAtKey);
   }

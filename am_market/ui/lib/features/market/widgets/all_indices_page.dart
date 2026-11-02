@@ -27,6 +27,7 @@ class AllIndicesPage extends ConsumerStatefulWidget {
 class _AllIndicesPageState extends ConsumerState<AllIndicesPage> {
   IndicesListFilter _filter = IndicesListFilter.indian;
   String? _selectedSymbol;
+  String _lastPublishedSymbols = '';
 
   @override
   void initState() {
@@ -60,6 +61,21 @@ class _AllIndicesPageState extends ConsumerState<AllIndicesPage> {
         : provider.allIndicesData;
   }
 
+  void _publishActiveSymbols(MarketProvider provider) {
+    final symbols = _active(provider).map((item) => item.indexSymbol).toList();
+    final key = symbols.join('|');
+    if (key == _lastPublishedSymbols) return;
+    _lastPublishedSymbols = key;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      provider.setSurfaceSymbols(
+        MarketProvider.allIndicesSurface,
+        symbols,
+        indexSymbols: symbols,
+      );
+    });
+  }
+
   double _displayPChange(StockIndicesMarketData data) {
     return data.pChange;
   }
@@ -80,6 +96,7 @@ class _AllIndicesPageState extends ConsumerState<AllIndicesPage> {
 
     return provider_pkg.Consumer<MarketProvider>(
       builder: (context, provider, _) {
+        _publishActiveSymbols(provider);
         if (provider.isLoading && provider.allIndicesData.isEmpty) {
           return Center(
             child: CircularProgressIndicator(color: ModuleColors.market),
@@ -128,8 +145,7 @@ class _AllIndicesPageState extends ConsumerState<AllIndicesPage> {
   ) {
     final active = List<StockIndicesMarketData>.from(_active(provider))
       ..sort(
-        (a, b) => _displayPChange(b)
-            .compareTo(_displayPChange(a)),
+        (a, b) => _displayPChange(b).compareTo(_displayPChange(a)),
       );
 
     return ColoredBox(

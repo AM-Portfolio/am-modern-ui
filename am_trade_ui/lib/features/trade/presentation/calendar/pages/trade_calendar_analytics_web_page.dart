@@ -4,10 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:am_design_system/am_design_system.dart';
-import 'package:am_design_system/am_design_system.dart';
-import 'package:am_design_system/am_design_system.dart';
 import '../../converters/year_calendar_converter.dart';
-import 'package:am_portfolio_ui/features/portfolio/presentation/widgets/portfolio_heatmap_widget.dart';
 import '../../../trade_calendar_providers.dart';
 import '../../cubit/trade_calendar_cubit.dart';
 import '../../cubit/trade_calendar_state.dart';
@@ -58,33 +55,61 @@ class _TradeCalendarAnalyticsWebPageState extends ConsumerState<TradeCalendarAna
   late int _selectedYear;
   int _focusMonth = DateTime.now().month;
   var _didResolveInitial = false;
+  var _initializationStarted = false;
 
   @override
   void initState() {
     super.initState();
 
-    // Placeholder until latest-activity resolves (avoids flashing wrong year).
-    _selectedYear = DateTime.now().year;
+    final existingCubit = ref.read(tradeCalendarCubitProvider(widget.portfolioId)).asData?.value;
+    if (existingCubit != null && existingCubit.state is TradeCalendarLoaded) {
+      _selectedYear = existingCubit.navigationState.year;
+      _focusMonth = existingCubit.navigationState.month ?? DateTime.now().month;
+      _didResolveInitial = true;
+      _initializationStarted = true;
+    } else {
+      // Placeholder until latest-activity resolves (avoids flashing wrong year).
+      _selectedYear = DateTime.now().year;
 
-    // Initialize cubit after the frame is built
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Initialize cubit after the frame is built
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _initializeTradeCalendar();
+      });
+    }
+  }
+
+  @override
+  void didUpdateWidget(TradeCalendarAnalyticsWebPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.portfolioId != oldWidget.portfolioId) {
+      _initializationStarted = false;
+      _didResolveInitial = false;
+      _selectedYear = DateTime.now().year;
       _initializeTradeCalendar();
-    });
+    }
   }
 
   /// Initialize trade calendar on the user's latest trade year/month.
-  void _initializeTradeCalendar() async {
-    final portfolioId = widget.portfolioId;
-    final cubit = await ref.read(tradeCalendarCubitProvider(portfolioId).future);
+  Future<void> _initializeTradeCalendar() async {
+    if (_initializationStarted) return;
+    _initializationStarted = true;
 
-    final target = await cubit.resolveLatestOpenTarget(portfolioId: widget.portfolioId);
-    if (!mounted) return;
-    setState(() {
-      _selectedYear = target.year;
-      _focusMonth = target.month;
-      _didResolveInitial = true;
-    });
-    await cubit.navigateToYearly(portfolioId: widget.portfolioId, year: target.year);
+    try {
+      final portfolioId = widget.portfolioId;
+      final cubit = await ref.read(tradeCalendarCubitProvider(portfolioId).future);
+
+      final target = await cubit.resolveLatestOpenTarget(portfolioId: widget.portfolioId);
+      if (!mounted) return;
+      setState(() {
+        _selectedYear = target.year;
+        _focusMonth = target.month;
+        _didResolveInitial = true;
+      });
+      await cubit.navigateToYearly(portfolioId: widget.portfolioId, year: target.year);
+    } catch (_) {
+      _initializationStarted = false;
+      rethrow;
+    }
   }
 
   /// Handle date selection changes through Cubit
@@ -137,7 +162,6 @@ class _TradeCalendarAnalyticsWebPageState extends ConsumerState<TradeCalendarAna
 
   @override
   Widget build(BuildContext context) {
-    final portfolioId = widget.portfolioId;
     final cubitAsync = ref.watch(tradeCalendarCubitProvider(widget.portfolioId));
 
     return cubitAsync.when(
@@ -279,24 +303,18 @@ class _TradeCalendarAnalyticsWebPageState extends ConsumerState<TradeCalendarAna
       );
 
   /// Build initial state
-  Widget _buildInitialState(BuildContext context, TradeCalendarCubit cubit) => Center(
-    child: Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Icon(Icons.calendar_today, size: 64, color: Theme.of(context).colorScheme.primary.withOpacity(0.5)),
-        const SizedBox(height: 16),
-        Text('Trade Calendar Analytics', style: Theme.of(context).textTheme.headlineSmall),
-        const SizedBox(height: 8),
-        const Text('Initialize calendar to view your trading analytics'),
-        const SizedBox(height: 24),
-        ElevatedButton.icon(
-          onPressed: _initializeTradeCalendar,
-          icon: const Icon(Icons.play_arrow),
-          label: const Text('Load Calendar'),
-        ),
-      ],
-    ),
-  );
+  Widget _buildInitialState(BuildContext context, TradeCalendarCubit cubit) {
+    // A cubit can become available after this page's first post-frame callback.
+    // Retry through the same guarded initializer so opening the Calendar tab never
+    // requires a manual "Load Calendar" action.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _initializeTradeCalendar();
+      }
+    });
+
+    return _buildLoadingState(context, false);
+  }
 
   /// Build error state with retry option
   Widget _buildErrorState(BuildContext context, TradeCalendarCubit cubit, String message) => Center(

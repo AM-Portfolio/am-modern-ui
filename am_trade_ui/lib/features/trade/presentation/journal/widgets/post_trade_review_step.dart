@@ -2,7 +2,9 @@ import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 
 import '../../../internal/domain/entities/journal_entry.dart';
+import '../../web/widgets/journal/utils/journal_field_decoration.dart';
 import '../utils/journal_calc_helper.dart';
+import '../utils/journal_entry_validation.dart';
 import 'journal_form_surface.dart';
 import 'journal_themed_dropdown.dart';
 import 'journal_workflow_field_theme.dart';
@@ -12,16 +14,30 @@ class PostTradeReviewStep extends StatefulWidget {
     super.key,
     required this.entry,
     required this.onUpdate,
+    this.fillHeight = false,
+    this.omitSurface = false,
   });
 
   final JournalEntry entry;
   final ValueChanged<JournalEntry> onUpdate;
+  final bool fillHeight;
+  final bool omitSurface;
 
   @override
-  State<PostTradeReviewStep> createState() => _PostTradeReviewStepState();
+  State<PostTradeReviewStep> createState() => PostTradeReviewStepState();
 }
 
-class _PostTradeReviewStepState extends State<PostTradeReviewStep> {
+class PostTradeReviewStepState extends State<PostTradeReviewStep> {
+  final _formKey = GlobalKey<FormState>();
+
+  bool validate() {
+    final fieldsOk = _formKey.currentState?.validate() ?? true;
+    if (!fieldsOk) return false;
+    return JournalEntryValidation.validatePostTrade(widget.entry) == null;
+  }
+
+  String? validationMessage() =>
+      JournalEntryValidation.validatePostTrade(widget.entry);
   static const _mistakes = [
     'NONE',
     'FOMO',
@@ -113,7 +129,8 @@ class _PostTradeReviewStepState extends State<PostTradeReviewStep> {
     );
   }
 
-  Widget _gap() => const SizedBox(height: 14);
+  /// Room between border-labeled fields so floating titles are not cramped.
+  Widget _gap() => const SizedBox(height: AppSpacing.md + 4);
 
   Widget _row(Widget left, Widget right) {
     return Row(
@@ -133,12 +150,14 @@ class _PostTradeReviewStepState extends State<PostTradeReviewStep> {
     required ValueChanged<T?> onChanged,
   }) {
     return JournalThemedDropdown<T>(
+      label: placeholder,
+      floatingLabel: true,
       hint: placeholder,
       value: value,
       items: items,
       onChanged: onChanged,
-      height: 48,
-      fontSize: 15,
+      height: 42,
+      fontSize: 14,
     );
   }
 
@@ -148,13 +167,21 @@ class _PostTradeReviewStepState extends State<PostTradeReviewStep> {
     Color? valueColor,
   }) {
     final theme = Theme.of(context);
+    final colors = context.colors;
     return InputDecorator(
-      decoration: journalWorkflowDecoration(context, hintText: placeholder),
+      decoration: JournalFieldDecoration.borderLabel(
+        context,
+        label: placeholder,
+      ),
       child: Text(
         value,
-        style: theme.textTheme.bodyLarge?.copyWith(
-          color: valueColor,
-          fontWeight: FontWeight.w700,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: theme.textTheme.bodyMedium?.copyWith(
+          fontSize: 14,
+          height: 1.3,
+          color: valueColor ?? colors.textPrimary,
+          fontWeight: FontWeight.w500,
         ),
       ),
     );
@@ -162,21 +189,32 @@ class _PostTradeReviewStepState extends State<PostTradeReviewStep> {
 
   Widget _field({
     required TextEditingController controller,
-    required String placeholder,
+    required String label,
     required ValueChanged<String> onChanged,
+    String? hintText,
     String? prefixText,
     TextInputType? keyboardType,
     int maxLines = 1,
+    FormFieldValidator<String>? validator,
+    bool required = false,
   }) {
     final theme = Theme.of(context);
     return TextFormField(
       controller: controller,
-      style: theme.textTheme.bodyLarge,
+      style: theme.textTheme.bodyMedium?.copyWith(
+        fontSize: 14,
+        height: 1.3,
+        fontWeight: FontWeight.w500,
+        color: context.colors.textPrimary,
+      ),
       keyboardType: keyboardType,
       maxLines: maxLines,
+      validator: validator,
       decoration: journalWorkflowDecoration(
         context,
-        hintText: placeholder,
+        label: label,
+        required: required,
+        hintText: hintText,
         prefixText: prefixText,
         alignLabelWithHint: maxLines > 1,
       ),
@@ -187,17 +225,21 @@ class _PostTradeReviewStepState extends State<PostTradeReviewStep> {
   @override
   Widget build(BuildContext context) {
     final review = widget.entry.postTradeReview ?? const PostTradeReview();
-    final colors = context.colors;
-    final theme = Theme.of(context);
 
-    return JournalFormSurface(
-      child: Column(
+    final form = Form(
+        key: _formKey,
+        child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _row(
             _field(
               controller: _exit,
-              placeholder: 'Actual exit price',
+              label: 'Actual exit price',
+              required: true,
+              validator: (v) => JournalEntryValidation.positiveNumber(
+                v,
+                label: 'Actual exit price',
+              ),
               prefixText: '₹ ',
               keyboardType:
                   const TextInputType.numberWithOptions(decimal: true),
@@ -299,14 +341,14 @@ class _PostTradeReviewStepState extends State<PostTradeReviewStep> {
           _row(
             _field(
               controller: _wentWell,
-              placeholder: 'What went well?',
+              label: 'What went well?',
               maxLines: 3,
               onChanged: (v) =>
                   _updateReview(review.copyWith(whatWentWell: v)),
             ),
             _field(
               controller: _improve,
-              placeholder: 'What could be improved?',
+              label: 'What could be improved?',
               maxLines: 3,
               onChanged: (v) =>
                   _updateReview(review.copyWith(whatCouldBeImproved: v)),
@@ -315,20 +357,31 @@ class _PostTradeReviewStepState extends State<PostTradeReviewStep> {
           _gap(),
           _field(
             controller: _lesson,
-            placeholder: 'Lesson learned',
+            label: 'Lesson learned',
+            required: true,
             maxLines: 3,
+            validator: (v) {
+              final lesson = v?.trim() ?? '';
+              final wentWell = _wentWell.text.trim();
+              final improve = _improve.text.trim();
+              if (lesson.isNotEmpty ||
+                  wentWell.isNotEmpty ||
+                  improve.isNotEmpty) {
+                return null;
+              }
+              return 'Add a lesson or review notes';
+            },
             onChanged: (v) =>
                 _updateReview(review.copyWith(lessonLearned: v)),
           ),
-          const SizedBox(height: 8),
-          Text(
-            'Saving the journal on this step marks it Completed.',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: colors.textSecondary,
-            ),
-          ),
         ],
       ),
+    );
+
+    if (widget.omitSurface) return form;
+    return JournalFormSurface(
+      fillHeight: widget.fillHeight,
+      child: form,
     );
   }
 }

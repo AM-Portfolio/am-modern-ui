@@ -2,6 +2,7 @@ import 'package:am_chart_ui/am_chart_ui.dart';
 import 'package:am_common/am_common.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:am_market_ui/am_market_ui.dart';
+import 'package:am_market_ui/shared/widgets/market_stream_surface_scope.dart';
 import 'package:am_news_ui/am_news_ui.dart';
 import 'package:am_paper_ui/am_paper_ui.dart';
 import 'package:am_portfolio_ui/am_portfolio_ui.dart';
@@ -122,6 +123,7 @@ class _ChartTerminalBodyState extends ConsumerState<_ChartTerminalBody>
   ChartTerminalController? _currentTerminalCtrl;
   String _indicesSearchQuery = '';
   IndicesRegion _region = IndicesRegion.indian;
+  String _lastPublishedStreamSymbols = '';
 
   static const _baseTags = <(_ChartBottomSection, String)>[
     (_ChartBottomSection.overview, 'Overview'),
@@ -292,7 +294,8 @@ class _ChartTerminalBodyState extends ConsumerState<_ChartTerminalBody>
     super.dispose();
   }
 
-  void _bindChartSearch(ChartTerminalController ctrl, ChartTerminalState state) {
+  void _bindChartSearch(
+      ChartTerminalController ctrl, ChartTerminalState state) {
     ChartSearchBridge.bind(
       recentSymbols: state.recentSearches,
       selectSymbol: (sym) {
@@ -324,7 +327,9 @@ class _ChartTerminalBodyState extends ConsumerState<_ChartTerminalBody>
     setState(() {
       _section = _ChartBottomSection.heatmap;
     });
-    if (mounted && MediaQuery.sizeOf(context).width < 768 && Navigator.of(context).canPop()) {
+    if (mounted &&
+        MediaQuery.sizeOf(context).width < 768 &&
+        Navigator.of(context).canPop()) {
       Navigator.of(context).maybePop();
     }
   }
@@ -588,13 +593,13 @@ class _ChartTerminalBodyState extends ConsumerState<_ChartTerminalBody>
               fillColor: context.glassOverlay(0.06),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
-                borderSide:
-                    BorderSide(color: theme.dividerColor.withValues(alpha: 0.2)),
+                borderSide: BorderSide(
+                    color: theme.dividerColor.withValues(alpha: 0.2)),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
-                borderSide:
-                    BorderSide(color: theme.dividerColor.withValues(alpha: 0.2)),
+                borderSide: BorderSide(
+                    color: theme.dividerColor.withValues(alpha: 0.2)),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
@@ -614,7 +619,8 @@ class _ChartTerminalBodyState extends ConsumerState<_ChartTerminalBody>
                           _region == IndicesRegion.global
                               ? 'No global indices found'
                               : 'No indices found',
-                          style: TextStyle(fontSize: 12, color: theme.hintColor),
+                          style:
+                              TextStyle(fontSize: AppTypeScale.sm, color: context.colors.textMuted),
                         ),
                 )
               : ListView.separated(
@@ -733,6 +739,25 @@ class _ChartTerminalBodyState extends ConsumerState<_ChartTerminalBody>
     _currentTerminalCtrl = terminalCtrl;
     _bindChartSearch(terminalCtrl, terminalState);
     final activeSymbol = terminalState.symbol;
+    final chartInstruments = terminalState.panes
+        .map((pane) => pane.symbol.trim().toUpperCase())
+        .where((symbol) => symbol.isNotEmpty)
+        .map((symbol) => MarketStreamInstrument(
+              symbol: symbol,
+              isIndexSymbol: _isIndexSymbol(symbol),
+            ))
+        .toList(growable: false);
+    final streamKey = chartInstruments
+        .map((instrument) => '${instrument.symbol}:${instrument.isIndexSymbol}')
+        .join('|');
+    if (streamKey != _lastPublishedStreamSymbols) {
+      _lastPublishedStreamSymbols = streamKey;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          MarketStreamSurfaceScope.publish(context, chartInstruments);
+        }
+      });
+    }
     final isIndex = _isIndexSymbol(activeSymbol);
     final tags = _getTags(activeSymbol);
 
@@ -1044,8 +1069,7 @@ class _ChartBottomSectionBar extends StatelessWidget {
                 tooltip: 'Minimize bottom panel',
                 iconSize: 20,
                 padding: EdgeInsets.zero,
-                constraints:
-                    const BoxConstraints(minWidth: 34, minHeight: 34),
+                constraints: const BoxConstraints(minWidth: 34, minHeight: 34),
                 onPressed: onMinimize,
                 icon: Icon(
                   Icons.keyboard_arrow_down,
@@ -1086,10 +1110,12 @@ class _PortfolioCubitProvider extends ConsumerWidget {
     return MultiBlocProvider(
       providers: [
         BlocProvider<PortfolioCubit>(
-          create: (_) => PortfolioCubit(portfolioServiceAsync.requireValue)..loadPortfolioById(portfolioId),
+          create: (_) => PortfolioCubit(portfolioServiceAsync.requireValue)
+            ..loadPortfolioById(portfolioId),
         ),
         BlocProvider<PortfolioAnalyticsCubit>(
-          create: (_) => PortfolioAnalyticsCubit(analyticsServiceAsync.requireValue),
+          create: (_) =>
+              PortfolioAnalyticsCubit(analyticsServiceAsync.requireValue),
         ),
       ],
       child: child,
@@ -1147,9 +1173,8 @@ class _MaximizedChartPanelDialogState
   @override
   Widget build(BuildContext context) {
     final terminalState = ref.watch(chartTerminalProvider);
-    final activeSymbol = terminalState.symbol.isNotEmpty
-        ? terminalState.symbol
-        : widget.symbol;
+    final activeSymbol =
+        terminalState.symbol.isNotEmpty ? terminalState.symbol : widget.symbol;
 
     if (_lastSymbol != null && _lastSymbol != activeSymbol) {
       _currentSection = _ChartBottomSection.overview;
@@ -1208,8 +1233,7 @@ class _MaximizedChartPanelDialogState
                         fontSize: 12.5,
                         fontWeight:
                             isActive ? FontWeight.w700 : FontWeight.w500,
-                        color:
-                            isActive ? theme.colorScheme.onSurface : muted,
+                        color: isActive ? theme.colorScheme.onSurface : muted,
                         letterSpacing: 0.15,
                       ),
                     ),
@@ -1329,8 +1353,7 @@ class _MaximizedChartPanelDialogState
                 tooltip: 'Exit full view',
                 iconSize: 18,
                 padding: EdgeInsets.zero,
-                constraints:
-                    const BoxConstraints(minWidth: 36, minHeight: 36),
+                constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
                 icon: Icon(Icons.close_fullscreen, color: muted),
                 onPressed: () => Navigator.of(context).pop(),
               ),
@@ -1357,4 +1380,3 @@ class _MaximizedChartPanelDialogState
     );
   }
 }
-

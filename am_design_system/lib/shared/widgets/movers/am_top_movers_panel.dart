@@ -82,6 +82,10 @@ class AmTopMoversPanel extends StatefulWidget {
     this.onViewAll,
     this.headerTrailing,
 
+    /// Optional activation callback for a gainer or loser tile.
+    /// The panel remains display-only when omitted.
+    this.onItemTap,
+
     /// When true, panel sizes to its content (no `height: infinity` / `Expanded`).
     /// Use inside a parent [SingleChildScrollView] to avoid unbounded flex errors.
     this.scrollEmbedded = false,
@@ -101,6 +105,9 @@ class AmTopMoversPanel extends StatefulWidget {
   final int maxItemsPerColumn;
   final double mobileBreakpoint;
   final VoidCallback? onViewAll;
+
+  /// Called when a user activates an item in either movers column.
+  final ValueChanged<AmMoverItem>? onItemTap;
 
   /// Optional widget shown on the right of the header (e.g. selected index chip).
   final Widget? headerTrailing;
@@ -200,7 +207,7 @@ class _AmTopMoversPanelState extends State<AmTopMoversPanel> {
         Container(
           padding: const EdgeInsets.all(7),
           decoration: BoxDecoration(
-            color: accent.withOpacity(0.12),
+            color: accent.withValues(alpha: 0.12),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(widget.headerIcon, color: accent, size: 18),
@@ -229,7 +236,7 @@ class _AmTopMoversPanelState extends State<AmTopMoversPanel> {
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               minimumSize: Size.zero,
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              backgroundColor: accent.withOpacity(0.10),
+              backgroundColor: accent.withValues(alpha: 0.10),
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20)),
             ),
@@ -274,9 +281,8 @@ class _AmTopMoversPanelState extends State<AmTopMoversPanel> {
             const SizedBox(height: 4),
             Text(
               widget.error!,
-              style: TextStyle(
-                  color: context.colors.textTertiary,
-                  fontSize: 12),
+              style:
+                  TextStyle(color: context.colors.textTertiary, fontSize: 12),
               textAlign: TextAlign.center,
             ),
           ],
@@ -308,7 +314,8 @@ class _AmTopMoversPanelState extends State<AmTopMoversPanel> {
       );
     }
 
-    final isMobile = MediaQuery.of(context).size.width < widget.mobileBreakpoint;
+    final isMobile =
+        MediaQuery.of(context).size.width < widget.mobileBreakpoint;
 
     if (isMobile) {
       return _buildMobileLayout(context, isDark);
@@ -329,7 +336,8 @@ class _AmTopMoversPanelState extends State<AmTopMoversPanel> {
         Container(
           padding: const EdgeInsets.all(4),
           decoration: BoxDecoration(
-            color: context.colors.surface.withValues(alpha: isDark ? 0.55 : 0.85),
+            color:
+                context.colors.surface.withValues(alpha: isDark ? 0.55 : 0.85),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: context.colors.border),
           ),
@@ -344,7 +352,7 @@ class _AmTopMoversPanelState extends State<AmTopMoversPanel> {
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     decoration: BoxDecoration(
                       color: _showGainers
-                          ? posColor.withOpacity(isDark ? 0.15 : 0.12)
+                          ? posColor.withValues(alpha: isDark ? 0.15 : 0.12)
                           : Colors.transparent,
                       borderRadius: BorderRadius.circular(8),
                     ),
@@ -353,9 +361,8 @@ class _AmTopMoversPanelState extends State<AmTopMoversPanel> {
                         'Gainers (${widget.gainers.take(widget.maxItemsPerColumn).length})',
                         style: TextStyle(
                           fontSize: 13,
-                          fontWeight: _showGainers
-                              ? FontWeight.bold
-                              : FontWeight.w500,
+                          fontWeight:
+                              _showGainers ? FontWeight.bold : FontWeight.w500,
                           color: _showGainers ? posColor : mutedColor,
                         ),
                       ),
@@ -372,7 +379,7 @@ class _AmTopMoversPanelState extends State<AmTopMoversPanel> {
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     decoration: BoxDecoration(
                       color: !_showGainers
-                          ? negColor.withOpacity(isDark ? 0.14 : 0.10)
+                          ? negColor.withValues(alpha: isDark ? 0.14 : 0.10)
                           : Colors.transparent,
                       borderRadius: BorderRadius.circular(8),
                     ),
@@ -381,9 +388,8 @@ class _AmTopMoversPanelState extends State<AmTopMoversPanel> {
                         'Losers (${widget.losers.take(widget.maxItemsPerColumn).length})',
                         style: TextStyle(
                           fontSize: 13,
-                          fontWeight: !_showGainers
-                              ? FontWeight.bold
-                              : FontWeight.w500,
+                          fontWeight:
+                              !_showGainers ? FontWeight.bold : FontWeight.w500,
                           color: !_showGainers ? negColor : mutedColor,
                         ),
                       ),
@@ -401,14 +407,10 @@ class _AmTopMoversPanelState extends State<AmTopMoversPanel> {
           AnimatedSwitcher(
             duration: const Duration(milliseconds: 300),
             child: _showGainers
-                ? _buildColumn(
-                    context, 'Gainers', widget.gainers, true, isDark,
-                    key: const ValueKey('gainers'),
-                    showSectionHeader: false)
-                : _buildColumn(
-                    context, 'Losers', widget.losers, false, isDark,
-                    key: const ValueKey('losers'),
-                    showSectionHeader: false),
+                ? _buildColumn(context, 'Gainers', widget.gainers, true, isDark,
+                    key: const ValueKey('gainers'), showSectionHeader: false)
+                : _buildColumn(context, 'Losers', widget.losers, false, isDark,
+                    key: const ValueKey('losers'), showSectionHeader: false),
           )
         else
           Expanded(
@@ -417,12 +419,10 @@ class _AmTopMoversPanelState extends State<AmTopMoversPanel> {
               child: _showGainers
                   ? _buildColumn(
                       context, 'Gainers', widget.gainers, true, isDark,
-                      key: const ValueKey('gainers'),
-                      showSectionHeader: false)
+                      key: const ValueKey('gainers'), showSectionHeader: false)
                   : _buildColumn(
                       context, 'Losers', widget.losers, false, isDark,
-                      key: const ValueKey('losers'),
-                      showSectionHeader: false),
+                      key: const ValueKey('losers'), showSectionHeader: false),
             ),
           ),
       ],
@@ -486,6 +486,9 @@ class _AmTopMoversPanelState extends State<AmTopMoversPanel> {
                       positiveColor: _positiveColor(context),
                       negativeColor: _negativeColor(context),
                       isDark: isDark,
+                      onTap: widget.onItemTap == null
+                          ? null
+                          : () => widget.onItemTap!(item),
                     ),
                 ],
               )
@@ -497,6 +500,9 @@ class _AmTopMoversPanelState extends State<AmTopMoversPanel> {
                   positiveColor: _positiveColor(context),
                   negativeColor: _negativeColor(context),
                   isDark: isDark,
+                  onTap: widget.onItemTap == null
+                      ? null
+                      : () => widget.onItemTap!(displayItems[index]),
                 ),
               ));
 
@@ -528,10 +534,7 @@ class _AmTopMoversPanelState extends State<AmTopMoversPanel> {
           ),
           const SizedBox(height: 8),
         ],
-        if (embedded || useTightColumn)
-          listBody
-        else
-          Expanded(child: listBody),
+        if (embedded || useTightColumn) listBody else Expanded(child: listBody),
       ],
     );
   }

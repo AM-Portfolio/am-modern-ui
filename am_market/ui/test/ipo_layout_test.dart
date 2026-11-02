@@ -42,6 +42,20 @@ void main() {
       expect(last.page, 4);
     });
 
+    test('supports the IPO landing default size of 10', () {
+      final all = List.generate(23, (i) => i);
+      final first = ipoPageWindow(all, page: 0, pageSize: 10);
+      final last = ipoPageWindow(all, page: 2, pageSize: 10);
+
+      expect(first.items.length, 10);
+      expect(first.from, 1);
+      expect(first.to, 10);
+      expect(first.totalPages, 3);
+      expect(last.items.length, 3);
+      expect(last.from, 21);
+      expect(last.to, 23);
+    });
+
     test('clamps out-of-range page', () {
       final all = List.generate(25, (i) => i);
       final window = ipoPageWindow(all, page: 99, pageSize: 20);

@@ -317,6 +317,9 @@ class _CustomDropdownState<T> extends State<CustomDropdown<T>> {
     if (displayWidget == null && widget.hint != null) {
       displayWidget = Text(
         widget.hint!,
+        maxLines: 1,
+        softWrap: false,
+        overflow: TextOverflow.ellipsis,
         style: DropdownStyles.createTextStyle(
           context,
           primaryColor: effectivePrimaryColor,
@@ -324,6 +327,14 @@ class _CustomDropdownState<T> extends State<CustomDropdown<T>> {
           isPlaceholder: true,
           enabled: widget.enabled,
         ),
+      );
+    } else if (displayWidget != null) {
+      // Keep selected value on one line in narrow columns.
+      displayWidget = DefaultTextStyle.merge(
+        style: const TextStyle(overflow: TextOverflow.ellipsis),
+        maxLines: 1,
+        softWrap: false,
+        child: displayWidget,
       );
     }
 

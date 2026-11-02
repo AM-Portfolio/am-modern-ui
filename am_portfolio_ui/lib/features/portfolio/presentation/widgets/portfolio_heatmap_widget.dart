@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -108,6 +110,7 @@ class _PortfolioHeatmapWidgetState
   HeatmapTileData? _drillDownTile;
   final ValueNotifier<HeatmapTileData?> _inspectedTile =
       ValueNotifier<HeatmapTileData?>(null);
+  Timer? _hoverClearTimer;
   int _heatmapLoadGeneration = 0;
   /// Full nested tiles before compact budget — used for sector drill-down.
   List<HeatmapTileData> _fullOverviewTiles = const [];
@@ -145,6 +148,7 @@ class _PortfolioHeatmapWidgetState
 
   @override
   void dispose() {
+    _hoverClearTimer?.cancel();
     _inspectedTile.dispose();
     super.dispose();
   }
@@ -152,10 +156,16 @@ class _PortfolioHeatmapWidgetState
   void _handleTileHover(HeatmapTileData? tile) {
     if (!mounted) return;
     if (tile == null) {
-      if (_inspectedTile.value != null) _inspectedTile.value = null;
+      _hoverClearTimer?.cancel();
+      _hoverClearTimer = Timer(const Duration(milliseconds: 180), () {
+        if (!mounted) return;
+        if (_inspectedTile.value != null) _inspectedTile.value = null;
+      });
       return;
     }
     if (tile.metadata?['type'] != 'stock') return;
+    _hoverClearTimer?.cancel();
+    _hoverClearTimer = null;
     if (_inspectedTile.value?.id == tile.id) return;
     _inspectedTile.value = tile;
   }
@@ -425,8 +435,9 @@ class _PortfolioHeatmapWidgetState
         solidFills: widget.config.compactMode || useNested,
       ),
       interactions: baseInteractions.copyWith(
-        // Hover on every nested leaf is expensive; keep for flat/drill only.
-        enableHoverEffects: !widget.config.compactMode && !useNested,
+        // Web: hover opens docked inspector via ValueNotifier (no mosaic rebuild).
+        // Compact/mobile: tap / long-press pin only.
+        enableHoverEffects: !widget.config.compactMode,
       ),
       selectors: baseSelectors.copyWith(
         selectorLayout: widget.config.compactMode
@@ -552,12 +563,19 @@ class _PortfolioHeatmapWidgetState
                     valueListenable: _inspectedTile,
                     builder: (context, tile, _) {
                       if (tile == null) return const SizedBox.shrink();
-                      return ConstrainedBox(
-                        constraints: const BoxConstraints(
-                          maxWidth: 460,
-                          maxHeight: 44,
+                      final screenW = MediaQuery.sizeOf(context).width;
+                      // Compact pill: phone ~92% width capped 360; web capped 420.
+                      final maxW = widget.config.compactMode
+                          ? (screenW - 24).clamp(240.0, 360.0)
+                          : (screenW * 0.42).clamp(280.0, 420.0);
+                      return IgnorePointer(
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(
+                            maxWidth: maxW,
+                            maxHeight: 44,
+                          ),
+                          child: HeatmapTileInspector(tile: tile),
                         ),
-                        child: HeatmapTileInspector(tile: tile),
                       );
                     },
                   ),

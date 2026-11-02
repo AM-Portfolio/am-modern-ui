@@ -24,7 +24,7 @@ class JournalRiskAmountField extends StatelessWidget {
         side: BorderSide(color: colors.border.withValues(alpha: 0.4)),
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -35,16 +35,16 @@ class JournalRiskAmountField extends StatelessWidget {
                 color: colors.textSecondary,
               ),
             ),
-            const SizedBox(width: 6),
+            const SizedBox(width: 4),
             Text(
               '₹',
               style: theme.textTheme.bodyMedium?.copyWith(
                 fontWeight: FontWeight.w700,
               ),
             ),
-            const SizedBox(width: 4),
+            const SizedBox(width: 2),
             SizedBox(
-              width: 88,
+              width: 64,
               child: TextField(
                 controller: controller,
                 keyboardType: const TextInputType.numberWithOptions(

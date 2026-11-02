@@ -11,6 +11,7 @@ abstract final class JournalFieldDecoration {
     String? hintText,
     bool floatingLabel = false,
     bool dense = false,
+    bool required = false,
     Widget? prefixIcon,
     EdgeInsetsGeometry? contentPadding,
   }) {
@@ -21,27 +22,55 @@ abstract final class JournalFieldDecoration {
     final borderColor = colors.border.withValues(alpha: 0.4);
     final focusedColor =
         ModuleColorProvider.maybeOf(context) ?? ModuleColors.trade;
+    final labelStyle = context.text.label(compact: true).copyWith(
+          color: colors.textSecondary,
+          fontWeight: FontWeight.w600,
+        );
 
     return InputDecoration(
-      labelText: labelText,
+      label: labelText == null
+          ? null
+          : (required
+              ? Text.rich(
+                  TextSpan(
+                    style: labelStyle,
+                    children: [
+                      TextSpan(text: labelText),
+                      TextSpan(
+                        text: ' *',
+                        style: labelStyle.copyWith(
+                          color: colors.statusError,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              : Text(labelText, style: labelStyle)),
       hintText: hintText,
       hintStyle: context.text.body(compact: true).copyWith(
             color: colors.textSecondary,
           ),
       floatingLabelBehavior:
           floatingLabel ? FloatingLabelBehavior.always : null,
-      floatingLabelStyle: context.text.label(compact: true).copyWith(
-            color: colors.textSecondary,
-            fontWeight: FontWeight.w600,
-          ),
+      floatingLabelStyle: labelStyle,
       prefixIcon: prefixIcon,
       filled: base.filled,
       fillColor: colors.surface.withValues(alpha: 0.45),
       isDense: dense,
       contentPadding: contentPadding ??
-          EdgeInsets.symmetric(
-            horizontal: AppSpacing.md,
-            vertical: dense ? AppSpacing.sm : AppSpacing.md,
+          EdgeInsets.fromLTRB(
+            AppSpacing.md,
+            floatingLabel
+                ? (dense ? AppSpacing.md : AppSpacing.md + AppSpacing.xs)
+                : (dense ? AppSpacing.sm : AppSpacing.md),
+            AppSpacing.md,
+            floatingLabel
+                ? (dense ? AppSpacing.sm + AppSpacing.xs : AppSpacing.md)
+                : (dense ? AppSpacing.sm : AppSpacing.md),
+          ),
+      errorStyle: context.text.caption(compact: true).copyWith(
+            color: colors.statusError,
           ),
       border: OutlineInputBorder(
         borderRadius: radius,
@@ -58,6 +87,14 @@ abstract final class JournalFieldDecoration {
           width: 1.5,
         ),
       ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: radius,
+        borderSide: BorderSide(color: colors.statusError, width: 1.2),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: radius,
+        borderSide: BorderSide(color: colors.statusError, width: 1.5),
+      ),
       disabledBorder: OutlineInputBorder(
         borderRadius: radius,
         borderSide: BorderSide(
@@ -71,19 +108,48 @@ abstract final class JournalFieldDecoration {
   static InputDecoration borderLabel(
     BuildContext context, {
     required String label,
+    bool required = false,
     EdgeInsetsGeometry? contentPadding,
   }) {
     final colors = context.colors;
     final borderColor = colors.border.withValues(alpha: 0.4);
     final focusedColor =
         ModuleColorProvider.maybeOf(context) ?? ModuleColors.trade;
+    final labelStyle = context.text.label(compact: true).copyWith(
+          fontSize: 12,
+          height: 1.2,
+          color: colors.textSecondary,
+          fontWeight: FontWeight.w600,
+        );
     return InputDecoration(
-      labelText: label,
+      label: required
+          ? Text.rich(
+              TextSpan(
+                style: labelStyle,
+                children: [
+                  TextSpan(text: label),
+                  TextSpan(
+                    text: ' *',
+                    style: labelStyle.copyWith(
+                      color: colors.statusError,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              softWrap: false,
+            )
+          : Text(
+              label,
+              maxLines: 1,
+              softWrap: false,
+              overflow: TextOverflow.ellipsis,
+              style: labelStyle,
+            ),
       floatingLabelBehavior: FloatingLabelBehavior.always,
-      floatingLabelStyle: context.text.label(compact: true).copyWith(
-            color: colors.textSecondary,
-            fontWeight: FontWeight.w600,
-          ),
+      floatingLabelStyle: labelStyle,
       filled: true,
       fillColor: colors.surface.withValues(alpha: 0.45),
       border: OutlineInputBorder(
@@ -103,10 +169,10 @@ abstract final class JournalFieldDecoration {
       ),
       contentPadding: contentPadding ??
           const EdgeInsets.fromLTRB(
-            AppSpacing.sm + AppSpacing.xs,
-            AppSpacing.sm + AppSpacing.xs,
-            AppSpacing.sm + AppSpacing.xs,
-            AppSpacing.sm,
+            AppSpacing.md,
+            AppSpacing.md,
+            AppSpacing.md,
+            AppSpacing.md,
           ),
       isDense: true,
     );

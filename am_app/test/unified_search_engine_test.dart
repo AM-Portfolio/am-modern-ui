@@ -449,6 +449,46 @@ void main() {
     engine.dispose();
   });
 
+  testWidgets('dashboard omni search includes portfolio holdings', (tester) async {
+    final engine = UnifiedSearchEngine(
+      debounce: Duration.zero,
+      securities: _FakeSecurities((_) async => const []),
+      etfBasket: _FakeEtf((_) async => const []),
+      holdings: HoldingsSearchAdapter(
+        debugHoldings: () => const [
+          HoldingsHit(
+            symbol: 'IRFC',
+            name: 'IRFC',
+            companyName: 'INDIAN RAILWAY FINANCE CORPORATION',
+          ),
+        ],
+      ),
+    );
+    final navKey = GlobalKey<NavigatorState>();
+    await tester.pumpWidget(
+      MaterialApp(
+        navigatorKey: navKey,
+        home: const Scaffold(body: SizedBox()),
+      ),
+    );
+
+    UnifiedSearchSnapshot? last;
+    engine.query(
+      rawQuery: 'indian railway',
+      context: SearchContext.dashboard,
+      navContext: navKey.currentContext!,
+      seedActions: const [],
+      onResult: (snapshot) => last = snapshot,
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 1));
+    await tester.pump();
+
+    expect(last!.items.any((item) => item.title == 'IRFC'), isTrue);
+    expect(last!.isLoading, isFalse);
+    engine.dispose();
+  });
+
   testWidgets('portfolio empty query suggests cached holdings', (tester) async {
     final engine = UnifiedSearchEngine(
       debounce: Duration.zero,
@@ -487,7 +527,56 @@ void main() {
     engine.dispose();
   });
 
-  testWidgets('equity insider irfc does not inject holdings', (tester) async {
+  testWidgets('empty omni search keeps all module categories available',
+      (tester) async {
+    final engine = UnifiedSearchEngine(
+      debounce: Duration.zero,
+      securities: _FakeSecurities((_) async => const []),
+      etfBasket: _FakeEtf((_) async => const []),
+      catalog: _catalogWithGold(),
+    );
+    final navKey = GlobalKey<NavigatorState>();
+    await tester.pumpWidget(
+      MaterialApp(
+        navigatorKey: navKey,
+        home: const Scaffold(body: SizedBox()),
+      ),
+    );
+
+    final destinations = List.generate(
+      18,
+      (index) => CommandItem(
+        title: 'Destination $index',
+        subtitle: 'Module destination',
+        icon: Icons.dashboard_outlined,
+        category: switch (index % 3) {
+          0 => 'Portfolio',
+          1 => 'Trade',
+          _ => 'Market',
+        },
+        onSelected: () {},
+      ),
+    );
+    List<CommandItem>? items;
+    engine.query(
+      rawQuery: '',
+      context: SearchContext.other,
+      navContext: navKey.currentContext!,
+      seedActions: destinations,
+      onResult: (snapshot) => items = snapshot.items,
+    );
+    await tester.pump();
+
+    expect(items, hasLength(18));
+    expect(items!.map((item) => item.category).toSet(), {
+      'Portfolio',
+      'Trade',
+      'Market',
+    });
+    engine.dispose();
+  });
+
+  testWidgets('equity insider omni search includes portfolio holdings', (tester) async {
     final engine = UnifiedSearchEngine(
       debounce: Duration.zero,
       securities: _FakeSecurities(
@@ -525,8 +614,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 1));
     await tester.pump();
-    expect(last!.items.any((i) => i.category == 'Portfolio'), isFalse);
-    expect(last!.items.first.title, 'IRFC');
+    expect(last!.items.any((i) => i.category == 'Portfolio'), isTrue);
     engine.dispose();
   });
 }

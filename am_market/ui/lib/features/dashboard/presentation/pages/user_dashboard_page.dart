@@ -24,7 +24,11 @@ import 'package:am_market_ui/features/dashboard/presentation/widgets/selected_in
 
 /// User Dashboard page with API-driven features
 class UserDashboardPage extends ConsumerStatefulWidget {
-  const UserDashboardPage({super.key});
+  const UserDashboardPage({super.key, this.onTopMoverSelected});
+
+  /// Host-owned navigation callback. The dashboard only emits the selected
+  /// symbol; MarketContent owns surface selection and Equity Insider routing.
+  final ValueChanged<String>? onTopMoverSelected;
 
   @override
   UserDashboardPageState createState() => UserDashboardPageState();
@@ -88,6 +92,7 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
 
   /// [SIP Optimization] Indicates whether a background preloading network request is actively in-flight.
   bool _isPreloadingActive = false;
+  StreamSubscription<Map<String, dynamic>>? _livePriceSubscription;
 
   /// Ensures sparkline + SIP preload run once when indices arrive — never from [build].
   bool _dashboardWarmupStarted = false;
@@ -96,10 +101,34 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
   void _onMarketProviderChanged() {
     final provider = _marketProvider;
     if (provider == null || !mounted) return;
+    _publishDashboardSurface(provider);
     if (_dashboardWarmupStarted) return;
     if (provider.allIndicesData.isEmpty) return;
     _dashboardWarmupStarted = true;
     _triggerBasePricesLoadingIfNeeded(provider);
+  }
+
+  void _publishDashboardSurface(MarketProvider provider) {
+    final indexSymbols = provider.allIndicesData
+        .take(12)
+        .map((item) => item.indexSymbol)
+        .toList();
+    final symbols = <String>{
+      ...indexSymbols,
+      ...selectedIndicesForChart,
+      selectedIndexForMovers,
+      ...topGainers.map((item) => item.symbol),
+      ...topLosers.map((item) => item.symbol),
+    };
+    unawaited(provider.setSurfaceSymbols(
+      MarketProvider.dashboardSurface,
+      symbols,
+      indexSymbols: {
+        ...indexSymbols,
+        ...selectedIndicesForChart,
+        selectedIndexForMovers,
+      },
+    ));
   }
 
   /// [SIP Optimization] Triggers the background preloading process after a 2-second idle delay.
@@ -462,6 +491,8 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
     // [SIP Optimization] Cancel the background preloading timer to prevent memory leaks or state updates after widget disposal.
     _marketProvider?.removeListener(_onMarketProviderChanged);
     _marketProvider = null;
+    _livePriceSubscription?.cancel();
+    _livePriceSubscription = null;
     _preloadTimer?.cancel();
     if (_popoverController.isShowing) {
       _popoverController.hide();
@@ -500,12 +531,56 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
       final provider = context.read<MarketProvider>();
       _marketProvider = provider;
       provider.addListener(_onMarketProviderChanged);
+      _livePriceSubscription =
+          provider.livePriceStream.listen(_applyLiveMoverUpdates);
       provider.setIndicesTimeframe(_selectedTimeframe);
       provider.selectIndex(selectedIndexForMovers);
       _onMarketProviderChanged();
       _loadTopMovers();
       _loadHistoricalData();
     });
+  }
+
+  void _applyLiveMoverUpdates(Map<String, dynamic> quotes) {
+    if (!mounted || quotes.isEmpty) return;
+
+    List<TopMoverStock> update(List<TopMoverStock> items) {
+      return items.map((item) {
+        final quote = quotes[item.symbol.toUpperCase()];
+        if (quote is! Map<String, dynamic>) return item;
+        double? number(String key) {
+          final value = quote[key];
+          return value is num ? value.toDouble() : double.tryParse('$value');
+        }
+
+        return item.copyWith(
+          lastPrice: number('lastPrice'),
+          change: number('change'),
+          changePercent: number('changePercent') ?? number('pChange'),
+        );
+      }).toList();
+    }
+
+    final gainers = update(topGainers);
+    final losers = update(topLosers);
+    bool changed(List<TopMoverStock> before, List<TopMoverStock> after) {
+      if (before.length != after.length) return true;
+      for (var i = 0; i < before.length; i++) {
+        if (before[i].lastPrice != after[i].lastPrice ||
+            before[i].change != after[i].change ||
+            before[i].changePercent != after[i].changePercent) {
+          return true;
+        }
+      }
+      return false;
+    }
+
+    if (changed(topGainers, gainers) || changed(topLosers, losers)) {
+      setState(() {
+        topGainers = gainers;
+        topLosers = losers;
+      });
+    }
   }
 
   /// Load top gainers and losers for selected index
@@ -551,6 +626,8 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
         isLoadingMovers = false;
         moversError = null;
       });
+      final provider = _marketProvider;
+      if (provider != null) _publishDashboardSurface(provider);
     } catch (e) {
       sw.stop();
       ProductTelemetry.instance.widgetTiming(
@@ -584,6 +661,7 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
       }
     });
     provider.selectIndex(symbol);
+    _publishDashboardSurface(provider);
     _loadTopMovers();
     _loadHistoricalData();
   }
@@ -762,6 +840,9 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
                                     }
                                   });
                                   setSheetState(() {});
+                                  if (_marketProvider != null) {
+                                    _publishDashboardSurface(_marketProvider!);
+                                  }
                                   _loadHistoricalData();
                                 },
                               );
@@ -1032,6 +1113,7 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
                         losers: topLosers,
                         isLoading: isLoadingMovers,
                         error: moversError,
+                        onSymbolTap: widget.onTopMoverSelected,
                         headerTrailing: GestureDetector(
                           onTap: () {
                             if (MediaQuery.sizeOf(context).width < 768) {

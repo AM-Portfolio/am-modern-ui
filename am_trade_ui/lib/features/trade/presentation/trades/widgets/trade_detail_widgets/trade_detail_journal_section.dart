@@ -1,6 +1,6 @@
+import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:am_design_system/am_design_system.dart';
 
 import '../../../../journal_providers.dart';
 import '../../../../internal/domain/entities/journal_entry.dart';
@@ -102,7 +102,6 @@ class _TradeDetailJournalSectionState
           initialEntry: entry,
           portfolioId: widget.portfolioId,
           initialReadOnly: completed,
-          startAtStep: completed ? 2 : null,
         ),
       ),
     );
@@ -111,107 +110,117 @@ class _TradeDetailJournalSectionState
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 60,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: BoxDecoration(
-        color: context.colors.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: context.colors.border),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.book, size: 18, color: context.colors.textSecondary),
-          const SizedBox(width: 8),
-          Text(
-            'Journal',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              color: context.colors.textPrimary,
+    final colors = context.colors;
+    final status = _loading
+        ? SizedBox(
+            height: 16,
+            width: 16,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: ModuleColors.trade,
             ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: _loading
-                ? const Align(
-                    alignment: Alignment.centerLeft,
-                    child: SizedBox(
-                      height: 16,
-                      width: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
+          )
+        : _error != null
+            ? Text(
+                _error!,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: context.statusError,
                     ),
-                  )
-                : _error != null
-                    ? Text(
-                        _error!,
-                        style: TextStyle(
-                          color: context.colors.statusError,
-                          fontSize: 13,
+              )
+            : _entries.isEmpty
+                ? Text(
+                    'No journal entries linked to this trade.',
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: context.textSecondary,
                         ),
-                      )
-                    : _entries.isEmpty
-                        ? Text(
-                            'No journal entries linked to this trade.',
-                            style: TextStyle(
-                              color: context.colors.textSecondary,
-                              fontSize: 13,
+                  )
+                : SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: _entries
+                          .map(
+                            (e) => Padding(
+                              padding: const EdgeInsets.only(
+                                right: AppSpacing.sm,
+                              ),
+                              child: InkWell(
+                                onTap: () => _openEntry(e),
+                                borderRadius: BorderRadius.circular(
+                                  AppRadii.xs,
+                                ),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: AppSpacing.sm + 2,
+                                    vertical: AppSpacing.xs,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: colors.cardSurface,
+                                    borderRadius: BorderRadius.circular(
+                                      AppRadii.xs,
+                                    ),
+                                    border: Border.all(
+                                      color: colors.border,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    e.title,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .labelMedium
+                                        ?.copyWith(
+                                          color: colors.textPrimary,
+                                        ),
+                                  ),
+                                ),
+                              ),
                             ),
                           )
-                        : SingleChildScrollView(
-                            scrollDirection: Axis.horizontal,
-                            child: Row(
-                              children: _entries
-                                  .map(
-                                    (e) => Padding(
-                                      padding: const EdgeInsets.only(right: 8.0),
-                                      child: InkWell(
-                                        onTap: () => _openEntry(e),
-                                        borderRadius: BorderRadius.circular(4),
-                                        child: Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 10,
-                                            vertical: 4,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: context.colors.cardSurface,
-                                            borderRadius:
-                                                BorderRadius.circular(4),
-                                            border: Border.all(
-                                              color: context.colors.border,
-                                            ),
-                                          ),
-                                          child: Text(
-                                            e.title,
-                                            style: TextStyle(
-                                              fontSize: 12,
-                                              color:
-                                                  context.colors.textPrimary,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  )
-                                  .toList(),
-                            ),
-                          ),
+                          .toList(),
+                    ),
+                  );
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.sm + AppSpacing.xs,
+        vertical: AppSpacing.sm,
+      ),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: AppRadii.card,
+        border: Border.all(color: colors.border),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Icon(Icons.book, size: 16, color: context.textSecondary),
+          const SizedBox(width: AppSpacing.xs + 2),
+          Text(
+            'Journal',
+            style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: colors.textPrimary,
+                ),
           ),
-          const SizedBox(width: 16),
-          TextButton.icon(
-            onPressed: _journaling ? null : _journalThis,
-            icon: _journaling
-                ? const SizedBox(
-                    width: 14,
-                    height: 14,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.menu_book_outlined, size: 16),
-            label: const Text('Journal this', style: TextStyle(fontSize: 12)),
-            style: TextButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              minimumSize: Size.zero,
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(child: status),
+          const SizedBox(width: AppSpacing.sm),
+          AppButton(
+            text: 'Journal this',
+            icon: Icons.menu_book_outlined,
+            isOutlined: true,
+            textColor: ModuleColors.trade,
+            height: 30,
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.sm,
+              vertical: AppSpacing.xs,
             ),
+            onPressed: _journaling ? null : _journalThis,
+            isLoading: _journaling,
           ),
         ],
       ),

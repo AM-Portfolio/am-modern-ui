@@ -155,6 +155,18 @@ class _AMAppState extends ConsumerState<AMApp> {
                 darkTheme: themeState.darkTheme,
                 themeMode: themeState.themeMode,
                 builder: (context, child) {
+                  final isDark = themeState.themeMode == ThemeMode.dark ||
+                      (themeState.themeMode == ThemeMode.system &&
+                          WidgetsBinding.instance.platformDispatcher
+                                  .platformBrightness ==
+                              Brightness.dark);
+                  final pageBackground = (isDark
+                          ? themeState.darkTheme
+                          : themeState.lightTheme)
+                      .scaffoldBackgroundColor;
+                  BrowserZoomPlatform.setPageBackground(
+                    '#${pageBackground.toARGB32().toRadixString(16).substring(2)}',
+                  );
                   return BrowserZoomHost(
                     child: child ?? const SizedBox.shrink(),
                   );

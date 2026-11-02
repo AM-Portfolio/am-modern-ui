@@ -151,7 +151,7 @@ class _BehaviorTrackingSectionState extends State<BehaviorTrackingSection> {
           onSelectionChanged: (s) => setState(() => _phaseIndex = s.first),
         ),
         SizedBox(
-          height: widget.compact ? AppSpacing.sm : AppSpacing.md,
+          height: widget.compact ? AppSpacing.md : AppSpacing.lg,
         ),
         switch (_phaseIndex) {
           1 => _buildTabContent(
@@ -191,7 +191,6 @@ class _BehaviorTrackingSectionState extends State<BehaviorTrackingSection> {
     required Function(String?) onMoodChanged,
     required Function(String?) onSentimentChanged,
   }) {
-    final theme = Theme.of(context);
     final colors = context.colors;
 
     final summaryField = TextFormField(
@@ -199,7 +198,7 @@ class _BehaviorTrackingSectionState extends State<BehaviorTrackingSection> {
       enabled: widget.isEditMode,
       maxLines: widget.compact ? 2 : 3,
       minLines: widget.compact ? 1 : 2,
-      style: theme.textTheme.bodyMedium?.copyWith(
+      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
         height: 1.35,
         color: widget.isEditMode
             ? null
@@ -207,32 +206,11 @@ class _BehaviorTrackingSectionState extends State<BehaviorTrackingSection> {
       ),
       decoration: JournalFieldDecoration.outlined(
         context,
-        labelText: widget.compact ? 'Summary' : null,
+        // Placeholder-only — no floating title above the field.
         hintText: hint,
-        floatingLabel: widget.compact,
         dense: widget.compact,
       ),
     );
-
-    Widget labeledAbove({
-      required String label,
-      required Widget child,
-    }) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: theme.textTheme.labelLarge?.copyWith(
-              fontWeight: FontWeight.w600,
-              color: colors.textSecondary,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.xs),
-          child,
-        ],
-      );
-    }
 
     final moodField = IgnorePointer(
       ignoring: !widget.isEditMode,
@@ -240,7 +218,7 @@ class _BehaviorTrackingSectionState extends State<BehaviorTrackingSection> {
         mood: mood,
         onMoodChanged: onMoodChanged,
         isEditMode: widget.isEditMode,
-        compact: widget.compact,
+        compact: true,
       ),
     );
     final sentimentField = IgnorePointer(
@@ -249,7 +227,7 @@ class _BehaviorTrackingSectionState extends State<BehaviorTrackingSection> {
         sentiment: sentiment,
         onSentimentChanged: onSentimentChanged,
         isEditMode: widget.isEditMode,
-        compact: widget.compact,
+        compact: true,
       ),
     );
     final tagsField = IgnorePointer(
@@ -257,47 +235,27 @@ class _BehaviorTrackingSectionState extends State<BehaviorTrackingSection> {
       child: PhaseTrackingWidget.buildTagsSelector(
         selectedTags: widget.selectedTags,
         onTagToggled: widget.onTagToggled,
-        compact: widget.compact,
+        compact: true,
       ),
     );
 
-    final gap = widget.compact ? AppSpacing.sm : AppSpacing.md;
+    final gap = widget.compact ? AppSpacing.md : AppSpacing.lg;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (!widget.compact) ...[
-          Text(
-            'Summary',
-            style: theme.textTheme.labelLarge?.copyWith(
-              fontWeight: FontWeight.w600,
-              color: colors.textSecondary,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.xs),
-        ],
         summaryField,
         SizedBox(height: gap),
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(
-              child: widget.compact
-                  ? moodField
-                  : labeledAbove(label: 'Mood', child: moodField),
-            ),
+            Expanded(child: moodField),
             SizedBox(width: gap),
-            Expanded(
-              child: widget.compact
-                  ? sentimentField
-                  : labeledAbove(label: 'Sentiment', child: sentimentField),
-            ),
+            Expanded(child: sentimentField),
           ],
         ),
         SizedBox(height: gap),
-        widget.compact
-            ? tagsField
-            : labeledAbove(label: 'Tags', child: tagsField),
+        tagsField,
       ],
     );
   }

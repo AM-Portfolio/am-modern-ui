@@ -11,6 +11,7 @@ class JournalBorderLabeledPanel extends StatelessWidget {
     required this.child,
     this.padding,
     this.readOnly = false,
+    this.required = false,
     super.key,
   });
 
@@ -18,6 +19,7 @@ class JournalBorderLabeledPanel extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry? padding;
   final bool readOnly;
+  final bool required;
 
   @override
   Widget build(BuildContext context) {
@@ -40,10 +42,10 @@ class JournalBorderLabeledPanel extends StatelessWidget {
           ),
           padding: padding ??
               const EdgeInsets.fromLTRB(
-                AppSpacing.sm + AppSpacing.xs,
                 AppSpacing.md,
-                AppSpacing.sm + AppSpacing.xs,
-                AppSpacing.sm,
+                AppSpacing.md + AppSpacing.xs,
+                AppSpacing.md,
+                AppSpacing.md,
               ),
           child: child,
         ),
@@ -54,13 +56,32 @@ class JournalBorderLabeledPanel extends StatelessWidget {
             color: fill,
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
-              child: Text(
-                label,
-                style: context.text.label(compact: true).copyWith(
-                      color: colors.textSecondary,
-                      fontWeight: FontWeight.w600,
+              child: required
+                  ? Text.rich(
+                      TextSpan(
+                        style: context.text.label(compact: true).copyWith(
+                              color: colors.textSecondary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                        children: [
+                          TextSpan(text: label),
+                          TextSpan(
+                            text: ' *',
+                            style: context.text.label(compact: true).copyWith(
+                                  color: colors.statusError,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                          ),
+                        ],
+                      ),
+                    )
+                  : Text(
+                      label,
+                      style: context.text.label(compact: true).copyWith(
+                            color: colors.textSecondary,
+                            fontWeight: FontWeight.w600,
+                          ),
                     ),
-              ),
             ),
           ),
         ),

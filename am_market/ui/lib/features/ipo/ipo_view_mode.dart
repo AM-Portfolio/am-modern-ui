@@ -1,0 +1,4 @@
+enum IpoViewMode {
+  cards,
+  table,
+}

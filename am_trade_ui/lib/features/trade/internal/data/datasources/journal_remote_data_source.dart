@@ -107,6 +107,9 @@ abstract class JournalRemoteDataSource {
     String journalStatus = 'DRAFT',
     String? portfolioId,
   });
+
+  /// Idempotent demo Log Day + Trade Journal for empty journals.
+  Future<List<TradeJournalEntryResponseDto>> seedDemoEntries();
 }
 
 /// Concrete implementation of journal remote data source
@@ -611,6 +614,16 @@ class JournalRemoteDataSourceImpl implements JournalRemoteDataSource {
         if (portfolioId != null && portfolioId.isNotEmpty)
           'portfolioId': portfolioId,
       },
+      parser: (data) => _parseEntryList(data),
+    );
+  }
+
+  @override
+  Future<List<TradeJournalEntryResponseDto>> seedDemoEntries() async {
+    final fullUri = _buildUri(_baseUrl, 'v1/journal/seed-demo');
+    return _apiClient.post<List<TradeJournalEntryResponseDto>>(
+      fullUri,
+      body: const <String, dynamic>{},
       parser: (data) => _parseEntryList(data),
     );
   }

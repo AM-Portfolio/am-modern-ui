@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/theme/app_radii.dart';
+import '../../../core/theme/app_spacing.dart';
+import '../../../core/theme/app_type_scale.dart';
+import '../../../core/theme/color_extensions.dart';
+
 /// Column configuration for AdaptiveDataTable
 class DataTableColumn<T> {
   const DataTableColumn({
@@ -9,6 +14,7 @@ class DataTableColumn<T> {
     this.width,
     this.sortable = false,
     this.sortValue,
+    this.nullableSortValue,
     this.textAlign = TextAlign.start,
     this.numeric = false,
   });
@@ -18,6 +24,9 @@ class DataTableColumn<T> {
   final double? width;
   final bool sortable;
   final Comparable Function(T item)? sortValue;
+
+  /// Optional nullable sort value. Null values are always placed last.
+  final Comparable? Function(T item)? nullableSortValue;
   final TextAlign textAlign;
   final bool numeric;
 }
@@ -38,6 +47,14 @@ class AdaptiveDataTable<T> extends StatefulWidget {
     this.loadingWidget,
     this.rowHeight,
     this.contentPadding,
+    this.keepTableOnMobile = false,
+    this.headerTextStyle,
+    this.rowTextStyle,
+    this.headerBackgroundColor,
+    this.rowHoverColor,
+    this.expandToAvailableWidth = false,
+    this.columnSpacing,
+    this.resetSortOnThirdTap = false,
   });
   final List<T> data;
   final List<DataTableColumn<T>> columns;
@@ -51,6 +68,25 @@ class AdaptiveDataTable<T> extends StatefulWidget {
   final Widget? loadingWidget;
   final double? rowHeight;
   final EdgeInsetsGeometry? contentPadding;
+  final TextStyle? headerTextStyle;
+  final TextStyle? rowTextStyle;
+  final Color? headerBackgroundColor;
+  final Color? rowHoverColor;
+
+  /// Makes the desktop table occupy the parent width before horizontal
+  /// overflow is considered. Opt-in so existing table layouts stay unchanged.
+  final bool expandToAvailableWidth;
+
+  /// Optional responsive spacing between table columns.
+  final double? columnSpacing;
+
+  /// When enabled, a third tap on the active sorted column restores the
+  /// caller-provided natural order and clears the sort indicator.
+  final bool resetSortOnThirdTap;
+
+  /// Keeps the tabular layout on narrow screens and lets the caller provide
+  /// horizontal scrolling. The default preserves the existing card fallback.
+  final bool keepTableOnMobile;
 
   @override
   State<AdaptiveDataTable<T>> createState() => _AdaptiveDataTableState<T>();
@@ -78,6 +114,15 @@ class _AdaptiveDataTableState<T> extends State<AdaptiveDataTable<T>> {
 
   void _onSort(String columnKey, bool ascending) {
     setState(() {
+      if (widget.resetSortOnThirdTap &&
+          _sortColumnKey == columnKey &&
+          !_sortAscending &&
+          ascending) {
+        _sortColumnKey = null;
+        _sortAscending = true;
+        _sortedData = List.from(widget.data);
+        return;
+      }
       _sortColumnKey = columnKey;
       _sortAscending = ascending;
       _applySorting();
@@ -92,14 +137,36 @@ class _AdaptiveDataTableState<T> extends State<AdaptiveDataTable<T>> {
       orElse: () => widget.columns.first,
     );
 
-    if (column.sortValue != null) {
-      _sortedData.sort((a, b) {
-        final aValue = column.sortValue!(a);
-        final bValue = column.sortValue!(b);
-        final result = aValue.compareTo(bValue);
-        return _sortAscending ? result : -result;
-      });
-    }
+    final indexed = widget.data
+        .asMap()
+        .entries
+        .map((entry) => (index: entry.key, value: entry.value))
+        .toList();
+
+    indexed.sort((a, b) {
+      final aValue = column.nullableSortValue?.call(a.value) ??
+          column.sortValue?.call(a.value);
+      final bValue = column.nullableSortValue?.call(b.value) ??
+          column.sortValue?.call(b.value);
+
+      if (column.nullableSortValue != null) {
+        if (aValue == null && bValue == null) {
+          return a.index.compareTo(b.index);
+        }
+        if (aValue == null) return 1;
+        if (bValue == null) return -1;
+      }
+
+      if (aValue == null || bValue == null) {
+        return a.index.compareTo(b.index);
+      }
+
+      final result = aValue.compareTo(bValue);
+      if (result != 0) return _sortAscending ? result : -result;
+      return a.index.compareTo(b.index);
+    });
+
+    _sortedData = indexed.map((entry) => entry.value).toList();
   }
 
   @override
@@ -111,10 +178,13 @@ class _AdaptiveDataTableState<T> extends State<AdaptiveDataTable<T>> {
 
     if (_sortedData.isEmpty) {
       return widget.emptyWidget ??
-          const Center(
+          Center(
             child: Text(
               'No data available',
-              style: TextStyle(fontSize: 16, color: Colors.grey),
+              style: TextStyle(
+                fontSize: AppTypeScale.xl,
+                color: context.colors.textMuted,
+              ),
             ),
           );
     }
@@ -123,8 +193,8 @@ class _AdaptiveDataTableState<T> extends State<AdaptiveDataTable<T>> {
       builder: (context, constraints) {
         final isDesktop = constraints.maxWidth > 768;
 
-        if (isDesktop) {
-          return _buildDesktopTable();
+        if (isDesktop || widget.keepTableOnMobile) {
+          return _buildDesktopTable(minWidth: constraints.maxWidth);
         } else {
           return _buildMobileTable();
         }
@@ -132,108 +202,137 @@ class _AdaptiveDataTableState<T> extends State<AdaptiveDataTable<T>> {
     );
   }
 
-  Widget _buildDesktopTable() => SingleChildScrollView(
-    child: DataTable(
-      columns: widget.columns
-          .map(
-            (column) => DataColumn(
-              label: Text(
-                column.title,
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-              onSort: column.sortable
-                  ? (columnIndex, ascending) => _onSort(column.key, ascending)
-                  : null,
-              numeric: column.numeric,
-            ),
-          )
-          .toList(),
-      rows: _sortedData.map((item) {
-        final isSelected = widget.selectedItems?.contains(item) ?? false;
+  Widget _buildDesktopTable({required double minWidth}) =>
+      SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            minWidth: widget.expandToAvailableWidth ? minWidth : 0,
+          ),
+          child: DataTable(
+            columnSpacing: widget.columnSpacing,
+            headingRowColor: widget.headerBackgroundColor == null
+                ? null
+                : WidgetStatePropertyAll(widget.headerBackgroundColor),
+            dataRowColor: widget.rowHoverColor == null
+                ? null
+                : WidgetStateProperty.resolveWith((states) {
+                    if (states.contains(WidgetState.hovered)) {
+                      return widget.rowHoverColor;
+                    }
+                    return null;
+                  }),
+            headingTextStyle: widget.headerTextStyle,
+            dataTextStyle: widget.rowTextStyle,
+            dataRowMinHeight: widget.rowHeight,
+            dataRowMaxHeight: widget.rowHeight,
+            columns: widget.columns
+                .map(
+                  (column) => DataColumn(
+                    label: Text(
+                      column.title,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    onSort: column.sortable
+                        ? (columnIndex, ascending) =>
+                            _onSort(column.key, ascending)
+                        : null,
+                    numeric: column.numeric,
+                  ),
+                )
+                .toList(),
+            rows: _sortedData.map((item) {
+              final isSelected = widget.selectedItems?.contains(item) ?? false;
 
-        return DataRow(
-          cells: widget.columns
-              .map(
-                (column) => DataCell(
-                  column.cellBuilder(item),
-                  onTap: widget.onRowTap != null
-                      ? () => widget.onRowTap!(item)
-                      : null,
-                  onLongPress: widget.onRowLongPress != null
-                      ? () => widget.onRowLongPress!(item)
-                      : null,
-                ),
-              )
-              .toList(),
-          selected: isSelected,
-          onSelectChanged: widget.showCheckboxes
-              ? (selected) => _onRowSelectionChanged(item, selected ?? false)
-              : null,
-        );
-      }).toList(),
-      sortColumnIndex: _sortColumnKey != null
-          ? widget.columns.indexWhere((col) => col.key == _sortColumnKey)
-          : null,
-      sortAscending: _sortAscending,
-      showCheckboxColumn: widget.showCheckboxes,
-    ),
-  );
-
-  Widget _buildMobileTable() => ListView.builder(
-    padding: widget.contentPadding ?? const EdgeInsets.all(16),
-    itemCount: _sortedData.length,
-    itemBuilder: (context, index) {
-      final item = _sortedData[index];
-      final isSelected = widget.selectedItems?.contains(item) ?? false;
-
-      return Card(
-        margin: const EdgeInsets.only(bottom: 8),
-        child: InkWell(
-          onTap: widget.onRowTap != null ? () => widget.onRowTap!(item) : null,
-          onLongPress: widget.onRowLongPress != null
-              ? () => widget.onRowLongPress!(item)
-              : null,
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: isSelected
-                ? BoxDecoration(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.primaryContainer.withOpacity(0.3),
-                    borderRadius: BorderRadius.circular(8),
+              return DataRow(
+                cells: widget.columns
+                    .map(
+                      (column) => DataCell(
+                        column.cellBuilder(item),
+                        onTap: widget.onRowTap != null
+                            ? () => widget.onRowTap!(item)
+                            : null,
+                        onLongPress: widget.onRowLongPress != null
+                            ? () => widget.onRowLongPress!(item)
+                            : null,
+                      ),
+                    )
+                    .toList(),
+                selected: isSelected,
+                onSelectChanged: widget.showCheckboxes
+                    ? (selected) =>
+                        _onRowSelectionChanged(item, selected ?? false)
+                    : null,
+              );
+            }).toList(),
+            sortColumnIndex: _sortColumnKey != null
+                ? widget.columns.indexWhere(
+                    (col) => col.key == _sortColumnKey,
                   )
                 : null,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: widget.columns
-                  .map(
-                    (column) => Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          SizedBox(
-                            width: 100,
-                            child: Text(
-                              column.title,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w500,
-                                color: Colors.grey,
-                              ),
-                            ),
-                          ),
-                          Expanded(child: column.cellBuilder(item)),
-                        ],
-                      ),
-                    ),
-                  )
-                  .toList(),
-            ),
+            sortAscending: _sortAscending,
+            showCheckboxColumn: widget.showCheckboxes,
           ),
         ),
       );
-    },
-  );
+
+  Widget _buildMobileTable() => ListView.builder(
+        padding: widget.contentPadding ?? const EdgeInsets.all(AppSpacing.md),
+        itemCount: _sortedData.length,
+        itemBuilder: (context, index) {
+          final item = _sortedData[index];
+          final isSelected = widget.selectedItems?.contains(item) ?? false;
+
+          return Card(
+            margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+            child: InkWell(
+              onTap:
+                  widget.onRowTap != null ? () => widget.onRowTap!(item) : null,
+              onLongPress: widget.onRowLongPress != null
+                  ? () => widget.onRowLongPress!(item)
+                  : null,
+              child: Container(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                decoration: isSelected
+                    ? BoxDecoration(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.primaryContainer.withValues(alpha: 0.3),
+                        borderRadius: BorderRadius.circular(AppRadii.sm),
+                      )
+                    : null,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: widget.columns
+                      .map(
+                        (column) => Padding(
+                          padding:
+                              const EdgeInsets.only(bottom: AppSpacing.sm),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              SizedBox(
+                                width: 100,
+                                child: Text(
+                                  column.title,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w500,
+                                    color: context.colors.textMuted,
+                                  ),
+                                ),
+                              ),
+                              Expanded(child: column.cellBuilder(item)),
+                            ],
+                          ),
+                        ),
+                      )
+                      .toList(),
+                ),
+              ),
+            ),
+          );
+        },
+      );
 
   void _onRowSelectionChanged(T item, bool selected) {
     if (widget.onSelectionChanged == null) return;

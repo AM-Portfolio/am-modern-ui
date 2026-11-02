@@ -8,6 +8,8 @@ import 'package:am_market_ui/features/f_o/presentation/widgets/fo_expiry_picker.
 import 'package:am_market_ui/features/f_o/providers/fo_provider.dart';
 import 'package:am_market_ui/features/f_o/providers/option_chain_provider.dart';
 import 'package:am_market_ui/features/f_o/providers/futures_provider.dart';
+import 'package:am_common/am_common.dart';
+import 'package:am_market_ui/shared/widgets/market_stream_surface_scope.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -40,6 +42,7 @@ class FoPageState extends ConsumerState<FoPage>
   late final TabController _tabController;
   final GlobalKey<OptionChainViewState> _optionChainKey =
       GlobalKey<OptionChainViewState>();
+  String? _lastPublishedStreamSymbol;
 
   @override
   void initState() {
@@ -99,9 +102,39 @@ class FoPageState extends ConsumerState<FoPage>
     ref.read(foActiveSymbolProvider.notifier).state = symbol;
   }
 
+  void _onBackToLanding() {
+    ref.read(foActiveSymbolProvider.notifier).state = null;
+    ref.read(foSelectedExpiryProvider.notifier).state = null;
+    ref.read(selectedFutureContractProvider.notifier).state = null;
+    ref.read(futuresShowAllUnderlyingsProvider.notifier).state = false;
+    ref.read(futuresExpiryFilterProvider.notifier).state = 'All';
+    if (_tabController.index != 0) {
+      _tabController.animateTo(0);
+    }
+    _optionChainKey.currentState?.resetToSpotPosition();
+  }
+
   @override
   Widget build(BuildContext context) {
     final activeSymbol = ref.watch(foActiveSymbolProvider);
+    final normalizedSymbol = activeSymbol?.trim().toUpperCase() ?? '';
+    if (normalizedSymbol != _lastPublishedStreamSymbol) {
+      _lastPublishedStreamSymbol = normalizedSymbol;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        MarketStreamSurfaceScope.publish(
+          context,
+          normalizedSymbol.isEmpty
+              ? const <MarketStreamInstrument>[]
+              : [
+                  MarketStreamInstrument(
+                    symbol: normalizedSymbol,
+                    isIndexSymbol: true,
+                  ),
+                ],
+        );
+      });
+    }
     final colors = context.colors;
     final marketCyan = ModuleColors.market;
     final scaffoldBg = colors.scaffoldBackground;
@@ -109,8 +142,8 @@ class FoPageState extends ConsumerState<FoPage>
     final body = activeSymbol == null
         ? FoEmptyLandingView(onSelected: _onSymbolSelected)
         : widget.embed
-        ? _buildEmbedDetailView()
-        : _buildTabDetailView(activeSymbol, colors);
+            ? _buildEmbedDetailView()
+            : _buildTabDetailView(activeSymbol, colors);
 
     if (widget.embed) {
       return ColoredBox(color: Colors.transparent, child: body);
@@ -140,11 +173,9 @@ class FoPageState extends ConsumerState<FoPage>
     final width = MediaQuery.sizeOf(context).width;
     final isMobile = width < AmBreakpoints.mobile;
     final bottomInset = MediaQuery.paddingOf(context).bottom;
-    final chainData = isMobile
-        ? ref.watch(optionChainProvider).asData?.value
-        : null;
-    final expiries =
-        (chainData?['expiries'] as List<dynamic>?)
+    final chainData =
+        isMobile ? ref.watch(optionChainProvider).asData?.value : null;
+    final expiries = (chainData?['expiries'] as List<dynamic>?)
             ?.map((expiry) => expiry.toString())
             .toList() ??
         const <String>[];
@@ -152,13 +183,16 @@ class FoPageState extends ConsumerState<FoPage>
     final responseExpiry = chainData?['expiry']?.toString() ?? '';
     final activeExpiry =
         selectedExpiry != null && expiries.contains(selectedExpiry)
-        ? selectedExpiry
-        : responseExpiry;
+            ? selectedExpiry
+            : responseExpiry;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        FoHeaderCard(symbol: symbol),
+        FoHeaderCard(
+          symbol: symbol,
+          onBack: _onBackToLanding,
+        ),
         const SizedBox(height: AppSpacing.xs),
         Builder(
           builder: (tabContext) {
@@ -215,9 +249,9 @@ class FoPageState extends ConsumerState<FoPage>
                       expiries: expiries,
                       activeExpiry: activeExpiry,
                       compact: true,
-                      onSelected: (expiry) =>
-                          ref.read(foSelectedExpiryProvider.notifier).state =
-                              expiry,
+                      onSelected: (expiry) => ref
+                          .read(foSelectedExpiryProvider.notifier)
+                          .state = expiry,
                     ),
                   ),
                 ),
