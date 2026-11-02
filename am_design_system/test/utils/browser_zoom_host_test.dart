@@ -5,7 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   tearDown(AppZoomPointer.reset);
 
-  testWidgets('150% chrome zoom compensates layout width to 1920',
+  testWidgets('150% chrome zoom keeps layout at the CSS viewport width',
       (tester) async {
     await tester.pumpWidget(
       MaterialApp(
@@ -33,7 +33,7 @@ void main() {
       ),
     );
     await tester.pump();
-    expect(find.text('layout=1920 mq=1280 p=150'), findsOneWidget);
+    expect(find.text('layout=1280 mq=1280 p=150'), findsOneWidget);
   });
 
   testWidgets('does not inflate MediaQuery so centered login stays on-screen',
@@ -114,7 +114,7 @@ void main() {
       ),
     );
     await tester.pump();
-    expect(find.text('layout=1650'), findsOneWidget);
+    expect(find.text('layout=1100'), findsOneWidget);
 
     inner = 1280;
     outer = 1920;
@@ -123,7 +123,7 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
     await tester.pump(const Duration(milliseconds: 80));
-    expect(find.text('layout=1920'), findsOneWidget);
+    expect(find.text('layout=1280'), findsOneWidget);
   });
 
   testWidgets('does not paint an in-app zoom chip or FittedBox', (tester) async {

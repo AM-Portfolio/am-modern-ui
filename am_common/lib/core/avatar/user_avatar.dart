@@ -133,6 +133,7 @@ class _AvatarFace extends StatelessWidget {
           ),
         );
       case UserAvatarKind.remote:
+      case UserAvatarKind.initials:
         final url = remotePhotoUrl?.trim();
         if (url != null && url.isNotEmpty) {
           return Image.network(
@@ -141,8 +142,6 @@ class _AvatarFace extends StatelessWidget {
             errorBuilder: (_, __, ___) => _initials(context),
           );
         }
-        return _initials(context);
-      case UserAvatarKind.initials:
         return _initials(context);
     }
   }

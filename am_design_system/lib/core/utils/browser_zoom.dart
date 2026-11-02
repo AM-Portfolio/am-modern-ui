@@ -23,6 +23,12 @@ class BrowserZoomMath {
   static const double minZoom = 0.67;
   static const double maxZoom = 2.0;
 
+  // Browser chrome can make outerWidth / innerWidth slightly exceed the
+  // selected zoom step. Larger ratios come from embedded webviews (for
+  // example VS Code's integrated browser), where outerWidth belongs to the
+  // host window rather than the page viewport.
+  static const double _outerRatioTolerance = 0.15;
+
   static double clampZoom(double zoom) => zoom.clamp(minZoom, maxZoom);
 
   static double nearestStep(double zoom) {
@@ -68,7 +74,10 @@ class BrowserZoomMath {
       final fromOuter = outerWidth > 0 ? outerWidth / innerWidth : 1.0;
       final base = baselineDpr <= 0 ? devicePixelRatio : baselineDpr;
       final fromDpr = (base <= 0) ? 1.0 : devicePixelRatio / base;
-      if (fromOuter < 0.97 || fromOuter > 1.08) {
+      final outerRatioIsPlausible =
+          fromOuter >= minZoom - _outerRatioTolerance &&
+              fromOuter <= maxZoom + _outerRatioTolerance;
+      if (outerRatioIsPlausible && (fromOuter < 0.97 || fromOuter > 1.08)) {
         return clampZoom(fromOuter);
       }
       return clampZoom(fromDpr);
@@ -77,11 +86,12 @@ class BrowserZoomMath {
     }
   }
 
-  static double layoutWidth(double cssWidth, double chromeZoom) =>
-      cssWidth * chromeZoom;
+  /// Browser zoom already changes the CSS viewport. Layout breakpoints must
+  /// use that real viewport so Flutter's constraints and responsive widgets
+  /// stay aligned instead of painting an oversized page off-screen.
+  static double layoutWidth(double cssWidth, double chromeZoom) => cssWidth;
 
-  static double layoutHeight(double cssHeight, double chromeZoom) =>
-      cssHeight * chromeZoom;
+  static double layoutHeight(double cssHeight, double chromeZoom) => cssHeight;
 
   /// In-app page scale after Chrome already applied its own zoom.
   static double pageScale({
