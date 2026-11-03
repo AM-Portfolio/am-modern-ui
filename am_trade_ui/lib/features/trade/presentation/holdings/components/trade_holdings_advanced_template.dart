@@ -67,10 +67,13 @@ class _TradeHoldingsAdvancedTemplateState
   String _filterStatus = 'all';
   String _searchQuery = '';
 
-  /// Room for Current / Value / 1D / Overall without amounts colliding.
-  static const double _minTableWidthWithEntry = 1480;
-  static const double _minTableWidthNoEntry = 1320;
+  /// Room for Current / Value / 1D / Overall / Actions without amounts colliding.
+  static const double _minTableWidthWithEntry = 1600;
+  static const double _minTableWidthNoEntry = 1440;
   static const double _minCompactTableWidth = 320;
+  /// Fixed sticky Symbol “drawer” width (other columns scroll underneath).
+  static const double _symbolColWidthDesktop = 156;
+  static const double _symbolColWidthCompact = 132;
   EdgeInsets get _cellPad => EdgeInsets.symmetric(
         horizontal: widget.compact ? AppSpacing.xs : AppSpacing.sm,
       );
@@ -81,6 +84,19 @@ class _TradeHoldingsAdvancedTemplateState
     if (widget.compact) return _minCompactTableWidth;
     return _showEntryColumns ? _minTableWidthWithEntry : _minTableWidthNoEntry;
   }
+
+  double get _symbolColWidth =>
+      widget.compact ? _symbolColWidthCompact : _symbolColWidthDesktop;
+
+  /// Sticky Symbol sits in a Positioned overlay, so it does not expand the row —
+  /// reserve this height in the leading spacer (avatar + status + ticker).
+  double get _symbolCellMinHeight => widget.compact ? 40.0 : 44.0;
+
+  double get _hOffset =>
+      _hScroll.hasClients ? _hScroll.offset : 0.0;
+
+  /// Drawer lifts once the user has scrolled past the Symbol column.
+  bool get _symbolDrawerActive => _hOffset > 0.5;
 
   Color get _accent => widget.accentColor ?? ModuleColors.trade;
 
@@ -505,36 +521,41 @@ class _TradeHoldingsAdvancedTemplateState
           child: SingleChildScrollView(
             controller: _hScroll,
             scrollDirection: Axis.horizontal,
-            child: SizedBox(
-              width: tableWidth,
-              height: constraints.maxHeight,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _buildCustomTableHeader(),
-                  const Divider(height: 1),
-                  Expanded(
-                    child: ListView.builder(
-                      itemCount: rowCount + trailing,
-                      itemBuilder: (context, index) {
-                        if (index < rowCount) {
-                          return _buildCustomTableRow(
-                            _paginatedHoldings[index],
-                            index,
-                          );
-                        }
-                        if (index == rowCount) {
-                          return _buildFooter();
-                        }
-                        return Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                          child: widget.listFooter!,
-                        );
-                      },
-                    ),
+            child: AnimatedBuilder(
+              animation: _hScroll,
+              builder: (context, _) {
+                return SizedBox(
+                  width: tableWidth,
+                  height: constraints.maxHeight,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _buildCustomTableHeader(),
+                      const Divider(height: 1),
+                      Expanded(
+                        child: ListView.builder(
+                          itemCount: rowCount + trailing,
+                          itemBuilder: (context, index) {
+                            if (index < rowCount) {
+                              return _buildCustomTableRow(
+                                _paginatedHoldings[index],
+                                index,
+                              );
+                            }
+                            if (index == rowCount) {
+                              return _buildFooter();
+                            }
+                            return Padding(
+                              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                              child: widget.listFooter!,
+                            );
+                          },
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                );
+              },
             ),
           ),
         );
@@ -558,48 +579,136 @@ class _TradeHoldingsAdvancedTemplateState
     );
   }
 
-  Widget _buildCustomTableHeader() => Padding(
-    padding: EdgeInsets.symmetric(
-      horizontal: widget.compact ? AppSpacing.sm : AppSpacing.md,
-      vertical: widget.compact ? AppSpacing.sm : AppSpacing.sm + AppSpacing.xs,
-    ),
-    child: Row(
+  Widget _buildCustomTableHeader() {
+    final colors = context.colors;
+    final vPad =
+        widget.compact ? AppSpacing.sm : AppSpacing.sm + AppSpacing.xs;
+    final hPad = widget.compact ? AppSpacing.sm : AppSpacing.md;
+    return Stack(
+      clipBehavior: Clip.none,
       children: [
-        _buildHeaderCell('Symbol', widget.compact ? 5 : 2, 0),
-        if (!widget.compact) _buildHeaderCell('Company', 2, 1),
-        _buildHeaderCell(
-          widget.compact ? 'Qty' : 'Quantity',
-          widget.compact ? 2 : 1,
-          2,
-          isNumeric: true,
-        ),
-        if (!widget.compact) ...[
-          if (_showEntryColumns)
-            _buildHeaderCell('Entry Price', 2, 3, isNumeric: true),
-          _buildHeaderCell('Current Price', 2, 4, isNumeric: true),
-          _buildHeaderCell('Current Value', 2, 5, isNumeric: true),
-          _buildHeaderCell('1D P&L', 2, 6, isNumeric: true),
-          _buildHeaderCell('1D %', 1, 7, isNumeric: true),
-          _buildHeaderCell('Overall P&L', 2, 8, isNumeric: true),
-          _buildHeaderCell('Overall %', 1, 9, isNumeric: true),
-          _buildHeaderCell('R:R Ratio', 1, 10, isNumeric: true),
-        ] else
-          _buildHeaderCell('Overall P&L', 5, 8, isNumeric: true),
-        if (_showActionsColumn)
-          _tableCell(
-            flex: 1,
-            child: Text(
-              'Actions',
-              style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    fontSize: AppTypeScale.md,
-                    color: context.textSecondary,
+        Padding(
+          padding: EdgeInsets.fromLTRB(hPad, vPad, hPad, vPad),
+          child: Row(
+            children: [
+              SizedBox(width: _symbolColWidth),
+              if (!widget.compact) _buildHeaderCell('Company', 2, 1),
+              _buildHeaderCell(
+                widget.compact ? 'Qty' : 'Quantity',
+                widget.compact ? 2 : 1,
+                2,
+                isNumeric: true,
+              ),
+              if (!widget.compact) ...[
+                if (_showEntryColumns)
+                  _buildHeaderCell('Entry Price', 2, 3, isNumeric: true),
+                _buildHeaderCell('Current Price', 2, 4, isNumeric: true),
+                _buildHeaderCell('Current Value', 2, 5, isNumeric: true),
+                _buildHeaderCell('1D P&L', 2, 6, isNumeric: true),
+                _buildHeaderCell('1D %', 1, 7, isNumeric: true),
+                _buildHeaderCell('Overall P&L', 2, 8, isNumeric: true),
+                _buildHeaderCell('Overall %', 1, 9, isNumeric: true),
+                _buildHeaderCell('R:R Ratio', 1, 10, isNumeric: true),
+              ] else
+                _buildHeaderCell('Overall P&L', 5, 8, isNumeric: true),
+              if (_showActionsColumn)
+                _tableCell(
+                  flex: 2,
+                  child: Text(
+                    'Actions',
+                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          fontSize: AppTypeScale.md,
+                          color: context.textSecondary,
+                        ),
                   ),
-            ),
+                ),
+            ],
           ),
+        ),
+        _buildStickySymbolDrawer(
+          background: colors.surface,
+          child: _buildStickySymbolHeader(),
+        ),
       ],
-    ),
-  );
+    );
+  }
+
+  /// Sticky Symbol column: stays pinned and lifts (drawer) while other cols slide under.
+  Widget _buildStickySymbolDrawer({
+    required Color background,
+    required Widget child,
+  }) {
+    final pinned = _symbolDrawerActive;
+    final hPad = widget.compact ? AppSpacing.sm : AppSpacing.md;
+    return Positioned(
+      left: _hOffset,
+      top: 0,
+      bottom: 0,
+      width: _symbolColWidth + hPad,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 160),
+        curve: Curves.easeOut,
+        // Lift via shadow only — translateY inside a tight Positioned caused
+        // bottom overflow on the Symbol column.
+        padding: EdgeInsets.only(left: hPad),
+        decoration: BoxDecoration(
+          color: background,
+          boxShadow: pinned
+              ? [
+                  BoxShadow(
+                    color: context.shadow(_isDarkChrome ? 0.45 : 0.14),
+                    blurRadius: 10,
+                    spreadRadius: 0,
+                    offset: const Offset(4, 0),
+                  ),
+                ]
+              : null,
+          border: pinned
+              ? Border(
+                  right: BorderSide(
+                    color: context.colors.divider.withValues(alpha: 0.55),
+                  ),
+                )
+              : null,
+        ),
+        alignment: Alignment.centerLeft,
+        child: child,
+      ),
+    );
+  }
+
+  Widget _buildStickySymbolHeader() {
+    final isSorted = _sortColumnIndex == 0;
+    return InkWell(
+      onTap: () => _sort(0, isSorted ? !_sortAscending : true),
+      child: Padding(
+        padding: _cellPad,
+        child: Row(
+          children: [
+            Flexible(
+              child: Text(
+                'Symbol',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      fontSize: AppTypeScale.md,
+                      color: context.textSecondary,
+                    ),
+              ),
+            ),
+            if (isSorted)
+              Icon(
+                _sortAscending ? Icons.arrow_upward : Icons.arrow_downward,
+                size: 14,
+                color: _accent,
+              ),
+          ],
+        ),
+      ),
+    );
+  }
 
   Widget _buildHeaderCell(String label, int flex, int columnIndex, {bool isNumeric = false}) {
     final isSorted = _sortColumnIndex == columnIndex;
@@ -644,164 +753,182 @@ class _TradeHoldingsAdvancedTemplateState
     final isPositive = holding.isProfit;
     final isTodayPositive = holding.isTodayProfit;
     final colors = context.colors;
+    final rowBg = index.isEven
+        ? colors.surface
+        : colors.border.withValues(alpha: 0.08);
+    final vPad =
+        widget.compact ? AppSpacing.sm : AppSpacing.sm + AppSpacing.xs;
+    final hPad = widget.compact ? AppSpacing.sm : AppSpacing.md;
 
     return InkWell(
       onTap: widget.embedded || widget.onHoldingSelected == null
           ? null
           : () => widget.onHoldingSelected!(holding),
-      child: Container(
-        padding: EdgeInsets.symmetric(
-          horizontal: widget.compact ? AppSpacing.sm : AppSpacing.md,
-          vertical: widget.compact ? AppSpacing.sm : AppSpacing.sm + AppSpacing.xs,
-        ),
+      child: DecoratedBox(
         decoration: BoxDecoration(
-          color: index.isEven
-              ? colors.surface
-              : colors.border.withValues(alpha: 0.08),
+          color: rowBg,
           border: Border(
             bottom: BorderSide(color: colors.divider.withValues(alpha: 0.5)),
           ),
         ),
-        child: Row(
+        child: Stack(
+          clipBehavior: Clip.none,
           children: [
-            _tableCell(
-              flex: widget.compact ? 5 : 2,
+            Padding(
+              padding: EdgeInsets.fromLTRB(hPad, vPad, hPad, vPad),
+              child: Row(
+                children: [
+                  // Reserves height for the sticky Symbol overlay (Positioned
+                  // children do not contribute to Stack layout size).
+                  SizedBox(
+                    width: _symbolColWidth,
+                    height: _symbolCellMinHeight,
+                  ),
+                  if (!widget.compact)
+                    _tableCell(
+                      flex: 2,
+                      child: Text(
+                        holding.displayCompanyName,
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              fontSize: AppTypeScale.md,
+                            ),
+                      ),
+                    ),
+                  _tableCell(
+                    flex: widget.compact ? 2 : 1,
+                    numeric: true,
+                    child: Text(
+                      holding.displayQuantity,
+                      textAlign: TextAlign.right,
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            fontSize: AppTypeScale.md,
+                          ),
+                    ),
+                  ),
+                  if (!widget.compact) ...[
+                    if (_showEntryColumns)
+                      _tableCell(
+                        flex: 2,
+                        numeric: true,
+                        child: Text(
+                          holding.displayEntryPrice,
+                          textAlign: TextAlign.right,
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                          style:
+                              Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    fontSize: AppTypeScale.md,
+                                  ),
+                        ),
+                      ),
+                    _tableCell(
+                      flex: 2,
+                      numeric: true,
+                      child: Text(
+                        holding.displayCurrentPrice,
+                        textAlign: TextAlign.right,
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              fontSize: AppTypeScale.md,
+                            ),
+                      ),
+                    ),
+                    _tableCell(
+                      flex: 2,
+                      numeric: true,
+                      child: Text(
+                        holding.displayCurrentValue,
+                        textAlign: TextAlign.right,
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              fontSize: AppTypeScale.md,
+                            ),
+                      ),
+                    ),
+                    _tableCell(
+                      flex: 2,
+                      numeric: true,
+                      child: _buildPnLCell(
+                        holding.displayTodayProfitLoss,
+                        isTodayPositive,
+                        missing: holding.todayProfitLoss == null,
+                      ),
+                    ),
+                    _tableCell(
+                      flex: 1,
+                      numeric: true,
+                      child: _buildPnLPercentageCell(
+                        holding.displayTodayProfitLossPercentage,
+                        isTodayPositive,
+                        missing: holding.todayProfitLossPercentage == null,
+                      ),
+                    ),
+                    _tableCell(
+                      flex: 2,
+                      numeric: true,
+                      child: _buildPnLCell(
+                        holding.displayProfitLoss,
+                        isPositive,
+                        missing: holding.profitLoss == null,
+                      ),
+                    ),
+                    _tableCell(
+                      flex: 1,
+                      numeric: true,
+                      child: _buildPnLPercentageCell(
+                        holding.displayProfitLossPercentage,
+                        isPositive,
+                        missing: holding.profitLossPercentage == null,
+                      ),
+                    ),
+                    _tableCell(
+                      flex: 1,
+                      numeric: true,
+                      child: Text(
+                        holding.displayRiskRewardRatio,
+                        textAlign: TextAlign.right,
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              fontSize: AppTypeScale.md,
+                            ),
+                      ),
+                    ),
+                  ] else
+                    _tableCell(
+                      flex: 5,
+                      numeric: true,
+                      child: _buildCompactPnLCell(holding, isPositive),
+                    ),
+                  if (_showActionsColumn)
+                    _tableCell(
+                      flex: 2,
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: _buildJournalButton(holding, compact: true),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            _buildStickySymbolDrawer(
+              background: rowBg,
               child: InkWell(
                 onTap: widget.onSymbolTap != null
                     ? () => widget.onSymbolTap!(holding.displaySymbol)
                     : null,
-                child: _buildSymbolCell(holding),
-              ),
-            ),
-            if (!widget.compact)
-              _tableCell(
-                flex: 2,
-                child: Text(
-                  holding.displayCompanyName,
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 1,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontSize: AppTypeScale.md,
-                  ),
-                ),
-              ),
-            _tableCell(
-              flex: widget.compact ? 2 : 1,
-              numeric: true,
-              child: Text(
-                holding.displayQuantity,
-                textAlign: TextAlign.right,
-                overflow: TextOverflow.ellipsis,
-                maxLines: 1,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  fontSize: AppTypeScale.md,
+                child: Padding(
+                  padding: _cellPad,
+                  child: _buildSymbolCell(holding),
                 ),
               ),
             ),
-            if (!widget.compact) ...[
-              if (_showEntryColumns)
-                _tableCell(
-                  flex: 2,
-                  numeric: true,
-                  child: Text(
-                    holding.displayEntryPrice,
-                    textAlign: TextAlign.right,
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 1,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontSize: AppTypeScale.md,
-                    ),
-                  ),
-                ),
-              _tableCell(
-                flex: 2,
-                numeric: true,
-                child: Text(
-                  holding.displayCurrentPrice,
-                  textAlign: TextAlign.right,
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 1,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontSize: AppTypeScale.md,
-                  ),
-                ),
-              ),
-              _tableCell(
-                flex: 2,
-                numeric: true,
-                child: Text(
-                  holding.displayCurrentValue,
-                  textAlign: TextAlign.right,
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 1,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontSize: AppTypeScale.md,
-                  ),
-                ),
-              ),
-              _tableCell(
-                flex: 2,
-                numeric: true,
-                child: _buildPnLCell(
-                  holding.displayTodayProfitLoss,
-                  isTodayPositive,
-                  missing: holding.todayProfitLoss == null,
-                ),
-              ),
-              _tableCell(
-                flex: 1,
-                numeric: true,
-                child: _buildPnLPercentageCell(
-                  holding.displayTodayProfitLossPercentage,
-                  isTodayPositive,
-                  missing: holding.todayProfitLossPercentage == null,
-                ),
-              ),
-              _tableCell(
-                flex: 2,
-                numeric: true,
-                child: _buildPnLCell(
-                  holding.displayProfitLoss,
-                  isPositive,
-                  missing: holding.profitLoss == null,
-                ),
-              ),
-              _tableCell(
-                flex: 1,
-                numeric: true,
-                child: _buildPnLPercentageCell(
-                  holding.displayProfitLossPercentage,
-                  isPositive,
-                  missing: holding.profitLossPercentage == null,
-                ),
-              ),
-              _tableCell(
-                flex: 1,
-                numeric: true,
-                child: Text(
-                  holding.displayRiskRewardRatio,
-                  textAlign: TextAlign.right,
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 1,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontSize: AppTypeScale.md,
-                  ),
-                ),
-              ),
-            ] else
-              _tableCell(
-                flex: 5,
-                numeric: true,
-                child: _buildCompactPnLCell(holding, isPositive),
-              ),
-            if (_showActionsColumn)
-              _tableCell(
-                flex: 1,
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: _buildJournalButton(holding, compact: true),
-                ),
-              ),
           ],
         ),
       ),
@@ -878,6 +1005,7 @@ class _TradeHoldingsAdvancedTemplateState
     }
 
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Container(
           width: 28,
@@ -907,13 +1035,13 @@ class _TradeHoldingsAdvancedTemplateState
           ),
         ),
         const SizedBox(width: AppSpacing.sm),
-        Flexible(
+        Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Row(
-                mainAxisSize: MainAxisSize.min,
                 children: [
                   Flexible(child: _buildStatusBadge(holding.displayStatus)),
                   if (!widget.embedded && widget.onEditTrade != null) ...[
@@ -933,7 +1061,6 @@ class _TradeHoldingsAdvancedTemplateState
                   ],
                 ],
               ),
-              const SizedBox(height: AppSpacing.xxs),
               Text(
                 holding.displaySymbol,
                 maxLines: 1,
@@ -941,6 +1068,7 @@ class _TradeHoldingsAdvancedTemplateState
                 style: Theme.of(context).textTheme.labelLarge?.copyWith(
                       fontWeight: FontWeight.bold,
                       fontSize: AppTypeScale.md,
+                      height: 1.15,
                     ),
               ),
             ],
@@ -950,23 +1078,46 @@ class _TradeHoldingsAdvancedTemplateState
     );
   }
 
-  /// Compact table / card Journal control (DS [AppButton]). Own gesture so row
-  /// selection does not fire.
+  /// Compact table / card Journal control — borderless so it never clips the
+  /// Actions cell. Own gesture so row selection does not fire.
   Widget _buildJournalButton(
     TradeHoldingViewModel holding, {
     bool compact = false,
   }) {
-    return AppButton(
-      text: 'Journal',
-      icon: Icons.menu_book_outlined,
-      isOutlined: true,
-      textColor: _accent,
-      height: compact ? 28 : 32,
-      padding: EdgeInsets.symmetric(
-        horizontal: compact ? AppSpacing.sm : AppSpacing.md,
-        vertical: AppSpacing.xs,
+    final labelStyle = Theme.of(context).textTheme.labelMedium?.copyWith(
+          color: _accent,
+          fontWeight: FontWeight.w600,
+          fontSize: compact ? AppTypeScale.sm : AppTypeScale.md,
+        );
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => widget.onJournalThis!(holding),
+        borderRadius: AppRadii.button,
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: compact ? AppSpacing.xs : AppSpacing.sm,
+            vertical: AppSpacing.xs,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.menu_book_outlined,
+                size: compact ? 16 : 18,
+                color: _accent,
+              ),
+              SizedBox(width: compact ? AppSpacing.xs : AppSpacing.sm),
+              Text(
+                'Journal',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: labelStyle,
+              ),
+            ],
+          ),
+        ),
       ),
-      onPressed: () => widget.onJournalThis!(holding),
     );
   }
 

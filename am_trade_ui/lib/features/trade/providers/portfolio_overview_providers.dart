@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../internal/data/datasources/portfolio_overview_data_source.dart';
 import '../internal/data/dtos/portfolio_summary_response_dto.dart';
+import '../internal/domain/entities/trade_holding.dart';
 import '../internal/domain/entities/trade_portfolio.dart';
 import '../presentation/models/trade_portfolio_view_model.dart';
 import 'portfolio_bridge_providers.dart';
@@ -120,10 +121,45 @@ final enrichedTradePortfoliosProvider =
     return realized;
   }
 
-  return [
+  final merged = [
     for (var i = 0; i < realized.length; i++)
       _mergeViewModel(realized[i], summaries[i]),
   ];
+
+  // Mail/demat books often leave am-portfolio overall/1D at null/0 (no cost).
+  // Trade holdings enrich already computes todayProfitLoss + import-mark overall —
+  // sum those onto the card when live gain is still flat.
+  // Heal Live P&L and/or live Win Rate from Trade holdings enrich when flat.
+  final needsTradeHeal = merged.any(
+    (p) =>
+        p.totalTrades > 0 &&
+        (p.totalGainLoss == 0 || (p.winRate ?? 0) == 0),
+  );
+  if (!needsTradeHeal) return merged;
+
+  try {
+    return await Future.wait<TradePortfolioViewModel>(
+      merged.map((portfolio) async {
+        if (portfolio.totalTrades <= 0) return portfolio;
+        if (portfolio.totalGainLoss != 0 && (portfolio.winRate ?? 0) != 0) {
+          return portfolio;
+        }
+        try {
+          final holdings = await ref
+              .read(tradeHoldingsProvider(portfolio.id).future)
+              .timeout(const Duration(seconds: 8));
+          return _healLivePnlFromTradeHoldings(portfolio, holdings);
+        } catch (_) {
+          return portfolio;
+        }
+      }),
+    ).timeout(
+      const Duration(seconds: 12),
+      onTimeout: () => merged,
+    );
+  } catch (_) {
+    return merged;
+  }
 });
 
 // ============================================================================
@@ -149,22 +185,31 @@ TradePortfolioViewModel _mergeViewModel(
     return realized;
   }
 
-  final int totalWinning =
-      realized.winningTrades + (liveSummary.gainersCount ?? 0);
-  final int totalItems =
-      realized.totalTrades + (liveSummary.totalAssets ?? 0);
-
+  // Closed win rate when there are closed trades; else live gainers / assets.
+  // Never dilute closed W/L with (trades + assets) — that forced 0% on mail books.
+  final closedCount = realized.winningTrades + realized.losingTrades;
   double? overallWinRate = realized.winRate;
-  if (totalItems > 0) {
-    overallWinRate = totalWinning / totalItems;
+  if (closedCount > 0) {
+    overallWinRate = realized.winRate;
+  } else if ((liveSummary.totalAssets ?? 0) > 0 &&
+      liveSummary.gainersCount != null) {
+    overallWinRate =
+        liveSummary.gainersCount! / liveSummary.totalAssets!;
   }
 
   final hasOpenBook =
       realized.totalTrades > 0 || realized.openPositions > 0;
 
-  final liveGain = liveSummary.totalGainLoss ?? liveSummary.todayChange;
-  final liveGainPct = liveSummary.totalGainLossPercentage ??
-      liveSummary.todayChangePercentage;
+  // Do not let a flat overall 0 mask a non-zero 1D move (mail books often
+  // persist totalGainLoss=0 while todayGainLoss is real).
+  final liveGain = _firstNonZeroOrNull(
+        liveSummary.totalGainLoss,
+        liveSummary.todayChange,
+      );
+  final liveGainPct = _firstNonZeroOrNull(
+        liveSummary.totalGainLossPercentage,
+        liveSummary.todayChangePercentage,
+      );
 
   return realized.copyWith(
     totalValue: _preferLiveMetric(
@@ -197,4 +242,66 @@ double _preferLiveMetric({
   if (live != 0) return live;
   if (hasOpenBook && realized != 0) return realized;
   return live;
+}
+
+/// First non-zero wins; else first non-null (may be 0); else null.
+double? _firstNonZeroOrNull(double? primary, double? fallback) {
+  if (primary != null && primary != 0) return primary;
+  if (fallback != null && fallback != 0) return fallback;
+  return primary ?? fallback;
+}
+
+/// Sum Trade holdings enrich metrics onto the discovery card Live P&L / Win %.
+TradePortfolioViewModel _healLivePnlFromTradeHoldings(
+  TradePortfolioViewModel card,
+  TradeHoldings holdings,
+) {
+  var daySum = 0.0;
+  var overallSum = 0.0;
+  var hasDay = false;
+  var hasOverall = false;
+  var scored = 0;
+  var winners = 0;
+
+  for (final trade in holdings.content) {
+    final metrics = trade.metrics;
+    if (metrics == null) continue;
+    final day = metrics.todayProfitLoss;
+    if (day != null) {
+      hasDay = true;
+      daySum += day;
+    }
+    final overall = metrics.profitLoss;
+    if (overall != null) {
+      hasOverall = true;
+      overallSum += overall;
+    }
+    final signal = overall ?? day;
+    if (signal != null) {
+      scored++;
+      if (signal > 0) winners++;
+    }
+  }
+
+  final live = hasOverall
+      ? overallSum
+      : (hasDay ? daySum : null);
+  final liveWinRate = scored > 0 ? winners / scored : null;
+
+  final value = card.totalValue;
+  final pct = live != null && value > 0
+      ? (live / value) * 100
+      : null;
+
+  return card.copyWith(
+    totalGainLoss: card.totalGainLoss == 0 && live != null
+        ? live
+        : null,
+    totalGainLossPercentage: card.totalGainLoss == 0 && pct != null
+        ? pct
+        : null,
+    winRate: (card.winRate ?? 0) == 0 && liveWinRate != null
+        ? liveWinRate
+        : null,
+  );
 }

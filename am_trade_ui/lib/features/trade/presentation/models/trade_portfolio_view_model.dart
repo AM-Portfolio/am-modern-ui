@@ -77,8 +77,19 @@ class TradePortfolioViewModel {
 
   // Trade metrics computed properties
   String get displayTotalTrades => '$totalTrades';
-  String get displayNetProfitLoss => '₹${(netProfitLoss ?? 0.0).toStringAsFixed(2)}';
-  String get displayNetProfitLossPercentage => '${(netProfitLossPercentage ?? 0.0).toStringAsFixed(2)}%';
+
+  /// True when at least one closed trade contributed to realized metrics.
+  bool get hasClosedTradeSignal =>
+      winningTrades + losingTrades > 0 ||
+      (netProfitLoss != null && netProfitLoss != 0);
+
+  /// Realized P&L — "—" when the book has no closed trades (mail/open-only).
+  String get displayNetProfitLoss => hasClosedTradeSignal
+      ? '₹${(netProfitLoss ?? 0.0).toStringAsFixed(2)}'
+      : '—';
+  String get displayNetProfitLossPercentage => hasClosedTradeSignal
+      ? '${(netProfitLossPercentage ?? 0.0).toStringAsFixed(2)}%'
+      : '—';
   String get displayWinRate => '${((winRate ?? 0.0) * 100).toStringAsFixed(1)}%';
   String get displayOpenPositions => '$openPositions';
   String get displayWinLossRecord => '$winningTrades W / $losingTrades L';

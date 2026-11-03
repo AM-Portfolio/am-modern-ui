@@ -66,7 +66,12 @@ class PortfolioOverviewDataSourceImpl implements PortfolioOverviewDataSource {
         timeout: const Duration(seconds: 5),
         parser: (data) {
           if (data == null) return null;
-          final json = data as Map<String, dynamic>;
+          final json = Map<String, dynamic>.from(data as Map);
+          // Normalize am-portfolio V1 field names → Trade DTO aliases.
+          json['totalValue'] ??= json['currentValue'];
+          json['todayChange'] ??= json['todayGainLoss'];
+          json['todayChangePercentage'] ??= json['todayGainLossPercentage'];
+          json['investedValue'] ??= json['investmentValue'];
           return PortfolioSummaryResponseDto.fromJson(json);
         },
       );
@@ -186,10 +191,10 @@ class PortfolioOverviewDataSourceImpl implements PortfolioOverviewDataSource {
         if (day > 0) gainers++;
       }
 
-      // Prefer real overall when Portfolio marks hasGainLoss / non-zero gainLoss.
-      final hasGainFlag = row['hasGainLoss'] == true;
+      // Overall when Portfolio computed gainLoss (cost or import mark).
+      // Do not require hasGainLoss — that flag is not always serialized.
       final overall = _asDouble(row['gainLoss'] ?? row['totalGainLoss']);
-      if (overall != null && (hasGainFlag || overall != 0)) {
+      if (overall != null) {
         hasOverall = true;
         overallPnl += overall;
       }

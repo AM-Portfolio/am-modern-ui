@@ -199,14 +199,20 @@ class _TradePortfolioDiscoveryTemplateState
     final profitableCount = widget.portfolios.where((p) => p.isProfit).length;
     final totalTrades =
         widget.portfolios.fold<int>(0, (sum, p) => sum + p.totalTrades);
+    final hasClosedBooks =
+        widget.portfolios.any((p) => p.hasClosedTradeSignal);
     final totalNetProfitLoss = widget.portfolios
         .fold<double>(0.0, (sum, p) => sum + (p.netProfitLoss ?? 0.0));
     final totalUnrealizedPnL = widget.portfolios
         .fold<double>(0.0, (sum, p) => sum + p.totalGainLoss);
-    final avgWinRate = widget.portfolios.isNotEmpty
-        ? (widget.portfolios
-                .fold<double>(0.0, (sum, p) => sum + (p.winRate ?? 0.0)) /
-            widget.portfolios.length) * 100
+    // Ribbon "Closed Win Rate" only averages books with closed trades.
+    // Card Win Rate may still show live winners % via enrichment.
+    final closedBooks =
+        widget.portfolios.where((p) => p.hasClosedTradeSignal).toList();
+    final avgWinRate = closedBooks.isNotEmpty
+        ? (closedBooks.fold<double>(0.0, (sum, p) => sum + (p.winRate ?? 0.0)) /
+                closedBooks.length) *
+            100
         : 0.0;
 
     return LayoutBuilder(
@@ -343,18 +349,24 @@ class _TradePortfolioDiscoveryTemplateState
                     const SizedBox(width: 8),
                     _metricCard(
                       title: 'Realized P&L',
-                      value:
-                          '${totalNetProfitLoss >= 0 ? '+' : ''}₹${_formatNum(totalNetProfitLoss)}',
+                      value: hasClosedBooks
+                          ? '${totalNetProfitLoss >= 0 ? '+' : ''}₹${_formatNum(totalNetProfitLoss)}'
+                          : '—',
                       subtitle: 'Closed trades',
-                      accent: totalNetProfitLoss >= 0
-                          ? context.statusSuccess
-                          : context.statusError,
+                      accent: !hasClosedBooks
+                          ? ModuleColors.trade
+                          : totalNetProfitLoss >= 0
+                              ? context.statusSuccess
+                              : context.statusError,
                       chrome: ModuleColors.trade,
                       icon: totalNetProfitLoss >= 0
                           ? Icons.arrow_upward_rounded
                           : Icons.arrow_downward_rounded,
-                      isPositive:
-                          totalNetProfitLoss == 0 ? null : totalNetProfitLoss > 0,
+                      isPositive: !hasClosedBooks
+                          ? null
+                          : totalNetProfitLoss == 0
+                              ? null
+                              : totalNetProfitLoss > 0,
                     ),
                     const SizedBox(width: 8),
                     _metricCard(
@@ -375,11 +387,17 @@ class _TradePortfolioDiscoveryTemplateState
                     const SizedBox(width: 8),
                     _metricCard(
                       title: 'Closed Win Rate',
-                      value: '${avgWinRate.toStringAsFixed(1)}%',
-                      subtitle: 'Average across portfolios',
-                      accent: avgWinRate >= 50
+                      value: hasClosedBooks
+                          ? '${avgWinRate.toStringAsFixed(1)}%'
+                          : '—',
+                      subtitle: hasClosedBooks
+                          ? 'Average across portfolios'
+                          : 'No closed trades yet',
+                      accent: !hasClosedBooks
                           ? ModuleColors.trade
-                          : context.statusWarning,
+                          : avgWinRate >= 50
+                              ? ModuleColors.trade
+                              : context.statusWarning,
                       chrome: ModuleColors.trade,
                       icon: Icons.percent_rounded,
                     ),
@@ -1170,7 +1188,9 @@ class _PortfolioHoverCardState extends State<_PortfolioHoverCard> {
                         child: _metric(
                           icon: Icons.check_circle_outline_rounded,
                           iconColor: ModuleColors.trade,
-                          label: 'Win Rate',
+                          label: p.hasClosedTradeSignal
+                              ? 'Win Rate'
+                              : 'Live Win',
                           value: p.displayWinRate,
                         ),
                       ),
