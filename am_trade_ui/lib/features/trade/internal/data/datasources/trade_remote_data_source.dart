@@ -354,9 +354,14 @@ class TradeRemoteDataSourceImpl implements TradeRemoteDataSource {
           final currentPrice = _asDouble(json['currentPrice']);
           final gainLoss = _asDouble(json['gainLoss']);
           final gainLossPct = _asDouble(json['gainLossPercentage']);
-          final avgPrice = qty > 0 ? investment / qty : 0.0;
+          final todayGain = _asDouble(json['todayGainLoss']);
+          final todayGainPct = _asDouble(json['todayGainLossPercentage']);
+          // Unknown cost must stay null — never invent avgPrice=0 from investmentCost=0.
+          final avgPrice = (investment > 0 && qty > 0) ? investment / qty : null;
           final name = (json['name'] as String?)?.trim();
           final isin = (json['isin'] as String?)?.trim();
+          final hasOverall = json['gainLoss'] != null;
+          final hasToday = json['todayGainLoss'] != null;
 
           list.add(TradeDetailsDto(
             tradeId: 'demo-holding-$portfolioId-$symbol-$i',
@@ -372,12 +377,14 @@ class TradeRemoteDataSourceImpl implements TradeRemoteDataSource {
             entryInfo: EntryExitInfoDto(
               price: avgPrice,
               quantity: qty.round(),
-              totalValue: investment,
+              totalValue: investment > 0 ? investment : null,
             ),
-            currentPrice: currentPrice,
+            currentPrice: currentPrice > 0 ? currentPrice : null,
             metrics: TradeMetricsDto(
-              profitLoss: gainLoss,
-              profitLossPercentage: gainLossPct,
+              profitLoss: hasOverall ? gainLoss : (hasToday ? todayGain : null),
+              profitLossPercentage: hasOverall
+                  ? gainLossPct
+                  : (hasToday ? todayGainPct : null),
             ),
             notes: currentValue > 0 ? 'currentValue=$currentValue' : null,
           ));

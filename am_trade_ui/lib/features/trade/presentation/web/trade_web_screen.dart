@@ -917,14 +917,32 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
               if (confirm == true && mounted) {
                 final service = ref.read(portfolioServiceProvider).value;
                 if (service == null) return;
-                await service.deletePortfolio(
-                  portfolio.id,
-                  deleteTrades: deleteTrades,
-                );
-                // Optimistically remove from local cache
-                final repository = ref.read(tradeRepositoryProvider).value;
-                repository?.removeCachedPortfolio(portfolio.id);
-                // We explicitly DO NOT call ref.invalidate here
+                try {
+                  await service.deletePortfolio(
+                    portfolio.id,
+                    deleteTrades: deleteTrades,
+                  );
+                  if (!mounted) return;
+                  // Optimistically remove from local cache, then refresh streams
+                  // so a failed/partial backend delete cannot leave a ghost card.
+                  final repository = ref.read(tradeRepositoryProvider).value;
+                  repository?.removeCachedPortfolio(portfolio.id);
+                  ref.invalidate(tradePortfoliosStreamProvider);
+                  ref.invalidate(enrichedTradePortfoliosProvider);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Portfolio deleted successfully'),
+                    ),
+                  );
+                } catch (e) {
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Failed to delete portfolio: $e'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
               }
             },
             onRefresh: () {

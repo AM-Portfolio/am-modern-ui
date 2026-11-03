@@ -85,16 +85,26 @@ class _TradeHoldingsTemplateState extends State<TradeHoldingsTemplate> {
             result = (a.currentPrice ?? 0).compareTo(b.currentPrice ?? 0);
             break;
           case 6: // Current Value
-            result = (a.currentValue ?? 0).compareTo(b.currentValue ?? 0);
+            result = (a.currentValue ?? double.nan).compareTo(b.currentValue ?? double.nan);
             break;
-          case 7: // P&L
-            result = (a.profitLoss ?? 0).compareTo(b.profitLoss ?? 0);
+          case 7: // 1D P&L
+            result = (a.todayProfitLoss ?? double.nan)
+                .compareTo(b.todayProfitLoss ?? double.nan);
             break;
-          case 8: // P&L %
-            result = (a.profitLossPercentage ?? 0).compareTo(b.profitLossPercentage ?? 0);
+          case 8: // 1D %
+            result = (a.todayProfitLossPercentage ?? double.nan)
+                .compareTo(b.todayProfitLossPercentage ?? double.nan);
             break;
-          case 9: // R:R Ratio
-            result = (a.riskRewardRatio ?? 0).compareTo(b.riskRewardRatio ?? 0);
+          case 9: // Overall P&L
+            result = (a.profitLoss ?? double.nan).compareTo(b.profitLoss ?? double.nan);
+            break;
+          case 10: // Overall %
+            result = (a.profitLossPercentage ?? double.nan)
+                .compareTo(b.profitLossPercentage ?? double.nan);
+            break;
+          case 11: // R:R Ratio
+            result = (a.riskRewardRatio ?? double.nan)
+                .compareTo(b.riskRewardRatio ?? double.nan);
             break;
           default:
             result = 0;
@@ -244,12 +254,15 @@ class _TradeHoldingsTemplateState extends State<TradeHoldingsTemplate> {
           DataColumn(label: const Text('Entry Price'), numeric: true, onSort: _sort),
           DataColumn(label: const Text('Current Price'), numeric: true, onSort: _sort),
           DataColumn(label: const Text('Current Value'), numeric: true, onSort: _sort),
-          DataColumn(label: const Text('P&L'), numeric: true, onSort: _sort),
-          DataColumn(label: const Text('P&L %'), numeric: true, onSort: _sort),
+          DataColumn(label: const Text('1D P&L'), numeric: true, onSort: _sort),
+          DataColumn(label: const Text('1D %'), numeric: true, onSort: _sort),
+          DataColumn(label: const Text('Overall P&L'), numeric: true, onSort: _sort),
+          DataColumn(label: const Text('Overall %'), numeric: true, onSort: _sort),
           DataColumn(label: const Text('R:R Ratio'), numeric: true, onSort: _sort),
         ],
         rows: _paginatedHoldings.map((holding) {
           final isPositive = holding.isProfit;
+          final isTodayPositive = holding.isTodayProfit;
 
           return DataRow(
             cells: [
@@ -262,11 +275,38 @@ class _TradeHoldingsTemplateState extends State<TradeHoldingsTemplate> {
               DataCell(Text(holding.displayCurrentValue)),
               DataCell(
                 Text(
+                  holding.displayTodayProfitLoss,
+                  style: TextStyle(
+                    color: holding.todayProfitLoss == null
+                        ? null
+                        : (isTodayPositive
+                            ? context.marketPositive
+                            : context.marketNegative),
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              DataCell(
+                Text(
+                  holding.displayTodayProfitLossPercentage,
+                  style: TextStyle(
+                    color: holding.todayProfitLossPercentage == null
+                        ? null
+                        : (isTodayPositive
+                            ? context.marketPositive
+                            : context.marketNegative),
+                  ),
+                ),
+              ),
+              DataCell(
+                Text(
                   holding.displayProfitLoss,
                   style: TextStyle(
-                    color: isPositive
-                        ? context.marketPositive
-                        : context.marketNegative,
+                    color: holding.profitLoss == null
+                        ? null
+                        : (isPositive
+                            ? context.marketPositive
+                            : context.marketNegative),
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -275,9 +315,11 @@ class _TradeHoldingsTemplateState extends State<TradeHoldingsTemplate> {
                 Text(
                   holding.displayProfitLossPercentage,
                   style: TextStyle(
-                    color: isPositive
-                        ? context.marketPositive
-                        : context.marketNegative,
+                    color: holding.profitLossPercentage == null
+                        ? null
+                        : (isPositive
+                            ? context.marketPositive
+                            : context.marketNegative),
                   ),
                 ),
               ),
