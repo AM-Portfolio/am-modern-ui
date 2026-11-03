@@ -305,3 +305,4 @@ TradePortfolioViewModel _healLivePnlFromTradeHoldings(
         : null,
   );
 }
+
