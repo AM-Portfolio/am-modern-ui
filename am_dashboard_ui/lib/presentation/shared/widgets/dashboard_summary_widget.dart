@@ -165,9 +165,19 @@ class DashboardSummaryWidget extends StatelessWidget {
     );
   }
 
+  /// CDSL/CAS books often have market value only — invested ≈ balance and overall return ≈ 0.
+  bool get _costBasisUnknown {
+    final value = summary.totalValue;
+    if (value <= 0) return false;
+    final invested = summary.totalInvested;
+    if (invested <= 0) return true;
+    return (invested - value).abs() / value < 0.005;
+  }
+
   Widget _buildInvestedCard(BuildContext context) {
     final currencyFormat =
         NumberFormat.currency(symbol: '₹ ', decimalDigits: 0);
+    final unknown = _costBasisUnknown;
 
     return AmGlassCard(
       padding: const EdgeInsets.all(AppSpacing.md),
@@ -181,13 +191,13 @@ class DashboardSummaryWidget extends StatelessWidget {
             fit: BoxFit.scaleDown,
             alignment: Alignment.centerLeft,
             child: Text(
-              currencyFormat.format(summary.totalInvested),
+              unknown ? '—' : currencyFormat.format(summary.totalInvested),
               style: _valueStyle(context),
             ),
           ),
           const SizedBox(height: AppSpacing.xs),
           Text(
-            'Principal Capital',
+            unknown ? 'Not in CAS (market value)' : 'Principal Capital',
             style: context.text
                 .caption()
                 .copyWith(color: context.colors.textSecondary),
@@ -201,6 +211,7 @@ class DashboardSummaryWidget extends StatelessWidget {
     final currencyFormat =
         NumberFormat.currency(symbol: '₹ ', decimalDigits: 0);
     final percentFormat = NumberFormat.decimalPercentPattern(decimalDigits: 2);
+    final unknown = _costBasisUnknown;
     final isPositiveReturn = summary.totalGainLoss >= 0;
     final valueColor = isPositiveReturn
         ? context.colors.statusSuccess
@@ -218,15 +229,21 @@ class DashboardSummaryWidget extends StatelessWidget {
             fit: BoxFit.scaleDown,
             alignment: Alignment.centerLeft,
             child: Text(
-              '${isPositiveReturn ? "+" : "-"}${currencyFormat.format(summary.totalGainLoss.abs())}',
-              style: _valueStyle(context).copyWith(color: valueColor),
+              unknown
+                  ? '—'
+                  : '${isPositiveReturn ? "+" : "-"}${currencyFormat.format(summary.totalGainLoss.abs())}',
+              style: _valueStyle(context).copyWith(
+                color: unknown ? context.colors.textPrimary : valueColor,
+              ),
             ),
           ),
           const SizedBox(height: AppSpacing.xs),
           Text(
-            '${isPositiveReturn ? "+" : ""}${percentFormat.format(summary.totalGainLossPercentage / 100)}',
+            unknown
+                ? 'Use day change on value'
+                : '${isPositiveReturn ? "+" : ""}${percentFormat.format(summary.totalGainLossPercentage / 100)}',
             style: context.text.label().copyWith(
-                  color: valueColor,
+                  color: unknown ? context.colors.textSecondary : valueColor,
                   fontWeight: FontWeight.w600,
                 ),
           ),

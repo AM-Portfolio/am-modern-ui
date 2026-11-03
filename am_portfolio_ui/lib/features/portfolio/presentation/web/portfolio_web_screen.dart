@@ -38,6 +38,8 @@ class PortfolioWebScreen extends ConsumerStatefulWidget {
     this.uploadPortfolioBuilder,
     this.addAssetClassBuilder,
     this.onQuickAdd,
+    this.defaultPortfolioId,
+    this.onToggleDefaultPortfolio,
   });
   final String? selectedPortfolioId;
   final String? selectedPortfolioName;
@@ -55,6 +57,8 @@ class PortfolioWebScreen extends ConsumerStatefulWidget {
   final Widget Function(String portfolioId, String? portfolioName, VoidCallback onCancel)? uploadPortfolioBuilder;
   final Widget Function(BuildContext context, String portfolioId, String? portfolioName, VoidCallback onComplete)? addAssetClassBuilder;
   final ValueChanged<GlobalAddActionKind>? onQuickAdd;
+  final String? defaultPortfolioId;
+  final void Function(String id, String name)? onToggleDefaultPortfolio;
 
   @override
   ConsumerState<PortfolioWebScreen> createState() => _PortfolioWebScreenState();
@@ -489,6 +493,12 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
                   idExtractor: (p) => p.portfolioId,
                   nameExtractor: (p) => p.portfolioName,
                   accentColor: ModuleColors.portfolio,
+                  defaultPortfolioId: widget.defaultPortfolioId,
+                  onToggleDefault: widget.onToggleDefaultPortfolio,
+                  isSelectableExtractor: (p) =>
+                      p.portfolioId == 'all' || p.isDummy || p.hasHoldings,
+                  showNoHoldingsBadgeExtractor: (p) =>
+                      p.portfolioId != 'all' && !p.isDummy && !p.hasHoldings,
                 ),
               ),
             SecondarySidebarSection(

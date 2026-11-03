@@ -4,6 +4,9 @@ import 'package:am_common/core/config/config_service.dart';
 import 'package:am_common/core/config/app_config.dart';
 import 'package:am_common/am_common.dart';
 import 'package:am_portfolio_ui/core/constants/portfolio_endpoints.dart';
+import '../dtos/accounts_hub_dto.dart';
+import '../dtos/cas_dto.dart';
+import '../dtos/nps_dto.dart';
 import '../dtos/portfolio_analytics_request_dto.dart';
 import '../dtos/portfolio_analytics_response_dto.dart';
 import '../dtos/portfolio_holdings_dto.dart';
@@ -106,6 +109,24 @@ abstract class PortfolioRemoteDataSource {
   Future<List<PortfolioIntradayDto>> getPortfolioIntraday(
     String? portfolioId,
   );
+
+  /// Latest CDSL CAS import meta (null when none).
+  Future<CasDocumentMetaDto?> getLatestCas();
+
+  /// Dashboard accounts hub (identity + demat + NPS + portfolio amounts).
+  Future<AccountsHubDto> getAccountsHub();
+
+  /// Demat + MF account directory from latest CAS.
+  Future<List<DematAccountDto>> getCasAccounts();
+
+  /// MF folio groups for a portfolio (CAS Mutual Funds / CDSL CAS).
+  Future<List<CasMfFolioDto>> getCasFolios(String portfolioId);
+
+  /// Latest NPS import meta (null when none).
+  Future<NpsDocumentMetaDto?> getLatestNps();
+
+  /// NPS scheme lines for a portfolio (statement + live NAV).
+  Future<List<NpsSchemeLineDto>> getNpsSchemes(String portfolioId);
 }
 
 /// Concrete implementation of portfolio remote data source
@@ -1211,6 +1232,95 @@ class PortfolioRemoteDataSourceImpl implements PortfolioRemoteDataSource {
       CommonLogger.error('Failed to fetch portfolio intraday',
           tag: 'PortfolioRemoteDataSource', error: e);
       rethrow;
+    }
+  }
+
+  @override
+  Future<CasDocumentMetaDto?> getLatestCas() async {
+    try {
+      final uri = _buildUri(_baseUrl, PortfolioEndpoints.casLatest);
+      final data = await _apiClient.get<Map<String, dynamic>>(
+        uri,
+        parser: (raw) => Map<String, dynamic>.from(raw as Map),
+      );
+      return CasDocumentMetaDto.fromJson(data);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  @override
+  Future<AccountsHubDto> getAccountsHub() async {
+    final uri = _buildUri(_baseUrl, PortfolioEndpoints.accountsHub);
+    final data = await _apiClient.get<Map<String, dynamic>>(
+      uri,
+      parser: (raw) => Map<String, dynamic>.from(raw as Map),
+    );
+    return AccountsHubDto.fromJson(data);
+  }
+
+  @override
+  Future<List<DematAccountDto>> getCasAccounts() async {
+    try {
+      final uri = _buildUri(_baseUrl, PortfolioEndpoints.casAccounts);
+      final data = await _apiClient.get<List<dynamic>>(
+        uri,
+        parser: (raw) => raw as List<dynamic>,
+      );
+      return data
+          .whereType<Map>()
+          .map((e) => DematAccountDto.fromJson(Map<String, dynamic>.from(e)))
+          .toList();
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  @override
+  Future<List<CasMfFolioDto>> getCasFolios(String portfolioId) async {
+    try {
+      final uri = _buildUri(_baseUrl, PortfolioEndpoints.casFolios(portfolioId));
+      final data = await _apiClient.get<List<dynamic>>(
+        uri,
+        parser: (raw) => raw as List<dynamic>,
+      );
+      return data
+          .whereType<Map>()
+          .map((e) => CasMfFolioDto.fromJson(Map<String, dynamic>.from(e)))
+          .toList();
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  @override
+  Future<NpsDocumentMetaDto?> getLatestNps() async {
+    try {
+      final uri = _buildUri(_baseUrl, PortfolioEndpoints.npsLatest);
+      final data = await _apiClient.get<Map<String, dynamic>>(
+        uri,
+        parser: (raw) => Map<String, dynamic>.from(raw as Map),
+      );
+      return NpsDocumentMetaDto.fromJson(data);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  @override
+  Future<List<NpsSchemeLineDto>> getNpsSchemes(String portfolioId) async {
+    try {
+      final uri = _buildUri(_baseUrl, PortfolioEndpoints.npsSchemes(portfolioId));
+      final data = await _apiClient.get<List<dynamic>>(
+        uri,
+        parser: (raw) => raw as List<dynamic>,
+      );
+      return data
+          .whereType<Map>()
+          .map((e) => NpsSchemeLineDto.fromJson(Map<String, dynamic>.from(e)))
+          .toList();
+    } catch (_) {
+      return const [];
     }
   }
 }

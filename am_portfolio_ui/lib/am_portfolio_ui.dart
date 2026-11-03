@@ -23,6 +23,7 @@ export 'features/portfolio/presentation/sections/portfolio_chart_section.dart';
 export 'features/portfolio/presentation/widgets/intelligence/portfolio_health_card.dart';
 export 'features/portfolio/presentation/widgets/intelligence/portfolio_xray_panel.dart';
 export 'features/portfolio/presentation/widgets/intelligence/portfolio_risk_radar_card.dart';
+export 'features/portfolio/presentation/widgets/intelligence/register_dashboard_intel.dart';
 export 'features/portfolio/presentation/widgets/portfolio_overview_widget.dart';
 
 // State Management (Cubits needed for embedding intelligence widgets)

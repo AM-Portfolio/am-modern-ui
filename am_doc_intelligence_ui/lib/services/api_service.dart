@@ -453,13 +453,45 @@ class ApiService {
     }
   }
 
+  /// Find latest Gmail statement for [broker] without unlock/extract.
+  Future<Map<String, dynamic>> discoverFromGmail(
+    String broker, {
+    String? mailbox,
+  }) async {
+    final params = <String, String>{};
+    final m = (mailbox ?? '').trim();
+    if (m.isNotEmpty) params['mailbox'] = m;
+    final qs = params.entries
+        .map((e) =>
+            '${Uri.encodeQueryComponent(e.key)}=${Uri.encodeQueryComponent(e.value)}')
+        .join('&');
+    final url = qs.isEmpty
+        ? '$_emailBase/discover/gmail/$broker'
+        : '$_emailBase/discover/gmail/$broker?$qs';
+    debugPrint('[ApiService] GET $url');
+    final apiClient = GetIt.I.isRegistered<ApiClient>()
+        ? GetIt.I<ApiClient>()
+        : ApiClient();
+
+    final headers = await _getHeaders();
+    return apiClient.get<Map<String, dynamic>>(
+      url,
+      headers: headers,
+      parser: (data) => Map<String, dynamic>.from(data),
+    );
+  }
+
   Future<Map<String, dynamic>> extractFromGmail(
     String broker, {
     String? pan,
     String? mailbox,
   }) async {
+    final raw = (pan ?? '').trim();
+    // NPS statement passwords are case-sensitive (e.g. 99om0111); PAN is uppercased.
+    final unlock =
+        broker.toLowerCase() == 'nps' ? raw : raw.toUpperCase();
     final params = <String, String>{
-      'pan': (pan ?? '').trim().toUpperCase(),
+      'pan': unlock,
     };
     final m = (mailbox ?? '').trim();
     if (m.isNotEmpty) params['mailbox'] = m;

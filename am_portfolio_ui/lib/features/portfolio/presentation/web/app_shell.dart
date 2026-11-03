@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:am_auth_ui/am_auth_ui.dart';
 import 'package:am_common/am_common.dart';
+import 'package:am_dashboard_ui/presentation/providers/dashboard_provider.dart';
 import '../cubit/portfolio_cubit.dart';
 import '../cubit/portfolio_state.dart';
 import '../../internal/domain/entities/portfolio_list.dart';
@@ -58,28 +60,8 @@ class AppShell extends StatelessWidget {
             if (portfolios != null && portfolios.isNotEmpty)
               SecondarySidebarSection(
                 title: '',
-                customWidget: Builder(
-                  builder: (ctx) {
-                    final selectedId = ctx.selectedPortfolioId;
-                    final selectedName = ctx.selectedPortfolioName;
-                    return SharedPortfolioSelector<PortfolioItem>(
-                      currentPortfolioId: selectedId,
-                      currentPortfolioName: selectedName,
-                      portfolios: [
-                        const PortfolioItem(
-                          portfolioId: 'all',
-                          portfolioName: 'All Portfolios',
-                        ),
-                        ...portfolios,
-                      ],
-                      onPortfolioSelected: (id, name) {
-                        context.selectPortfolio(id, name);
-                      },
-                      idExtractor: (p) => p.portfolioId,
-                      nameExtractor: (p) => p.portfolioName,
-                      accentColor: ModuleColors.portfolio,
-                    );
-                  }
+                customWidget: _DefaultAwarePortfolioSelector(
+                  portfolios: portfolios,
                 ),
               ),
 
@@ -129,6 +111,126 @@ class AppShell extends StatelessWidget {
           body: child, // Render specific page content here
         );
       },
+    );
+  }
+}
+
+class _DefaultAwarePortfolioSelector extends ConsumerStatefulWidget {
+  const _DefaultAwarePortfolioSelector({required this.portfolios});
+
+  final List<PortfolioItem> portfolios;
+
+  @override
+  ConsumerState<_DefaultAwarePortfolioSelector> createState() =>
+      _DefaultAwarePortfolioSelectorState();
+}
+
+class _DefaultAwarePortfolioSelectorState
+    extends ConsumerState<_DefaultAwarePortfolioSelector> {
+  String? _defaultPortfolioId;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadDefault());
+  }
+
+  String _userId() {
+    try {
+      final auth = context.read<AuthCubit>().state;
+      if (auth is Authenticated) return auth.user.id;
+    } catch (_) {}
+    return '';
+  }
+
+  Future<void> _loadDefault() async {
+    final userId = _userId();
+    if (userId.isEmpty) return;
+    final saved = await DefaultPortfolioStore.instance.load(userId);
+    if (!mounted) return;
+    setState(() => _defaultPortfolioId = saved?.id);
+  }
+
+  Future<void> _toggleDefault(String id, String name) async {
+    final userId = _userId();
+    if (userId.isEmpty || id == 'all') return;
+    if (_defaultPortfolioId == id) {
+      await DefaultPortfolioStore.instance.clear(userId);
+      if (!mounted) return;
+      setState(() => _defaultPortfolioId = null);
+      return;
+    }
+    await DefaultPortfolioStore.instance.save(userId, id: id, name: name);
+    if (!mounted) return;
+    setState(() => _defaultPortfolioId = id);
+  }
+
+  Map<String, String> _externalIdsFor(String userId) {
+    if (userId.isEmpty) return const {};
+    final hub = ref.watch(accountsHubProvider(userId)).asData?.value;
+    if (hub == null) return const {};
+    final byId = <String, String>{};
+    for (final d in hub.dematAccounts) {
+      final pid = d.portfolioId;
+      final label = d.externalIdLabel;
+      if (pid == null || pid.isEmpty || label == null) continue;
+      byId.putIfAbsent(pid, () => label);
+    }
+    final byBroker = <String, String>{};
+    for (final d in hub.dematAccounts) {
+      final broker = (d.mappedBroker ?? '').toUpperCase();
+      final label = d.externalIdLabel;
+      if (broker.isEmpty || label == null) continue;
+      byBroker.putIfAbsent(broker, () => label);
+    }
+    final pran = hub.identity?.pran ?? hub.nps?.pran;
+    for (final p in widget.portfolios) {
+      if (byId.containsKey(p.portfolioId)) continue;
+      final broker = (p.brokerType ?? p.portfolioName).toUpperCase();
+      if (broker.contains('NPS') && pran != null && pran.isNotEmpty) {
+        byId[p.portfolioId] = pran;
+      } else if (byBroker.containsKey(broker)) {
+        byId[p.portfolioId] = byBroker[broker]!;
+      }
+    }
+    return byId;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final selectedId = context.selectedPortfolioId;
+    final selectedName = context.selectedPortfolioName;
+    final userId = _userId();
+    final externalIds = _externalIdsFor(userId);
+    return SharedPortfolioSelector<PortfolioItem>(
+      currentPortfolioId: selectedId,
+      currentPortfolioName: selectedName,
+      portfolios: [
+        const PortfolioItem(
+          portfolioId: 'all',
+          portfolioName: 'All Portfolios',
+        ),
+        ...widget.portfolios,
+      ],
+      onPortfolioSelected: (id, name) {
+        context.selectPortfolio(id, name);
+      },
+      idExtractor: (p) => p.portfolioId,
+      nameExtractor: (p) => p.portfolioName,
+      subtitleExtractor: (p) {
+        final id = externalIds[p.portfolioId];
+        if (id == null || id.isEmpty) return null;
+        final broker = (p.brokerType ?? p.portfolioName).toUpperCase();
+        if (broker.contains('NPS')) return 'PRAN $id';
+        return id;
+      },
+      accentColor: ModuleColors.portfolio,
+      defaultPortfolioId: _defaultPortfolioId,
+      onToggleDefault: _toggleDefault,
+      isSelectableExtractor: (p) =>
+          p.portfolioId == 'all' || p.isDummy || p.hasHoldings,
+      showNoHoldingsBadgeExtractor: (p) =>
+          p.portfolioId != 'all' && !p.isDummy && !p.hasHoldings,
     );
   }
 }

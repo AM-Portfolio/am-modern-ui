@@ -9,6 +9,7 @@ class PortfolioItemDto {
     this.kind,
     this.brokerType,
     this.isDummy = false,
+    this.assetCount,
   });
 
   /// Create from JSON
@@ -23,12 +24,14 @@ class PortfolioItemDto {
         brokerType: (json['brokerType'] as String?) ??
             (json['broker'] as String?),
         isDummy: json['isDummy'] == true || json['dummy'] == true,
+        assetCount: (json['assetCount'] as num?)?.toInt(),
       );
   final String portfolioId;
   final String portfolioName;
   final String? kind;
   final String? brokerType;
   final bool isDummy;
+  final int? assetCount;
 
   /// Convert to JSON
   Map<String, dynamic> toJson() => {
@@ -37,6 +40,7 @@ class PortfolioItemDto {
     if (kind != null) 'kind': kind,
     if (brokerType != null) 'brokerType': brokerType,
     'isDummy': isDummy,
+    if (assetCount != null) 'assetCount': assetCount,
   };
 
   @override

@@ -15,8 +15,9 @@ final portfolioIntelligenceProvider = FutureProvider.autoDispose
   final needXray = ref.watch(portfolioIntelXrayEnabledProvider);
   if (!needHealth && !needRisk && !needXray) return null;
 
-  if (portfolioId.isEmpty || portfolioId == 'all') return null;
+  if (portfolioId.isEmpty) return null;
 
+  // 'all' maps to POST /v1/analytics/portfolio/all/intelligence.
   final remote = await ref.watch(portfolioRemoteDataSourceProvider.future);
   return remote.getPortfolioIntelligence(portfolioId);
 });

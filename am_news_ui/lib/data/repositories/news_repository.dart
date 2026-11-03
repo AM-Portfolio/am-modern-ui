@@ -7,7 +7,7 @@ class NewsRepository {
     required ApiClient newsClient,
     required ApiClient portfolioClient,
     required this.holdingsResource,
-    this.timeout = const Duration(milliseconds: 3000),
+    this.timeout = const Duration(milliseconds: 15000),
   })  : _newsClient = newsClient,
         _portfolioClient = portfolioClient;
 
@@ -53,8 +53,16 @@ class NewsRepository {
       body: {'symbols': symbols},
       timeout: timeout,
       parser: (raw) {
-        if (raw is Map) return Map<String, dynamic>.from(raw);
-        return <String, dynamic>{};
+        if (raw is! Map) return <String, dynamic>{};
+        final map = Map<String, dynamic>.from(raw);
+        final nested = map['data'];
+        if (nested is Map &&
+            (nested.containsKey('current_affairs') ||
+                nested.containsKey('holdings') ||
+                nested.containsKey('currentAffairs'))) {
+          return Map<String, dynamic>.from(nested);
+        }
+        return map;
       },
     );
     return InsightNews.fromJson(data);

@@ -1,3 +1,4 @@
+import 'package:am_auth_ui/am_auth_ui.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -57,6 +58,8 @@ class _PortfolioListWrapperState extends ConsumerState<PortfolioListWrapper> {
   String? selectedPortfolioName;
   String? _streamActivatedForId;
   bool _emittedNoPortfolios = false;
+  String? _defaultPortfolioId;
+  bool _defaultLoaded = false;
 
   @override
   void initState() {
@@ -66,12 +69,49 @@ class _PortfolioListWrapperState extends ConsumerState<PortfolioListWrapper> {
     }
     _logInitialization();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadDefaultPortfolio();
       final id = selectedPortfolioId ?? context.selectedPortfolioId;
       if (id != null && mounted) {
         _streamActivatedForId = null;
         _ensureStreamActive(id);
       }
     });
+  }
+
+  String _currentUserId() {
+    try {
+      final authState = context.read<AuthCubit>().state;
+      if (authState is Authenticated) return authState.user.id;
+    } catch (_) {}
+    return '';
+  }
+
+  Future<void> _loadDefaultPortfolio() async {
+    final userId = _currentUserId();
+    if (userId.isEmpty) {
+      if (mounted) setState(() => _defaultLoaded = true);
+      return;
+    }
+    final saved = await DefaultPortfolioStore.instance.load(userId);
+    if (!mounted) return;
+    setState(() {
+      _defaultPortfolioId = saved?.id;
+      _defaultLoaded = true;
+    });
+  }
+
+  Future<void> _toggleDefaultPortfolio(String id, String name) async {
+    final userId = _currentUserId();
+    if (userId.isEmpty || id == 'all') return;
+    if (_defaultPortfolioId == id) {
+      await DefaultPortfolioStore.instance.clear(userId);
+      if (!mounted) return;
+      setState(() => _defaultPortfolioId = null);
+      return;
+    }
+    await DefaultPortfolioStore.instance.save(userId, id: id, name: name);
+    if (!mounted) return;
+    setState(() => _defaultPortfolioId = id);
   }
 
   /// Logs the initialization of the wrapper
@@ -216,24 +256,28 @@ class _PortfolioListWrapperState extends ConsumerState<PortfolioListWrapper> {
     }
 
     if (selectedPortfolioId == null) {
-      final firstPortfolio = portfolios.first;
+      PortfolioItem pick = portfolios.first;
+      final defaultId = _defaultPortfolioId;
+      if (defaultId != null) {
+        for (final p in portfolios) {
+          if (p.portfolioId == defaultId) {
+            pick = p;
+            break;
+          }
+        }
+      }
       setState(() {
-        selectedPortfolioId = firstPortfolio.portfolioId;
-        selectedPortfolioName = firstPortfolio.portfolioName;
+        selectedPortfolioId = pick.portfolioId;
+        selectedPortfolioName = pick.portfolioName;
       });
       if (context.mounted) {
-        context.selectPortfolio(
-          firstPortfolio.portfolioId,
-          firstPortfolio.portfolioName,
-        );
-        widget.onPortfolioChanged?.call(
-          firstPortfolio.portfolioId,
-          firstPortfolio.portfolioName,
-        );
+        context.selectPortfolio(pick.portfolioId, pick.portfolioName);
+        widget.onPortfolioChanged?.call(pick.portfolioId, pick.portfolioName);
       }
 
       CommonLogger.info(
-        'Auto-selected first portfolio: ${firstPortfolio.portfolioName} (${firstPortfolio.portfolioId})',
+        'Auto-selected portfolio: ${pick.portfolioName} (${pick.portfolioId})'
+        '${defaultId == pick.portfolioId ? ' [default]' : ''}',
         tag: 'PortfolioListWrapper',
       );
     }
@@ -304,7 +348,14 @@ class _PortfolioListWrapperState extends ConsumerState<PortfolioListWrapper> {
   /// Handles portfolio state changes
   void _handlePortfolioStateChange(BuildContext context, PortfolioState state) {
     if (state is PortfolioListLoaded) {
-      _autoSelectFirstPortfolio(state.portfolioList!.portfolios);
+      if (!_defaultLoaded) {
+        _loadDefaultPortfolio().then((_) {
+          if (!mounted) return;
+          _autoSelectFirstPortfolio(state.portfolioList!.portfolios);
+        });
+      } else {
+        _autoSelectFirstPortfolio(state.portfolioList!.portfolios);
+      }
     } else if (state is PortfolioListError) {
       _handlePortfolioError(context, state.message);
     }
@@ -448,6 +499,8 @@ class _PortfolioListWrapperState extends ConsumerState<PortfolioListWrapper> {
         onOpenDocIntel: widget.onOpenDocIntel,
         uploadPortfolioBuilder: widget.uploadPortfolioBuilder,
         onQuickAdd: widget.onQuickAdd,
+        defaultPortfolioId: _defaultPortfolioId,
+        onToggleDefaultPortfolio: _toggleDefaultPortfolio,
       );
     }
   }

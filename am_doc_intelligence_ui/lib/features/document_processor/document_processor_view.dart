@@ -29,9 +29,11 @@ class DocumentProcessorView extends StatefulWidget {
     this.onImportCompleted,
     this.useSharedImportControls = false,
     this.sharedBrokerDocCode,
+    this.sharedSourceDocCodes,
     this.sharedDocumentType,
     this.portfolioNameController,
     this.passwordController,
+    this.npsPasswordController,
     this.onOpenPortfolio,
     this.onOpenTrade,
   });
@@ -45,9 +47,12 @@ class DocumentProcessorView extends StatefulWidget {
   /// Parent owns broker / doc type / name / password.
   final bool useSharedImportControls;
   final String? sharedBrokerDocCode;
+  /// Multi-select doc codes (e.g. GROWW, CDSL, NPS). First used as default broker hint.
+  final List<String>? sharedSourceDocCodes;
   final String? sharedDocumentType;
   final TextEditingController? portfolioNameController;
   final TextEditingController? passwordController;
+  final TextEditingController? npsPasswordController;
   final void Function(String portfolioId, String portfolioName)? onOpenPortfolio;
   final void Function(String portfolioId, String portfolioName)? onOpenTrade;
 
@@ -106,6 +111,7 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
   void didUpdateWidget(covariant DocumentProcessorView oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.sharedBrokerDocCode != widget.sharedBrokerDocCode ||
+        oldWidget.sharedSourceDocCodes != widget.sharedSourceDocCodes ||
         oldWidget.sharedDocumentType != widget.sharedDocumentType) {
       _applySharedSelections();
     }
@@ -113,8 +119,25 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
 
   void _applySharedSelections() {
     if (!widget.useSharedImportControls) return;
-    _selectedBrokerType = widget.sharedBrokerDocCode;
+    final multi = widget.sharedSourceDocCodes;
+    if (multi != null && multi.isNotEmpty) {
+      _selectedBrokerType = multi.first;
+    } else {
+      _selectedBrokerType = widget.sharedBrokerDocCode;
+    }
     _selectedDocType = widget.sharedDocumentType;
+    if (_selectedBrokerType == 'NPS' &&
+        (_selectedDocType == null || _selectedDocType!.isEmpty)) {
+      _selectedDocType = 'NPS_STATEMENT';
+    }
+  }
+
+  String _passwordForBroker(String? brokerCode) {
+    if (brokerCode == 'NPS') {
+      final nps = widget.npsPasswordController?.text.trim() ?? '';
+      if (nps.isNotEmpty) return nps;
+    }
+    return widget.passwordController?.text.trim() ?? '';
   }
 
   @override
@@ -551,14 +574,14 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
         name = brokerDisplayName(broker);
         _effectivePortfolioController.text = name;
       }
-      final sharedPassword = widget.passwordController?.text.trim() ?? '';
       for (final file in _pendingFiles) {
         file.brokerType = broker;
         file.documentType = docType;
         file.portfolioController.text = name;
-        if (sharedPassword.isNotEmpty &&
+        final unlock = _passwordForBroker(broker);
+        if (unlock.isNotEmpty &&
             file.passwordController.text.trim().isEmpty) {
-          file.passwordController.text = sharedPassword;
+          file.passwordController.text = unlock;
         }
       }
       _samePortfolioForAll = true;

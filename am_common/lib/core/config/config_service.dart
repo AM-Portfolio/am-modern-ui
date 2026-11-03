@@ -415,7 +415,7 @@ class ConfigService {
         ),
         oms: OmsApiConfig(baseUrl: omsUrl),
         analysis: AnalysisApiConfig(baseUrl: analysisUrl),
-        news: NewsApiConfig(baseUrl: newsUrl),
+        news: NewsApiConfig(baseUrl: newsUrl, connectTimeoutMs: 20000),
         cloudinary: CloudinaryApiConfig(baseUrl: cloudinaryUrl),
         gmail: GmailApiConfig(
           baseUrl: gmailUrl,

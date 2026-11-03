@@ -1,7 +1,8 @@
 import 'package:am_dashboard_ui/presentation/providers/dashboard_provider.dart';
+import 'package:am_dashboard_ui/presentation/shared/widgets/dashboard_accounts_hub_widget.dart';
 import 'package:am_dashboard_ui/presentation/shared/widgets/dashboard_allocation_widget.dart';
 import 'package:am_dashboard_ui/presentation/shared/widgets/dashboard_chart_widget.dart';
-import 'package:am_dashboard_ui/presentation/shared/widgets/dashboard_portfolio_overview_card.dart';
+import 'package:am_dashboard_ui/presentation/shared/widgets/dashboard_portfolios_panel.dart';
 import 'package:am_dashboard_ui/presentation/shared/widgets/dashboard_ranking_widget.dart';
 import 'package:am_dashboard_ui/presentation/shared/widgets/dashboard_recent_activity_widget.dart';
 import 'package:am_dashboard_ui/presentation/shared/widgets/dashboard_summary_widget.dart';
@@ -14,9 +15,21 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dashboard_widget_descriptor.dart';
 import 'dashboard_widget_id.dart';
 
+/// Builder registered by am_portfolio_ui (avoids a circular package dependency).
+typedef DashboardIntelWidgetBuilder = Widget Function(
+  BuildContext context,
+  WidgetRef ref,
+  DashboardWidgetContext ctx,
+);
+
 /// Registry of dashboard widgets sourced from feature modules.
 class DashboardWidgetCatalog {
   DashboardWidgetCatalog._();
+
+  /// Wired from [registerDashboardIntelWidgets] in am_portfolio_ui.
+  static DashboardIntelWidgetBuilder? portfolioHealthBuilder;
+  static DashboardIntelWidgetBuilder? portfolioXrayBuilder;
+  static DashboardIntelWidgetBuilder? portfolioRiskBuilder;
 
   static final Map<DashboardWidgetId, DashboardWidgetDescriptor> descriptors = {
     DashboardWidgetId.summary: DashboardWidgetDescriptor(
@@ -37,30 +50,75 @@ class DashboardWidgetCatalog {
       defaultSize: DashboardWidgetSize.twoThirds,
       build: _buildBenchmarkComparison,
     ),
-    DashboardWidgetId.movers: DashboardWidgetDescriptor(
-      id: DashboardWidgetId.movers,
-      title: DashboardWidgetId.movers.label,
-      module: DashboardWidgetId.movers.module,
+    DashboardWidgetId.portfolioHealth: DashboardWidgetDescriptor(
+      id: DashboardWidgetId.portfolioHealth,
+      title: DashboardWidgetId.portfolioHealth.label,
+      module: DashboardWidgetId.portfolioHealth.module,
       defaultVisible: true,
       defaultOrder: 2,
       defaultSize: DashboardWidgetSize.oneThird,
-      build: _buildMovers,
+      build: _buildPortfolioHealth,
+    ),
+    DashboardWidgetId.portfolioXray: DashboardWidgetDescriptor(
+      id: DashboardWidgetId.portfolioXray,
+      title: DashboardWidgetId.portfolioXray.label,
+      module: DashboardWidgetId.portfolioXray.module,
+      defaultVisible: true,
+      defaultOrder: 3,
+      defaultSize: DashboardWidgetSize.twoThirds,
+      build: _buildPortfolioXray,
+    ),
+    DashboardWidgetId.portfolioRisk: DashboardWidgetDescriptor(
+      id: DashboardWidgetId.portfolioRisk,
+      title: DashboardWidgetId.portfolioRisk.label,
+      module: DashboardWidgetId.portfolioRisk.module,
+      defaultVisible: false,
+      defaultOrder: 10,
+      defaultSize: DashboardWidgetSize.oneThird,
+      build: _buildPortfolioRisk,
+    ),
+    DashboardWidgetId.accountsHub: DashboardWidgetDescriptor(
+      id: DashboardWidgetId.accountsHub,
+      title: DashboardWidgetId.accountsHub.label,
+      module: DashboardWidgetId.accountsHub.module,
+      defaultVisible: true,
+      defaultOrder: 4,
+      defaultSize: DashboardWidgetSize.oneThird,
+      build: _buildAccountsHub,
+    ),
+    DashboardWidgetId.news: DashboardWidgetDescriptor(
+      id: DashboardWidgetId.news,
+      title: DashboardWidgetId.news.label,
+      module: DashboardWidgetId.news.module,
+      defaultVisible: true,
+      defaultOrder: 5,
+      defaultSize: DashboardWidgetSize.twoThirds,
+      build: _buildNews,
     ),
     DashboardWidgetId.recentActivity: DashboardWidgetDescriptor(
       id: DashboardWidgetId.recentActivity,
       title: DashboardWidgetId.recentActivity.label,
       module: DashboardWidgetId.recentActivity.module,
       defaultVisible: true,
-      defaultOrder: 4,
+      defaultOrder: 6,
       defaultSize: DashboardWidgetSize.oneThird,
       build: _buildRecentActivity,
+    ),
+    DashboardWidgetId.movers: DashboardWidgetDescriptor(
+      id: DashboardWidgetId.movers,
+      title: DashboardWidgetId.movers.label,
+      module: DashboardWidgetId.movers.module,
+      defaultVisible: true,
+      defaultOrder: 7,
+      defaultSize: DashboardWidgetSize.oneThird,
+      build: _buildMovers,
     ),
     DashboardWidgetId.portfolioList: DashboardWidgetDescriptor(
       id: DashboardWidgetId.portfolioList,
       title: DashboardWidgetId.portfolioList.label,
       module: DashboardWidgetId.portfolioList.module,
-      defaultVisible: true,
-      defaultOrder: 5,
+      defaultVisible: false,
+      defaultOrder: 8,
       defaultSize: DashboardWidgetSize.oneThird,
       build: _buildPortfolioList,
     ),
@@ -69,18 +127,9 @@ class DashboardWidgetCatalog {
       title: DashboardWidgetId.allocation.label,
       module: DashboardWidgetId.allocation.module,
       defaultVisible: false,
-      defaultOrder: 6,
+      defaultOrder: 9,
       defaultSize: DashboardWidgetSize.oneThird,
       build: _buildAllocation,
-    ),
-    DashboardWidgetId.news: DashboardWidgetDescriptor(
-      id: DashboardWidgetId.news,
-      title: DashboardWidgetId.news.label,
-      module: DashboardWidgetId.news.module,
-      defaultVisible: true,
-      defaultOrder: 3,
-      defaultSize: DashboardWidgetSize.twoThirds,
-      build: _buildNews,
     ),
     DashboardWidgetId.paperTrading: DashboardWidgetDescriptor(
       id: DashboardWidgetId.paperTrading,
@@ -145,46 +194,34 @@ class DashboardWidgetCatalog {
     WidgetRef ref,
     DashboardWidgetContext ctx,
   ) {
-    final overviewsAsync = ref.watch(portfolioOverviewsProvider(ctx.userId));
-    return AmGlassCard(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            'Your Portfolios',
-            style: TextStyle(
-              fontWeight: FontWeight.w600,
-              fontSize: 16,
-              color: ModuleColors.dashboard,
-              fontFamily: 'Inter',
-            ),
-          ),
-          const SizedBox(height: 16),
-          overviewsAsync.when(
-            data: (overviews) => Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: overviews
-                  .map(
-                    (overview) => Padding(
-                      padding: const EdgeInsets.only(bottom: 16),
-                      child: DashboardPortfolioOverviewCard(
-                        overview: overview,
-                        onTap: () {},
-                      ),
-                    ),
-                  )
-                  .toList(),
-            ),
-            loading: () => const _LoadingCard(height: 100),
-            error: (err, stack) => AmErrorWidget(
-              message: 'Failed to load portfolios',
-              onRetry: () =>
-                  ref.invalidate(portfolioOverviewsProvider(ctx.userId)),
-            ),
-          ),
-        ],
+    final hubAsync = ref.watch(accountsHubProvider(ctx.userId));
+    return hubAsync.when(
+      skipLoadingOnReload: true,
+      skipLoadingOnRefresh: true,
+      data: (hub) => DashboardPortfoliosPanel(hub: hub),
+      loading: () => const AmGlassCard(
+        padding: EdgeInsets.all(12),
+        child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
       ),
+      error: (err, stack) => AmGlassCard(
+        padding: const EdgeInsets.all(12),
+        child: AmErrorWidget(
+          message: 'Failed to load portfolios',
+          onRetry: () => ref.invalidate(accountsHubProvider(ctx.userId)),
+        ),
+      ),
+    );
+  }
+
+  static Widget _buildAccountsHub(
+    BuildContext context,
+    WidgetRef ref,
+    DashboardWidgetContext ctx,
+  ) {
+    return DashboardUsersHubWidget(
+      userId: ctx.userId,
+      onOpenDocIntel: ctx.onOpenDocIntel,
+      onOpenUsers: ctx.onOpenUsers,
     );
   }
 
@@ -220,6 +257,48 @@ class DashboardWidgetCatalog {
     DashboardWidgetContext ctx,
   ) {
     return DashboardChartWidget(userId: ctx.userId);
+  }
+
+  static Widget _buildPortfolioHealth(
+    BuildContext context,
+    WidgetRef ref,
+    DashboardWidgetContext ctx,
+  ) {
+    final builder = portfolioHealthBuilder;
+    if (builder != null) return builder(context, ref, ctx);
+    return _intelPlaceholder('Health Score');
+  }
+
+  static Widget _buildPortfolioXray(
+    BuildContext context,
+    WidgetRef ref,
+    DashboardWidgetContext ctx,
+  ) {
+    final builder = portfolioXrayBuilder;
+    if (builder != null) return builder(context, ref, ctx);
+    return _intelPlaceholder('Portfolio X-Ray');
+  }
+
+  static Widget _buildPortfolioRisk(
+    BuildContext context,
+    WidgetRef ref,
+    DashboardWidgetContext ctx,
+  ) {
+    final builder = portfolioRiskBuilder;
+    if (builder != null) return builder(context, ref, ctx);
+    return _intelPlaceholder('Risk Radar');
+  }
+
+  static Widget _intelPlaceholder(String title) {
+    return AmGlassCard(
+      padding: const EdgeInsets.all(16),
+      child: Center(
+        child: Text(
+          '$title unavailable',
+          style: const TextStyle(fontFamily: 'Inter'),
+        ),
+      ),
+    );
   }
 
   static Widget _buildPaperTrading(

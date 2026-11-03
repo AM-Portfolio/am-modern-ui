@@ -18,6 +18,14 @@ class PortfolioListMapper {
       // Map individual portfolio items
       final portfolioItems = dto.portfolios
           .where((itemDto) => itemDto.kind?.toUpperCase() != 'DELETED')
+          .where((itemDto) {
+            final broker = (itemDto.brokerType ?? '').toUpperCase();
+            if (broker == 'CDSL') return false;
+            final n = itemDto.portfolioName.toLowerCase();
+            return !(n.contains('cdsl') ||
+                n == 'cas' ||
+                n.contains('cas aggregator'));
+          })
           .map(
             (itemDto) {
               String name = itemDto.portfolioName;
@@ -56,11 +64,20 @@ class PortfolioListMapper {
                   kind == 'DUMMY' ||
                   kind == 'DEMO' ||
                   name.toLowerCase().contains('demo');
+              final isPaper =
+                  kind == 'PAPER' || name.toLowerCase() == 'paper';
+              final hasHoldings = isPaper ||
+                  isDummy ||
+                  (itemDto.assetCount == null
+                      ? true
+                      : itemDto.assetCount! > 0);
               return PortfolioItem(
                 portfolioId: itemDto.portfolioId,
                 portfolioName: name,
                 isBasket: kind == 'BASKET',
                 isDummy: isDummy,
+                hasHoldings: hasHoldings,
+                brokerType: itemDto.brokerType,
               );
             },
           )

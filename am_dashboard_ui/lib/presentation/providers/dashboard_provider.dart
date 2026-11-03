@@ -5,6 +5,7 @@ import 'package:am_dashboard_ui/domain/models/activity_item.dart';
 import 'package:am_dashboard_ui/domain/models/allocation_response.dart';
 import 'package:am_dashboard_ui/domain/models/dashboard_summary.dart';
 import 'package:am_dashboard_ui/domain/models/performance_response.dart';
+import 'package:am_dashboard_ui/domain/models/accounts_hub.dart';
 import 'package:am_dashboard_ui/domain/models/portfolio_overview.dart';
 import 'package:am_dashboard_ui/domain/models/recent_activity_response.dart';
 import 'package:am_dashboard_ui/presentation/layout/dashboard_layout_provider.dart';
@@ -99,6 +100,10 @@ void dashboardParallelKickoff(
   }
   if (visible.contains(DashboardWidgetId.movers)) {
     ref.watch(moversStreamProvider(userId, timeFrame: timeFrame));
+  }
+  if (visible.contains(DashboardWidgetId.portfolioList) ||
+      visible.contains(DashboardWidgetId.accountsHub)) {
+    ref.watch(accountsHubProvider(userId));
   }
   if (visible.contains(DashboardWidgetId.portfolioList)) {
     ref.watch(portfolioOverviewsProvider(userId));
@@ -470,8 +475,111 @@ Stream<PerformanceResponse> historyStream(Ref ref, String userId, {String timeFr
   }
 }
 
+/// Accounts hub (identity / demat / NPS / per-broker amounts).
+final accountsHubProvider =
+    FutureProvider.autoDispose.family<AccountsHub, String>((ref, userId) async {
+  await _requireDashboardUserId(ref, userId);
+  final client = await ref.watch(portfolioApiClientProvider.future);
+  try {
+    final raw = await client
+        .get(
+          '/v1/portfolios/accounts-hub',
+          parser: (data) {
+            if (data is Map) return Map<String, dynamic>.from(data);
+            throw const FormatException('Accounts hub was not an object');
+          },
+        )
+        .timeout(const Duration(seconds: 12));
+    return AccountsHub.fromJson(raw);
+  } catch (e, st) {
+    AppLogger.warning('Accounts hub fetch failed', error: e, stackTrace: st);
+    // Soft-fail so chart-row panels render empty / retry instead of spinning forever.
+    return const AccountsHub();
+  }
+});
+
+/// NPS scheme lines for a portfolio (Users NPS tab).
+final npsSchemesProvider =
+    FutureProvider.autoDispose.family<List<NpsSchemeLine>, String>(
+        (ref, portfolioId) async {
+  if (portfolioId.isEmpty) return const [];
+  final client = await ref.watch(portfolioApiClientProvider.future);
+  try {
+    return await client
+        .get(
+          '/v1/portfolios/$portfolioId/nps/schemes',
+          parser: (data) => (data as List)
+              .whereType<Map>()
+              .map((e) => NpsSchemeLine.fromJson(Map<String, dynamic>.from(e)))
+              .toList(),
+        )
+        .timeout(const Duration(seconds: 12));
+  } catch (e, st) {
+    AppLogger.warning('NPS schemes fetch failed', error: e, stackTrace: st);
+    return const [];
+  }
+});
+
+List<PortfolioOverview> _portfolioOverviewsFromAccountsHub(AccountsHub hub) {
+  final rows = hub.portfolios;
+  if (rows.isEmpty) {
+    return const [];
+  }
+  final cards = <PortfolioOverview>[];
+  double investedSum = 0;
+  double currentSum = 0;
+  for (final row in rows) {
+    final current = row.current ?? 0;
+    final invested = row.invested ?? (current - (row.returnAbs ?? 0));
+    final ret = row.returnAbs ?? (current - invested);
+    final pct = row.returnPct ??
+        (invested > 0 ? (ret / invested) * 100.0 : 0.0);
+    investedSum += invested;
+    currentSum += current;
+    cards.add(
+      PortfolioOverview(
+        type: (row.displayName != null && row.displayName!.trim().isNotEmpty)
+            ? row.displayName!.trim()
+            : (row.brokerType ?? 'Portfolio'),
+        totalValue: current,
+        totalReturn: ret,
+        returnPercentage: pct,
+        dayChange: 0,
+        dayChangePercentage: 0,
+        portfolioCount: 1,
+      ),
+    );
+  }
+  final consRet = currentSum - investedSum;
+  final consPct = investedSum > 0 ? (consRet / investedSum) * 100.0 : 0.0;
+  cards.add(
+    PortfolioOverview(
+      type: 'CONSOLIDATED',
+      totalValue: currentSum,
+      totalReturn: consRet,
+      returnPercentage: consPct,
+      dayChange: 0,
+      dayChangePercentage: 0,
+      portfolioCount: rows.length,
+    ),
+  );
+  return cards;
+}
+
 @riverpod
 Future<List<PortfolioOverview>> portfolioOverviews(Ref ref, String userId) async {
+  try {
+    final hub = await ref.watch(accountsHubProvider(userId).future);
+    final fromHub = _portfolioOverviewsFromAccountsHub(hub);
+    if (fromHub.isNotEmpty) {
+      return fromHub;
+    }
+  } catch (e) {
+    AppLogger.warning(
+      'Accounts hub unavailable for portfolio list; falling back',
+      error: e,
+    );
+  }
   final repository = await ref.watch(dashboardRepositoryProvider.future);
   try {
     return await repository.getPortfolioOverviews(userId);

@@ -7,6 +7,7 @@ class DashboardWidgetContext {
     required this.timeFrameCode,
     this.onOpenDocIntel,
     this.onOpenPaper,
+    this.onOpenUsers,
     this.chartHeight,
   });
 
@@ -14,6 +15,7 @@ class DashboardWidgetContext {
   final String timeFrameCode;
   final VoidCallback? onOpenDocIntel;
   final VoidCallback? onOpenPaper;
+  final VoidCallback? onOpenUsers;
   final double? chartHeight;
 }
 
@@ -24,10 +26,14 @@ enum DashboardWidgetId {
   movers,
   recentActivity,
   portfolioList,
+  accountsHub,
   allocation,
   benchmarkComparison,
   news,
   paperTrading,
+  portfolioHealth,
+  portfolioXray,
+  portfolioRisk,
 }
 
 extension DashboardWidgetIdX on DashboardWidgetId {
@@ -37,15 +43,23 @@ extension DashboardWidgetIdX on DashboardWidgetId {
         DashboardWidgetId.movers => 'Top Movers',
         DashboardWidgetId.recentActivity => 'Recent Activity',
         DashboardWidgetId.portfolioList => 'Your Portfolios',
+        DashboardWidgetId.accountsHub => 'Users',
         DashboardWidgetId.allocation => 'Allocation',
         DashboardWidgetId.benchmarkComparison => 'Performance Chart',
         DashboardWidgetId.news => 'Market Intelligence',
         DashboardWidgetId.paperTrading => 'Paper trading',
+        DashboardWidgetId.portfolioHealth => 'Health Score',
+        DashboardWidgetId.portfolioXray => 'Portfolio X-Ray',
+        DashboardWidgetId.portfolioRisk => 'Risk Radar',
       };
 
   String get module => switch (this) {
         DashboardWidgetId.portfolioWealthChart ||
-        DashboardWidgetId.allocation =>
+        DashboardWidgetId.allocation ||
+        DashboardWidgetId.accountsHub ||
+        DashboardWidgetId.portfolioHealth ||
+        DashboardWidgetId.portfolioXray ||
+        DashboardWidgetId.portfolioRisk =>
           'portfolio',
         DashboardWidgetId.benchmarkComparison => 'market',
         DashboardWidgetId.paperTrading => 'paper',

@@ -18,6 +18,7 @@ class DashboardMobileScreen extends ConsumerStatefulWidget {
   final String userId;
   final VoidCallback? onOpenDocIntel;
   final VoidCallback? onOpenPaper;
+  final VoidCallback? onOpenUsers;
   final ValueChanged<GlobalAddActionKind>? onQuickAdd;
 
   const DashboardMobileScreen({
@@ -25,6 +26,7 @@ class DashboardMobileScreen extends ConsumerStatefulWidget {
     required this.userId,
     this.onOpenDocIntel,
     this.onOpenPaper,
+    this.onOpenUsers,
     this.onQuickAdd,
   });
 
@@ -56,6 +58,7 @@ class _DashboardMobileScreenState
     if (!mounted) return;
     final id = widget.userId;
     if (id.isEmpty) return;
+    ref.invalidate(accountsHubProvider(id));
     ref.invalidate(portfolioOverviewsProvider(id));
     ref.invalidate(hasDemoPortfolioProvider);
     ref.invalidate(dashboardStreamProvider(id));
@@ -135,6 +138,7 @@ class _DashboardMobileScreenState
 
     Future<void> refresh() async {
       retryDashboardSummary(ref, userId);
+      ref.invalidate(accountsHubProvider(userId));
       ref.invalidate(portfolioOverviewsProvider(userId));
       ref.invalidate(hasDemoPortfolioProvider);
     }
@@ -220,6 +224,7 @@ class _DashboardMobileScreenState
                             timeFrameCode: tfCode,
                             onOpenDocIntel: widget.onOpenDocIntel,
                             onOpenPaper: widget.onOpenPaper,
+                            onOpenUsers: widget.onOpenUsers,
                             compactBreakpoint: 99999,
                             chartHeight: 350,
                             mobileChartHeight: 350,

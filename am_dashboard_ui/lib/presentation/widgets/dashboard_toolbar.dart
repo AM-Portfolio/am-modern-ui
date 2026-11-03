@@ -86,7 +86,12 @@ class DashboardToolbar extends StatelessWidget {
           const Spacer()
         else
           const SizedBox(width: AppSpacing.sm),
-        DashboardPortfolioSelector(userId: userId),
+        // Toolbar Row is horizontally unbounded for min children — pin width
+        // so SharedPortfolioSelector never hits stretch+infinity (blank web).
+        SizedBox(
+          width: hideTfLeading ? 168 : 220,
+          child: DashboardPortfolioSelector(userId: userId),
+        ),
         const SizedBox(width: AppSpacing.sm),
         GlobalTimeFrameBar(
           variant: GlobalTimeFrameVariant.dropdown,
