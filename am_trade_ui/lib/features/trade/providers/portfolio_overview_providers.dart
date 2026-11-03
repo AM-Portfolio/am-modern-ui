@@ -7,26 +7,10 @@ import '../internal/data/datasources/portfolio_overview_data_source.dart';
 import '../internal/data/dtos/portfolio_summary_response_dto.dart';
 import '../internal/domain/entities/trade_portfolio.dart';
 import '../presentation/models/trade_portfolio_view_model.dart';
+import 'portfolio_bridge_providers.dart';
 import 'trade_internal_providers.dart';
 
-// ============================================================================
-// Infrastructure (private — not for direct UI consumption)
-// ============================================================================
-
-/// Private provider that wires up the PortfolioOverviewDataSource.
-///
-/// Uses the existing shared ApiClient (so auth headers are automatically
-/// forwarded) and the PortfolioApiConfig that is already in AppConfig.
-final _portfolioOverviewDataSourceProvider =
-    FutureProvider<PortfolioOverviewDataSource>((ref) async {
-  final apiClient = await ref.watch(apiClientProvider.future);
-  final appConfig = await ref.watch(appConfigProvider.future);
-
-  return PortfolioOverviewDataSourceImpl(
-    apiClient: apiClient,
-    portfolioConfig: appConfig.api.portfolio,
-  );
-});
+export 'portfolio_bridge_providers.dart';
 
 // ============================================================================
 // Public Providers (for UI consumption)
@@ -48,7 +32,7 @@ final portfolioLiveSummaryProvider =
   if (portfolioId.isEmpty) return null;
 
   final dataSource =
-      await ref.watch(_portfolioOverviewDataSourceProvider.future);
+      await ref.watch(portfolioOverviewDataSourceProvider.future);
 
   // The data source itself never throws — it returns null on errors.
   return dataSource.getPortfolioSummary(portfolioId);
@@ -107,7 +91,7 @@ final enrichedTradePortfoliosProvider =
   PortfolioOverviewDataSource? dataSource;
   try {
     dataSource = await ref
-        .watch(_portfolioOverviewDataSourceProvider.future)
+        .watch(portfolioOverviewDataSourceProvider.future)
         .timeout(const Duration(seconds: 8));
   } catch (_) {
     return realized;
@@ -179,6 +163,10 @@ TradePortfolioViewModel _mergeViewModel(
   final hasOpenBook =
       realized.totalTrades > 0 || realized.openPositions > 0;
 
+  final liveGain = liveSummary.totalGainLoss ?? liveSummary.todayChange;
+  final liveGainPct = liveSummary.totalGainLossPercentage ??
+      liveSummary.todayChangePercentage;
+
   return realized.copyWith(
     totalValue: _preferPositiveOverlay(
       live: liveSummary.totalValue,
@@ -186,12 +174,12 @@ TradePortfolioViewModel _mergeViewModel(
       hasOpenBook: hasOpenBook,
     ),
     totalGainLoss: _preferPositiveOverlay(
-      live: liveSummary.totalGainLoss,
+      live: liveGain,
       realized: realized.totalGainLoss,
       hasOpenBook: hasOpenBook,
     ),
     totalGainLossPercentage: _preferPositiveOverlay(
-      live: liveSummary.totalGainLossPercentage,
+      live: liveGainPct,
       realized: realized.totalGainLossPercentage,
       hasOpenBook: hasOpenBook,
     ),
