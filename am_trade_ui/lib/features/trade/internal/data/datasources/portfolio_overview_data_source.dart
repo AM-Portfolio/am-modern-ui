@@ -178,7 +178,7 @@ class PortfolioOverviewDataSourceImpl implements PortfolioOverviewDataSource {
         '${_buildUri(_portfolioConfig.baseUrl, holdingsResource)}?portfolioId=$portfolioId';
     final parsed = await _apiClient.get<List<Map<String, dynamic>>>(
       fullUri,
-      timeout: const Duration(seconds: 8),
+      timeout: const Duration(seconds: 4),
       parser: (data) {
         if (data == null) return <Map<String, dynamic>>[];
         final json = data as Map<String, dynamic>;

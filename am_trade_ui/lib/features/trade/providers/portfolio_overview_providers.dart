@@ -1,11 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:am_common/core/di/network_providers.dart';
 
 import '../internal/data/datasources/portfolio_overview_data_source.dart';
 import '../internal/data/dtos/portfolio_summary_response_dto.dart';
-import '../internal/domain/entities/trade_portfolio.dart';
 import '../presentation/models/trade_portfolio_view_model.dart';
 import 'portfolio_bridge_providers.dart';
 import 'trade_internal_providers.dart';

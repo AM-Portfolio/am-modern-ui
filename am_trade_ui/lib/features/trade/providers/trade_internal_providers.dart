@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:am_common/core/config/config_service.dart';
 import 'package:am_common/core/config/app_config.dart';
@@ -178,44 +180,53 @@ final tradeCalendarProvider = FutureProvider.family<TradeCalendar, String>((
 });
 
 /// Provider for watching trade holdings (stream) - returns view models.
-/// Overlays am-portfolio day P&L when Trade enrich leaves 1D null.
+/// Emits Trade data immediately; Portfolio 1D overlay is best-effort and timed out.
 final tradeHoldingsStreamProvider =
     StreamProvider.family<TradeHoldingsViewModel, String>(
         (ref, portfolioId) async* {
   if (portfolioId.isEmpty) return;
   final useCase = await ref.watch(_getTradeHoldingsProvider.future);
-  final overviewDs =
-      await ref.watch(portfolioOverviewDataSourceProvider.future);
-  yield* useCase.watch(portfolioId).asyncMap((entity) async {
+  await for (final entity in useCase.watch(portfolioId)) {
     final base = TradeHoldingsViewModel.fromEntity(entity);
+    // Never block the spinner on am-portfolio — show Trade rows first.
+    yield base;
+
     try {
-      final overlays = await overviewDs.getHoldingDayOverlays(portfolioId);
-      if (overlays.isEmpty) return base;
-      final merged = [
-        for (final h in base.holdings)
-          h.copyWith(
-            todayProfitLoss: h.todayProfitLoss ??
-                overlays[h.symbol.toUpperCase()]?.todayChange,
-            todayProfitLossPercentage: h.todayProfitLossPercentage ??
-                overlays[h.symbol.toUpperCase()]?.todayChangePercentage,
-            currentPrice: h.currentPrice ??
-                overlays[h.symbol.toUpperCase()]?.currentPrice,
-            currentValue: h.currentValue ??
-                overlays[h.symbol.toUpperCase()]?.currentValue,
-          ),
-      ];
-      return TradeHoldingsViewModel(
+      final overviewDs = await ref
+          .read(portfolioOverviewDataSourceProvider.future)
+          .timeout(const Duration(seconds: 3));
+      final overlays = await overviewDs
+          .getHoldingDayOverlays(portfolioId)
+          .timeout(const Duration(seconds: 4), onTimeout: () => const {});
+      if (overlays.isEmpty) continue;
+
+      final needsOverlay = base.holdings.any((h) => h.todayProfitLoss == null);
+      if (!needsOverlay) continue;
+
+      yield TradeHoldingsViewModel(
         portfolioId: base.portfolioId,
-        holdings: merged,
+        holdings: [
+          for (final h in base.holdings)
+            h.copyWith(
+              todayProfitLoss: h.todayProfitLoss ??
+                  overlays[h.symbol.toUpperCase()]?.todayChange,
+              todayProfitLossPercentage: h.todayProfitLossPercentage ??
+                  overlays[h.symbol.toUpperCase()]?.todayChangePercentage,
+              currentPrice: h.currentPrice ??
+                  overlays[h.symbol.toUpperCase()]?.currentPrice,
+              currentValue: h.currentValue ??
+                  overlays[h.symbol.toUpperCase()]?.currentValue,
+            ),
+        ],
         totalElements: base.totalElements,
         totalPages: base.totalPages,
         currentPage: base.currentPage,
         hasMore: base.hasMore,
       );
     } catch (_) {
-      return base;
+      // Keep base yield — overlay is optional.
     }
-  });
+  }
 });
 
 /// Provider for watching trade summary (stream)
