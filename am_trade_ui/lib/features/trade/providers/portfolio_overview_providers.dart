@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../internal/data/datasources/portfolio_overview_data_source.dart';
 import '../internal/data/dtos/portfolio_summary_response_dto.dart';
+import '../internal/domain/entities/trade_portfolio.dart';
 import '../presentation/models/trade_portfolio_view_model.dart';
 import 'portfolio_bridge_providers.dart';
 import 'trade_internal_providers.dart';
@@ -98,7 +99,7 @@ final enrichedTradePortfoliosProvider =
   // Cap enrichment wait so Portfolios never sits behind slow am-portfolio calls.
   List<PortfolioSummaryResponseDto?> summaries;
   try {
-    summaries = await Future.wait(
+    summaries = await Future.wait<PortfolioSummaryResponseDto?>(
       tradePortfolioList.portfolios.map((portfolio) async {
         try {
           return await dataSource!
