@@ -66,9 +66,24 @@ class PortfolioListMapper {
           )
           .toList();
 
+      // Keep a single Demo row even if the API still returns duplicates
+      // (race / soft-hide lag). Prefer first occurrence (backend keep-newest).
+      final seenDemo = <String>{};
+      final deduped = <PortfolioItem>[];
+      for (final item in portfolioItems) {
+        if (item.isDummy) {
+          final key = 'demo';
+          if (seenDemo.contains(key)) {
+            continue;
+          }
+          seenDemo.add(key);
+        }
+        deduped.add(item);
+      }
+
       // Create domain entity
       final portfolioList = PortfolioList(
-        portfolios: portfolioItems,
+        portfolios: deduped,
         lastUpdated: DateTime.now(),
       );
 

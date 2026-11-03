@@ -158,8 +158,11 @@ class ApiClient {
         // clearly instead of a raw FormatException.
         final trimmed = response.body.trimLeft();
         if (trimmed.startsWith('<')) {
+          final pathHint = uri.path.length > 120
+              ? '${uri.path.substring(0, 120)}…'
+              : uri.path;
           throw ApiException(
-            'Unexpected HTML from API (wrong base URL or gateway SPA fallback)',
+            'Unexpected HTML from API (wrong base URL or gateway SPA fallback): $pathHint',
             statusCode: response.statusCode,
           );
         }
