@@ -63,7 +63,7 @@ class PortfolioListMapper {
                 isDummy: isDummy,
               );
             },
-          )
+          ) 
           .toList();
 
       // Keep a single Demo row even if the API still returns duplicates
