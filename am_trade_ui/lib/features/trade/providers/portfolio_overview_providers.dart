@@ -150,42 +150,65 @@ final enrichedTradePortfoliosProvider =
 /// Merges a realized TradePortfolioViewModel with an optional live summary.
 ///
 /// **Rules:**
-/// - `totalValue`: live portfolio value wins over the stale trade value.
-/// - `totalGainLoss`: live unrealized P&L wins (this is what shows on the card bottom).
-/// - `totalGainLossPercentage`: live percentage wins.
-/// - `netProfitLoss`: ALWAYS kept from trade. This is Realized P&L and must
-///    never be overridden with the portfolio's unrealized figure.
-/// - `winRate`: Calculated as (winningTrades + gainersCount) / (totalTrades + totalAssets)
+/// - `totalValue`: positive live value wins; a live **0** must not clobber a
+///    positive trade ledger value when the book still has trades/open positions
+///    (unknown-cost demat books often get a zero am-portfolio overlay).
+/// - `totalGainLoss` / `%`: same positive-prefer rule.
+/// - `netProfitLoss`: ALWAYS kept from trade (realized).
+/// - `winRate`: (winningTrades + gainersCount) / (totalTrades + totalAssets)
 ///
-/// When `liveSummary` is null (am-portfolio down or no data), the realized-only
-/// view model is returned unchanged — the card degrades gracefully.
+/// When `liveSummary` is null, the realized-only view model is returned unchanged.
 TradePortfolioViewModel _mergeViewModel(
   TradePortfolioViewModel realized,
   PortfolioSummaryResponseDto? liveSummary,
 ) {
   if (liveSummary == null) {
-    // No live data — show what we have from the trade ledger
     return realized;
   }
 
-  // Calculate overall win rate using both closed trades and live holdings
-  final int totalWinning = realized.winningTrades + (liveSummary.gainersCount ?? 0);
-  final int totalItems = realized.totalTrades + (liveSummary.totalAssets ?? 0);
-  
-  double? overallWinRate = realized.winRate; // Default to existing if no trades/holdings
+  final int totalWinning =
+      realized.winningTrades + (liveSummary.gainersCount ?? 0);
+  final int totalItems =
+      realized.totalTrades + (liveSummary.totalAssets ?? 0);
+
+  double? overallWinRate = realized.winRate;
   if (totalItems > 0) {
     overallWinRate = totalWinning / totalItems;
   }
 
+  final hasOpenBook =
+      realized.totalTrades > 0 || realized.openPositions > 0;
+
   return realized.copyWith(
-    // Live portfolio metrics override stale trade ledger values
-    totalValue: liveSummary.totalValue ?? realized.totalValue,
-    totalGainLoss: liveSummary.totalGainLoss ?? realized.totalGainLoss,
-    totalGainLossPercentage:
-        liveSummary.totalGainLossPercentage ?? realized.totalGainLossPercentage,
-    // Overall win rate incorporates live gainers
+    totalValue: _preferPositiveOverlay(
+      live: liveSummary.totalValue,
+      realized: realized.totalValue,
+      hasOpenBook: hasOpenBook,
+    ),
+    totalGainLoss: _preferPositiveOverlay(
+      live: liveSummary.totalGainLoss,
+      realized: realized.totalGainLoss,
+      hasOpenBook: hasOpenBook,
+    ),
+    totalGainLossPercentage: _preferPositiveOverlay(
+      live: liveSummary.totalGainLossPercentage,
+      realized: realized.totalGainLossPercentage,
+      hasOpenBook: hasOpenBook,
+    ),
     winRate: overallWinRate,
-    // NOTE: netProfitLoss is intentionally NOT overridden here.
-    // It remains as-is from the trade ledger (Realized metrics).
   );
+}
+
+/// Prefer a positive live overlay; never let live 0 wipe a usable realized value
+/// for books that still have trades.
+double _preferPositiveOverlay({
+  required double? live,
+  required double realized,
+  required bool hasOpenBook,
+}) {
+  if (live == null) return realized;
+  if (live > 0) return live;
+  if (live == 0 && hasOpenBook && realized > 0) return realized;
+  if (live == 0 && hasOpenBook) return realized;
+  return live;
 }

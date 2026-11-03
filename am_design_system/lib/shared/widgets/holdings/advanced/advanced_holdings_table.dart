@@ -29,6 +29,7 @@ class AdvancedHoldingsTable extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Fade only — slideY left a persistent blank band under the header.
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -36,13 +37,14 @@ class AdvancedHoldingsTable extends StatelessWidget {
         const Divider(height: 1),
         Expanded(
           child: ListView.builder(
+            padding: EdgeInsets.zero,
             itemCount: holdings.length,
             itemBuilder: (context, index) =>
                 _buildRow(context, holdings[index], index),
           ),
         ),
       ],
-    ).animate().fadeIn(duration: 300.ms).slideY(begin: 0.05, end: 0);
+    ).animate().fadeIn(duration: 300.ms);
   }
 
   Widget _buildHeader(BuildContext context) => Padding(

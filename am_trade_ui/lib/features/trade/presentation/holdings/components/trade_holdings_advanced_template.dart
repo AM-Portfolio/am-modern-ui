@@ -67,15 +67,20 @@ class _TradeHoldingsAdvancedTemplateState
   String _filterStatus = 'all';
   String _searchQuery = '';
 
-  /// Room for Entry / Current / Value / P&L without the amounts colliding.
-  static const double _minTableWidth = 1340;
+  /// Room for Current / Value / 1D / Overall without amounts colliding.
+  static const double _minTableWidthWithEntry = 1480;
+  static const double _minTableWidthNoEntry = 1320;
   static const double _minCompactTableWidth = 320;
   EdgeInsets get _cellPad => EdgeInsets.symmetric(
         horizontal: widget.compact ? AppSpacing.xs : AppSpacing.sm,
       );
 
-  double get _effectiveMinTableWidth =>
-      widget.compact ? _minCompactTableWidth : _minTableWidth;
+  bool get _showEntryColumns => showHoldingsEntryColumns(widget.holdings);
+
+  double get _effectiveMinTableWidth {
+    if (widget.compact) return _minCompactTableWidth;
+    return _showEntryColumns ? _minTableWidthWithEntry : _minTableWidthNoEntry;
+  }
 
   Color get _accent => widget.accentColor ?? ModuleColors.trade;
 
@@ -153,13 +158,23 @@ class _TradeHoldingsAdvancedTemplateState
           case 5: // Current Value
             result = (a.currentValue ?? 0).compareTo(b.currentValue ?? 0);
             break;
-          case 6: // P&L
-            result = (a.profitLoss ?? 0).compareTo(b.profitLoss ?? 0);
+          case 6: // 1D P&L
+            result = (a.todayProfitLoss ?? double.nan)
+                .compareTo(b.todayProfitLoss ?? double.nan);
             break;
-          case 7: // P&L %
-            result = (a.profitLossPercentage ?? 0).compareTo(b.profitLossPercentage ?? 0);
+          case 7: // 1D %
+            result = (a.todayProfitLossPercentage ?? double.nan)
+                .compareTo(b.todayProfitLossPercentage ?? double.nan);
             break;
-          case 8: // R:R Ratio
+          case 8: // Overall P&L
+            result = (a.profitLoss ?? double.nan)
+                .compareTo(b.profitLoss ?? double.nan);
+            break;
+          case 9: // Overall %
+            result = (a.profitLossPercentage ?? double.nan)
+                .compareTo(b.profitLossPercentage ?? double.nan);
+            break;
+          case 10: // R:R Ratio
             result = (a.riskRewardRatio ?? 0).compareTo(b.riskRewardRatio ?? 0);
             break;
           default:
@@ -285,8 +300,10 @@ class _TradeHoldingsAdvancedTemplateState
                 crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
                   _buildFilterPill('all', 'All', _accent),
-                  _buildFilterPill('profit', 'Profit', context.marketPositive),
-                  _buildFilterPill('loss', 'Loss', context.marketNegative),
+                  if (_showEntryColumns) ...[
+                    _buildFilterPill('profit', 'Profit', context.marketPositive),
+                    _buildFilterPill('loss', 'Loss', context.marketNegative),
+                  ],
                   const SizedBox(width: AppSpacing.xs),
                   Container(
                     decoration: BoxDecoration(
@@ -557,14 +574,17 @@ class _TradeHoldingsAdvancedTemplateState
           isNumeric: true,
         ),
         if (!widget.compact) ...[
-          _buildHeaderCell('Entry Price', 2, 3, isNumeric: true),
+          if (_showEntryColumns)
+            _buildHeaderCell('Entry Price', 2, 3, isNumeric: true),
           _buildHeaderCell('Current Price', 2, 4, isNumeric: true),
           _buildHeaderCell('Current Value', 2, 5, isNumeric: true),
-          _buildHeaderCell('P&L', 2, 6, isNumeric: true),
-          _buildHeaderCell('P&L %', 1, 7, isNumeric: true),
-          _buildHeaderCell('R:R Ratio', 1, 8, isNumeric: true),
+          _buildHeaderCell('1D P&L', 2, 6, isNumeric: true),
+          _buildHeaderCell('1D %', 1, 7, isNumeric: true),
+          _buildHeaderCell('Overall P&L', 2, 8, isNumeric: true),
+          _buildHeaderCell('Overall %', 1, 9, isNumeric: true),
+          _buildHeaderCell('R:R Ratio', 1, 10, isNumeric: true),
         ] else
-          _buildHeaderCell('P&L', 5, 6, isNumeric: true),
+          _buildHeaderCell('Overall P&L', 5, 8, isNumeric: true),
         if (_showActionsColumn)
           _tableCell(
             flex: 1,
@@ -622,6 +642,7 @@ class _TradeHoldingsAdvancedTemplateState
 
   Widget _buildCustomTableRow(TradeHoldingViewModel holding, int index) {
     final isPositive = holding.isProfit;
+    final isTodayPositive = holding.isTodayProfit;
     final colors = context.colors;
 
     return InkWell(
@@ -678,19 +699,20 @@ class _TradeHoldingsAdvancedTemplateState
               ),
             ),
             if (!widget.compact) ...[
-              _tableCell(
-                flex: 2,
-                numeric: true,
-                child: Text(
-                  holding.displayEntryPrice,
-                  textAlign: TextAlign.right,
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 1,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontSize: AppTypeScale.md,
+              if (_showEntryColumns)
+                _tableCell(
+                  flex: 2,
+                  numeric: true,
+                  child: Text(
+                    holding.displayEntryPrice,
+                    textAlign: TextAlign.right,
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontSize: AppTypeScale.md,
+                    ),
                   ),
                 ),
-              ),
               _tableCell(
                 flex: 2,
                 numeric: true,
@@ -717,21 +739,40 @@ class _TradeHoldingsAdvancedTemplateState
                   ),
                 ),
               ),
-            ],
-            _tableCell(
-              flex: widget.compact ? 5 : 2,
-              numeric: true,
-              child: widget.compact
-                  ? _buildCompactPnLCell(holding, isPositive)
-                  : _buildPnLCell(holding.displayProfitLoss, isPositive),
-            ),
-            if (!widget.compact) ...[
+              _tableCell(
+                flex: 2,
+                numeric: true,
+                child: _buildPnLCell(
+                  holding.displayTodayProfitLoss,
+                  isTodayPositive,
+                  missing: holding.todayProfitLoss == null,
+                ),
+              ),
+              _tableCell(
+                flex: 1,
+                numeric: true,
+                child: _buildPnLPercentageCell(
+                  holding.displayTodayProfitLossPercentage,
+                  isTodayPositive,
+                  missing: holding.todayProfitLossPercentage == null,
+                ),
+              ),
+              _tableCell(
+                flex: 2,
+                numeric: true,
+                child: _buildPnLCell(
+                  holding.displayProfitLoss,
+                  isPositive,
+                  missing: holding.profitLoss == null,
+                ),
+              ),
               _tableCell(
                 flex: 1,
                 numeric: true,
                 child: _buildPnLPercentageCell(
                   holding.displayProfitLossPercentage,
                   isPositive,
+                  missing: holding.profitLossPercentage == null,
                 ),
               ),
               _tableCell(
@@ -747,7 +788,12 @@ class _TradeHoldingsAdvancedTemplateState
                   ),
                 ),
               ),
-            ],
+            ] else
+              _tableCell(
+                flex: 5,
+                numeric: true,
+                child: _buildCompactPnLCell(holding, isPositive),
+              ),
             if (_showActionsColumn)
               _tableCell(
                 flex: 1,
@@ -950,7 +996,21 @@ class _TradeHoldingsAdvancedTemplateState
     );
   }
 
-  Widget _buildPnLCell(String value, bool isPositive) {
+  Widget _buildPnLCell(
+    String value,
+    bool isPositive, {
+    bool missing = false,
+  }) {
+    if (missing) {
+      return Text(
+        value,
+        textAlign: TextAlign.right,
+        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              fontSize: AppTypeScale.md,
+              color: context.textSecondary,
+            ),
+      );
+    }
     final pnlColor =
         isPositive ? context.marketPositive : context.marketNegative;
     return Row(
@@ -1023,7 +1083,21 @@ class _TradeHoldingsAdvancedTemplateState
     );
   }
 
-  Widget _buildPnLPercentageCell(String value, bool isPositive) {
+  Widget _buildPnLPercentageCell(
+    String value,
+    bool isPositive, {
+    bool missing = false,
+  }) {
+    if (missing) {
+      return Text(
+        value,
+        textAlign: TextAlign.right,
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              fontSize: AppTypeScale.xs + 1,
+              color: context.textSecondary,
+            ),
+      );
+    }
     final pnlColor =
         isPositive ? context.marketPositive : context.marketNegative;
     return Container(
@@ -1213,7 +1287,7 @@ class _TradeHoldingsAdvancedTemplateState
                     ),
                     const SizedBox(width: AppSpacing.sm),
                     Tooltip(
-                      message: 'Total P&L %',
+                      message: 'Overall P&L %',
                       child: Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: AppSpacing.sm,
@@ -1231,7 +1305,9 @@ class _TradeHoldingsAdvancedTemplateState
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: AppTypeScale.sm,
-                            color: pnlColor,
+                            color: holding.profitLossPercentage == null
+                                ? muted
+                                : pnlColor,
                           ),
                         ),
                       ),
@@ -1247,14 +1323,17 @@ class _TradeHoldingsAdvancedTemplateState
                 ),
                 child: Row(
                   children: [
-                    Expanded(
-                      child: _buildQuickMetric(
-                        'Entry',
-                        holding.displayEntryPrice,
-                        titleColor,
+                    if (_showEntryColumns &&
+                        tradeHoldingHasEntryPrice(holding)) ...[
+                      Expanded(
+                        child: _buildQuickMetric(
+                          'Entry',
+                          holding.displayEntryPrice,
+                          titleColor,
+                        ),
                       ),
-                    ),
-                    _buildMetricDivider(theme.divider),
+                      _buildMetricDivider(theme.divider),
+                    ],
                     Expanded(
                       child: _buildQuickMetric(
                         'Current',
@@ -1288,7 +1367,35 @@ class _TradeHoldingsAdvancedTemplateState
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'P&L',
+                            '1D P&L',
+                            style: TextStyle(
+                              color: muted,
+                              fontSize: AppTypeScale.xs,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const SizedBox(height: AppSpacing.xxs),
+                          Text(
+                            holding.displayTodayProfitLoss,
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: AppTypeScale.md,
+                              color: holding.todayProfitLoss == null
+                                  ? muted
+                                  : (holding.isTodayProfit
+                                      ? context.marketPositive
+                                      : context.marketNegative),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Overall P&L',
                             style: TextStyle(
                               color: muted,
                               fontSize: AppTypeScale.xs,
@@ -1301,7 +1408,9 @@ class _TradeHoldingsAdvancedTemplateState
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: AppTypeScale.md,
-                              color: pnlColor,
+                              color: holding.profitLoss == null
+                                  ? muted
+                                  : pnlColor,
                             ),
                           ),
                         ],

@@ -1,6 +1,5 @@
 import '../../internal/domain/entities/trade_controller_entities.dart';
 import '../../internal/domain/entities/trade_holding.dart';
-import '../../internal/domain/enums/trade_directions.dart';
 
 /// View model for presenting trade holding data in UI
 /// Flattens nested domain structure for easier template consumption
@@ -393,3 +392,11 @@ class TradeHoldingsViewModel {
   int get displayCount => holdings.length;
   String get displayTotal => '$totalElements total trades';
 }
+
+/// True when the holding has a usable entry / avg cost.
+bool tradeHoldingHasEntryPrice(TradeHoldingViewModel h) =>
+    h.entryPrice != null && h.entryPrice! > 0;
+
+/// Show Entry column only when at least one holding has cost basis.
+bool showHoldingsEntryColumns(Iterable<TradeHoldingViewModel> holdings) =>
+    holdings.any(tradeHoldingHasEntryPrice);
