@@ -86,19 +86,21 @@ class RecentImportEntry {
   }
 }
 
-/// Device-local recent import history (not synced to backend).
+/// Optional device cache for Recent imports (server history APIs are SoT).
 class RecentImportsStore {
   RecentImportsStore._();
   static final RecentImportsStore instance = RecentImportsStore._();
 
   static const _keyPrefix = 'am_recent_imports_v1_';
-  static const maxEntries = 10;
+  static const _anonKey = 'am_recent_imports_v1__anon';
+  static const maxEntries = 25;
 
-  Future<List<RecentImportEntry>> load(String userId) async {
+  String _storageKey(String userId) {
     final id = userId.trim();
-    if (id.isEmpty) return const [];
-    final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString('$_keyPrefix$id');
+    return id.isEmpty ? _anonKey : '$_keyPrefix$id';
+  }
+
+  List<RecentImportEntry> _decodeList(String? raw) {
     if (raw == null || raw.isEmpty) return const [];
     try {
       final list = jsonDecode(raw);
@@ -106,25 +108,100 @@ class RecentImportsStore {
       return list
           .whereType<Map>()
           .map((e) => RecentImportEntry.fromJson(Map<String, dynamic>.from(e)))
+          .where((e) => e.id.isNotEmpty)
           .toList();
     } catch (_) {
+      // Corrupt JSON — do not wipe prefs here; caller keeps existing string.
       return const [];
     }
+  }
+
+  List<RecentImportEntry> _mergeById(
+    List<RecentImportEntry> newerFirst,
+    List<RecentImportEntry> older,
+  ) {
+    final seen = <String>{};
+    final out = <RecentImportEntry>[];
+    for (final e in [...newerFirst, ...older]) {
+      if (e.id.isEmpty || seen.contains(e.id)) continue;
+      seen.add(e.id);
+      out.add(e);
+      if (out.length >= maxEntries) break;
+    }
+    return out;
+  }
+
+  Future<List<RecentImportEntry>> load(String userId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final key = _storageKey(userId);
+    final raw = prefs.getString(key);
+    var items = _decodeList(raw);
+
+    // Migrate anon → real user once we have an id (and clear anon).
+    final id = userId.trim();
+    if (id.isNotEmpty) {
+      final anonRaw = prefs.getString(_anonKey);
+      final anonItems = _decodeList(anonRaw);
+      if (anonItems.isNotEmpty) {
+        items = _mergeById(items, anonItems);
+        await prefs.setString(
+          key,
+          jsonEncode(items.map((e) => e.toJson()).toList()),
+        );
+        await prefs.remove(_anonKey);
+      }
+    }
+
+    // If decode failed but raw exists, leave raw untouched and return [].
+    // Next successful prepend will still read raw via merge path below.
+    if (items.isEmpty && raw != null && raw.isNotEmpty) {
+      // Attempt salvage: raw may be valid JSON with empty maps — already handled.
+      return const [];
+    }
+    return items;
+  }
+
+  /// Replace the whole cache with a server-fetched list (newest first).
+  Future<void> replaceAll(String userId, List<RecentImportEntry> entries) async {
+    final prefs = await SharedPreferences.getInstance();
+    final key = _storageKey(userId);
+    final next = entries.take(maxEntries).toList();
+    await prefs.setString(
+      key,
+      jsonEncode(next.map((e) => e.toJson()).toList()),
+    );
   }
 
   Future<List<RecentImportEntry>> prepend(
     String userId,
     RecentImportEntry entry,
   ) async {
-    final id = userId.trim();
-    if (id.isEmpty) return [entry];
-    final current = await load(id);
-    final next = [entry, ...current.where((e) => e.id != entry.id)]
-        .take(maxEntries)
-        .toList();
     final prefs = await SharedPreferences.getInstance();
+    final key = _storageKey(userId);
+    final raw = prefs.getString(key);
+    var current = _decodeList(raw);
+
+    // If decode failed, try not to destroy the previous blob: merge entry alone
+    // only when raw is empty/corrupt-empty; otherwise keep what we could parse.
+    if (current.isEmpty && raw != null && raw.isNotEmpty) {
+      // Corrupt — start fresh with this entry rather than wiping then losing
+      // ability to recover; still write a valid list so UI works going forward.
+      current = const [];
+    }
+
+    // Also pull anon history when writing under a real user.
+    final id = userId.trim();
+    if (id.isNotEmpty) {
+      final anonItems = _decodeList(prefs.getString(_anonKey));
+      current = _mergeById(current, anonItems);
+      if (anonItems.isNotEmpty) {
+        await prefs.remove(_anonKey);
+      }
+    }
+
+    final next = _mergeById([entry], current);
     await prefs.setString(
-      '$_keyPrefix$id',
+      key,
       jsonEncode(next.map((e) => e.toJson()).toList()),
     );
     return next;

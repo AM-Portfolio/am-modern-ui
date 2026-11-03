@@ -1,4 +1,6 @@
 import 'package:am_paper_ui/providers/paper_symbol_discovery_provider.dart';
+import 'package:am_common/am_common.dart';
+import 'package:am_market_ui/shared/widgets/market_stream_surface_scope.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -53,7 +55,9 @@ class PaperWatchlistPane extends ConsumerStatefulWidget {
 
 class _PaperWatchlistPaneState extends ConsumerState<PaperWatchlistPane> {
   late final WatchlistController _internalController;
-  WatchlistController get _controller => widget.controller ?? _internalController;
+  String _lastPublishedSymbols = '';
+  WatchlistController get _controller =>
+      widget.controller ?? _internalController;
 
   @override
   void initState() {
@@ -99,6 +103,21 @@ class _PaperWatchlistPaneState extends ConsumerState<PaperWatchlistPane> {
     return ListenableBuilder(
       listenable: _controller,
       builder: (context, _) {
+        final visibleInstruments = _controller.pageRows
+            .map((row) => MarketStreamInstrument(
+                  symbol: row.symbol,
+                  isIndexSymbol: false,
+                ))
+            .toList(growable: false);
+        final streamKey = visibleInstruments.map((i) => i.symbol).join('|');
+        if (streamKey != _lastPublishedSymbols) {
+          _lastPublishedSymbols = streamKey;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              MarketStreamSurfaceScope.publish(context, visibleInstruments);
+            }
+          });
+        }
         if (widget.compactChrome) {
           final mobile = PaperWatchlistMobile(
             controller: _controller,

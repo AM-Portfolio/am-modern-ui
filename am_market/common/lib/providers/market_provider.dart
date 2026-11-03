@@ -83,6 +83,18 @@ class MarketProvider with ChangeNotifier {
   PriceService? _priceService;
   final Set<String> _subscribedSymbols = {};
   final Set<String> _detailSymbols = {};
+  static const String dashboardSurface = 'market.dashboard';
+  static const String allIndicesSurface = 'market.all-indices';
+  static const String equityInsiderSurface = 'market.equity-insider';
+  static const String watchListSurface = 'market.watch-list';
+  static const String paperSurface = 'market.paper';
+  static const String chartSurface = 'market.chart';
+  static const String futuresOptionsSurface = 'market.futures-options';
+  static const String stockDetailSurface = 'market.stock-detail';
+  static const String _priceScopeOwner = 'market-ui';
+  final Map<String, Map<String, bool>> _surfaceSymbols = {};
+  String _activeSurface = dashboardSurface;
+  int _surfaceGeneration = 0;
   DateTime? _lastNotify;
   static const Duration _notifyThrottle = Duration(milliseconds: 300);
   StreamSubscription<MarketDataUpdate>? _priceUpdateSub;
@@ -97,7 +109,7 @@ class MarketProvider with ChangeNotifier {
     CommonLogger.info("PriceService delegated to MarketProvider",
         tag: "MarketProvider");
 
-    _syncWithPriceService();
+    unawaited(_publishActiveSurface());
 
     _priceUpdateSub = _priceService!.updateStream.listen((update) {
       if (update.quotes != null) {
@@ -109,7 +121,7 @@ class MarketProvider with ChangeNotifier {
       }
     });
 
-    unawaited(_resubscribeActiveSymbols());
+    unawaited(_publishActiveSurface());
   }
 
   /// Max simultaneous live-streamed symbols before evicting lower-priority symbols.
@@ -179,124 +191,90 @@ class MarketProvider with ChangeNotifier {
   }
 
   Future<void> _resubscribeActiveSymbols() async {
-    if (_priceService == null) return;
-
-    final candidates = <String>{};
-    if (_selectedIndex != null &&
-        _selectedIndex != 'All Indices' &&
-        _selectedIndex != 'Dashboard' &&
-        !isNavigationOnlySelection(_selectedIndex)) {
-      candidates.add(_selectedIndex!);
-    }
-    candidates.addAll(_detailSymbols);
-    if (_currentIndexData != null) {
-      candidates.addAll(_currentIndexData!.stocks.map((s) => s.symbol));
-    }
-    if (_allIndicesData.isNotEmpty) {
-      candidates.addAll(_allIndicesData.map((e) => e.indexSymbol));
-    }
-
-    final budgeted = _prioritizeSubscriptionBudget(candidates);
-    final budgetedSet = budgeted.map((s) => s.toUpperCase()).toSet();
-    final toEvict = _subscribedSymbols
-        .where((s) => !budgetedSet.contains(s.toUpperCase()))
-        .toList();
-
-    if (toEvict.isNotEmpty) {
-      await _priceService!.unsubscribe(toEvict);
-      _subscribedSymbols.removeWhere((s) => toEvict.contains(s));
-    }
-
-    if (budgeted.isNotEmpty) {
-      await _priceService!.subscribe(
-        budgeted,
-        isIndexSymbol: _indexSymbol,
-        forceResubscribe: true,
-      );
-      _subscribedSymbols
-        ..clear()
-        ..addAll(budgeted);
-    }
+    await _publishActiveSurface();
   }
 
-  Future<void> _ensurePriceSubscription(List<String> symbols,
-      {bool? isIndexSymbol}) async {
-    if (symbols.isEmpty) return;
+  /// Activates one Market page without requiring inactive kept-alive widgets
+  /// to dispose. The page's cached desired symbols remain available for return.
+  Future<void> activateSurface(String surface) async {
+    final normalized = surface.trim().isEmpty ? dashboardSurface : surface;
+    _activeSurface = normalized;
+    await _publishActiveSurface();
+  }
 
-    final budgeted = _prioritizeSubscriptionBudget(symbols);
-    final budgetedSet = budgeted.map((s) => s.toUpperCase()).toSet();
+  /// Replaces the desired symbols for one page. Only the active page is sent
+  /// to PriceService; inactive pages merely update their cached intent.
+  Future<void> setSurfaceSymbols(
+    String surface,
+    Iterable<String> symbols, {
+    Iterable<String> indexSymbols = const <String>[],
+  }) async {
+    final indexSet = indexSymbols
+        .map((symbol) => symbol.trim().toUpperCase())
+        .where((symbol) => symbol.isNotEmpty)
+        .toSet();
+    final next = <String, bool>{};
+    for (final symbol in symbols) {
+      final normalized = symbol.trim().toUpperCase();
+      if (normalized.isNotEmpty) {
+        next[normalized] = indexSet.contains(normalized);
+      }
+    }
+    _surfaceSymbols[surface] = next;
+    if (surface == _activeSurface) await _publishActiveSurface();
+  }
 
-    // Evict symbols not in budget
-    final toEvict = _subscribedSymbols
-        .where((s) => !budgetedSet.contains(s.toUpperCase()))
+  Future<void> setSurfaceInstruments(
+    String surface,
+    Iterable<MarketStreamInstrument> instruments,
+  ) async {
+    final next = <String, bool>{};
+    for (final instrument in instruments) {
+      final symbol = instrument.symbol.trim().toUpperCase();
+      if (symbol.isNotEmpty) next[symbol] = instrument.isIndexSymbol;
+    }
+    _surfaceSymbols[surface] = next;
+    if (surface == _activeSurface) await _publishActiveSurface();
+  }
+
+  Future<void> _publishActiveSurface() async {
+    final service = _priceService;
+    if (service == null) return;
+    final generation = ++_surfaceGeneration;
+    final desired = _surfaceSymbols[_activeSurface] ?? const <String, bool>{};
+    final instruments = desired.entries
+        .map((entry) => MarketStreamInstrument(
+              symbol: entry.key,
+              isIndexSymbol: entry.value,
+            ))
         .toList();
-
-    if (toEvict.isNotEmpty && _priceService != null) {
-      await _priceService!.unsubscribe(toEvict);
-      _subscribedSymbols.removeWhere((s) => toEvict.contains(s));
-      CommonLogger.info(
-        'Evicted ${toEvict.length} symbols from subscription budget',
-        tag: 'MarketProvider._ensurePriceSubscription',
-      );
-    }
-
-    final pending =
-        budgeted.where((s) => !_subscribedSymbols.contains(s)).toList();
-    if (pending.isEmpty) return;
-
-    if (_priceService == null) {
-      _subscribedSymbols.addAll(pending);
-      return;
-    }
-
-    await _priceService!.subscribe(
-      pending,
-      isIndexSymbol: isIndexSymbol ?? _indexSymbol,
-    );
-    _subscribedSymbols.addAll(pending);
-    CommonLogger.info(
-      'Subscribed to ${pending.length} symbols (${_subscribedSymbols.length} active)',
-      tag: 'MarketProvider._ensurePriceSubscription',
-    );
+    await service.replaceScope(_priceScopeOwner, instruments);
+    if (generation != _surfaceGeneration) return;
+    _subscribedSymbols
+      ..clear()
+      ..addAll(desired.keys);
   }
 
   Future<void> subscribeLiveSymbol(String symbol,
       {bool isIndexSymbol = false}) async {
     final normalized = symbol.trim();
     if (normalized.isEmpty) return;
-    _detailSymbols.add(normalized);
-    await _ensurePriceSubscription([normalized], isIndexSymbol: isIndexSymbol);
+    final current = Map<String, bool>.from(
+      _surfaceSymbols[stockDetailSurface] ?? const <String, bool>{},
+    );
+    current[normalized.toUpperCase()] = isIndexSymbol;
+    _surfaceSymbols[stockDetailSurface] = current;
+    await activateSurface(stockDetailSurface);
   }
 
   Future<void> unsubscribeLiveSymbol(String symbol) async {
     final normalized = symbol.trim();
     if (normalized.isEmpty) return;
-    _detailSymbols.remove(normalized);
-    if (_isRequiredByActiveMarketView(normalized)) return;
-    await _priceService?.unsubscribe([normalized]);
-    _subscribedSymbols.remove(normalized);
-  }
-
-  bool _isRequiredByActiveMarketView(String symbol) {
-    final upper = symbol.toUpperCase();
-    if (_selectedIndex?.toUpperCase() == upper) return true;
-    if (_allIndicesData.any((item) => item.indexSymbol.toUpperCase() == upper))
-      return true;
-    if (_currentIndexData?.stocks
-            .any((item) => item.symbol.toUpperCase() == upper) ??
-        false) return true;
-    return _detailSymbols.contains(symbol);
-  }
-
-  Future<void> _releasePriceSubscription() async {
-    if (_priceService == null || _subscribedSymbols.isEmpty) return;
-    final symbols = _subscribedSymbols.toList();
-    await _priceService!.unsubscribe(symbols);
-    _subscribedSymbols.clear();
-    CommonLogger.info(
-      'Unsubscribed from ${symbols.length} market symbols',
-      tag: 'MarketProvider._releasePriceSubscription',
-    );
+    final current = Map<String, bool>.from(
+      _surfaceSymbols[stockDetailSurface] ?? const <String, bool>{},
+    )..remove(normalized.toUpperCase());
+    _surfaceSymbols[stockDetailSurface] = current;
+    await _publishActiveSurface();
   }
 
   // Legacy Store Support (if needed, or just defer to PriceService)
@@ -897,12 +875,6 @@ class MarketProvider with ChangeNotifier {
           "Data refreshed for $_selectedIndex. Constituents: ${_currentIndexData?.stocks.length ?? 0}",
           tag: "MarketProvider.refreshIndexData");
       if (_selectedIndex != null) {
-        await _ensurePriceSubscription([_selectedIndex!], isIndexSymbol: true);
-        await _ensurePriceSubscription(
-          _currentIndexData?.stocks.map((stock) => stock.symbol).toList() ??
-              const <String>[],
-          isIndexSymbol: false,
-        );
         _syncWithPriceService();
       }
     } catch (e) {
@@ -976,9 +948,6 @@ class MarketProvider with ChangeNotifier {
         unawaited(loadGlobalIndicesData());
       }
 
-      await _ensurePriceSubscription(
-        _allIndicesData.map((e) => e.indexSymbol).toList(),
-      );
       _syncWithPriceService();
     } catch (e) {
       CommonLogger.error("Error loading all indices",

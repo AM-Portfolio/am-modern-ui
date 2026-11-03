@@ -21,6 +21,15 @@ class PortfolioListMapper {
           .map(
             (itemDto) {
               String name = itemDto.portfolioName;
+              final opaque = RegExp(r'^[0-9a-fA-F]{24}$').hasMatch(name.trim()) ||
+                  RegExp(
+                    r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
+                  ).hasMatch(name.trim());
+              if (opaque &&
+                  itemDto.brokerType != null &&
+                  itemDto.brokerType!.trim().isNotEmpty) {
+                name = itemDto.brokerType!;
+              }
               final lower = name.toLowerCase();
               if (lower.contains('grow')) {
                 name = 'Groww';
@@ -28,7 +37,9 @@ class PortfolioListMapper {
                 name = 'Zerodha';
               } else if (lower.contains('dhan')) {
                 name = 'Dhan';
-              } else if (lower.contains('angelone') || lower.contains('angel one')) {
+              } else if (lower.contains('angelone') ||
+                  lower.contains('angel one') ||
+                  lower == 'angel_one') {
                 name = 'Angel One';
               } else if (lower.contains('upstox')) {
                 name = 'Upstox';
@@ -36,6 +47,8 @@ class PortfolioListMapper {
                 name = 'MStock';
               } else if (lower.contains('kotak')) {
                 name = 'Kotak';
+              } else if (opaque) {
+                name = 'Portfolio';
               }
 
               final kind = itemDto.kind?.toUpperCase();

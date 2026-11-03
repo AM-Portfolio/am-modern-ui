@@ -1,5 +1,6 @@
 import 'package:am_design_system/am_design_system.dart';
 import 'package:am_market_ui/features/ipo/ipo_layout.dart';
+import 'package:am_market_ui/features/ipo/ipo_view_mode.dart';
 import 'package:am_market_ui/features/ipo/models/ipo_models.dart';
 import 'package:am_market_ui/features/ipo/providers/ipo_providers.dart';
 import 'package:am_market_ui/features/ipo/providers/ipo_calendar_providers.dart';
@@ -7,6 +8,7 @@ import 'package:am_market_ui/features/ipo/widgets/calendar/ipo_calendar_overlay.
 import 'package:am_market_ui/features/ipo/widgets/ipo_filter_toolbar.dart';
 import 'package:am_market_ui/features/ipo/widgets/ipo_kpi_stats_bar.dart';
 import 'package:am_market_ui/features/ipo/widgets/ipo_summary_card.dart';
+import 'package:am_market_ui/features/ipo/widgets/ipo_table_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -19,7 +21,7 @@ class IpoLandingScreen extends ConsumerStatefulWidget {
   /// When true (Market shell host), skip outer Scaffold/SafeArea.
   final bool embedded;
 
-  static const int pageSize = 20;
+  static const int defaultPageSize = 10;
 
   @override
   ConsumerState<IpoLandingScreen> createState() => _IpoLandingScreenState();
@@ -27,6 +29,8 @@ class IpoLandingScreen extends ConsumerStatefulWidget {
 
 class _IpoLandingScreenState extends ConsumerState<IpoLandingScreen> {
   int _page = 0;
+  int _pageSize = IpoLandingScreen.defaultPageSize;
+  IpoViewMode _viewMode = IpoViewMode.cards;
 
   @override
   Widget build(BuildContext context) {
@@ -34,6 +38,7 @@ class _IpoLandingScreenState extends ConsumerState<IpoLandingScreen> {
     final filteredIposAsync = ref.watch(filteredIposProvider);
     final width = MediaQuery.sizeOf(context).width;
     final isCompactMobile = width < AmBreakpoints.mobile;
+    final activeViewMode = isCompactMobile ? IpoViewMode.cards : _viewMode;
     final hPad = isCompactMobile ? 12.0 : 14.0;
 
     ref.listen<IpoFilterState>(ipoFilterStateProvider, (prev, next) {
@@ -80,7 +85,7 @@ class _IpoLandingScreenState extends ConsumerState<IpoLandingScreen> {
                                 Text(
                                   'IPOs',
                                   style: TextStyle(
-                                    fontSize: 24,
+                                    fontSize: AppTypeScale.h2,
                                     fontWeight: FontWeight.w800,
                                     color: context.textPrimary,
                                     letterSpacing: -0.5,
@@ -92,7 +97,7 @@ class _IpoLandingScreenState extends ConsumerState<IpoLandingScreen> {
                                 Text(
                                   'Live & upcoming public issues',
                                   style: TextStyle(
-                                    fontSize: 13,
+                                    fontSize: AppTypeScale.md,
                                     fontWeight: FontWeight.w500,
                                     color: context.textSecondary,
                                   ),
@@ -111,7 +116,6 @@ class _IpoLandingScreenState extends ConsumerState<IpoLandingScreen> {
                 ),
               ),
             ),
-
           if (!isCompactMobile) ...[
             SliverToBoxAdapter(
               child: Padding(
@@ -119,8 +123,7 @@ class _IpoLandingScreenState extends ConsumerState<IpoLandingScreen> {
                 child: countsAsync.when(
                   data: (counts) => IpoKpiStatsBar(counts: counts),
                   loading: () => const _KpiSkeleton(),
-                  error: (_, __) =>
-                      IpoKpiStatsBar(counts: AsraxIpoCountsDto()),
+                  error: (_, __) => IpoKpiStatsBar(counts: AsraxIpoCountsDto()),
                 ),
               ),
             ),
@@ -129,25 +132,30 @@ class _IpoLandingScreenState extends ConsumerState<IpoLandingScreen> {
             SliverToBoxAdapter(
               child: SizedBox(height: widget.embedded ? 8 : 12),
             ),
-
           SliverToBoxAdapter(
             child: Padding(
               padding: EdgeInsets.symmetric(horizontal: hPad),
               child: countsAsync.when(
-                data: (counts) => IpoFilterToolbar(counts: counts),
+                data: (counts) => IpoFilterToolbar(
+                  counts: counts,
+                  viewMode: activeViewMode,
+                  onViewModeChanged: _setViewMode,
+                ),
                 loading: () => const SizedBox(height: 40),
-                error: (_, __) =>
-                    IpoFilterToolbar(counts: AsraxIpoCountsDto()),
+                error: (_, __) => IpoFilterToolbar(
+                  counts: AsraxIpoCountsDto(),
+                  viewMode: activeViewMode,
+                  onViewModeChanged: _setViewMode,
+                ),
               ),
             ),
           ),
-
           SliverToBoxAdapter(
             child: SizedBox(height: isCompactMobile ? 12 : 14),
           ),
-
           ...filteredIposAsync.when(
-            data: (ipos) => _buildIpoSlivers(context, ipos, hPad),
+            data: (ipos) =>
+                _buildIpoSlivers(context, ipos, hPad, activeViewMode),
             loading: () => const [
               SliverFillRemaining(
                 hasScrollBody: false,
@@ -170,7 +178,7 @@ class _IpoLandingScreenState extends ConsumerState<IpoLandingScreen> {
                       Text(
                         'Failed to load IPO data',
                         style: TextStyle(
-                          fontSize: 15,
+                          fontSize: AppTypeScale.lg,
                           fontWeight: FontWeight.w600,
                           color: context.textPrimary,
                         ),
@@ -217,6 +225,7 @@ class _IpoLandingScreenState extends ConsumerState<IpoLandingScreen> {
     BuildContext context,
     List<AsraxIpoSummaryDto> ipos,
     double hPad,
+    IpoViewMode viewMode,
   ) {
     if (ipos.isEmpty) {
       return [
@@ -235,7 +244,7 @@ class _IpoLandingScreenState extends ConsumerState<IpoLandingScreen> {
                 Text(
                   'No IPOs match your criteria',
                   style: TextStyle(
-                    fontSize: 16,
+                    fontSize: AppTypeScale.xl,
                     fontWeight: FontWeight.w600,
                     color: context.textPrimary,
                   ),
@@ -244,7 +253,7 @@ class _IpoLandingScreenState extends ConsumerState<IpoLandingScreen> {
                 Text(
                   'Try clearing filters or search query',
                   style: TextStyle(
-                    fontSize: 13,
+                    fontSize: AppTypeScale.md,
                     color: context.textSecondary,
                   ),
                 ),
@@ -266,7 +275,7 @@ class _IpoLandingScreenState extends ConsumerState<IpoLandingScreen> {
     final window = ipoPageWindow(
       ipos,
       page: _page,
-      pageSize: IpoLandingScreen.pageSize,
+      pageSize: _pageSize,
     );
     if (window.page != _page) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -275,54 +284,58 @@ class _IpoLandingScreenState extends ConsumerState<IpoLandingScreen> {
     }
     final pageItems = window.items;
 
-    return [
-      SliverPadding(
-        padding: EdgeInsets.fromLTRB(hPad, 0, hPad, 8),
-        sliver: SliverLayoutBuilder(
-          builder: (context, constraints) {
-            final crossAxisCount =
-                columnsForIpoGrid(constraints.crossAxisExtent);
+    final contentSliver = viewMode == IpoViewMode.table
+        ? SliverToBoxAdapter(child: IpoTableView(items: pageItems))
+        : SliverLayoutBuilder(
+            builder: (context, constraints) {
+              final crossAxisCount =
+                  columnsForIpoGrid(constraints.crossAxisExtent);
 
-            if (crossAxisCount == 1) {
-              return SliverList(
+              if (crossAxisCount == 1) {
+                return SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) => Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: IpoSummaryCard(
+                        ipo: pageItems[index],
+                        compact: true,
+                      ),
+                    ),
+                    childCount: pageItems.length,
+                  ),
+                );
+              }
+
+              return SliverGrid(
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: crossAxisCount,
+                  mainAxisSpacing: 8,
+                  crossAxisSpacing: 8,
+                  mainAxisExtent: 176,
+                ),
                 delegate: SliverChildBuilderDelegate(
-                  (context, index) => Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
-                    child: IpoSummaryCard(
-                      ipo: pageItems[index],
-                      compact: true,
+                  (context, index) => Align(
+                    alignment: Alignment.topCenter,
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: IpoSummaryCard(
+                        ipo: pageItems[index],
+                        compact: true,
+                      ),
                     ),
                   ),
                   childCount: pageItems.length,
                 ),
               );
-            }
+            },
+          );
 
-            return SliverGrid(
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: crossAxisCount,
-                mainAxisSpacing: 8,
-                crossAxisSpacing: 8,
-                mainAxisExtent: 104,
-              ),
-              delegate: SliverChildBuilderDelegate(
-                (context, index) => Align(
-                  alignment: Alignment.topCenter,
-                  child: SizedBox(
-                    width: double.infinity,
-                    child: IpoSummaryCard(
-                      ipo: pageItems[index],
-                      compact: true,
-                    ),
-                  ),
-                ),
-                childCount: pageItems.length,
-              ),
-            );
-          },
-        ),
+    return [
+      SliverPadding(
+        padding: EdgeInsets.fromLTRB(hPad, 0, hPad, 8),
+        sliver: contentSliver,
       ),
-      if (ipos.length > IpoLandingScreen.pageSize)
+      if (ipos.isNotEmpty)
         SliverToBoxAdapter(
           child: Padding(
             padding: EdgeInsets.fromLTRB(hPad, 4, hPad, 20),
@@ -330,8 +343,10 @@ class _IpoLandingScreenState extends ConsumerState<IpoLandingScreen> {
               from: window.from,
               to: window.to,
               total: ipos.length,
+              pageSize: _pageSize,
               page: window.page,
               totalPages: window.totalPages,
+              onPageSizeTap: () => _openPageSizeDialog(ipos.length),
               onPrev: window.page > 0
                   ? () => setState(() => _page = window.page - 1)
                   : null,
@@ -354,13 +369,13 @@ class _IpoLandingScreenState extends ConsumerState<IpoLandingScreen> {
         onTap: () {
           ref.read(ipoCalendarUiProvider.notifier).toggle();
         },
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppRadii.sm),
         child: Container(
           height: 38,
           padding: EdgeInsets.symmetric(horizontal: compact ? 10 : 14),
           decoration: BoxDecoration(
             color: context.surfaceColor,
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(AppRadii.sm),
             border: Border.all(
               color: context.borderColor,
               width: 1,
@@ -379,7 +394,7 @@ class _IpoLandingScreenState extends ConsumerState<IpoLandingScreen> {
                 Text(
                   'IPO Calendar',
                   style: TextStyle(
-                    fontSize: 13,
+                    fontSize: AppTypeScale.md,
                     fontWeight: FontWeight.w600,
                     color: context.textPrimary,
                   ),
@@ -397,6 +412,25 @@ class _IpoLandingScreenState extends ConsumerState<IpoLandingScreen> {
       ),
     );
   }
+
+  void _setViewMode(IpoViewMode mode) {
+    if (_viewMode == mode) return;
+    setState(() => _viewMode = mode);
+  }
+
+  Future<void> _openPageSizeDialog(int totalItems) async {
+    final selected = await PageSizeDialog.show(
+      context: context,
+      currentValue: _pageSize,
+      minValue: 1,
+      maxValue: totalItems > _pageSize ? totalItems : _pageSize,
+    );
+    if (!mounted || selected == null || selected == _pageSize) return;
+    setState(() {
+      _pageSize = selected;
+      _page = 0;
+    });
+  }
 }
 
 class _IpoPaginationFooter extends StatelessWidget {
@@ -404,8 +438,10 @@ class _IpoPaginationFooter extends StatelessWidget {
     required this.from,
     required this.to,
     required this.total,
+    required this.pageSize,
     required this.page,
     required this.totalPages,
+    required this.onPageSizeTap,
     required this.onPrev,
     required this.onNext,
   });
@@ -413,55 +449,125 @@ class _IpoPaginationFooter extends StatelessWidget {
   final int from;
   final int to;
   final int total;
+  final int pageSize;
   final int page;
   final int totalPages;
+  final VoidCallback onPageSizeTap;
   final VoidCallback? onPrev;
   final VoidCallback? onNext;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: context.surfaceColor,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: context.borderColor),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isNarrow = constraints.maxWidth < 520;
+        final range = _buildRange(context);
+        final controls = _buildControls(context);
+
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: context.surfaceColor,
+            borderRadius: BorderRadius.circular(AppRadii.sm + 2),
+            border: Border.all(color: context.borderColor),
+          ),
+          child: isNarrow
+              ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      children: [
+                        range,
+                        const Spacer(),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Align(
+                        alignment: AlignmentDirectional.centerEnd,
+                        child: controls),
+                  ],
+                )
+              : Row(
+                  children: [
+                    range,
+                    const Spacer(),
+                    controls,
+                  ],
+                ),
+        );
+      },
+    );
+  }
+
+  Widget _buildRange(BuildContext context) {
+    return Text(
+      '$from–$to of $total',
+      style: TextStyle(
+        fontSize: AppTypeScale.sm,
+        color: context.textSecondary,
+        fontWeight: FontWeight.w500,
       ),
-      child: Row(
-        children: [
-          Text(
-            '$from–$to of $total',
-            style: TextStyle(
-              fontSize: 12,
-              color: context.textSecondary,
-              fontWeight: FontWeight.w500,
+    );
+  }
+
+  Widget _buildControls(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Semantics(
+          button: true,
+          label: 'Rows per page: $pageSize',
+          child: InkWell(
+            onTap: onPageSizeTap,
+            borderRadius: BorderRadius.circular(AppRadii.xs + 2),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    '$pageSize / page',
+                    style: TextStyle(
+                      fontSize: AppTypeScale.sm,
+                      fontWeight: FontWeight.w600,
+                      color: ModuleColorProvider.of(context),
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Icon(
+                    Icons.edit_outlined,
+                    size: 14,
+                    color: ModuleColorProvider.of(context),
+                  ),
+                ],
+              ),
             ),
           ),
-          const Spacer(),
-          IconButton(
-            onPressed: onPrev,
-            icon: const Icon(Icons.chevron_left_rounded, size: 22),
-            tooltip: 'Previous',
-            visualDensity: VisualDensity.compact,
-            color: ModuleColors.market,
+        ),
+        const SizedBox(width: 4),
+        IconButton(
+          onPressed: onPrev,
+          icon: const Icon(Icons.chevron_left_rounded, size: 22),
+          tooltip: 'Previous page',
+          visualDensity: VisualDensity.compact,
+          color: ModuleColorProvider.of(context),
+        ),
+        Text(
+          '${page + 1} / $totalPages',
+          style: TextStyle(
+            fontSize: AppTypeScale.sm,
+            fontWeight: FontWeight.w600,
+            color: context.textPrimary,
           ),
-          Text(
-            '${page + 1} / $totalPages',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: context.textPrimary,
-            ),
-          ),
-          IconButton(
-            onPressed: onNext,
-            icon: const Icon(Icons.chevron_right_rounded, size: 22),
-            tooltip: 'Next',
-            visualDensity: VisualDensity.compact,
-            color: ModuleColors.market,
-          ),
-        ],
-      ),
+        ),
+        IconButton(
+          onPressed: onNext,
+          icon: const Icon(Icons.chevron_right_rounded, size: 22),
+          tooltip: 'Next page',
+          visualDensity: VisualDensity.compact,
+          color: ModuleColorProvider.of(context),
+        ),
+      ],
     );
   }
 }
@@ -475,7 +581,7 @@ class _KpiSkeleton extends StatelessWidget {
       height: 80,
       decoration: BoxDecoration(
         color: context.surfaceColor,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadii.lg),
         border: Border.all(
           color: context.borderColor,
         ),

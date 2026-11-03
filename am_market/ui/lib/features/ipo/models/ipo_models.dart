@@ -92,7 +92,7 @@ class AsraxIpoSummaryDto {
 
   factory AsraxIpoSummaryDto.fromJson(Map<String, dynamic> json) {
     return AsraxIpoSummaryDto(
-      id: json['id'] as String,
+      id: (json['id'] as String? ?? '').trim(),
       symbol: json['symbol'] as String?,
       companyName: json['companyName'] as String?,
       status: json['status'] as String?,
@@ -106,13 +106,26 @@ class AsraxIpoSummaryDto {
       biddingEndDate: json['biddingEndDate'] as String?,
       totalSubscription: json['totalSubscription'] as String?,
       eligibleInvestors: (json['eligibleInvestors'] as List<dynamic>?)
-          ?.map((e) => AsraxInvestorCategoryDto.fromJson(e as Map<String, dynamic>))
+          ?.map((e) =>
+              AsraxInvestorCategoryDto.fromJson(e as Map<String, dynamic>))
           .toList(),
-      lotSize: json['lotSize'] != null ? int.tryParse(json['lotSize'].toString()) : null,
-      minimumQuantity: json['minimumQuantity'] != null ? int.tryParse(json['minimumQuantity'].toString()) : null,
-      cutOffPrice: json['cutOffPrice'] != null ? double.tryParse(json['cutOffPrice'].toString()) : null,
-      minInvestment: (json['minInvestment'] ?? json['minimumInvestment'] ?? json['min_investment']) != null
-          ? double.tryParse((json['minInvestment'] ?? json['minimumInvestment'] ?? json['min_investment']).toString())
+      lotSize: json['lotSize'] != null
+          ? int.tryParse(json['lotSize'].toString())
+          : null,
+      minimumQuantity: json['minimumQuantity'] != null
+          ? int.tryParse(json['minimumQuantity'].toString())
+          : null,
+      cutOffPrice: json['cutOffPrice'] != null
+          ? double.tryParse(json['cutOffPrice'].toString())
+          : null,
+      minInvestment: (json['minInvestment'] ??
+                  json['minimumInvestment'] ??
+                  json['min_investment']) !=
+              null
+          ? double.tryParse((json['minInvestment'] ??
+                  json['minimumInvestment'] ??
+                  json['min_investment'])
+              .toString())
           : null,
     );
   }
@@ -159,8 +172,10 @@ class AsraxIpoTimelineDto {
   factory AsraxIpoTimelineDto.fromJson(Map<String, dynamic> json) {
     return AsraxIpoTimelineDto(
       preApplyStartDate: json['preApplyStartDate'] as String?,
-      applicationStartDate: (json['applicationStartDate'] ?? json['biddingStartDate']) as String?,
-      applicationEndDate: (json['applicationEndDate'] ?? json['biddingEndDate']) as String?,
+      applicationStartDate:
+          (json['applicationStartDate'] ?? json['biddingStartDate']) as String?,
+      applicationEndDate:
+          (json['applicationEndDate'] ?? json['biddingEndDate']) as String?,
       allotmentStartDate: json['allotmentStartDate'] as String?,
       allotmentDate: json['allotmentDate'] as String?,
       refundInitiationDate: json['refundInitiationDate'] as String?,
@@ -284,25 +299,40 @@ class AsraxIpoDetailsDto {
       dailyEndTime: json['dailyEndTime'] as String?,
       faceValue: (json['faceValue'] as num?)?.toDouble(),
       tickSize: (json['tickSize'] as num?)?.toDouble(),
-      lotSize: json['lotSize'] != null ? int.tryParse(json['lotSize'].toString()) : null,
-      minimumQuantity: json['minimumQuantity'] != null ? int.tryParse(json['minimumQuantity'].toString()) : null,
-      cutOffPrice: json['cutOffPrice'] != null ? double.tryParse(json['cutOffPrice'].toString()) : null,
+      lotSize: json['lotSize'] != null
+          ? int.tryParse(json['lotSize'].toString())
+          : null,
+      minimumQuantity: json['minimumQuantity'] != null
+          ? int.tryParse(json['minimumQuantity'].toString())
+          : null,
+      cutOffPrice: json['cutOffPrice'] != null
+          ? double.tryParse(json['cutOffPrice'].toString())
+          : null,
       listingPrice: (json['listingPrice'] as num?)?.toDouble(),
       listingExchange: json['listingExchange'] as String?,
       rhpUrl: json['rhpUrl'] as String?,
       drhpUrl: json['drhpUrl'] as String?,
       timeline: json['timeline'] != null
-          ? AsraxIpoTimelineDto.fromJson(json['timeline'] as Map<String, dynamic>)
+          ? AsraxIpoTimelineDto.fromJson(
+              json['timeline'] as Map<String, dynamic>)
           : null,
       registrarInfo: json['registrarInfo'] != null
-          ? AsraxIpoRegistrarDto.fromJson(json['registrarInfo'] as Map<String, dynamic>)
+          ? AsraxIpoRegistrarDto.fromJson(
+              json['registrarInfo'] as Map<String, dynamic>)
           : null,
       totalSubscription: json['totalSubscription'] as String?,
       eligibleInvestors: (json['eligibleInvestors'] as List<dynamic>?)
-          ?.map((e) => AsraxInvestorCategoryDto.fromJson(e as Map<String, dynamic>))
+          ?.map((e) =>
+              AsraxInvestorCategoryDto.fromJson(e as Map<String, dynamic>))
           .toList(),
-      minInvestment: (json['minInvestment'] ?? json['minimumInvestment'] ?? json['min_investment']) != null
-          ? double.tryParse((json['minInvestment'] ?? json['minimumInvestment'] ?? json['min_investment']).toString())
+      minInvestment: (json['minInvestment'] ??
+                  json['minimumInvestment'] ??
+                  json['min_investment']) !=
+              null
+          ? double.tryParse((json['minInvestment'] ??
+                  json['minimumInvestment'] ??
+                  json['min_investment'])
+              .toString())
           : null,
     );
   }

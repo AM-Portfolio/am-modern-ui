@@ -152,6 +152,7 @@ class DashboardWebScreen extends ConsumerWidget {
                         ] else
                           const Spacer(),
                         DashboardToolbar(
+                          userId: userId,
                           glass: false,
                           onSurface: onSurface,
                           onOpenPaper: onOpenPaper,

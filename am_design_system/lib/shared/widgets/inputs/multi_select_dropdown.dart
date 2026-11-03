@@ -105,9 +105,9 @@ class _MultiSelectDropdownState<T> extends State<MultiSelectDropdown<T>> {
   }
 
   Widget _buildBackgroundDismiss() => Positioned.fill(
-    child: GestureDetector(
-      onTap: _closeDropdown,
-      behavior: HitTestBehavior.translucent,
+    child: Listener(
+      behavior: HitTestBehavior.opaque,
+      onPointerDown: (_) => _closeDropdown(),
     ),
   );
 

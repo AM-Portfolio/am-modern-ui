@@ -6,6 +6,7 @@ import 'package:am_doc_intelligence_ui/features/email_extractor/email_extractor_
 import 'package:am_doc_intelligence_ui/features/import_holdings_info_rail.dart';
 import 'package:am_doc_intelligence_ui/features/import_holdings_shared_controls.dart';
 import 'package:am_doc_intelligence_ui/features/recent_imports_store.dart';
+import 'package:am_doc_intelligence_ui/models/batch_sync_models.dart';
 import 'package:am_doc_intelligence_ui/services/api_service.dart';
 
 enum _ImportSource { email, upload }
@@ -33,6 +34,8 @@ class DocIntelligenceScreen extends StatefulWidget {
 
 class _DocIntelligenceScreenState extends State<DocIntelligenceScreen> {
   List<RecentImportEntry> _recentEntries = const [];
+  /// Bumped on refresh / userId change so a stale [_loadRecent] cannot clobber.
+  int _recentLoadGen = 0;
   String? _selectedBrokerKey;
   String? _documentType;
   late _ImportSource _source;
@@ -42,6 +45,7 @@ class _DocIntelligenceScreenState extends State<DocIntelligenceScreen> {
   String? _autoPortfolioName;
 
   static const double _mobileShellMax = 1100;
+  static const int _recentCap = 25;
 
   static _ImportSource _sourceFromSlug(String slug) {
     switch (slug) {
@@ -74,9 +78,122 @@ class _DocIntelligenceScreenState extends State<DocIntelligenceScreen> {
   }
 
   Future<void> _loadRecent() async {
-    final items = await RecentImportsStore.instance.load(widget.userId);
-    if (!mounted) return;
-    setState(() => _recentEntries = items);
+    final gen = ++_recentLoadGen;
+
+    List<RecentImportEntry> uploadRows = const [];
+    List<RecentImportEntry> mailboxRows = const [];
+
+    try {
+      final history =
+          await apiProvider.listBatchSyncHistory(limit: _recentCap);
+      uploadRows = _entriesFromBatchHistory(history.items);
+    } catch (e) {
+      debugPrint('[ImportHoldings] batch history failed: $e');
+    }
+
+    try {
+      final extracts =
+          await apiProvider.listExtractHistory(limit: _recentCap);
+      mailboxRows = _entriesFromExtractHistory(extracts);
+    } catch (e) {
+      debugPrint('[ImportHoldings] extract history failed: $e');
+    }
+
+    final merged = <RecentImportEntry>[...uploadRows, ...mailboxRows]
+      ..sort((a, b) => b.at.compareTo(a.at));
+    final capped = merged.take(_recentCap).toList();
+
+    // Best-effort local cache for offline display; server is SoT.
+    try {
+      await RecentImportsStore.instance.replaceAll(widget.userId, capped);
+    } catch (_) {}
+
+    if (!mounted || gen != _recentLoadGen) return;
+    setState(() => _recentEntries = capped);
+  }
+
+  static List<RecentImportEntry> _entriesFromBatchHistory(
+      List<BatchSyncStatus> batches) {
+    final out = <RecentImportEntry>[];
+    for (final batch in batches) {
+      final batchAt = batch.updatedAt ?? batch.createdAt ?? DateTime.now();
+      if (batch.files.isEmpty) {
+        out.add(RecentImportEntry(
+          id: 'up-${batch.batchId}',
+          source: 'upload',
+          title: 'Batch ${batch.batchId}',
+          status: _mapOverallStatus(batch.overallStatus),
+          at: batchAt.toLocal(),
+          files: const [],
+          detail: batch.overallStatus,
+        ));
+        continue;
+      }
+      for (final file in batch.files) {
+        final at =
+            (file.completedAt ?? file.startedAt ?? batchAt).toLocal();
+        out.add(RecentImportEntry(
+          id: 'up-${batch.batchId}-${file.fileId}',
+          source: 'upload',
+          title: file.fileName.isNotEmpty ? file.fileName : 'Upload',
+          status: _mapFileStatus(file.status),
+          at: at,
+          files: [file.fileName],
+          detail: file.errorMessage ??
+              (file.detectedBroker != null
+                  ? file.detectedBroker
+                  : file.status),
+        ));
+      }
+    }
+    return out;
+  }
+
+  static List<RecentImportEntry> _entriesFromExtractHistory(
+      List<ExtractHistoryItem> items) {
+    return items.map((e) {
+      final label = e.broker.isNotEmpty ? e.broker : 'Gmail';
+      final title = e.filename?.isNotEmpty == true
+          ? e.filename!
+          : 'Gmail · $label';
+      return RecentImportEntry(
+        id: 'mb-${e.id}',
+        source: 'mailbox',
+        title: title,
+        status: 'success',
+        at: e.extractedAt,
+        files: [e.filename ?? 'Gmail · $label statement'],
+        detail: e.holdingsCount > 0 ? '${e.holdingsCount} holdings' : null,
+      );
+    }).toList();
+  }
+
+  static String _mapOverallStatus(String raw) {
+    switch (raw.toUpperCase()) {
+      case 'FAILED':
+        return 'failed';
+      case 'PARTIAL':
+        return 'partial';
+      case 'COMPLETED':
+        return 'success';
+      default:
+        return raw.toLowerCase();
+    }
+  }
+
+  static String _mapFileStatus(String raw) {
+    switch (raw.toUpperCase()) {
+      case 'FAILED':
+        return 'failed';
+      case 'COMPLETED':
+      case 'SKIPPED':
+        return 'success';
+      case 'NEEDS_INPUT':
+      case 'NEEDS_CONFIRM':
+        return 'partial';
+      default:
+        return raw.toLowerCase();
+    }
   }
 
   @override
@@ -91,11 +208,18 @@ class _DocIntelligenceScreenState extends State<DocIntelligenceScreen> {
     }
   }
 
-  Future<void> _prependRecent(RecentImportEntry entry) async {
-    final next =
-        await RecentImportsStore.instance.prepend(widget.userId, entry);
-    if (!mounted) return;
-    setState(() => _recentEntries = next);
+  Future<void> _onImportCompleted(RecentImportEntry entry) async {
+    // Optimistic local row, then refresh from server history APIs.
+    _recentLoadGen++;
+    if (mounted) {
+      setState(() {
+        _recentEntries = [
+          entry,
+          ..._recentEntries.where((e) => e.id != entry.id),
+        ].take(_recentCap).toList();
+      });
+    }
+    await _loadRecent();
   }
 
   void _setSource(_ImportSource source) {
@@ -246,7 +370,7 @@ class _DocIntelligenceScreenState extends State<DocIntelligenceScreen> {
             sharedBrokerEmailId: brokerKeyToEmailId(_selectedBrokerKey),
             passwordController: _passwordController,
             portfolioNameController: _portfolioNameController,
-            onImportCompleted: _prependRecent,
+            onImportCompleted: _onImportCompleted,
             onOpenPortfolio: widget.onOpenPortfolio,
             onOpenTrade: widget.onOpenTrade,
           ),
@@ -263,7 +387,7 @@ class _DocIntelligenceScreenState extends State<DocIntelligenceScreen> {
             sharedDocumentType: _documentType,
             portfolioNameController: _portfolioNameController,
             passwordController: _passwordController,
-            onImportCompleted: _prependRecent,
+            onImportCompleted: _onImportCompleted,
             onOpenPortfolio: widget.onOpenPortfolio,
             onOpenTrade: widget.onOpenTrade,
           ),
