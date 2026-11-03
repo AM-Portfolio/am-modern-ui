@@ -17,7 +17,7 @@ class PortfolioWealthHistoricalProvider implements HistoricalDataProvider {
 
   static const portfolioPrefix = 'PORTFOLIO:';
 
-  /// Encoded as `PORTFOLIO:<uuid>` or `PORTFOLIO:<uuid>|<displayName>`.
+  /// Encoded as `PORTFOLIO:<id>` or `PORTFOLIO:<id>|<displayName>`.
   static bool isPortfolioWealthSymbol(String symbol) {
     final u = symbol.trim().toUpperCase();
     return u == 'OVERALL' ||
@@ -44,7 +44,8 @@ class PortfolioWealthHistoricalProvider implements HistoricalDataProvider {
   }
 
   static String encodePortfolioSymbol(String portfolioId, {String? name}) {
-    final id = portfolioId.trim();
+    // Keep API path IDs lowercase — backends treat UUID casing as significant.
+    final id = portfolioId.trim().toLowerCase();
     final n = name?.trim();
     if (n != null && n.isNotEmpty) {
       return '$portfolioPrefix$id|$n';
@@ -72,6 +73,111 @@ class PortfolioWealthHistoricalProvider implements HistoricalDataProvider {
     return symbol;
   }
 
+  /// Pick the series the Portfolio overview chart would plot.
+  static List<OverlayPoint> resolveOverlayPoints(
+    PortfolioOverlayHistory history, {
+    String? portfolioId,
+  }) {
+    bool hasPlottable(List<OverlayPoint> pts) =>
+        pts.any((p) => p.value.isFinite && p.value > 0);
+
+    if (portfolioId != null && portfolioId.isNotEmpty && portfolioId != 'all') {
+      final direct = history.byPortfolioId[portfolioId];
+      if (direct != null && hasPlottable(direct)) return direct;
+
+      final needle = portfolioId.toLowerCase();
+      for (final e in history.byPortfolioId.entries) {
+        if (e.key.toLowerCase() == needle && hasPlottable(e.value)) {
+          return e.value;
+        }
+      }
+
+      if (history.byPortfolioId.length == 1) {
+        final only = history.byPortfolioId.values.first;
+        if (hasPlottable(only)) return only;
+      }
+
+      for (final pts in history.byPortfolioId.values) {
+        if (hasPlottable(pts)) return pts;
+      }
+    }
+
+    if (hasPlottable(history.aggregate)) return history.aggregate;
+
+    for (final pts in history.byPortfolioId.values) {
+      if (hasPlottable(pts)) return pts;
+    }
+    return history.aggregate;
+  }
+
+  /// Same value extraction as [PortfolioHistoryChartWidget] for a single book.
+  static List<ChartBar> barsFromHistoryRows(
+    dynamic raw, {
+    String? portfolioId,
+  }) {
+    final rows = _asObjectList(raw);
+    final bars = <ChartBar>[];
+    double? lastValid;
+    final needle = portfolioId?.trim().toLowerCase();
+
+    for (final row in rows) {
+      final dateLabel = _stringOf(
+            row,
+            const ['snapshotDate', 'date', 'timestamp', 'time'],
+          ) ??
+          '';
+      final t = _parseLabel(dateLabel, isIntraday: false);
+      if (t == null) continue;
+
+      double? value;
+      final entries = row['portfolios'];
+      if (entries is List && entries.isNotEmpty) {
+        if (needle != null && needle.isNotEmpty && needle != 'all') {
+          for (final entry in entries) {
+            if (entry is! Map) continue;
+            final map = Map<String, dynamic>.from(entry);
+            final id = (_stringOf(map, const ['portfolioId', 'id']) ?? '')
+                .toLowerCase();
+            if (id != needle) continue;
+            value = _numOf(map, const ['close', 'value', 'totalWealth']);
+            break;
+          }
+        }
+        // Overview fallback: portfolios.first.close
+        if (value == null) {
+          final first = entries.first;
+          if (first is Map) {
+            value = _numOf(
+              Map<String, dynamic>.from(first),
+              const ['close', 'value', 'totalWealth'],
+            );
+          }
+        }
+      }
+      value ??= _numOf(
+        row,
+        const ['totalUserWealth', 'totalWealth', 'close', 'value'],
+      );
+
+      if (value == null || !value.isFinite || value <= 0) {
+        if (lastValid != null && lastValid! > 0) {
+          value = lastValid;
+        } else {
+          continue;
+        }
+      }
+      lastValid = value;
+      bars.add(ChartBar(
+        time: t,
+        open: value,
+        high: value,
+        low: value,
+        close: value,
+      ));
+    }
+    return bars;
+  }
+
   @override
   bool get isMock => _market.isMock;
 
@@ -95,49 +201,63 @@ class PortfolioWealthHistoricalProvider implements HistoricalDataProvider {
 
     final portfolioId = portfolioIdFromSymbol(symbol);
     final apiTf = _apiTimeFrame(timeframe);
-    final isIntraday = apiTf == '1D';
     final client = await _getPortfolioClient();
-    final singleId = (portfolioId != null &&
-            portfolioId.isNotEmpty &&
-            portfolioId != 'all')
-        ? portfolioId
-        : null;
-    final path = singleId == null
-        ? (isIntraday ? '/v1/portfolios/intraday' : '/v1/portfolios/history')
-        : (isIntraday
-            ? '/v1/portfolios/$singleId/intraday'
-            : '/v1/portfolios/$singleId/history');
-    final raw = await client.get(
-      path,
-      queryParams: isIntraday ? null : {'timeFrame': apiTf},
-      parser: (data) => data,
+    final singleId =
+        (portfolioId != null && portfolioId.isNotEmpty && portfolioId != 'all')
+            ? portfolioId.toLowerCase()
+            : null;
+
+    // 1) Same path as Portfolio overview (single book history).
+    // 2) Fall back to all-books history and pick the series (dashboard overlay).
+    final attempts = <String>[
+      if (singleId != null) '/v1/portfolios/$singleId/history?timeFrame=$apiTf',
+      '/v1/portfolios/history?timeFrame=$apiTf',
+    ];
+
+    Object? lastError;
+    for (final path in attempts) {
+      try {
+        final raw = await client.get(
+          path,
+          parser: (data) => data,
+        );
+        var bars = barsFromHistoryRows(raw, portfolioId: singleId);
+        if (bars.isEmpty) {
+          // Overlay pivot (carry-forward) as a second parse of the same payload.
+          final history = parsePortfolioOverlayHistory(raw, isIntraday: false);
+          final points = resolveOverlayPoints(history, portfolioId: singleId);
+          bars = [
+            for (final p in points)
+              if (_parseLabel(p.xLabel, isIntraday: false) != null &&
+                  p.value.isFinite &&
+                  p.value > 0)
+                ChartBar(
+                  time: _parseLabel(p.xLabel, isIntraday: false)!,
+                  open: p.value,
+                  high: p.value,
+                  low: p.value,
+                  close: p.value,
+                ),
+          ];
+        }
+        if (bars.isNotEmpty) {
+          if (limit != null && bars.length > limit) {
+            return bars.sublist(bars.length - limit);
+          }
+          return bars;
+        }
+      } catch (e) {
+        lastError = e;
+      }
+    }
+
+    throw StateError(
+      'No portfolio chart history for ${displayLabel(symbol)} '
+      '($apiTf)${lastError != null ? ': $lastError' : ''}',
     );
-    final history = parsePortfolioOverlayHistory(raw, isIntraday: isIntraday);
-
-    List<OverlayPoint> points = history.aggregate;
-    if (singleId != null && history.byPortfolioId.containsKey(singleId)) {
-      points = history.byPortfolioId[singleId] ?? points;
-    }
-
-    final bars = <ChartBar>[];
-    for (final p in points) {
-      final t = _parseLabel(p.xLabel, isIntraday: isIntraday);
-      if (t == null || !p.value.isFinite || p.value <= 0) continue;
-      bars.add(ChartBar(
-        time: t,
-        open: p.value,
-        high: p.value,
-        low: p.value,
-        close: p.value,
-      ));
-    }
-    if (limit != null && bars.length > limit) {
-      return bars.sublist(bars.length - limit);
-    }
-    return bars;
   }
 
-  /// Terminal TF → portfolio history `timeFrame` / intraday.
+  /// Terminal TF → portfolio history `timeFrame` (same codes as Portfolio UI).
   static String _apiTimeFrame(String timeframe) {
     switch (timeframe.toUpperCase()) {
       case '5M':
@@ -159,11 +279,52 @@ class PortfolioWealthHistoricalProvider implements HistoricalDataProvider {
     }
   }
 
+  static List<Map<String, dynamic>> _asObjectList(dynamic data) {
+    if (data is List) {
+      return [
+        for (final e in data)
+          if (e is Map) Map<String, dynamic>.from(e),
+      ];
+    }
+    if (data is Map) {
+      final map = Map<String, dynamic>.from(data);
+      for (final key in const [
+        'points',
+        'data',
+        'content',
+        'snapshots',
+        'history',
+      ]) {
+        final inner = map[key];
+        if (inner is List) return _asObjectList(inner);
+      }
+    }
+    return const [];
+  }
+
+  static String? _stringOf(Map<String, dynamic> json, List<String> keys) {
+    for (final key in keys) {
+      final value = json[key];
+      if (value == null) continue;
+      final text = value.toString();
+      if (text.isNotEmpty) return text;
+    }
+    return null;
+  }
+
+  static double? _numOf(Map<String, dynamic> json, List<String> keys) {
+    for (final key in keys) {
+      final value = json[key];
+      if (value is num) return value.toDouble();
+      if (value is String) return double.tryParse(value);
+    }
+    return null;
+  }
+
   static DateTime? _parseLabel(String label, {required bool isIntraday}) {
     final s = label.trim();
     if (s.isEmpty) return null;
     if (isIntraday) {
-      // "09:15" or "9:15 AM"
       final m = RegExp(r'^(\d{1,2}):(\d{2})').firstMatch(s);
       if (m != null) {
         final h = int.parse(m.group(1)!);
@@ -174,7 +335,6 @@ class PortfolioWealthHistoricalProvider implements HistoricalDataProvider {
     }
     final iso = DateTime.tryParse(s);
     if (iso != null) return iso;
-    // dd-MM-yyyy / yyyy-MM-dd already covered; try slash dates
     final parts = s.split(RegExp(r'[/-]'));
     if (parts.length == 3) {
       try {
