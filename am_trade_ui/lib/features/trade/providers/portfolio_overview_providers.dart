@@ -167,17 +167,17 @@ TradePortfolioViewModel _mergeViewModel(
       liveSummary.todayChangePercentage;
 
   return realized.copyWith(
-    totalValue: _preferPositiveOverlay(
+    totalValue: _preferLiveMetric(
       live: liveSummary.totalValue,
       realized: realized.totalValue,
       hasOpenBook: hasOpenBook,
     ),
-    totalGainLoss: _preferPositiveOverlay(
+    totalGainLoss: _preferLiveMetric(
       live: liveGain,
       realized: realized.totalGainLoss,
       hasOpenBook: hasOpenBook,
     ),
-    totalGainLossPercentage: _preferPositiveOverlay(
+    totalGainLossPercentage: _preferLiveMetric(
       live: liveGainPct,
       realized: realized.totalGainLossPercentage,
       hasOpenBook: hasOpenBook,
@@ -186,16 +186,15 @@ TradePortfolioViewModel _mergeViewModel(
   );
 }
 
-/// Prefer a positive live overlay; never let live 0 wipe a usable realized value
-/// for books that still have trades.
-double _preferPositiveOverlay({
+/// Prefer non-null live metrics (including losses). Only fall back to realized
+/// when live is missing or a flat 0 while realized still has a signal.
+double _preferLiveMetric({
   required double? live,
   required double realized,
   required bool hasOpenBook,
 }) {
   if (live == null) return realized;
-  if (live > 0) return live;
-  if (live == 0 && hasOpenBook && realized > 0) return realized;
-  if (live == 0 && hasOpenBook) return realized;
+  if (live != 0) return live;
+  if (hasOpenBook && realized != 0) return realized;
   return live;
 }

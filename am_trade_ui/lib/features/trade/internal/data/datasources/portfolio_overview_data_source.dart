@@ -71,15 +71,39 @@ class PortfolioOverviewDataSourceImpl implements PortfolioOverviewDataSource {
         },
       );
 
-      // Dig Trade often persists metrics.totalValue=0 for mail demat books.
-      // Portfolio holdings already have live value + 1D — heal the card from that.
-      final needsHeal = response == null ||
+      // Mail/demat books often have value but P&L stuck at 0 (no cost basis).
+      // Heal value and/or P&L from Portfolio holdings (1D + overall when present).
+      final needsValueHeal = response == null ||
           response.totalValue == null ||
           response.totalValue! <= 0;
-      if (needsHeal) {
+      final needsPnlHeal = response == null ||
+          (!_hasNonZero(response.totalGainLoss) &&
+              !_hasNonZero(response.todayChange));
+      if (needsValueHeal || needsPnlHeal) {
         final healed = await _summaryFromHoldings(portfolioId);
         if (healed != null) {
-          response = healed;
+          response = PortfolioSummaryResponseDto(
+            totalValue: needsValueHeal
+                ? healed.totalValue
+                : response?.totalValue ?? healed.totalValue,
+            totalGainLoss: needsPnlHeal
+                ? healed.totalGainLoss
+                : response?.totalGainLoss ?? healed.totalGainLoss,
+            totalGainLossPercentage: needsPnlHeal
+                ? healed.totalGainLossPercentage
+                : response?.totalGainLossPercentage ??
+                    healed.totalGainLossPercentage,
+            todayChange: needsPnlHeal
+                ? healed.todayChange
+                : response?.todayChange ?? healed.todayChange,
+            todayChangePercentage: needsPnlHeal
+                ? healed.todayChangePercentage
+                : response?.todayChangePercentage ??
+                    healed.todayChangePercentage,
+            investedValue: response?.investedValue ?? healed.investedValue,
+            totalAssets: response?.totalAssets ?? healed.totalAssets,
+            gainersCount: response?.gainersCount ?? healed.gainersCount,
+          );
         }
       }
 
@@ -147,28 +171,53 @@ class PortfolioOverviewDataSourceImpl implements PortfolioOverviewDataSource {
 
     var totalValue = 0.0;
     var todayChange = 0.0;
+    var overallPnl = 0.0;
     var gainers = 0;
     var hasToday = false;
+    var hasOverall = false;
     for (final row in rows) {
       final value = _asDouble(row['currentValue']) ?? 0;
       totalValue += value;
+
       final day = _asDouble(row['todayGainLoss'] ?? row['todayChange']);
       if (day != null) {
         hasToday = true;
         todayChange += day;
         if (day > 0) gainers++;
       }
+
+      // Prefer real overall when Portfolio marks hasGainLoss / non-zero gainLoss.
+      final hasGainFlag = row['hasGainLoss'] == true;
+      final overall = _asDouble(row['gainLoss'] ?? row['totalGainLoss']);
+      if (overall != null && (hasGainFlag || overall != 0)) {
+        hasOverall = true;
+        overallPnl += overall;
+      }
     }
     if (totalValue <= 0) return null;
 
+    // Card "Live P&L": overall when known, else today's move (mail books).
+    final livePnl = hasOverall ? overallPnl : (hasToday ? todayChange : null);
+    final livePct = livePnl != null && totalValue > 0
+        ? (livePnl / totalValue) * 100
+        : null;
+    final todayPct = hasToday && totalValue > 0
+        ? (todayChange / totalValue) * 100
+        : null;
+
     return PortfolioSummaryResponseDto(
       totalValue: totalValue,
-      totalGainLoss: hasToday ? todayChange : null,
+      totalGainLoss: livePnl,
+      totalGainLossPercentage: livePct,
       todayChange: hasToday ? todayChange : null,
+      todayChangePercentage: todayPct,
       totalAssets: rows.length,
       gainersCount: gainers,
     );
   }
+
+  static bool _hasNonZero(double? value) =>
+      value != null && value != 0;
 
   Future<List<Map<String, dynamic>>> _fetchEquityHoldings(
     String portfolioId,
