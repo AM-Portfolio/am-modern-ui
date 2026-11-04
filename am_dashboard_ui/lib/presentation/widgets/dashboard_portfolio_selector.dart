@@ -17,6 +17,8 @@ class DashboardPortfolioChoice {
     this.isPaper = false,
     this.brokerType,
     this.externalId,
+    this.familyMemberId,
+    this.familyMemberName,
   });
 
   final String id;
@@ -29,19 +31,42 @@ class DashboardPortfolioChoice {
   /// Broker client/BOID or NPS PRAN shown under the name when present.
   final String? externalId;
 
+  final String? familyMemberId;
+  final String? familyMemberName;
+
   bool get isSelectable => id == 'all' || isPaper || hasHoldings;
 
-  DashboardPortfolioChoice copyWith({String? externalId}) {
+  DashboardPortfolioChoice copyWith({
+    String? name,
+    String? externalId,
+    String? familyMemberName,
+  }) {
     return DashboardPortfolioChoice(
       id: id,
-      name: name,
+      name: name ?? this.name,
       hasHoldings: hasHoldings,
       assetCount: assetCount,
       isPaper: isPaper,
       brokerType: brokerType,
       externalId: externalId ?? this.externalId,
+      familyMemberId: familyMemberId,
+      familyMemberName: familyMemberName ?? this.familyMemberName,
     );
   }
+}
+
+/// Primary books: bare broker/display name. Family: `Dhan (Priyanshu)`.
+String formatPortfolioDropdownLabel({
+  required String displayName,
+  String? familyMemberId,
+  String? familyMemberName,
+}) {
+  final id = familyMemberId?.trim();
+  if (id == null || id.isEmpty) return displayName;
+  final member = familyMemberName?.trim();
+  if (member == null || member.isEmpty) return displayName;
+  final short = member.split(RegExp(r'\s+')).first;
+  return '$displayName ($short)';
 }
 
 bool _isCdslChoice({
@@ -121,9 +146,18 @@ List<DashboardPortfolioChoice> parseDashboardPortfolioChoices(dynamic data) {
             map['externalId'] ??
             map['pran'])
         ?.toString();
-    final displayName = (name.isEmpty || name == id) && brokerType != null && brokerType.isNotEmpty
+    final familyMemberId = (map['familyMemberId'] as String?)?.trim();
+    final familyMemberName = (map['familyMemberName'] as String?)?.trim();
+    final baseName = (name.isEmpty || name == id) &&
+            brokerType != null &&
+            brokerType.isNotEmpty
         ? brokerType
         : name;
+    final displayName = formatPortfolioDropdownLabel(
+      displayName: baseName,
+      familyMemberId: familyMemberId,
+      familyMemberName: familyMemberName,
+    );
     choices.add(
       DashboardPortfolioChoice(
         id: id,
@@ -133,6 +167,9 @@ List<DashboardPortfolioChoice> parseDashboardPortfolioChoices(dynamic data) {
         isPaper: isPaper,
         brokerType: brokerType,
         externalId: externalId,
+        familyMemberId: familyMemberId?.isEmpty == true ? null : familyMemberId,
+        familyMemberName:
+            familyMemberName?.isEmpty == true ? null : familyMemberName,
       ),
     );
   }
@@ -143,7 +180,8 @@ List<DashboardPortfolioChoice> parseDashboardPortfolioChoices(dynamic data) {
   return choices;
 }
 
-/// Join list rows with accounts-hub demat / NPS PRAN for selector subtitles.
+/// Join list rows with accounts-hub demat / NPS PRAN for selector subtitles,
+/// and fill blank family member names from hub members when id is known.
 List<DashboardPortfolioChoice> enrichChoicesWithHubIds(
   List<DashboardPortfolioChoice> choices,
   AccountsHub? hub,
@@ -163,19 +201,59 @@ List<DashboardPortfolioChoice> enrichChoicesWithHubIds(
     if (broker.isEmpty || label == null) continue;
     byBroker.putIfAbsent(broker, () => label);
   }
+  final memberNameById = <String, String>{};
+  for (final m in hub.familyMembers) {
+    final mid = m.id?.trim();
+    final n = m.name?.trim();
+    if (mid == null || mid.isEmpty || n == null || n.isEmpty) continue;
+    memberNameById.putIfAbsent(mid, () => n);
+  }
   final pran = hub.identity?.pran ?? hub.nps?.pran;
 
   return [
     for (final c in choices)
-      c.copyWith(
-        externalId: c.externalId ??
-            byPortfolio[c.id] ??
-            byBroker[(c.brokerType ?? '').toUpperCase()] ??
-            (((c.brokerType ?? c.name).toUpperCase().contains('NPS'))
-                ? pran
-                : null),
+      _enrichOneChoice(
+        c,
+        byPortfolio: byPortfolio,
+        byBroker: byBroker,
+        memberNameById: memberNameById,
+        pran: pran,
       ),
   ];
+}
+
+DashboardPortfolioChoice _enrichOneChoice(
+  DashboardPortfolioChoice c, {
+  required Map<String, String> byPortfolio,
+  required Map<String, String> byBroker,
+  required Map<String, String> memberNameById,
+  required String? pran,
+}) {
+  final famId = c.familyMemberId?.trim();
+  final needsName = famId != null &&
+      famId.isNotEmpty &&
+      (c.familyMemberName == null || c.familyMemberName!.trim().isEmpty);
+  final resolvedName = needsName ? memberNameById[famId] : c.familyMemberName;
+  var baseName = c.name;
+  final open = baseName.lastIndexOf(' (');
+  if (open > 0 && baseName.endsWith(')')) {
+    baseName = baseName.substring(0, open);
+  }
+  final labeled = formatPortfolioDropdownLabel(
+    displayName: baseName,
+    familyMemberId: famId,
+    familyMemberName: resolvedName,
+  );
+  return c.copyWith(
+    name: labeled,
+    familyMemberName: resolvedName,
+    externalId: c.externalId ??
+        byPortfolio[c.id] ??
+        byBroker[(c.brokerType ?? '').toUpperCase()] ??
+        (((c.brokerType ?? c.name).toUpperCase().contains('NPS'))
+            ? pran
+            : null),
+  );
 }
 
 /// Top-of-dashboard portfolio picker. Same shell selection the portfolio

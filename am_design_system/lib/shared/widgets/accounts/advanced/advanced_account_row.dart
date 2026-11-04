@@ -22,6 +22,7 @@ class AdvancedAccountRow {
     this.hasValue = false,
     this.nomineeMissing = false,
     this.statusKind = AccountStatusKind.unknown,
+    this.weightPct,
   });
 
   final String id;
@@ -41,6 +42,8 @@ class AdvancedAccountRow {
   final bool hasValue;
   final bool nomineeMissing;
   final AccountStatusKind statusKind;
+  /// Share of selected persona / household scope total (0–100).
+  final double? weightPct;
 
   static final NumberFormat _inr = NumberFormat.currency(
     locale: 'en_IN',
@@ -74,7 +77,21 @@ class AdvancedAccountRow {
 
   String get displayBroker {
     final b = broker?.trim();
-    return (b == null || b.isEmpty) ? '—' : b;
+    if (b != null && b.isNotEmpty) return b;
+    final first = firstWordOfTitle(title);
+    return first ?? '—';
+  }
+
+  /// First whitespace token of [title] for broker display fallback.
+  static String? firstWordOfTitle(String? title) {
+    final t = title?.trim() ?? '';
+    if (t.isEmpty) return null;
+    final token = t.split(RegExp(r'\s+')).firstWhere(
+          (p) => p.isNotEmpty,
+          orElse: () => '',
+        );
+    if (token.isEmpty) return null;
+    return token.toUpperCase();
   }
 
   String get displayNominee {
@@ -128,6 +145,13 @@ class AdvancedAccountRow {
   }
 
   String get displayValue => hasValue ? _inr.format(value) : '—';
+
+  String get displayWeightPct {
+    final p = weightPct;
+    if (p == null || p <= 0) return '';
+    final label = p >= 10 ? p.toStringAsFixed(0) : p.toStringAsFixed(1);
+    return '$label%';
+  }
 
   bool get isInactive => statusKind == AccountStatusKind.inactive;
 

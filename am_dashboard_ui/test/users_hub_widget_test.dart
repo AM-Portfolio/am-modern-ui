@@ -24,6 +24,13 @@ const _fixtureHub = AccountsHub(
     brokerPortfolioCount: 1,
     npsLinked: true,
   ),
+  familyMembers: [
+    FamilyMemberRow(
+      id: 'fm1',
+      name: 'Priyanshu',
+      portfolioCount: 1,
+    ),
+  ],
   portfolios: [
     AccountsPortfolioRow(
       portfolioId: 'p1',
@@ -77,14 +84,18 @@ void main() {
     expect(DashboardWidgetId.accountsHub.label, 'Users');
   });
 
-  testWidgets('Family tab shows Add family member CTA', (tester) async {
+  testWidgets('persona cards show All You and family; Family tab lists member',
+      (tester) async {
     await _pumpUsers(tester);
     expect(find.text('USERS'), findsOneWidget);
     expect(find.text('test@example.com'), findsNothing);
+    expect(find.text('All'), findsWidgets);
+    expect(find.text('Household'), findsOneWidget);
+    expect(find.text('Priyanshu'), findsWidgets);
     await tester.tap(find.text('Family'));
     await tester.pumpAndSettle();
-    expect(find.text('Add family member'), findsOneWidget);
-    expect(find.text('No family members yet'), findsOneWidget);
+    expect(find.text('Add'), findsOneWidget);
+    expect(find.text('Priyanshu'), findsWidgets);
   });
 
   testWidgets('NPS strip is not under Brokers tab', (tester) async {

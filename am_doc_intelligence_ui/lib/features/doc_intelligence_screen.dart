@@ -262,7 +262,8 @@ class _DocIntelligenceScreenState extends State<DocIntelligenceScreen> {
         (_autoPortfolioName != null && current == _autoPortfolioName);
     setState(() {
       _selectedSourceKeys = keys;
-      _documentType = null;
+      // CDSL/NPS auto-pick the matching doc type; other brokers clear for chips.
+      _documentType = defaultDocTypeForSourceKeys(keys);
       // Hide passwords until Email view finishes discover for the new set.
       if (_source == _ImportSource.email) {
         _emailDiscover = const EmailDiscoverSnapshot(discovering: true);
@@ -374,6 +375,14 @@ class _DocIntelligenceScreenState extends State<DocIntelligenceScreen> {
       onDocumentTypeChanged: (v) => setState(() {
         _documentType =
             (v == null || v.isEmpty || v == kImportDocTypeAuto) ? null : v;
+        // Doc-type chips can seed the matching source when none selected yet.
+        if (_selectedSourceKeys.isEmpty) {
+          if (_documentType == 'MUTUAL_FUND') {
+            _selectedSourceKeys = {'cdsl'};
+          } else if (_documentType == 'NPS_STATEMENT') {
+            _selectedSourceKeys = {'nps'};
+          }
+        }
       }),
       portfolioNameHint: brokerHint != null
           ? 'Optional — defaults to $brokerHint'

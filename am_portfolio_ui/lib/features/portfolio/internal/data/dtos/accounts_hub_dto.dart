@@ -10,6 +10,7 @@ class AccountsHubDto {
     this.dematAccounts = const [],
     this.nps,
     this.cas,
+    this.familyMembers = const [],
   });
 
   factory AccountsHubDto.fromJson(Map<String, dynamic> json) {
@@ -19,6 +20,7 @@ class AccountsHubDto {
     final demat = json['dematAccounts'];
     final nps = json['nps'];
     final cas = json['cas'];
+    final family = json['familyMembers'];
     return AccountsHubDto(
       identity: identity is Map<String, dynamic>
           ? AccountsIdentityDto.fromJson(identity)
@@ -48,6 +50,14 @@ class AccountsHubDto {
       cas: cas is Map<String, dynamic>
           ? CasDocumentMetaDto.fromJson(cas)
           : null,
+      familyMembers: family is List
+          ? family
+              .whereType<Map>()
+              .map((e) => FamilyMemberSummaryDto.fromJson(
+                    Map<String, dynamic>.from(e),
+                  ))
+              .toList()
+          : const [],
     );
   }
 
@@ -57,6 +67,32 @@ class AccountsHubDto {
   final List<DematAccountDto> dematAccounts;
   final NpsDocumentMetaDto? nps;
   final CasDocumentMetaDto? cas;
+  final List<FamilyMemberSummaryDto> familyMembers;
+}
+
+class FamilyMemberSummaryDto {
+  const FamilyMemberSummaryDto({
+    this.id,
+    this.name,
+    this.email,
+    this.portfolioCount,
+    this.source,
+  });
+
+  factory FamilyMemberSummaryDto.fromJson(Map<String, dynamic> json) =>
+      FamilyMemberSummaryDto(
+        id: json['id'] as String?,
+        name: json['name'] as String?,
+        email: json['email'] as String?,
+        portfolioCount: (json['portfolioCount'] as num?)?.toInt(),
+        source: json['source'] as String?,
+      );
+
+  final String? id;
+  final String? name;
+  final String? email;
+  final int? portfolioCount;
+  final String? source;
 }
 
 class AccountsIdentityDto {
@@ -92,6 +128,10 @@ class AccountsStatsDto {
     this.npsLinked,
     this.brokerPortfolioCount,
     this.overallXirrPct,
+    this.primaryTotalValue,
+    this.familyTotalValue,
+    this.householdTotalValue,
+    this.familySharePct,
   });
 
   factory AccountsStatsDto.fromJson(Map<String, dynamic> json) =>
@@ -102,6 +142,10 @@ class AccountsStatsDto {
         npsLinked: json['npsLinked'] as bool?,
         brokerPortfolioCount: (json['brokerPortfolioCount'] as num?)?.toInt(),
         overallXirrPct: (json['overallXirrPct'] as num?)?.toDouble(),
+        primaryTotalValue: (json['primaryTotalValue'] as num?)?.toDouble(),
+        familyTotalValue: (json['familyTotalValue'] as num?)?.toDouble(),
+        householdTotalValue: (json['householdTotalValue'] as num?)?.toDouble(),
+        familySharePct: (json['familySharePct'] as num?)?.toDouble(),
       );
 
   final int? activeDematCount;
@@ -110,6 +154,10 @@ class AccountsStatsDto {
   final bool? npsLinked;
   final int? brokerPortfolioCount;
   final double? overallXirrPct;
+  final double? primaryTotalValue;
+  final double? familyTotalValue;
+  final double? householdTotalValue;
+  final double? familySharePct;
 }
 
 class AccountsPortfolioRowDto {
@@ -124,6 +172,8 @@ class AccountsPortfolioRowDto {
     this.returnPct,
     this.assetCount,
     this.dummy,
+    this.familyMemberId,
+    this.familyMemberName,
   });
 
   factory AccountsPortfolioRowDto.fromJson(Map<String, dynamic> json) =>
@@ -138,6 +188,8 @@ class AccountsPortfolioRowDto {
         returnPct: (json['returnPct'] as num?)?.toDouble(),
         assetCount: (json['assetCount'] as num?)?.toInt(),
         dummy: json['dummy'] as bool?,
+        familyMemberId: json['familyMemberId'] as String?,
+        familyMemberName: json['familyMemberName'] as String?,
       );
 
   final String? portfolioId;
@@ -150,4 +202,6 @@ class AccountsPortfolioRowDto {
   final double? returnPct;
   final int? assetCount;
   final bool? dummy;
+  final String? familyMemberId;
+  final String? familyMemberName;
 }

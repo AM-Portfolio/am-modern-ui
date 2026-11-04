@@ -18,6 +18,15 @@ const _hub = AccountsHub(
     email: 'ssd2658@gmail.com',
     mobile: 'XXXXXX2257',
   ),
+  familyMembers: [
+    FamilyMemberRow(
+      id: 'fm1',
+      name: 'Priyanshu Kumar',
+      email: 'priyanshukpd@gmail.com',
+      portfolioCount: 2,
+      source: 'CAS',
+    ),
+  ],
   portfolios: [
     AccountsPortfolioRow(
       portfolioId: 'fyers-1',
@@ -39,6 +48,24 @@ const _hub = AccountsHub(
       brokerType: 'DHAN',
       current: 2462709,
       assetCount: 86,
+    ),
+    AccountsPortfolioRow(
+      portfolioId: 'zerodha-family',
+      displayName: 'Zerodha',
+      brokerType: 'ZERODHA',
+      current: 930000,
+      assetCount: 109,
+      familyMemberId: 'fm1',
+      familyMemberName: 'Priyanshu Kumar',
+    ),
+    AccountsPortfolioRow(
+      portfolioId: 'cdsl-family',
+      displayName: 'CDSL CAS',
+      brokerType: 'CDSL',
+      current: 127000,
+      assetCount: 12,
+      familyMemberId: 'fm1',
+      familyMemberName: 'Priyanshu Kumar',
     ),
   ],
   dematAccounts: [
@@ -102,6 +129,17 @@ void main() {
     expect(find.text('Active'), findsWidgets);
     expect(find.textContaining('Primary Investor Profile'), findsOneWidget);
     expect(find.textContaining('ABHIMANYU KUMAR 100%'), findsWidgets);
+    expect(find.text('All'), findsOneWidget);
+    expect(find.text('Household'), findsOneWidget);
+    expect(find.text('Priyanshu Kumar'), findsWidgets);
+
+    await tester.tap(find.text('Priyanshu Kumar').first);
+    await tester.pumpAndSettle();
+    expect(find.text('Family member'), findsOneWidget);
+
+    await tester.tap(find.text('Munish'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Primary Investor Profile'), findsOneWidget);
 
     await tester.tap(find.text('Demat (2)'));
     await tester.pumpAndSettle();
@@ -122,6 +160,7 @@ void main() {
     expect(find.text('Managed CDSL/NSDL'), findsNothing);
     expect(find.text('Table'), findsOneWidget);
     expect(find.text('Card'), findsOneWidget);
+    expect(find.text('BROKER'), findsOneWidget);
     expect(find.text('TYPE'), findsOneWidget);
     expect(find.text('NOMINEE STATUS'), findsOneWidget);
     expect(find.text('No nominee'), findsOneWidget);
@@ -129,5 +168,37 @@ void main() {
         findsOneWidget);
     expect(find.text('Previous'), findsOneWidget);
     expect(find.text('Next'), findsOneWidget);
+  });
+
+  testWidgets('Family tab shows members and tagged books', (tester) async {
+    tester.view.physicalSize = const Size(1400, 1000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          accountsHubProvider('u1').overrideWith((ref) async => _hub),
+        ],
+        child: MaterialApp(
+          theme: _theme(),
+          home: const Scaffold(
+            body: DashboardUsersPage(userId: 'u1'),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Family linking is not available yet.'), findsNothing);
+    await tester.tap(find.text('Family (1)'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Add family member'), findsOneWidget);
+    expect(find.text('Priyanshu Kumar'), findsWidgets);
+    expect(find.textContaining('priyanshukpd@gmail.com'), findsWidgets);
+    expect(find.byTooltip('Edit'), findsWidgets);
+    expect(find.byTooltip('Delete'), findsWidgets);
   });
 }

@@ -137,15 +137,29 @@ class _Card extends StatelessWidget {
                     ),
                   ),
                   const Spacer(),
-                  Text(
-                    account.displayValue,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: account.isInactive
-                          ? muted
-                          : Theme.of(context).colorScheme.onSurface,
-                    ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        account.displayValue,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: account.isInactive
+                              ? muted
+                              : Theme.of(context).colorScheme.onSurface,
+                        ),
+                      ),
+                      if (account.displayWeightPct.isNotEmpty)
+                        Text(
+                          account.displayWeightPct,
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: muted,
+                          ),
+                        ),
+                    ],
                   ),
                 ],
               ),

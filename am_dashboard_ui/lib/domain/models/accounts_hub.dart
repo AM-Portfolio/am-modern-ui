@@ -6,6 +6,8 @@ class AccountsHub {
     this.portfolios = const [],
     this.dematAccounts = const [],
     this.nps,
+    this.npsAccounts = const [],
+    this.familyMembers = const [],
   });
 
   factory AccountsHub.fromJson(Map<String, dynamic> json) {
@@ -14,6 +16,8 @@ class AccountsHub {
     final portfolios = json['portfolios'];
     final demat = json['dematAccounts'];
     final nps = json['nps'];
+    final npsAccounts = json['npsAccounts'];
+    final family = json['familyMembers'];
     return AccountsHub(
       identity: identity is Map
           ? AccountsIdentity.fromJson(Map<String, dynamic>.from(identity))
@@ -40,6 +44,20 @@ class AccountsHub {
       nps: nps is Map
           ? NpsMetaRow.fromJson(Map<String, dynamic>.from(nps))
           : null,
+      npsAccounts: npsAccounts is List
+          ? npsAccounts
+              .whereType<Map>()
+              .map((e) => NpsMetaRow.fromJson(Map<String, dynamic>.from(e)))
+              .toList()
+          : const [],
+      familyMembers: family is List
+          ? family
+              .whereType<Map>()
+              .map((e) => FamilyMemberRow.fromJson(
+                    Map<String, dynamic>.from(e),
+                  ))
+              .toList()
+          : const [],
     );
   }
 
@@ -48,6 +66,34 @@ class AccountsHub {
   final List<AccountsPortfolioRow> portfolios;
   final List<DematAccountRow> dematAccounts;
   final NpsMetaRow? nps;
+  final List<NpsMetaRow> npsAccounts;
+  final List<FamilyMemberRow> familyMembers;
+}
+
+class FamilyMemberRow {
+  const FamilyMemberRow({
+    this.id,
+    this.name,
+    this.email,
+    this.portfolioCount,
+    this.source,
+  });
+
+  factory FamilyMemberRow.fromJson(Map<String, dynamic> json) =>
+      FamilyMemberRow(
+        id: json['id'] as String?,
+        name: (json['name'] as String?) ??
+            (json['displayName'] as String?),
+        email: json['email'] as String?,
+        portfolioCount: (json['portfolioCount'] as num?)?.toInt(),
+        source: json['source'] as String?,
+      );
+
+  final String? id;
+  final String? name;
+  final String? email;
+  final int? portfolioCount;
+  final String? source;
 }
 
 class AccountsIdentity {
@@ -83,6 +129,10 @@ class AccountsStats {
     this.npsLinked,
     this.brokerPortfolioCount,
     this.overallXirrPct,
+    this.primaryTotalValue,
+    this.familyTotalValue,
+    this.householdTotalValue,
+    this.familySharePct,
   });
 
   factory AccountsStats.fromJson(Map<String, dynamic> json) => AccountsStats(
@@ -92,6 +142,10 @@ class AccountsStats {
         npsLinked: json['npsLinked'] as bool?,
         brokerPortfolioCount: (json['brokerPortfolioCount'] as num?)?.toInt(),
         overallXirrPct: (json['overallXirrPct'] as num?)?.toDouble(),
+        primaryTotalValue: (json['primaryTotalValue'] as num?)?.toDouble(),
+        familyTotalValue: (json['familyTotalValue'] as num?)?.toDouble(),
+        householdTotalValue: (json['householdTotalValue'] as num?)?.toDouble(),
+        familySharePct: (json['familySharePct'] as num?)?.toDouble(),
       );
 
   final int? activeDematCount;
@@ -100,6 +154,10 @@ class AccountsStats {
   final bool? npsLinked;
   final int? brokerPortfolioCount;
   final double? overallXirrPct;
+  final double? primaryTotalValue;
+  final double? familyTotalValue;
+  final double? householdTotalValue;
+  final double? familySharePct;
 }
 
 class AccountsPortfolioRow {
@@ -114,6 +172,8 @@ class AccountsPortfolioRow {
     this.returnPct,
     this.assetCount,
     this.dummy,
+    this.familyMemberId,
+    this.familyMemberName,
   });
 
   factory AccountsPortfolioRow.fromJson(Map<String, dynamic> json) =>
@@ -128,6 +188,8 @@ class AccountsPortfolioRow {
         returnPct: (json['returnPct'] as num?)?.toDouble(),
         assetCount: (json['assetCount'] as num?)?.toInt(),
         dummy: json['dummy'] as bool?,
+        familyMemberId: json['familyMemberId'] as String?,
+        familyMemberName: json['familyMemberName'] as String?,
       );
 
   final String? portfolioId;
@@ -140,6 +202,8 @@ class AccountsPortfolioRow {
   final double? returnPct;
   final int? assetCount;
   final bool? dummy;
+  final String? familyMemberId;
+  final String? familyMemberName;
 
   bool get hasHoldings {
     if (assetCount != null) return assetCount! > 0;
@@ -194,6 +258,7 @@ class DematAccountRow {
     this.folio,
     this.active,
     this.portfolioId,
+    this.familyMemberId,
   });
 
   factory DematAccountRow.fromJson(Map<String, dynamic> json) =>
@@ -217,6 +282,7 @@ class DematAccountRow {
         folio: json['folio'] as String?,
         active: json['active'] as bool?,
         portfolioId: json['portfolioId'] as String?,
+        familyMemberId: json['familyMemberId'] as String?,
       );
 
   final String accountNo;
@@ -238,6 +304,7 @@ class DematAccountRow {
   final String? folio;
   final bool? active;
   final String? portfolioId;
+  final String? familyMemberId;
 
   /// Prefer BOID, then client id, then account number for selector subtitles.
   String? get externalIdLabel {
@@ -262,6 +329,7 @@ class NpsMetaRow {
     this.totalValue,
     this.nomineeDetails,
     this.registrationDate,
+    this.familyMemberId,
   });
 
   factory NpsMetaRow.fromJson(Map<String, dynamic> json) => NpsMetaRow(
@@ -275,6 +343,7 @@ class NpsMetaRow {
         totalValue: (json['totalValue'] as num?)?.toDouble(),
         nomineeDetails: json['nomineeDetails'] as String?,
         registrationDate: json['registrationDate'] as String?,
+        familyMemberId: json['familyMemberId'] as String?,
       );
 
   final String? pran;
@@ -287,6 +356,7 @@ class NpsMetaRow {
   final double? totalValue;
   final String? nomineeDetails;
   final String? registrationDate;
+  final String? familyMemberId;
 }
 
 /// Line from GET /v1/portfolios/{id}/nps/schemes.

@@ -78,7 +78,7 @@ String brokerDisplayName(String code) {
     case 'kotak':
       return 'Kotak';
     case 'cdsl':
-      return 'CDSL';
+      return 'CDSL CAS';
     case 'nps':
       return 'NPS';
     case '__auto__':
@@ -101,7 +101,7 @@ String brokerDisplayName(String code) {
         case 'KOTAK':
           return 'Kotak';
         case 'CDSL':
-          return 'CDSL';
+          return 'CDSL CAS';
         case 'NPS':
           return 'NPS';
         case '__AUTO__':

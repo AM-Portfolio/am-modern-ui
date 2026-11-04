@@ -120,6 +120,50 @@ void main() {
     expect(nps.value, 937908);
   });
 
+  test('mapper sets weightPct from scope total; subtitle has no %', () {
+    final brokers = _hub.portfolios.where((p) => p.isRunningBroker).toList();
+    final mf = _hub.dematAccounts
+        .where((a) => (a.accountType ?? '').toLowerCase() == 'mf')
+        .toList();
+    final demat = _hub.dematAccounts
+        .where((a) => (a.accountType ?? '').toLowerCase() != 'mf')
+        .toList();
+    const scope = 1000000.0;
+    final rows = mapAccountsHubToAdvancedRows(
+      brokers: brokers,
+      mf: mf,
+      demat: demat,
+      hub: _hub,
+      hasNps: true,
+      scopeTotalValue: scope,
+      includeFamilySummaries: false,
+    );
+    final dhan = rows.firstWhere((r) => r.title == 'Dhan');
+    expect(dhan.weightPct, closeTo(246.2709, 0.01));
+    expect(dhan.displayWeightPct, '246%');
+    expect(dhan.subtitle ?? '', isNot(contains('%')));
+
+    final dematRow = rows.firstWhere((r) => r.accountId == '12033201');
+    expect(dematRow.weightPct, closeTo(0.0113, 0.0001));
+    expect(dematRow.subtitle ?? '', isNot(contains('%')));
+  });
+
+  test('displayBroker falls back to first word of title', () {
+    expect(
+      AdvancedAccountRow.firstWordOfTitle('Dhan Equity'),
+      'DHAN',
+    );
+    final row = AdvancedAccountRow(
+      id: 'x',
+      type: 'demat',
+      title: 'Groww Demat 1208',
+      value: 1,
+      hasValue: true,
+    );
+    expect(row.displayBroker, 'GROWW');
+    expect(row.displayWeightPct, '');
+  });
+
   test('tab and broker filters intersect', () {
     final brokers = _hub.portfolios.where((p) => p.isRunningBroker).toList();
     final mf = _hub.dematAccounts

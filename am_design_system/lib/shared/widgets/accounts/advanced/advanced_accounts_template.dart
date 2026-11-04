@@ -132,18 +132,19 @@ class _AdvancedAccountsTemplateState extends State<AdvancedAccountsTemplate>
     _sortAscending = ascending;
     _sortedAccounts.sort((a, b) {
       int result;
+      // Column order: BROKER | TYPE | TITLE | DP/ID | NOMINEE | EMAIL | MOBILE | STATUS | VALUE
       switch (columnIndex) {
         case 0:
-          result = a.displayType.compareTo(b.displayType);
+          result = a.displayBroker.compareTo(b.displayBroker);
           break;
         case 1:
-          result = a.displayTitle.compareTo(b.displayTitle);
+          result = a.displayType.compareTo(b.displayType);
           break;
         case 2:
-          result = a.displayAccountId.compareTo(b.displayAccountId);
+          result = a.displayTitle.compareTo(b.displayTitle);
           break;
         case 3:
-          result = a.displayBroker.compareTo(b.displayBroker);
+          result = a.displayAccountId.compareTo(b.displayAccountId);
           break;
         case 4:
           result = a.displayNominee.compareTo(b.displayNominee);

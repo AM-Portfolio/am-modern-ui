@@ -520,6 +520,56 @@ final npsSchemesProvider =
   }
 });
 
+/// Soft family persona CRUD against portfolio-service.
+Future<FamilyMemberRow> createFamilyMember({
+  required ApiClient client,
+  required String displayName,
+  String? email,
+}) async {
+  final raw = await client.post(
+    '/v1/portfolios/family-members',
+    body: {
+      'displayName': displayName,
+      if (email != null && email.trim().isNotEmpty) 'email': email.trim(),
+    },
+    parser: (data) {
+      if (data is Map) return Map<String, dynamic>.from(data);
+      throw const FormatException('Family member create was not an object');
+    },
+  );
+  return FamilyMemberRow.fromJson(raw);
+}
+
+Future<FamilyMemberRow> updateFamilyMember({
+  required ApiClient client,
+  required String familyMemberId,
+  String? displayName,
+  String? email,
+}) async {
+  final body = <String, dynamic>{};
+  if (displayName != null) body['displayName'] = displayName;
+  if (email != null) body['email'] = email;
+  final raw = await client.put(
+    '/v1/portfolios/family-members/$familyMemberId',
+    body: body,
+    parser: (data) {
+      if (data is Map) return Map<String, dynamic>.from(data);
+      throw const FormatException('Family member update was not an object');
+    },
+  );
+  return FamilyMemberRow.fromJson(raw);
+}
+
+Future<void> deleteFamilyMember({
+  required ApiClient client,
+  required String familyMemberId,
+}) async {
+  await client.delete(
+    '/v1/portfolios/family-members/$familyMemberId',
+    parser: (_) => null,
+  );
+}
+
 List<PortfolioOverview> _portfolioOverviewsFromAccountsHub(AccountsHub hub) {
   final rows = hub.portfolios;
   if (rows.isEmpty) {

@@ -1,15 +1,32 @@
 import 'package:am_dashboard_ui/domain/models/accounts_hub.dart';
 import 'package:am_design_system/am_design_system.dart';
 
+bool _isPrimaryPortfolio(AccountsPortfolioRow p) {
+  final id = p.familyMemberId?.trim();
+  return id == null || id.isEmpty;
+}
+
+double? _weightPctOfScope(double? value, double? scopeTotal) {
+  if (value == null || scopeTotal == null || scopeTotal <= 0) return null;
+  return (value / scopeTotal) * 100.0;
+}
+
 /// Maps accounts-hub models into design-system [AdvancedAccountRow]s.
+///
+/// [brokers] / [mf] / [demat] should already be persona-scoped by the caller
+/// (You / member / All). [nps] overrides [hub.nps] for the selected persona.
 List<AdvancedAccountRow> mapAccountsHubToAdvancedRows({
   required List<AccountsPortfolioRow> brokers,
   required List<DematAccountRow> mf,
   required List<DematAccountRow> demat,
   required AccountsHub hub,
   required bool hasNps,
+  NpsMetaRow? nps,
+  double? scopeTotalValue,
+  bool includeFamilySummaries = true,
 }) {
   final out = <AdvancedAccountRow>[];
+  final npsMeta = nps ?? hub.nps;
 
   for (final p in brokers) {
     final title = p.displayName?.trim().isNotEmpty == true
@@ -28,6 +45,7 @@ List<AdvancedAccountRow> mapAccountsHubToAdvancedRows({
         statusKind: AccountStatusKind.active,
         value: p.current ?? 0,
         hasValue: p.current != null,
+        weightPct: _weightPctOfScope(p.current, scopeTotalValue),
         subtitle: [
           if (broker != null && broker.isNotEmpty) broker,
           if (assets != null) '$assets assets',
@@ -37,14 +55,14 @@ List<AdvancedAccountRow> mapAccountsHubToAdvancedRows({
   }
 
   for (final a in mf) {
-    out.add(_dematRow(a, type: 'mf'));
+    out.add(_dematRow(a, type: 'mf', scopeTotalValue: scopeTotalValue));
   }
   for (final a in demat) {
-    out.add(_dematRow(a, type: 'demat'));
+    out.add(_dematRow(a, type: 'demat', scopeTotalValue: scopeTotalValue));
   }
 
-  if (hasNps && hub.nps != null) {
-    final n = hub.nps!;
+  if (hasNps && npsMeta != null) {
+    final n = npsMeta;
     final nominee = n.nomineeDetails?.trim();
     out.add(
       AdvancedAccountRow(
@@ -60,6 +78,7 @@ List<AdvancedAccountRow> mapAccountsHubToAdvancedRows({
         statusKind: AccountStatusKind.active,
         value: n.totalValue ?? 0,
         hasValue: n.totalValue != null,
+        weightPct: _weightPctOfScope(n.totalValue, scopeTotalValue),
         subtitle: [
           if (n.registrationDate != null &&
               n.registrationDate!.trim().isNotEmpty)
@@ -72,10 +91,72 @@ List<AdvancedAccountRow> mapAccountsHubToAdvancedRows({
     );
   }
 
+  if (includeFamilySummaries) {
+    final familyBooks = hub.portfolios
+        .where((p) => !_isPrimaryPortfolio(p))
+        .toList();
+    for (final m in hub.familyMembers) {
+      final memberId = m.id?.trim();
+      final books = familyBooks
+          .where((p) => memberId != null && p.familyMemberId == memberId)
+          .toList();
+      final bookValue =
+          books.fold<double>(0, (s, p) => s + (p.current ?? 0));
+      out.add(
+        AdvancedAccountRow(
+          id: m.id ?? 'family-${m.name}',
+          type: 'family',
+          title: m.name?.trim().isNotEmpty == true
+              ? m.name!.trim()
+              : 'Family member',
+          accountId: m.id,
+          email: m.email,
+          status: 'Linked',
+          statusKind: AccountStatusKind.active,
+          value: bookValue,
+          hasValue: books.isNotEmpty,
+          subtitle: [
+            if (m.email != null && m.email!.isNotEmpty) m.email!,
+            if (m.portfolioCount != null) '${m.portfolioCount} demat',
+            if (m.source != null) m.source!,
+          ].join(' · '),
+        ),
+      );
+      for (final p in books) {
+        final title = p.displayName?.trim().isNotEmpty == true
+            ? p.displayName!.trim()
+            : (p.brokerType ?? p.portfolioId ?? 'Broker');
+        final broker = p.brokerType?.trim();
+        out.add(
+          AdvancedAccountRow(
+            id: 'family-book-${p.portfolioId ?? title}',
+            type: 'family',
+            title: title,
+            accountId: p.portfolioId,
+            broker: broker,
+            status: 'Active',
+            statusKind: AccountStatusKind.active,
+            value: p.current ?? 0,
+            hasValue: p.current != null,
+            subtitle: [
+              m.name?.trim().isNotEmpty == true ? m.name!.trim() : 'Family',
+              if (broker != null && broker.isNotEmpty) broker,
+              if (p.assetCount != null) '${p.assetCount} assets',
+            ].join(' · '),
+          ),
+        );
+      }
+    }
+  }
+
   return out;
 }
 
-AdvancedAccountRow _dematRow(DematAccountRow a, {required String type}) {
+AdvancedAccountRow _dematRow(
+  DematAccountRow a, {
+  required String type,
+  double? scopeTotalValue,
+}) {
   final isMf = type == 'mf';
   final title = isMf
       ? 'Folio ${a.folio ?? a.accountNo}'
@@ -121,6 +202,7 @@ AdvancedAccountRow _dematRow(DematAccountRow a, {required String type}) {
     statusKind: statusKind,
     value: a.holdingValue ?? 0,
     hasValue: a.holdingValue != null,
+    weightPct: _weightPctOfScope(a.holdingValue, scopeTotalValue),
     subtitle: [
       if (!isMf) 'Depository: CDSL',
       if (isMf && a.amcName != null && a.amcName!.trim().isNotEmpty)
@@ -145,7 +227,7 @@ List<AdvancedAccountRow> filterAdvancedAccountRowsByTab({
     case 'nps':
       return rows.where((r) => r.type == 'nps').toList();
     case 'family':
-      return const [];
+      return rows.where((r) => r.type == 'family').toList();
     case 'overview':
     default:
       return rows;

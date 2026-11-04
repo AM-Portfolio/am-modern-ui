@@ -151,6 +151,32 @@ String brokerKeyDisplayName(String? key) {
   return brokerDisplayName(brokerKeyToDocCode(k) ?? k);
 }
 
+/// Default document type when a shared source is selected (upload auto-select).
+String? defaultDocTypeForSourceKeys(Iterable<String> keys) {
+  final ordered = orderedImportSources(keys);
+  if (ordered.isEmpty) return null;
+  switch (ordered.first) {
+    case 'cdsl':
+      return 'MUTUAL_FUND';
+    case 'nps':
+      return 'NPS_STATEMENT';
+    default:
+      return null;
+  }
+}
+
+/// Default document type for a document-processor broker code (CDSL / NPS / …).
+String? defaultDocTypeForBrokerCode(String? brokerCode) {
+  switch ((brokerCode ?? '').toUpperCase()) {
+    case 'CDSL':
+      return 'MUTUAL_FUND';
+    case 'NPS':
+      return 'NPS_STATEMENT';
+    default:
+      return null;
+  }
+}
+
 /// Sentinel for optional Auto document type in the shared dropdown.
 const String kImportDocTypeAuto = '__AUTO__';
 

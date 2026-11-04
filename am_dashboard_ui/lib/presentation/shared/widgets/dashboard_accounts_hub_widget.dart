@@ -5,6 +5,7 @@ import 'package:am_dashboard_ui/presentation/providers/dashboard_overlay_provide
 import 'package:am_dashboard_ui/presentation/providers/dashboard_portfolio_scope.dart';
 import 'package:am_dashboard_ui/presentation/providers/dashboard_provider.dart';
 import 'package:am_dashboard_ui/presentation/shared/widgets/glass_card.dart';
+import 'package:am_dashboard_ui/presentation/shared/widgets/persona_card_strip.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -41,6 +42,35 @@ class _DashboardUsersHubWidgetState
   /// Secondary broker chip under Brokers / Demat / MF (`all` or broker key).
   String _brokerFilter = 'all';
 
+  /// null = You (primary); [FavoritePersonaStore.kAll] = household; otherwise soft family member id.
+  String? _familyMemberId;
+  String? _favoriteKey;
+  bool _favoriteApplied = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadFavorite();
+  }
+
+  Future<void> _loadFavorite() async {
+    final key = await FavoritePersonaStore.instance.load(widget.userId);
+    if (!mounted) return;
+    setState(() {
+      _favoriteKey = key;
+      if (!_favoriteApplied && key != null) {
+        _familyMemberId = FavoritePersonaStore.selectionFromKey(key);
+        _favoriteApplied = true;
+      }
+    });
+  }
+
+  Future<void> _setFavorite(String personaKey) async {
+    await FavoritePersonaStore.instance.save(widget.userId, personaKey);
+    if (!mounted) return;
+    setState(() => _favoriteKey = personaKey);
+  }
+
   @override
   Widget build(BuildContext context) {
     final async = ref.watch(accountsHubProvider(widget.userId));
@@ -73,13 +103,16 @@ class _DashboardUsersHubWidgetState
           ],
         ),
         data: (hub) {
-          final hasCas = hub.dematAccounts.isNotEmpty;
-          final hasNps = hub.nps?.pran != null && hub.nps!.pran!.isNotEmpty;
+          final personaDemat = _filteredDematByFamily(hub.dematAccounts);
+          final hasCas = personaDemat.isNotEmpty;
+          final personaNps = _npsForFamily(hub);
+          final hasNps =
+              personaNps?.pran != null && personaNps!.pran!.isNotEmpty;
           final showNps = hasNps &&
               (_primary == _UsersPrimaryTab.overview ||
                   _primary == _UsersPrimaryTab.nps);
           final brokerChips = _secondaryBrokerChips(hub);
-          final demat = _filteredByBroker(hub.dematAccounts);
+          final demat = _filteredByBroker(personaDemat);
           final mfRows = demat
               .where((a) => (a.accountType ?? '').toLowerCase() == 'mf')
               .toList();
@@ -99,15 +132,22 @@ class _DashboardUsersHubWidgetState
                   _primary == _UsersPrimaryTab.mf);
           final isFamily = _primary == _UsersPrimaryTab.family;
           final isOverview = _primary == _UsersPrimaryTab.overview;
+          final familyMembers = hub.familyMembers;
+          final showFamilyNameFilter = familyMembers.isNotEmpty;
 
-          final brokerCount =
-              hub.portfolios.where((p) => p.isRunningBroker).length;
-          final mfCount = hub.dematAccounts
+          final brokerCount = portfolios.where((p) => p.isRunningBroker).length;
+          final mfCount = personaDemat
               .where((a) => (a.accountType ?? '').toLowerCase() == 'mf')
               .length;
-          final dematCount = hub.dematAccounts
+          final dematCount = personaDemat
               .where((a) => (a.accountType ?? '').toLowerCase() != 'mf')
               .length;
+          final scopeTotal = _scopeTotalValue(
+            demat: personaDemat,
+            brokers: portfolios,
+            nps: personaNps,
+            allNps: _familyMemberId == FavoritePersonaStore.kAll ? hub.npsAccounts : null,
+          );
           final showBrokerSwitcher = !isFamily &&
               (_primary == _UsersPrimaryTab.brokers ||
                   _primary == _UsersPrimaryTab.demat ||
@@ -120,14 +160,17 @@ class _DashboardUsersHubWidgetState
             children: [
               _CompactHeader(
                 identity: hub.identity,
-                nps: hub.nps,
+                nps: personaNps,
                 xirrPct: hub.stats?.overallXirrPct,
+                familySharePct: hub.stats?.familySharePct,
                 onOpenUsers: widget.onOpenUsers,
               ),
               const SizedBox(height: 8),
               _StatsChips(
                 stats: hub.stats,
                 highlightNps: _primary == _UsersPrimaryTab.nps,
+                showFamilyShare: _familyMemberId == FavoritePersonaStore.kAll ||
+                    _primary == _UsersPrimaryTab.family,
               ),
               const SizedBox(height: 8),
               _CompactFilterRow(
@@ -144,6 +187,21 @@ class _DashboardUsersHubWidgetState
                 brokerSelected: _brokerFilter,
                 onBrokerSelected: _onSecondaryBrokerSelected,
               ),
+              if (showFamilyNameFilter) ...[
+                const SizedBox(height: 8),
+                PersonaCardStrip(
+                  members: familyMembers,
+                  selectedId: _familyMemberId,
+                  primaryLabel: hub.identity?.name?.trim().isNotEmpty == true
+                      ? hub.identity!.name!.trim()
+                      : 'You',
+                  favoriteKey: _favoriteKey,
+                  compact: true,
+                  onSelected: (id) => _onFamilyMemberSelected(hub, id),
+                  onFavorite: _setFavorite,
+                  onDelete: (m) => _deleteFamilyMember(context, m),
+                ),
+              ],
               const SizedBox(height: 8),
               Expanded(
                 child: SingleChildScrollView(
@@ -152,7 +210,11 @@ class _DashboardUsersHubWidgetState
                     children: [
                       if (isFamily) ...[
                         _FamilyTab(
-                          onAdd: () => _showAddFamilyStub(context),
+                          members: familyMembers,
+                          onAdd: () => _addFamilyMember(context),
+                          onEdit: (m) => _editFamilyMember(context, m),
+                          onDelete: (m) => _deleteFamilyMember(context, m),
+                          onSelect: (id) => _onFamilyMemberSelected(hub, id),
                         ),
                       ] else ...[
                         if (showCasCta && widget.onOpenDocIntel != null)
@@ -169,8 +231,15 @@ class _DashboardUsersHubWidgetState
                               ),
                             ),
                           ),
-                        if (showNps) ...[
-                          _NpsStrip(nps: hub.nps!, currency: currency),
+                        if (showNps && personaNps != null) ...[
+                          _NpsStrip(
+                            nps: personaNps,
+                            currency: currency,
+                            pctOfScope: _pctOfScope(
+                              personaNps.totalValue,
+                              scopeTotal,
+                            ),
+                          ),
                         ],
                         if (showDematSection &&
                             !isOverview &&
@@ -190,6 +259,10 @@ class _DashboardUsersHubWidgetState
                               child: _DematDetailCard(
                                 account: a,
                                 currency: currency,
+                                pctOfScope: _pctOfScope(
+                                  a.holdingValue,
+                                  scopeTotal,
+                                ),
                               ),
                             ),
                           ),
@@ -212,6 +285,10 @@ class _DashboardUsersHubWidgetState
                               child: _FolioDetailCard(
                                 account: a,
                                 currency: currency,
+                                pctOfScope: _pctOfScope(
+                                  a.holdingValue,
+                                  scopeTotal,
+                                ),
                               ),
                             ),
                           ),
@@ -234,6 +311,7 @@ class _DashboardUsersHubWidgetState
                               child: _PortfolioCard(
                                 row: p,
                                 currency: currency,
+                                pctOfScope: _pctOfScope(p.current, scopeTotal),
                                 onTap: () => _selectPortfolio(p),
                               ),
                             ),
@@ -252,7 +330,7 @@ class _DashboardUsersHubWidgetState
                               if (_primary == _UsersPrimaryTab.mf) ...mfRows,
                             ],
                             nps: _primary == _UsersPrimaryTab.nps
-                                ? hub.nps
+                                ? personaNps
                                 : null,
                           ),
                         ],
@@ -268,13 +346,18 @@ class _DashboardUsersHubWidgetState
     );
   }
 
-  Future<void> _showAddFamilyStub(BuildContext context) async {
-    final nameCtrl = TextEditingController();
-    final emailCtrl = TextEditingController();
-    final added = await showDialog<bool>(
+  Future<(String, String?)?> _promptFamilyFields(
+    BuildContext context, {
+    String title = 'Add family member',
+    String? initialName,
+    String? initialEmail,
+  }) async {
+    final nameCtrl = TextEditingController(text: initialName ?? '');
+    final emailCtrl = TextEditingController(text: initialEmail ?? '');
+    final saved = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Add family member'),
+        title: Text(title),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -286,7 +369,7 @@ class _DashboardUsersHubWidgetState
             const SizedBox(height: 8),
             TextField(
               controller: emailCtrl,
-              decoration: const InputDecoration(labelText: 'Email'),
+              decoration: const InputDecoration(labelText: 'Email (optional)'),
               keyboardType: TextInputType.emailAddress,
             ),
           ],
@@ -298,17 +381,141 @@ class _DashboardUsersHubWidgetState
           ),
           FilledButton(
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Add'),
+            child: const Text('Save'),
           ),
         ],
       ),
     );
+    final name = nameCtrl.text.trim();
+    final email = emailCtrl.text.trim();
     nameCtrl.dispose();
     emailCtrl.dispose();
-    if (!context.mounted || added != true) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Family linking coming soon')),
+    if (saved != true || name.isEmpty) return null;
+    return (name, email.isEmpty ? null : email);
+  }
+
+  Future<void> _addFamilyMember(BuildContext context) async {
+    final hub = ref.read(accountsHubProvider(widget.userId)).asData?.value;
+    if (hub != null && hub.familyMembers.length >= 5) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Maximum of 5 family members allowed')),
+        );
+      }
+      return;
+    }
+    final result = await _promptFamilyFields(context);
+    if (result == null || !context.mounted) return;
+    try {
+      final client = await ref.read(portfolioApiClientProvider.future);
+      await createFamilyMember(
+        client: client,
+        displayName: result.$1,
+        email: result.$2,
+      );
+      ref.invalidate(accountsHubProvider(widget.userId));
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Family member added')),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not add: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _editFamilyMember(
+    BuildContext context,
+    FamilyMemberRow member,
+  ) async {
+    final id = member.id?.trim();
+    if (id == null || id.isEmpty) return;
+    final result = await _promptFamilyFields(
+      context,
+      title: 'Edit family member',
+      initialName: member.name,
+      initialEmail: member.email,
     );
+    if (result == null || !context.mounted) return;
+    try {
+      final client = await ref.read(portfolioApiClientProvider.future);
+      await updateFamilyMember(
+        client: client,
+        familyMemberId: id,
+        displayName: result.$1,
+        email: result.$2 ?? '',
+      );
+      ref.invalidate(accountsHubProvider(widget.userId));
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Family member updated')),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not update: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _deleteFamilyMember(
+    BuildContext context,
+    FamilyMemberRow member,
+  ) async {
+    final id = member.id?.trim();
+    if (id == null || id.isEmpty) return;
+    final name = member.name?.trim().isNotEmpty == true
+        ? member.name!.trim()
+        : 'this family member';
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete family member?'),
+        content: Text(
+          'Removes $name, their linked broker portfolios, and CAS/NPS imports for that persona.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || !context.mounted) return;
+    try {
+      final client = await ref.read(portfolioApiClientProvider.future);
+      await deleteFamilyMember(client: client, familyMemberId: id);
+      if (_familyMemberId == id) {
+        setState(() => _familyMemberId = null);
+      }
+      if (_favoriteKey == id) {
+        await FavoritePersonaStore.instance.clear(widget.userId);
+        if (mounted) setState(() => _favoriteKey = null);
+      }
+      ref.invalidate(accountsHubProvider(widget.userId));
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Family member deleted')),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not delete: $e')),
+        );
+      }
+    }
   }
 
   List<({String key, String label, String? portfolioId})> _secondaryBrokerChips(
@@ -335,6 +542,42 @@ class _DashboardUsersHubWidgetState
     return out;
   }
 
+  bool _matchesPersona(String? rowFamilyId) {
+    if (_familyMemberId == FavoritePersonaStore.kAll) return true;
+    final primary = rowFamilyId == null || rowFamilyId.trim().isEmpty;
+    if (_familyMemberId == null) return primary;
+    return rowFamilyId == _familyMemberId;
+  }
+
+  List<DematAccountRow> _filteredDematByFamily(List<DematAccountRow> all) {
+    return all.where((a) => _matchesPersona(a.familyMemberId)).toList();
+  }
+
+  NpsMetaRow? _npsForFamily(AccountsHub hub) {
+    final list = hub.npsAccounts;
+    if (_familyMemberId == FavoritePersonaStore.kAll) {
+      // Prefer primary strip; household % uses allNps sum separately.
+      for (final n in list) {
+        if (n.familyMemberId == null || n.familyMemberId!.trim().isEmpty) {
+          return n;
+        }
+      }
+      return hub.nps ?? (list.isNotEmpty ? list.first : null);
+    }
+    if (_familyMemberId == null) {
+      for (final n in list) {
+        if (n.familyMemberId == null || n.familyMemberId!.trim().isEmpty) {
+          return n;
+        }
+      }
+      return hub.nps;
+    }
+    for (final n in list) {
+      if (n.familyMemberId == _familyMemberId) return n;
+    }
+    return null;
+  }
+
   List<DematAccountRow> _filteredByBroker(List<DematAccountRow> all) {
     if (_brokerFilter == 'all') return all;
     return all.where((a) {
@@ -344,12 +587,70 @@ class _DashboardUsersHubWidgetState
   }
 
   List<AccountsPortfolioRow> _filteredPortfolios(AccountsHub hub) {
-    final rows = hub.portfolios.where((p) => p.isRunningBroker).toList();
+    var rows = hub.portfolios
+        .where((p) => p.isRunningBroker && _matchesPersona(p.familyMemberId))
+        .toList();
     if (_brokerFilter == 'all') return rows;
     return rows.where((p) {
       final key = (p.brokerType ?? p.displayName ?? '').trim().toUpperCase();
       return key == _brokerFilter;
     }).toList();
+  }
+
+  double _scopeTotalValue({
+    required List<DematAccountRow> demat,
+    required List<AccountsPortfolioRow> brokers,
+    NpsMetaRow? nps,
+    List<NpsMetaRow>? allNps,
+  }) {
+    var sum = 0.0;
+    for (final a in demat) {
+      final v = a.holdingValue;
+      if (v != null && v > 0) sum += v;
+    }
+    for (final p in brokers) {
+      final v = p.current;
+      if (v != null && v > 0) sum += v;
+    }
+    if (allNps != null) {
+      for (final n in allNps) {
+        final v = n.totalValue;
+        if (v != null && v > 0) sum += v;
+      }
+    } else if (nps?.totalValue != null && nps!.totalValue! > 0) {
+      sum += nps.totalValue!;
+    }
+    return sum;
+  }
+
+  String? _pctOfScope(double? value, double scopeTotal) {
+    if (value == null || scopeTotal <= 0) return null;
+    final pct = (value / scopeTotal) * 100.0;
+    final label = pct >= 10 ? pct.toStringAsFixed(0) : pct.toStringAsFixed(1);
+    return '$label%';
+  }
+
+  void _onFamilyMemberSelected(AccountsHub hub, String? memberId) {
+    setState(() {
+      _familyMemberId = memberId;
+      _brokerFilter = 'all';
+    });
+    final rows = hub.portfolios.where((p) {
+      if (!p.isRunningBroker) return false;
+      if (memberId == FavoritePersonaStore.kAll) return true;
+      if (memberId == null) {
+        return p.familyMemberId == null || p.familyMemberId!.trim().isEmpty;
+      }
+      return p.familyMemberId == memberId;
+    }).toList();
+    if (rows.isEmpty) return;
+    final first = rows.first;
+    final id = first.portfolioId;
+    if (id == null || id.isEmpty) return;
+    final label = first.displayName?.trim().isNotEmpty == true
+        ? first.displayName!.trim()
+        : (first.brokerType ?? id);
+    _scopePortfolio(id, label);
   }
 
   void _onSecondaryBrokerSelected(
@@ -387,11 +688,13 @@ class _CompactHeader extends StatelessWidget {
     this.identity,
     this.nps,
     this.xirrPct,
+    this.familySharePct,
   });
 
   final AccountsIdentity? identity;
   final NpsMetaRow? nps;
   final double? xirrPct;
+  final double? familySharePct;
   final VoidCallback? onOpenUsers;
 
   @override
@@ -487,6 +790,16 @@ class _CompactHeader extends StatelessWidget {
                 fontSize: 18,
               ),
         ),
+        if (familySharePct != null && familySharePct! > 0) ...[
+          const SizedBox(height: 4),
+          Text(
+            'Family ${familySharePct!.toStringAsFixed(familySharePct! >= 10 ? 0 : 1)}% of portfolio',
+            style: context.text.caption().copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: muted,
+                ),
+          ),
+        ],
         if (pran != null && pran.isNotEmpty) ...[
           const SizedBox(height: 6),
           Container(
@@ -594,45 +907,110 @@ class _CompactFilterRow extends StatelessWidget {
 }
 
 class _FamilyTab extends StatelessWidget {
-  const _FamilyTab({required this.onAdd});
+  const _FamilyTab({
+    required this.members,
+    required this.onAdd,
+    required this.onEdit,
+    required this.onDelete,
+    required this.onSelect,
+  });
 
+  final List<FamilyMemberRow> members;
   final VoidCallback onAdd;
+  final ValueChanged<FamilyMemberRow> onEdit;
+  final ValueChanged<FamilyMemberRow> onDelete;
+  final ValueChanged<String?> onSelect;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        border: Border.all(color: context.colors.border.withValues(alpha: 0.4)),
-        borderRadius: BorderRadius.circular(AppRadii.sm),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            'No family members yet',
-            style: context.text.label().copyWith(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 13,
+    if (members.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          border:
+              Border.all(color: context.colors.border.withValues(alpha: 0.4)),
+          borderRadius: BorderRadius.circular(AppRadii.sm),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              'No family members yet',
+              style: context.text.label().copyWith(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13,
+                  ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Add manually or import a CDSL/NPS statement whose holder differs from your profile.',
+              style: context.text.caption().copyWith(
+                    color: context.colors.textSecondary,
+                  ),
+            ),
+            const SizedBox(height: 12),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: FilledButton.tonal(
+                onPressed: members.length >= 5 ? null : onAdd,
+                child: Text(
+                  members.length >= 5
+                      ? 'Family limit reached (5)'
+                      : 'Add family member',
                 ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            'Link household members when family sharing is available.',
-            style: context.text.caption().copyWith(
-                  color: context.colors.textSecondary,
-                ),
-          ),
-          const SizedBox(height: 12),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: FilledButton.tonal(
-              onPressed: onAdd,
-              child: const Text('Add family member'),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Align(
+          alignment: Alignment.centerLeft,
+          child: TextButton.icon(
+            onPressed: members.length >= 5 ? null : onAdd,
+            icon: const Icon(Icons.person_add_alt_1, size: 16),
+            label: Text(
+              members.length >= 5 ? 'Limit 5' : 'Add',
             ),
           ),
-        ],
-      ),
+        ),
+        for (final m in members)
+          Material(
+            type: MaterialType.transparency,
+            child: ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(m.name?.trim().isNotEmpty == true
+                  ? m.name!.trim()
+                  : 'Family member'),
+              subtitle: Text(
+                [
+                  if (m.email != null && m.email!.isNotEmpty) m.email,
+                  if (m.portfolioCount != null) '${m.portfolioCount} demat',
+                  if (m.source != null) m.source,
+                ].whereType<String>().join(' · '),
+              ),
+              trailing: Wrap(
+                spacing: 0,
+                children: [
+                  IconButton(
+                    tooltip: 'Edit',
+                    icon: const Icon(Icons.edit_outlined, size: 18),
+                    onPressed: () => onEdit(m),
+                  ),
+                  IconButton(
+                    tooltip: 'Delete',
+                    icon: const Icon(Icons.delete_outline, size: 18),
+                    onPressed: () => onDelete(m),
+                  ),
+                ],
+              ),
+              onTap: () => onSelect(m.id),
+            ),
+          ),
+      ],
     );
   }
 }
@@ -642,11 +1020,13 @@ class _PortfolioCard extends StatelessWidget {
     required this.row,
     required this.currency,
     required this.onTap,
+    this.pctOfScope,
   });
 
   final AccountsPortfolioRow row;
   final NumberFormat currency;
   final VoidCallback onTap;
+  final String? pctOfScope;
 
   @override
   Widget build(BuildContext context) {
@@ -682,6 +1062,7 @@ class _PortfolioCard extends StatelessWidget {
             Text(
               [
                 if (row.current != null) currency.format(row.current),
+                if (pctOfScope != null) pctOfScope!,
                 if (row.assetCount != null) '${row.assetCount} assets',
                 if (row.returnPct != null)
                   '${row.returnPct!.toStringAsFixed(1)}%',
@@ -723,14 +1104,20 @@ class _Chip extends StatelessWidget {
 }
 
 class _StatsChips extends StatelessWidget {
-  const _StatsChips({this.stats, this.highlightNps = false});
+  const _StatsChips({
+    this.stats,
+    this.highlightNps = false,
+    this.showFamilyShare = false,
+  });
 
   final AccountsStats? stats;
   final bool highlightNps;
+  final bool showFamilyShare;
 
   @override
   Widget build(BuildContext context) {
     if (stats == null) return const SizedBox.shrink();
+    final share = stats!.familySharePct;
     final items = <(String, bool)>[
       if (stats!.activeDematCount != null)
         ('Demat ${stats!.activeDematCount}', false),
@@ -738,6 +1125,11 @@ class _StatsChips extends StatelessWidget {
       if (stats!.brokerPortfolioCount != null)
         ('Brokers ${stats!.brokerPortfolioCount}', false),
       if (stats!.npsLinked == true) ('NPS', highlightNps),
+      if (showFamilyShare && share != null && share > 0)
+        (
+          'Family ${share.toStringAsFixed(share >= 10 ? 0 : 1)}%',
+          true,
+        ),
     ];
     if (items.isEmpty) return const SizedBox.shrink();
     return Wrap(
@@ -752,10 +1144,15 @@ class _StatsChips extends StatelessWidget {
 }
 
 class _NpsStrip extends StatelessWidget {
-  const _NpsStrip({required this.nps, required this.currency});
+  const _NpsStrip({
+    required this.nps,
+    required this.currency,
+    this.pctOfScope,
+  });
 
   final NpsMetaRow nps;
   final NumberFormat currency;
+  final String? pctOfScope;
 
   @override
   Widget build(BuildContext context) {
@@ -879,13 +1276,27 @@ class _NpsStrip extends StatelessWidget {
                   ),
                 ),
                 if (total != null)
-                  Text(
-                    currency.format(total),
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
-                      color: accent,
-                    ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        currency.format(total),
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                          color: accent,
+                        ),
+                      ),
+                      if (pctOfScope != null)
+                        Text(
+                          pctOfScope!,
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: muted,
+                          ),
+                        ),
+                    ],
                   ),
               ],
             ),
@@ -971,10 +1382,15 @@ class _NpsStrip extends StatelessWidget {
 }
 
 class _DematDetailCard extends StatelessWidget {
-  const _DematDetailCard({required this.account, required this.currency});
+  const _DematDetailCard({
+    required this.account,
+    required this.currency,
+    this.pctOfScope,
+  });
 
   final DematAccountRow account;
   final NumberFormat currency;
+  final String? pctOfScope;
 
   @override
   Widget build(BuildContext context) {
@@ -1016,7 +1432,10 @@ class _DematDetailCard extends StatelessWidget {
               ),
               if (account.holdingValue != null)
                 Text(
-                  currency.format(account.holdingValue),
+                  [
+                    currency.format(account.holdingValue),
+                    if (pctOfScope != null) pctOfScope!,
+                  ].join(' · '),
                   style: context.text.label().copyWith(
                         fontWeight: FontWeight.w700,
                         fontSize: 12,
@@ -1060,10 +1479,15 @@ String _dematAccountDetailLine(DematAccountRow a) {
 }
 
 class _FolioDetailCard extends StatelessWidget {
-  const _FolioDetailCard({required this.account, required this.currency});
+  const _FolioDetailCard({
+    required this.account,
+    required this.currency,
+    this.pctOfScope,
+  });
 
   final DematAccountRow account;
   final NumberFormat currency;
+  final String? pctOfScope;
 
   @override
   Widget build(BuildContext context) {
@@ -1092,7 +1516,10 @@ class _FolioDetailCard extends StatelessWidget {
               ),
               if (account.holdingValue != null)
                 Text(
-                  currency.format(account.holdingValue),
+                  [
+                    currency.format(account.holdingValue),
+                    if (pctOfScope != null) pctOfScope!,
+                  ].join(' · '),
                   style: context.text.label().copyWith(
                         fontWeight: FontWeight.w700,
                         fontSize: 12,

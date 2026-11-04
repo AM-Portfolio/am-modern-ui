@@ -45,10 +45,10 @@ class AdvancedAccountsTable extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Row(
           children: [
-            _headerCell(context, 'TYPE', 1, 0),
-            _headerCell(context, 'ACCOUNT LEGAL NAME', 2, 1),
-            _headerCell(context, 'DP / ACCOUNT ID', 2, 2),
-            _headerCell(context, 'BROKER', 1, 3),
+            _headerCell(context, 'BROKER', 1, 0),
+            _headerCell(context, 'TYPE', 1, 1),
+            _headerCell(context, 'ACCOUNT LEGAL NAME', 2, 2),
+            _headerCell(context, 'DP / ACCOUNT ID', 2, 3),
             _headerCell(context, 'NOMINEE STATUS', 2, 4),
             _headerCell(context, 'LINKED EMAIL', 2, 5),
             _headerCell(context, 'MOBILE', 1, 6),
@@ -126,6 +126,7 @@ class AdvancedAccountsTable extends StatelessWidget {
         ),
         child: Row(
           children: [
+            Expanded(child: _brokerCell(context, account)),
             Expanded(child: _typeBadge(context, account)),
             Expanded(
               flex: 2,
@@ -162,7 +163,6 @@ class AdvancedAccountsTable extends StatelessWidget {
                 ),
               ),
             ),
-            Expanded(child: _brokerCell(context, account)),
             Expanded(flex: 2, child: _nomineeBadge(context, account)),
             Expanded(
               flex: 2,
@@ -181,15 +181,30 @@ class AdvancedAccountsTable extends StatelessWidget {
             ),
             Expanded(child: _statusCell(context, account)),
             Expanded(
-              child: Text(
-                account.displayValue,
-                textAlign: TextAlign.right,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color: valueColor,
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    account.displayValue,
+                    textAlign: TextAlign.right,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: valueColor,
+                    ),
+                  ),
+                  if (account.displayWeightPct.isNotEmpty)
+                    Text(
+                      account.displayWeightPct,
+                      textAlign: TextAlign.right,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: muted,
+                      ),
+                    ),
+                ],
               ),
             ),
           ],
