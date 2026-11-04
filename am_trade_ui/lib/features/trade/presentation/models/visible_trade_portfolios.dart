@@ -13,6 +13,9 @@ List<TradePortfolioViewModel> mergeVisibleTradePortfolios({
 }) {
   final seen = <String>{};
   final out = <TradePortfolioViewModel>[];
+  final shellById = {
+    for (final book in shell) book.portfolioId: book,
+  };
 
   void add(TradePortfolioViewModel book) {
     if (book.id.isEmpty || book.id == 'all' || !seen.add(book.id)) return;
@@ -20,13 +23,21 @@ List<TradePortfolioViewModel> mergeVisibleTradePortfolios({
   }
 
   for (final book in trade) {
-    add(book);
+    final shellBook = shellById[book.id];
+    add(
+      book.copyWith(
+        familyMemberId: book.familyMemberId ?? shellBook?.familyMemberId,
+        familyMemberName: book.familyMemberName ?? shellBook?.familyMemberName,
+      ),
+    );
   }
   for (final book in shell) {
     add(
       TradePortfolioViewModel(
         id: book.portfolioId,
         name: book.portfolioName,
+        familyMemberId: book.familyMemberId,
+        familyMemberName: book.familyMemberName,
       ),
     );
   }

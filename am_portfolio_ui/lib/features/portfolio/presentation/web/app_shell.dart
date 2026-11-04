@@ -9,6 +9,7 @@ import 'package:am_dashboard_ui/presentation/providers/dashboard_provider.dart';
 import '../cubit/portfolio_cubit.dart';
 import '../cubit/portfolio_state.dart';
 import '../../internal/domain/entities/portfolio_list.dart';
+import '../widgets/family_filtered_portfolio_items.dart';
 
 class AppShell extends StatelessWidget {
   final Widget child;
@@ -202,16 +203,69 @@ class _DefaultAwarePortfolioSelectorState
     final selectedName = context.selectedPortfolioName;
     final userId = _userId();
     final externalIds = _externalIdsFor(userId);
-    return SharedPortfolioSelector<PortfolioItem>(
-      currentPortfolioId: selectedId,
-      currentPortfolioName: selectedName,
-      portfolios: [
-        const PortfolioItem(
-          portfolioId: 'all',
-          portfolioName: 'All Portfolios',
-        ),
-        ...widget.portfolios,
-      ],
+    final hub = userId.isEmpty
+        ? null
+        : ref.watch(accountsHubProvider(userId)).asData?.value;
+    final members = familyMembersForFilter(hub);
+    final showFamily = showFamilyPortfolioFilter(
+      members.map((m) => (id: m.id, name: m.name)),
+    );
+    final filterKey = ref.watch(familyPortfolioFilterProvider);
+    final filtered = familyFilteredPortfolioItems(
+      portfolios: widget.portfolios,
+      filterKey: filterKey,
+      showFamilyUi: showFamily,
+      hub: hub,
+    );
+    final portfolios = <PortfolioItem>[
+      const PortfolioItem(
+        portfolioId: 'all',
+        portfolioName: 'All Portfolios',
+      ),
+      ...filtered,
+    ];
+
+    var currentId = selectedId;
+    if (currentId != null &&
+        currentId != 'all' &&
+        !portfolios.any((p) => p.portfolioId == currentId)) {
+      Future.microtask(() {
+        if (!context.mounted) return;
+        context.selectPortfolio('all', 'All Portfolios');
+      });
+      currentId = 'all';
+    }
+
+    final currentName = portfolios
+            .where((p) => p.portfolioId == (currentId ?? 'all'))
+            .map((p) => p.portfolioName)
+            .firstOrNull ??
+        selectedName;
+
+    return FamilyAwarePortfolioPicker<PortfolioItem>(
+      showFamilyFilter: showFamily,
+      familyFilterKey: filterKey,
+      primaryLabel: primaryFamilyLabel(hub),
+      members: members,
+      onFamilySelected: (key) {
+        ref.read(familyPortfolioFilterProvider.notifier).select(key);
+        final next = familyFilteredPortfolioItems(
+          portfolios: widget.portfolios,
+          filterKey: key,
+          showFamilyUi: showFamily,
+          hub: hub,
+        );
+        final id = selectedId;
+        final stillValid =
+            id == null || id == 'all' || next.any((p) => p.portfolioId == id);
+        if (!stillValid) {
+          context.selectPortfolio('all', 'All Portfolios');
+        }
+      },
+      layout: FamilyAwarePortfolioPickerLayout.stack,
+      currentPortfolioId: currentId,
+      currentPortfolioName: currentName,
+      portfolios: portfolios,
       onPortfolioSelected: (id, name) {
         context.selectPortfolio(id, name);
       },

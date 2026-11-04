@@ -13,6 +13,8 @@ class TradePortfolioViewModel {
     this.description,
     this.lastUpdated,
     this.isPaper = false,
+    this.familyMemberId,
+    this.familyMemberName,
     // Trade metrics
     this.totalTrades = 0,
     this.netProfitLoss,
@@ -57,6 +59,8 @@ class TradePortfolioViewModel {
   final String? description;
   final DateTime? lastUpdated;
   final bool isPaper;
+  final String? familyMemberId;
+  final String? familyMemberName;
 
   // Trade metrics
   final int totalTrades;
@@ -96,6 +100,7 @@ class TradePortfolioViewModel {
   /// overrideable via this method. It is a Realized metric that must never
   /// be confused with Unrealized (live) portfolio values.
   TradePortfolioViewModel copyWith({
+    String? name,
     double? totalValue,
     double? totalGainLoss,
     double? totalGainLossPercentage,
@@ -103,10 +108,12 @@ class TradePortfolioViewModel {
     DateTime? lastUpdated,
     double? winRate,
     bool? isPaper,
+    String? familyMemberId,
+    String? familyMemberName,
   }) =>
       TradePortfolioViewModel(
         id: id,
-        name: name,
+        name: name ?? this.name,
         ownerId: ownerId,
         totalValue: totalValue ?? this.totalValue,
         totalGainLoss: totalGainLoss ?? this.totalGainLoss,
@@ -123,6 +130,8 @@ class TradePortfolioViewModel {
         losingTrades: losingTrades,
         openPositions: openPositions,
         isPaper: isPaper ?? this.isPaper,
+        familyMemberId: familyMemberId ?? this.familyMemberId,
+        familyMemberName: familyMemberName ?? this.familyMemberName,
       );
 }
 

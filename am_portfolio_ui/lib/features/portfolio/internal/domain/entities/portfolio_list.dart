@@ -13,6 +13,8 @@ abstract class PortfolioItem with _$PortfolioItem {
     @Default(false) bool isDummy,
     @Default(true) bool hasHoldings,
     String? brokerType,
+    String? familyMemberId,
+    String? familyMemberName,
   }) = _PortfolioItem;
   const PortfolioItem._();
 

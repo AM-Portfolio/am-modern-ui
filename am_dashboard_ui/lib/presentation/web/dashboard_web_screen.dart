@@ -140,25 +140,48 @@ class DashboardWebScreen extends ConsumerWidget {
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        Text(
-                          'Dashboard',
-                          style: context.text.sectionTitle().copyWith(
-                                color: onSurface,
-                                fontWeight: FontWeight.w600,
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                'Dashboard',
+                                style: context.text.sectionTitle().copyWith(
+                                      color: onSurface,
+                                      fontWeight: FontWeight.w700,
+                                    ),
                               ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'Portfolio overview, performance and key metrics',
+                                style: TextStyle(
+                                  color: context.textSecondary,
+                                  fontSize: AppTypeScale.sm,
+                                  fontWeight: FontWeight.w500,
+                                  height: 1.2,
+                                ),
+                              ),
+                              if (showDemoBanner) ...[
+                                const SizedBox(height: AppSpacing.sm),
+                                const DemoAccountInlineBanner(),
+                              ],
+                            ],
+                          ),
                         ),
-                        if (showDemoBanner) ...[
-                          const SizedBox(width: AppSpacing.md),
-                          // Badge + welcome in one row; Upload is only "Add Portfolio".
-                          const Expanded(child: DemoAccountInlineBanner()),
-                        ] else
-                          const Spacer(),
-                        DashboardToolbar(
-                          userId: userId,
-                          glass: false,
-                          onSurface: onSurface,
-                          onOpenPaper: onOpenPaper,
-                          onQuickAdd: onQuickAdd,
+                        const SizedBox(width: AppSpacing.md),
+                        Flexible(
+                          child: Align(
+                            alignment: Alignment.centerRight,
+                            child: DashboardToolbar(
+                              userId: userId,
+                              glass: false,
+                              onSurface: onSurface,
+                              onOpenPaper: onOpenPaper,
+                              onOpenUsers: onOpenUsers,
+                              onQuickAdd: onQuickAdd,
+                            ),
+                          ),
                         ),
                       ],
                     ),

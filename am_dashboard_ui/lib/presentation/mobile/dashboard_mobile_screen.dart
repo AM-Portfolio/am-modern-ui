@@ -105,6 +105,7 @@ class _DashboardMobileScreenState
       onSurface: onSurface,
       showDemoBadge: showDemoBadge,
       onOpenPaper: widget.onOpenPaper,
+      onOpenUsers: widget.onOpenUsers,
       onQuickAdd: widget.onQuickAdd,
       onSearch: () {
         if (MobileSearchScope.tryOpenGlobalSearch(context)) return;

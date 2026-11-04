@@ -8,7 +8,9 @@ import 'package:am_common/am_common.dart';
 import '../../internal/domain/entities/portfolio_list.dart';
 import '../cubit/portfolio_cubit.dart';
 
+import 'package:am_dashboard_ui/presentation/providers/dashboard_provider.dart';
 import 'package:am_design_system/am_design_system.dart';
+import '../widgets/family_filtered_portfolio_items.dart';
 import 'pages/portfolio_overview_web_page.dart';
 import 'pages/portfolio_holdings_web_page.dart';
 import 'pages/portfolio_heatmap_web_page.dart';
@@ -478,28 +480,7 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
             if (widget.portfolios != null && widget.portfolios!.isNotEmpty)
               SecondarySidebarSection(
                 title: '',
-                customWidget: SharedPortfolioSelector<PortfolioItem>(
-                  currentPortfolioId: _currentPortfolioId,
-                  currentPortfolioName:
-                      _currentPortfolioName ?? widget.selectedPortfolioName,
-                  portfolios: [
-                    const PortfolioItem(
-                      portfolioId: 'all',
-                      portfolioName: 'All Portfolios',
-                    ),
-                    ...widget.portfolios!,
-                  ],
-                  onPortfolioSelected: _onPortfolioChanged,
-                  idExtractor: (p) => p.portfolioId,
-                  nameExtractor: (p) => p.portfolioName,
-                  accentColor: ModuleColors.portfolio,
-                  defaultPortfolioId: widget.defaultPortfolioId,
-                  onToggleDefault: widget.onToggleDefaultPortfolio,
-                  isSelectableExtractor: (p) =>
-                      p.portfolioId == 'all' || p.isDummy || p.hasHoldings,
-                  showNoHoldingsBadgeExtractor: (p) =>
-                      p.portfolioId != 'all' && !p.isDummy && !p.hasHoldings,
-                ),
+                customWidget: _buildFamilyAwarePortfolioPicker(),
               ),
             SecondarySidebarSection(
               title: '',
@@ -519,6 +500,86 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildFamilyAwarePortfolioPicker() {
+    final auth = context.read<AuthCubit>().state;
+    final userId = auth is Authenticated ? auth.user.id : '';
+    final hub = userId.isEmpty
+        ? null
+        : ref.watch(accountsHubProvider(userId)).asData?.value;
+    final members = familyMembersForFilter(hub);
+    final showFamily = showFamilyPortfolioFilter(
+      members.map((m) => (id: m.id, name: m.name)),
+    );
+    final filterKey = ref.watch(familyPortfolioFilterProvider);
+    final source = widget.portfolios ?? const <PortfolioItem>[];
+    final filtered = familyFilteredPortfolioItems(
+      portfolios: source,
+      filterKey: filterKey,
+      showFamilyUi: showFamily,
+      hub: hub,
+    );
+    final portfolios = <PortfolioItem>[
+      const PortfolioItem(
+        portfolioId: 'all',
+        portfolioName: 'All Portfolios',
+      ),
+      ...filtered,
+    ];
+
+    var currentId = _currentPortfolioId;
+    if (currentId != null &&
+        currentId != 'all' &&
+        !portfolios.any((p) => p.portfolioId == currentId)) {
+      currentId = 'all';
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _onPortfolioChanged('all', 'All Portfolios');
+      });
+    }
+
+    final currentName = portfolios
+            .where((p) => p.portfolioId == (currentId ?? 'all'))
+            .map((p) => p.portfolioName)
+            .firstOrNull ??
+        (_currentPortfolioName ?? widget.selectedPortfolioName);
+
+    return FamilyAwarePortfolioPicker<PortfolioItem>(
+      showFamilyFilter: showFamily,
+      familyFilterKey: filterKey,
+      primaryLabel: primaryFamilyLabel(hub),
+      members: members,
+      onFamilySelected: (key) {
+        ref.read(familyPortfolioFilterProvider.notifier).select(key);
+        final next = familyFilteredPortfolioItems(
+          portfolios: source,
+          filterKey: key,
+          showFamilyUi: showFamily,
+          hub: hub,
+        );
+        final id = _currentPortfolioId;
+        final stillValid =
+            id == null || id == 'all' || next.any((p) => p.portfolioId == id);
+        if (!stillValid) {
+          _onPortfolioChanged('all', 'All Portfolios');
+        }
+      },
+      layout: FamilyAwarePortfolioPickerLayout.stack,
+      currentPortfolioId: currentId,
+      currentPortfolioName: currentName,
+      portfolios: portfolios,
+      onPortfolioSelected: _onPortfolioChanged,
+      idExtractor: (p) => p.portfolioId,
+      nameExtractor: (p) => p.portfolioName,
+      accentColor: ModuleColors.portfolio,
+      defaultPortfolioId: widget.defaultPortfolioId,
+      onToggleDefault: widget.onToggleDefaultPortfolio,
+      isSelectableExtractor: (p) =>
+          p.portfolioId == 'all' || p.isDummy || p.hasHoldings,
+      showNoHoldingsBadgeExtractor: (p) =>
+          p.portfolioId != 'all' && !p.isDummy && !p.hasHoldings,
     );
   }
 }

@@ -1,18 +1,29 @@
 import 'dart:io';
 
 import 'package:am_common/am_common.dart';
+import 'package:am_dashboard_ui/domain/models/accounts_hub.dart';
+import 'package:am_dashboard_ui/presentation/providers/dashboard_provider.dart';
+import 'package:am_dashboard_ui/presentation/widgets/dashboard_portfolio_selector.dart';
 import 'package:am_dashboard_ui/presentation/widgets/dashboard_toolbar.dart';
 import 'package:am_dashboard_ui/presentation/widgets/paper_trading_nav_chip.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:riverpod/misc.dart' show Override;
 
 ThemeData _theme() {
   return ThemeData.dark().copyWith(
     extensions: const <ThemeExtension<dynamic>>[AppColorsTheme.dark],
   );
 }
+
+List<Override> _toolbarOverrides({String userId = 'test-user'}) => [
+      dashboardPortfolioChoicesProvider.overrideWith((ref) async => const []),
+      accountsHubProvider(userId).overrideWith(
+        (ref) async => const AccountsHub(),
+      ),
+    ];
 
 Future<void> _pumpToolbar(
   WidgetTester tester, {
@@ -29,6 +40,7 @@ Future<void> _pumpToolbar(
   var paperTaps = 0;
   await tester.pumpWidget(
     ProviderScope(
+      overrides: _toolbarOverrides(),
       child: MaterialApp(
         theme: _theme(),
         home: Scaffold(
@@ -68,8 +80,12 @@ void main() {
     expect(search.left, lessThan(paper.left));
     expect(paper.left, lessThan(tf.left));
     expect(tf.left, lessThan(overflow.left));
-    expect(paper.right, lessThanOrEqualTo(tf.left + 0.5));
-    expect(find.text('Paper Trade'), findsOneWidget);
+    // Narrow widths keep the short Paper label; wide uses "Paper Trading".
+    expect(
+      find.text('Paper').evaluate().isNotEmpty ||
+          find.text('Paper Trading').evaluate().isNotEmpty,
+      isTrue,
+    );
     expect(find.byIcon(Icons.add_rounded), findsWidgets);
 
     await tester.tap(find.byIcon(Icons.search_rounded));
@@ -86,11 +102,17 @@ void main() {
     expect(find.text('Add Basket'), findsOneWidget);
   });
 
-  testWidgets('360 shows Paper Trade label and does not overflow',
+  testWidgets('360 shows Paper segment and keeps timeframe visible',
       (tester) async {
     await _pumpToolbar(tester, size: const Size(360, 800));
-    expect(find.text('Paper Trade'), findsOneWidget);
+    expect(
+      find.text('Paper').evaluate().isNotEmpty ||
+          find.text('Paper Trading').evaluate().isNotEmpty,
+      isTrue,
+    );
     expect(find.text('Try'), findsNothing);
+    expect(find.byKey(const Key('dashboard-toolbar-timeframe')), findsOneWidget);
+    expect(find.byType(GlobalTimeFrameBar), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
@@ -103,18 +125,21 @@ void main() {
 
     await tester.pumpWidget(
       ProviderScope(
+        overrides: _toolbarOverrides(),
         child: MaterialApp(
           theme: _theme(),
           home: Scaffold(
             body: Row(
               children: [
                 const Text('Dashboard'),
-                const Spacer(),
-                DashboardToolbar(
-                  userId: 'test-user',
-                  glass: false,
-                  onOpenPaper: () {},
-                  onQuickAdd: (_) {},
+                const SizedBox(width: 12),
+                Expanded(
+                  child: DashboardToolbar(
+                    userId: 'test-user',
+                    glass: false,
+                    onOpenPaper: () {},
+                    onQuickAdd: (_) {},
+                  ),
                 ),
               ],
             ),
@@ -175,6 +200,7 @@ void main() {
     late WidgetRef containerRef;
     await tester.pumpWidget(
       ProviderScope(
+        overrides: _toolbarOverrides(),
         child: MaterialApp(
           theme: _theme(),
           home: Scaffold(
@@ -205,7 +231,43 @@ void main() {
   testWidgets('412 stays one line without overflow', (tester) async {
     await _pumpToolbar(tester, size: const Size(412, 844));
     expect(tester.takeException(), isNull);
-    expect(find.text('Paper Trade'), findsOneWidget);
+    expect(
+      find.text('Paper').evaluate().isNotEmpty ||
+          find.text('Paper Trading').evaluate().isNotEmpty,
+      isTrue,
+    );
     expect(find.byType(DashboardToolbar), findsOneWidget);
+  });
+
+  testWidgets('wide toolbar shows Paper Trading and Advanced', (tester) async {
+    var advancedTaps = 0;
+    tester.view.physicalSize = const Size(1200, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: _toolbarOverrides(),
+        child: MaterialApp(
+          theme: _theme(),
+          home: Scaffold(
+            body: DashboardToolbar(
+              userId: 'test-user',
+              glass: false,
+              onOpenPaper: () {},
+              onOpenUsers: () => advancedTaps++,
+              onQuickAdd: (_) {},
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.text('Paper Trading'), findsOneWidget);
+    expect(find.text('Advanced'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('dashboard-advanced-chip')));
+    expect(advancedTaps, 1);
   });
 }

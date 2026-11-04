@@ -182,6 +182,8 @@ export 'shared/widgets/portfolio_overview/charts/market_cap_allocation/animated_
 // --- Selectors ---
 export 'shared/widgets/selectors/selectors.dart';
 export 'shared/widgets/selectors/shared_portfolio_selector.dart';
+export 'shared/widgets/selectors/shared_family_filter_dropdown.dart';
+export 'shared/widgets/selectors/family_aware_portfolio_picker.dart';
 
 // --- Feedback & Loading ---
 export 'shared/widgets/feedback/shimmer_loading.dart';

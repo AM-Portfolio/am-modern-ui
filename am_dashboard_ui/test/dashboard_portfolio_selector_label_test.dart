@@ -1,3 +1,4 @@
+import 'package:am_common/am_common.dart';
 import 'package:am_dashboard_ui/domain/models/accounts_hub.dart';
 import 'package:am_dashboard_ui/presentation/widgets/dashboard_portfolio_selector.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -26,7 +27,7 @@ void main() {
     );
   });
 
-  test('parseDashboardPortfolioChoices applies family suffix', () {
+  test('parseDashboardPortfolioChoices keeps bare names + family fields', () {
     final choices = parseDashboardPortfolioChoices([
       {
         'portfolioId': 'p-primary',
@@ -45,7 +46,8 @@ void main() {
         'familyMemberName': 'Priyanshu Kumar',
       },
     ]);
-    expect(choices.map((c) => c.name), ['Dhan', 'Dhan (Priyanshu)']);
+    expect(choices.map((c) => c.name), ['Dhan', 'Dhan']);
+    expect(choices[1].familyMemberId, 'fm1');
   });
 
   test('enrichChoicesWithHubIds fills blank family member name', () {
@@ -69,6 +71,58 @@ void main() {
         ],
       ),
     );
-    expect(enriched.single.name, 'Dhan (Priyanshu)');
+    expect(enriched.single.familyMemberName, 'Priyanshu Kumar');
+    expect(enriched.single.name, 'Dhan');
+  });
+
+  test('filterDashboardChoicesByFamily All vs You vs member', () {
+    final choices = enrichChoicesWithHubIds(
+      parseDashboardPortfolioChoices([
+        {
+          'portfolioId': 'p-primary',
+          'portfolioName': 'Groww',
+          'kind': 'BROKER',
+          'brokerType': 'GROWW',
+          'assetCount': 10,
+        },
+        {
+          'portfolioId': 'p-family',
+          'portfolioName': 'Groww',
+          'kind': 'BROKER',
+          'brokerType': 'GROWW',
+          'assetCount': 5,
+          'familyMemberId': 'fm1',
+          'familyMemberName': 'Priyanshu Kumar',
+        },
+      ]),
+      const AccountsHub(
+        familyMembers: [
+          FamilyMemberRow(id: 'fm1', name: 'Priyanshu Kumar'),
+        ],
+      ),
+    );
+
+    final all = filterDashboardChoicesByFamily(
+      choices: choices,
+      filterKey: FavoritePersonaStore.kAll,
+      showFamilyUi: true,
+    );
+    expect(all.map((c) => c.name), ['Groww', 'Groww (Priyanshu)']);
+
+    final you = filterDashboardChoicesByFamily(
+      choices: choices,
+      filterKey: FavoritePersonaStore.kYou,
+      showFamilyUi: true,
+    );
+    expect(you.map((c) => c.name), ['Groww']);
+    expect(you.single.id, 'p-primary');
+
+    final member = filterDashboardChoicesByFamily(
+      choices: choices,
+      filterKey: 'fm1',
+      showFamilyUi: true,
+    );
+    expect(member.map((c) => c.name), ['Groww']);
+    expect(member.single.id, 'p-family');
   });
 }

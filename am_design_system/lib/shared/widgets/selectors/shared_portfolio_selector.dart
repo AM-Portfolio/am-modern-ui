@@ -21,6 +21,8 @@ class SharedPortfolioSelector<T> extends StatelessWidget {
     this.showNoHoldingsBadgeExtractor,
     this.subtitleExtractor,
     this.isCompact = false,
+    /// Single-line control for toolbars (no "Current Portfolio" title).
+    this.dense = false,
     this.accentColor,
     this.isDark,
   });
@@ -63,6 +65,9 @@ class SharedPortfolioSelector<T> extends StatelessWidget {
 
   /// Whether to show in compact mode (icon only)
   final bool isCompact;
+
+  /// Toolbar-friendly single-line dropdown without the section title.
+  final bool dense;
 
   /// Accent color for the selector (defaults to ModuleColors.portfolio)
   final Color? accentColor;
@@ -226,63 +231,67 @@ class SharedPortfolioSelector<T> extends StatelessWidget {
         const fallbackWidth = 280.0;
         final bounded = outer.maxWidth.isFinite && outer.maxWidth > 0;
         final menuWidth = bounded ? outer.maxWidth : fallbackWidth;
-        return Container(
-          width: menuWidth,
-          margin: const EdgeInsets.symmetric(vertical: 8),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'Current Portfolio',
-                style: TextStyle(
-                  color: subTextColor,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w500,
-                ),
+        final trigger = Theme(
+          data: menuTheme(context),
+          child: PopupMenuButton<String>(
+            tooltip: 'Select Portfolio',
+            offset: Offset(0, dense ? 40 : 48),
+            color: cardBgColor,
+            surfaceTintColor: Colors.transparent,
+            constraints: BoxConstraints(
+              minWidth: menuWidth,
+              maxWidth: menuWidth,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: BorderSide(color: cardBorderColor),
+            ),
+            elevation: 8,
+            onSelected: (portfolioId) {
+              final portfolio = portfolios
+                  .firstWhere((p) => idExtractor(p) == portfolioId);
+              onPortfolioSelected(portfolioId, nameExtractor(portfolio));
+            },
+            itemBuilder: buildItems,
+            child: Container(
+              width: menuWidth,
+              height: dense ? 36 : null,
+              padding: EdgeInsets.symmetric(
+                horizontal: dense ? 10 : 12,
+                vertical: dense ? 0 : 10,
               ),
-              const SizedBox(height: 6),
-              Theme(
-                data: menuTheme(context),
-                child: PopupMenuButton<String>(
-                  tooltip: 'Select Portfolio',
-                  offset: const Offset(0, 48),
-                  color: cardBgColor,
-                  surfaceTintColor: Colors.transparent,
-                  constraints: BoxConstraints(
-                    minWidth: menuWidth,
-                    maxWidth: menuWidth,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    side: BorderSide(color: cardBorderColor),
-                  ),
-                  elevation: 8,
-                  onSelected: (portfolioId) {
-                    final portfolio = portfolios
-                        .firstWhere((p) => idExtractor(p) == portfolioId);
-                    onPortfolioSelected(
-                        portfolioId, nameExtractor(portfolio));
-                  },
-                  itemBuilder: buildItems,
-                  child: Container(
-                    width: menuWidth,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 10),
-                    decoration: BoxDecoration(
-                      color: cardBgColor,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: idleFieldBorder),
+              decoration: BoxDecoration(
+                color: cardBgColor,
+                borderRadius: BorderRadius.circular(dense ? 999 : 8),
+                border: Border.all(color: idleFieldBorder),
+              ),
+              child: Row(
+                children: [
+                  if (dense) ...[
+                    Icon(
+                      Icons.business_center_outlined,
+                      size: 14,
+                      color: effectiveAccent,
                     ),
-                    child: Row(
-                      children: [
-                        if (defaultPortfolioId != null &&
-                            currentPortfolioId == defaultPortfolioId) ...[
-                          Icon(Icons.star, size: 14, color: effectiveAccent),
-                          const SizedBox(width: 6),
-                        ],
-                        Expanded(
-                          child: Column(
+                    const SizedBox(width: 6),
+                  ] else if (defaultPortfolioId != null &&
+                      currentPortfolioId == defaultPortfolioId) ...[
+                    Icon(Icons.star, size: 14, color: effectiveAccent),
+                    const SizedBox(width: 6),
+                  ],
+                  Expanded(
+                    child: dense
+                        ? Text(
+                            displayName,
+                            style: TextStyle(
+                              color: textColor,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          )
+                        : Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             mainAxisSize: MainAxisSize.min,
                             children: [
@@ -310,17 +319,39 @@ class SharedPortfolioSelector<T> extends StatelessWidget {
                                 ),
                             ],
                           ),
-                        ),
-                        Icon(
-                          Icons.keyboard_arrow_down,
-                          size: 18,
-                          color: effectiveAccent.withValues(alpha: 0.85),
-                        ),
-                      ],
-                    ),
                   ),
+                  Icon(
+                    Icons.keyboard_arrow_down,
+                    size: dense ? 16 : 18,
+                    color: effectiveAccent.withValues(alpha: 0.85),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+
+        if (dense) {
+          return SizedBox(width: menuWidth, height: 36, child: trigger);
+        }
+
+        return Container(
+          width: menuWidth,
+          margin: const EdgeInsets.symmetric(vertical: 8),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Current Portfolio',
+                style: TextStyle(
+                  color: subTextColor,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
+              const SizedBox(height: 6),
+              trigger,
             ],
           ),
         );

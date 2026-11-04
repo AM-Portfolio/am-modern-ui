@@ -208,9 +208,23 @@ class _PortfolioHistoryChartWidgetState
               portfolioName: 'All Portfolios',
             );
 
+            final filterKey = ref.watch(familyPortfolioFilterProvider);
+            final showFamily = portfolios.any(
+              (p) => (p.familyMemberId?.trim().isNotEmpty ?? false),
+            );
+            final labeled = applyFamilyPortfolioFilter<PortfolioItem>(
+              items: portfolios,
+              filterKey: filterKey,
+              showFamilyUi: showFamily,
+              familyMemberIdOf: (p) => p.familyMemberId,
+              familyMemberNameOf: (p) => p.familyMemberName,
+              baseNameOf: (p) => p.portfolioName,
+              copyWithName: (p, name) => p.copyWith(portfolioName: name),
+            );
+
             // Deduplicate portfolios by name to prevent multiple tabs with same label
             final Map<String, PortfolioItem> uniqueItems = {};
-            for (final p in portfolios) {
+            for (final p in labeled) {
               uniqueItems.putIfAbsent(p.portfolioName, () => p);
             }
 

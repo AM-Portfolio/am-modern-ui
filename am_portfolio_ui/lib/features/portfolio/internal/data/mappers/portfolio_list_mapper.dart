@@ -71,6 +71,8 @@ class PortfolioListMapper {
                   (itemDto.assetCount == null
                       ? true
                       : itemDto.assetCount! > 0);
+              final famId = itemDto.familyMemberId?.trim();
+              final famName = itemDto.familyMemberName?.trim();
               return PortfolioItem(
                 portfolioId: itemDto.portfolioId,
                 portfolioName: name,
@@ -78,6 +80,10 @@ class PortfolioListMapper {
                 isDummy: isDummy,
                 hasHoldings: hasHoldings,
                 brokerType: itemDto.brokerType,
+                familyMemberId:
+                    (famId == null || famId.isEmpty) ? null : famId,
+                familyMemberName:
+                    (famName == null || famName.isEmpty) ? null : famName,
               );
             },
           )
@@ -119,6 +125,9 @@ class PortfolioListMapper {
             (item) => PortfolioItemDto(
               portfolioId: item.portfolioId,
               portfolioName: item.portfolioName,
+              brokerType: item.brokerType,
+              familyMemberId: item.familyMemberId,
+              familyMemberName: item.familyMemberName,
             ),
           )
           .toList();

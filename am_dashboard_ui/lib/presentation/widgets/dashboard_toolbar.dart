@@ -6,16 +6,15 @@ import 'package:am_dashboard_ui/presentation/widgets/paper_trading_nav_chip.dart
 import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 
-/// Dashboard sticky controls: search, paper CTA, timeframe, overflow.
-///
-/// Mobile wraps the row in [NavigationChrome.glass]. Desktop paints the
-/// trailing cluster only (title stays in the page header).
+/// Dashboard sticky controls matching the header mock:
+/// Paper Trading | Advanced · Family · Portfolio · Timeframe · +
 class DashboardToolbar extends StatelessWidget {
   const DashboardToolbar({
     super.key,
     required this.userId,
     this.onSearch,
     this.onOpenPaper,
+    this.onOpenUsers,
     this.onQuickAdd,
     this.showDemoBadge = false,
     this.glass = true,
@@ -25,24 +24,25 @@ class DashboardToolbar extends StatelessWidget {
   final String userId;
   final VoidCallback? onSearch;
   final VoidCallback? onOpenPaper;
+  final VoidCallback? onOpenUsers;
   final ValueChanged<GlobalAddActionKind>? onQuickAdd;
   final bool showDemoBadge;
   final bool glass;
   final Color? onSurface;
 
-  static const double _controlSize = AppComponentSizes.iconButtonSize;
+  static const double _controlSize = 36;
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final accent = ModuleColors.dashboard;
     final width = MediaQuery.sizeOf(context).width;
-    final hideTfLeading = width < 440;
+    final compact = width < 900;
     final demoCompact = width < 360;
     final iconColor = onSurface ?? context.textPrimary;
 
-    final row = Row(
-      mainAxisSize: glass ? MainAxisSize.max : MainAxisSize.min,
+    final cluster = Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
         if (onSearch != null) ...[
           _ToolbarIconWell(
@@ -70,53 +70,46 @@ class DashboardToolbar extends StatelessWidget {
               minHeight: _controlSize,
             ),
           ),
-        if (onOpenPaper != null)
-          Flexible(
-            fit: FlexFit.loose,
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              alignment: Alignment.centerLeft,
-              child: PaperTradingNavChip(
-                onTap: onOpenPaper!,
-                compact: hideTfLeading,
-              ),
-            ),
+        if (onOpenPaper != null) ...[
+          PaperTradingNavChip(
+            onTap: onOpenPaper!,
+            onAdvanced: onOpenUsers,
+            compact: compact,
           ),
-        if (glass)
-          const Spacer()
-        else
           const SizedBox(width: AppSpacing.sm),
-        // Toolbar Row is horizontally unbounded for min children — pin width
-        // so SharedPortfolioSelector never hits stretch+infinity (blank web).
+          _Hairline(isDark: isDark, tall: true),
+          const SizedBox(width: AppSpacing.sm),
+        ],
         SizedBox(
-          width: hideTfLeading ? 168 : 220,
-          child: DashboardPortfolioSelector(userId: userId),
+          width: compact ? 260 : 310,
+          child: DashboardPortfolioSelector(
+            userId: userId,
+            compact: true,
+            layout: FamilyAwarePortfolioPickerLayout.row,
+          ),
         ),
         const SizedBox(width: AppSpacing.sm),
         GlobalTimeFrameBar(
+          key: const Key('dashboard-toolbar-timeframe'),
           variant: GlobalTimeFrameVariant.dropdown,
-          dropdownWidth: hideTfLeading ? 72 : 96,
+          dropdownWidth: compact ? 78 : 92,
           primaryColor: accent,
-          dropdownTrailingDivider: true,
-          dropdownLeading: hideTfLeading
-              ? null
-              : Icon(
-                  Icons.bar_chart_rounded,
-                  size: AppTypeScale.sm,
-                  color: accent,
-                ),
+          dropdownTrailingDivider: false,
+          dropdownLeading: Icon(
+            Icons.calendar_today_outlined,
+            size: AppTypeScale.sm,
+            color: accent,
+          ),
         ),
         if (onQuickAdd != null) ...[
           const SizedBox(width: AppSpacing.xs),
-          _ToolbarIconWell(
-            icon: Icons.add_rounded,
+          _GoldAddButton(
             accent: accent,
-            iconColor: iconColor,
-            tooltip: 'Sync portfolio',
             child: SyncQuickActionsControl(
               accentColor: accent,
-              iconColor: iconColor,
+              iconColor: context.colors.actionPrimaryFg,
               icon: Icons.add_rounded,
+              iconSize: 20,
               actions: buildGlobalAddMenuActions(onQuickAdd!),
               showSubtitles: false,
             ),
@@ -125,10 +118,19 @@ class DashboardToolbar extends StatelessWidget {
       ],
     );
 
+    final scaled = Align(
+      alignment: Alignment.centerRight,
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        alignment: Alignment.centerRight,
+        child: cluster,
+      ),
+    );
+
     if (!glass) {
       return KeyedSubtree(
         key: const Key('dashboard-toolbar'),
-        child: row,
+        child: scaled,
       );
     }
 
@@ -146,9 +148,10 @@ class DashboardToolbar extends StatelessWidget {
         child: SizedBox(
           key: const Key('dashboard-toolbar'),
           height: _controlSize + AppSpacing.xs * 2,
+          width: double.infinity,
           child: Padding(
             padding: const EdgeInsets.all(AppSpacing.xs),
-            child: row,
+            child: scaled,
           ),
         ),
       ),
@@ -157,16 +160,37 @@ class DashboardToolbar extends StatelessWidget {
 }
 
 class _Hairline extends StatelessWidget {
-  const _Hairline({required this.isDark});
+  const _Hairline({required this.isDark, this.tall = false});
 
   final bool isDark;
+  final bool tall;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: 1,
-      height: AppTypeScale.h4,
+      height: tall ? 22 : AppTypeScale.h4,
       color: NavigationChrome.borderColor(isDark: isDark),
+    );
+  }
+}
+
+class _GoldAddButton extends StatelessWidget {
+  const _GoldAddButton({required this.accent, required this.child});
+
+  final Color accent;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: DashboardToolbar._controlSize,
+      height: DashboardToolbar._controlSize,
+      decoration: BoxDecoration(
+        color: accent,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Center(child: child),
     );
   }
 }

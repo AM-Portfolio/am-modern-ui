@@ -55,20 +55,6 @@ class DashboardPortfolioChoice {
   }
 }
 
-/// Primary books: bare broker/display name. Family: `Dhan (Priyanshu)`.
-String formatPortfolioDropdownLabel({
-  required String displayName,
-  String? familyMemberId,
-  String? familyMemberName,
-}) {
-  final id = familyMemberId?.trim();
-  if (id == null || id.isEmpty) return displayName;
-  final member = familyMemberName?.trim();
-  if (member == null || member.isEmpty) return displayName;
-  final short = member.split(RegExp(r'\s+')).first;
-  return '$displayName ($short)';
-}
-
 bool _isCdslChoice({
   required String name,
   String? brokerType,
@@ -153,15 +139,10 @@ List<DashboardPortfolioChoice> parseDashboardPortfolioChoices(dynamic data) {
             brokerType.isNotEmpty
         ? brokerType
         : name;
-    final displayName = formatPortfolioDropdownLabel(
-      displayName: baseName,
-      familyMemberId: familyMemberId,
-      familyMemberName: familyMemberName,
-    );
     choices.add(
       DashboardPortfolioChoice(
         id: id,
-        name: displayName,
+        name: stripPortfolioFamilySuffix(baseName),
         hasHoldings: isPaper ? true : hasHoldings,
         assetCount: assetCount,
         isPaper: isPaper,
@@ -234,18 +215,8 @@ DashboardPortfolioChoice _enrichOneChoice(
       famId.isNotEmpty &&
       (c.familyMemberName == null || c.familyMemberName!.trim().isEmpty);
   final resolvedName = needsName ? memberNameById[famId] : c.familyMemberName;
-  var baseName = c.name;
-  final open = baseName.lastIndexOf(' (');
-  if (open > 0 && baseName.endsWith(')')) {
-    baseName = baseName.substring(0, open);
-  }
-  final labeled = formatPortfolioDropdownLabel(
-    displayName: baseName,
-    familyMemberId: famId,
-    familyMemberName: resolvedName,
-  );
   return c.copyWith(
-    name: labeled,
+    name: stripPortfolioFamilySuffix(c.name),
     familyMemberName: resolvedName,
     externalId: c.externalId ??
         byPortfolio[c.id] ??
@@ -256,12 +227,36 @@ DashboardPortfolioChoice _enrichOneChoice(
   );
 }
 
+List<DashboardPortfolioChoice> filterDashboardChoicesByFamily({
+  required List<DashboardPortfolioChoice> choices,
+  required String filterKey,
+  required bool showFamilyUi,
+}) {
+  return applyFamilyPortfolioFilter<DashboardPortfolioChoice>(
+    items: choices,
+    filterKey: filterKey,
+    showFamilyUi: showFamilyUi,
+    familyMemberIdOf: (c) => c.familyMemberId,
+    familyMemberNameOf: (c) => c.familyMemberName,
+    baseNameOf: (c) => c.name,
+    copyWithName: (c, labeled) => c.copyWith(name: labeled),
+    alwaysKeep: (c) => c.id == 'all',
+  );
+}
+
 /// Top-of-dashboard portfolio picker. Same shell selection the portfolio
 /// sidebar uses. `All` keeps the aggregate dashboard.
 class DashboardPortfolioSelector extends ConsumerWidget {
-  const DashboardPortfolioSelector({required this.userId, super.key});
+  const DashboardPortfolioSelector({
+    required this.userId,
+    this.compact = false,
+    this.layout = FamilyAwarePortfolioPickerLayout.row,
+    super.key,
+  });
 
   final String userId;
+  final bool compact;
+  final FamilyAwarePortfolioPickerLayout layout;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -283,13 +278,31 @@ class DashboardPortfolioSelector extends ConsumerWidget {
 
     final choices = ref.watch(dashboardPortfolioChoicesProvider);
     final hubAsync = ref.watch(accountsHubProvider(userId));
+    final hub = hubAsync.asData?.value;
     final enriched = enrichChoicesWithHubIds(
       choices.asData?.value ?? const [],
-      hubAsync.asData?.value,
+      hub,
+    );
+
+    final members = <({String id, String name})>[
+      for (final m in hub?.familyMembers ?? const <FamilyMemberRow>[])
+        if ((m.id?.trim().isNotEmpty ?? false))
+          (id: m.id!.trim(), name: (m.name?.trim().isNotEmpty ?? false)
+              ? m.name!.trim()
+              : m.id!.trim()),
+    ];
+    final showFamily = showFamilyPortfolioFilter(
+      members.map((m) => (id: m.id, name: m.name)),
+    );
+    final filterKey = ref.watch(familyPortfolioFilterProvider);
+    final filteredBooks = filterDashboardChoicesByFamily(
+      choices: enriched,
+      filterKey: filterKey,
+      showFamilyUi: showFamily,
     );
     final portfolios = <DashboardPortfolioChoice>[
       const DashboardPortfolioChoice(id: 'all', name: 'All Portfolios'),
-      ...enriched,
+      ...filteredBooks,
     ];
 
     var currentId = normalized ?? 'all';
@@ -312,7 +325,34 @@ class DashboardPortfolioSelector extends ConsumerWidget {
             .firstOrNull ??
         'All Portfolios';
 
-    return SharedPortfolioSelector<DashboardPortfolioChoice>(
+    final primaryLabel = hub?.identity?.name?.trim().isNotEmpty == true
+        ? hub!.identity!.name!.trim().split(RegExp(r'\s+')).first
+        : 'You';
+
+    return FamilyAwarePortfolioPicker<DashboardPortfolioChoice>(
+      showFamilyFilter: showFamily,
+      familyFilterKey: filterKey,
+      primaryLabel: primaryLabel,
+      members: members,
+      onFamilySelected: (key) {
+        ref.read(familyPortfolioFilterProvider.notifier).select(key);
+        final nextBooks = filterDashboardChoicesByFamily(
+          choices: enriched,
+          filterKey: key,
+          showFamilyUi: showFamily,
+        );
+        final stillValid =
+            currentId == 'all' || nextBooks.any((c) => c.id == currentId);
+        if (!stillValid) {
+          context.selectPortfolio('all', 'All Portfolios');
+          ref.read(dashboardPortfolioScopeProvider.notifier).select(null);
+          ref
+              .read(dashboardOverlayProvider(userId).notifier)
+              .setPreferredPortfolioId(null);
+        }
+      },
+      layout: layout,
+      compact: compact,
       currentPortfolioId: currentId,
       currentPortfolioName: currentName,
       portfolios: portfolios,
