@@ -6,6 +6,11 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('trade portfolio book merge', () {
+    test('portfolio list merge timeout stays under enriched 20s cap', () {
+      expect(kPortfolioListMergeTimeout, const Duration(seconds: 3));
+      expect(kPortfolioListMergeTimeout.inSeconds, lessThan(20));
+    });
+
     test('includePaper is set on the by-owner uri', () {
       expect(
         withIncludePaper(

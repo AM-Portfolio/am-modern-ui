@@ -86,7 +86,7 @@ class TradeRemoteDataSourceImpl implements TradeRemoteDataSource {
   final bool _useMockData;
 
   /// Broker and email books live on the portfolio list, not the trade summary.
-  /// A failed portfolio call leaves the trade rows in place.
+  /// A failed or slow portfolio call leaves the trade rows in place.
   Future<TradePortfolioListDto> _mergePortfolioServiceBooks(
     TradePortfolioListDto trade,
   ) async {
@@ -97,6 +97,7 @@ class TradeRemoteDataSourceImpl implements TradeRemoteDataSource {
       final books = await _apiClient.get<List<TradePortfolioDto>>(
         uri,
         parser: parsePortfolioServiceBooks,
+        timeout: kPortfolioListMergeTimeout,
       );
       return mergePortfolioBooks(trade, books);
     } catch (e) {

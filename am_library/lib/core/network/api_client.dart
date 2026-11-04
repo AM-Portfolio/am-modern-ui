@@ -218,6 +218,9 @@ class ApiClient {
     }
   }
 
+  /// Delegates to [isApiTimeoutError] (kept for call-site clarity).
+  static bool isTimeoutError(Object e) => isApiTimeoutError(e);
+
   /// Helper to wrap requests with retry logic
   Future<T> _requestWithRetry<T>(
     Future<T> Function(int attempt) request, {
@@ -233,17 +236,17 @@ class ApiClient {
       } catch (e) {
         bool shouldRetry = true;
 
-        if (e is ApiException) {
-          // Don't retry client errors (4xx) except maybe request timeout
+        if (isApiTimeoutError(e)) {
+          // Honor retryOnTimeout for both TimeoutException and wrapped ApiException
+          // (GET previously converted timeouts to ApiException and ignored the flag).
+          shouldRetry = retryOnTimeout;
+        } else if (e is ApiException) {
+          // Don't retry client errors (4xx)
           if (e.statusCode != null &&
               e.statusCode! >= 400 &&
               e.statusCode! < 500) {
-            if (e.statusCode != 408) {
-              shouldRetry = false;
-            }
+            shouldRetry = false;
           }
-        } else if (e is TimeoutException) {
-          shouldRetry = retryOnTimeout;
         }
 
         if (!shouldRetry || attempt >= maxRetries) {
@@ -349,7 +352,11 @@ class ApiClient {
           rethrow;
         }
         if (e is TimeoutException) {
-          throw ApiException('Request timed out: ${e.message}');
+          // status 408 so isTimeoutError / retryOnTimeout stay consistent.
+          throw ApiException(
+            'Request timed out: ${e.message}',
+            statusCode: 408,
+          );
         }
         throw ApiException('Network error: ${e.toString()}');
       }
@@ -444,7 +451,11 @@ class ApiClient {
           rethrow;
         }
         if (e is TimeoutException) {
-          throw ApiException('Request timed out: ${e.message}');
+          // status 408 so isTimeoutError / retryOnTimeout stay consistent.
+          throw ApiException(
+            'Request timed out: ${e.message}',
+            statusCode: 408,
+          );
         }
         throw ApiException('Network error: ${e.toString()}');
       }
@@ -509,7 +520,11 @@ class ApiClient {
           rethrow;
         }
         if (e is TimeoutException) {
-          throw ApiException('Request timed out: ${e.message}');
+          // status 408 so isTimeoutError / retryOnTimeout stay consistent.
+          throw ApiException(
+            'Request timed out: ${e.message}',
+            statusCode: 408,
+          );
         }
         throw ApiException('Network error: ${e.toString()}');
       }
@@ -574,7 +589,11 @@ class ApiClient {
           rethrow;
         }
         if (e is TimeoutException) {
-          throw ApiException('Request timed out: ${e.message}');
+          // status 408 so isTimeoutError / retryOnTimeout stay consistent.
+          throw ApiException(
+            'Request timed out: ${e.message}',
+            statusCode: 408,
+          );
         }
         throw ApiException('Network error: ${e.toString()}');
       }
