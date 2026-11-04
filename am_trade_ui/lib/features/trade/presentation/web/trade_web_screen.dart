@@ -150,53 +150,6 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
     }
   }
 
-  void _onHoldingSelected(TradeHoldingViewModel holding) {
-    setState(() {
-      _selectedTradeIdForTrades = holding.tradeId;
-      _swipeController.updateItems(_buildNavigationItems());
-    });
-    final tradesIndex = _swipeController.items
-        .indexWhere((item) => item.title == 'Trades');
-    if (tradesIndex != -1) {
-      _swipeController.navigateTo(tradesIndex);
-    }
-  }
-
-  /// Create/open journal for [holding], then jump to Journal tab with that entry focused.
-  Future<void> _onJournalHolding(TradeHoldingViewModel holding) async {
-    if (_journalNavigating) return;
-    _journalNavigating = true;
-    try {
-      final cubit = await ref.read(journalCubitProvider.future);
-      if (!mounted) return;
-      final entry = await journalThisTrade(
-        cubit: cubit,
-        tradeId: holding.tradeId,
-        portfolioId: _currentPortfolioId ?? holding.portfolioId,
-        holding: holding,
-      );
-      if (!mounted) return;
-      // Do not set _journalInitialTab — keeps Journal ValueKey stable so focus
-      // survives onInitialTabApplied clearing the pending focus id.
-      setState(() {
-        _journalFocusEntryId = entry.id;
-        _swipeController.updateItems(_buildNavigationItems());
-      });
-      final journalIndex =
-          _swipeController.items.indexWhere((item) => item.title == 'Journal');
-      if (journalIndex != -1) {
-        _swipeController.navigateTo(journalIndex);
-      }
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not open journal: $e')),
-      );
-    } finally {
-      _journalNavigating = false;
-    }
-  }
-
   @override
   void initState() {
     super.initState();

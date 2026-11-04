@@ -198,46 +198,6 @@ class TradeJournalWorkflowPageState
     return true;
   }
 
-  bool _validateAllStepsForSave() {
-    if (_readOnly) return true;
-    for (var step = 0; step <= 2; step++) {
-      final ok = switch (step) {
-        0 => widget.useMobileLayout
-            ? (_preStepMobileKey.currentState?.validate() ?? true)
-            : (_preStepKey.currentState?.validate() ?? true),
-        1 => _execStepKey.currentState?.validate() ?? true,
-        2 => _postStepKey.currentState?.validate() ?? true,
-        _ => true,
-      };
-      final message = ok
-          ? JournalEntryValidation.validateTradeStep(_entry, step)
-          : (switch (step) {
-                0 => widget.useMobileLayout
-                    ? _preStepMobileKey.currentState?.validationMessage()
-                    : _preStepKey.currentState?.validationMessage(),
-                1 => _execStepKey.currentState?.validationMessage(),
-                2 => _postStepKey.currentState?.validationMessage(),
-                _ => null,
-              } ??
-              JournalEntryValidation.validateTradeStep(_entry, step) ??
-              'Please fix the highlighted fields');
-      if (!ok || message != null) {
-        setState(() => _currentStep = step);
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          _scrollToSection(step);
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(message ?? 'Please fix the highlighted fields'),
-            backgroundColor: context.colors.statusWarning,
-          ),
-        );
-        return false;
-      }
-    }
-    return true;
-  }
-
   @override
   void didUpdateWidget(covariant TradeJournalWorkflowPage oldWidget) {
     super.didUpdateWidget(oldWidget);
@@ -710,15 +670,7 @@ class TradeJournalWorkflowPageState
                   child: child,
                 ),
               ),
-              if (_readOnly)
-                Positioned.fill(
-                  child: GestureDetector(
-                    behavior: HitTestBehavior.translucent,
-                    onDoubleTap: _unlockEdit,
-                    child: const SizedBox.expand(),
-                  ),
-                ),
-            ],
+            ),
           ),
         ),
       ),
