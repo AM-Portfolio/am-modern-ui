@@ -155,4 +155,43 @@ void main() {
     expect(paragraph.toLowerCase(), contains('cash'));
     expect(paragraph.toLowerCase(), contains('higher'));
   });
+
+  test('plot radius leaves gutter for wide left/right labels', () {
+    const canvas = Size(260, 260);
+    final labels = [
+      const Size(80, 28), // top
+      const Size(88, 28), // right Sector
+      const Size(90, 28), // bottom
+      const Size(86, 28), // left Liquidity
+    ];
+    final radius = riskRadarPlotRadius(canvasSize: canvas, labelSizes: labels);
+    final tipRight = riskRadarFlatPoint(
+      center: const Offset(130, 130),
+      radius: radius,
+      angle: riskRadarAxisAngle(1, 4),
+      radiusFraction: 1,
+    );
+    final rightOrigin = riskRadarLabelTopLeft(
+      axisIndex: 1,
+      tip: tipRight,
+      labelSize: labels[1],
+      canvasSize: canvas,
+    );
+    expect(rightOrigin.dx, greaterThanOrEqualTo(tipRight.dx + kRiskRadarTipClearanceH - 0.5));
+
+    final tipLeft = riskRadarFlatPoint(
+      center: const Offset(130, 130),
+      radius: radius,
+      angle: riskRadarAxisAngle(3, 4),
+      radiusFraction: 1,
+    );
+    final leftOrigin = riskRadarLabelTopLeft(
+      axisIndex: 3,
+      tip: tipLeft,
+      labelSize: labels[3],
+      canvasSize: canvas,
+    );
+    final leftInner = leftOrigin.dx + labels[3].width;
+    expect(leftInner, lessThanOrEqualTo(tipLeft.dx - kRiskRadarTipClearanceH + 0.5));
+  });
 }
