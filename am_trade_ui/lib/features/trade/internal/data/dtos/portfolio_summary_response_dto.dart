@@ -37,35 +37,9 @@ abstract class PortfolioSummaryResponseDto with _$PortfolioSummaryResponseDto {
     int? gainersCount,
   }) = _PortfolioSummaryResponseDto;
 
-  /// am-portfolio V1 uses `currentValue` / `todayGainLoss` / `investmentValue`.
-  /// Accept those aliases so Trade cards do not drop Live P&L as null→₹0.
-  factory PortfolioSummaryResponseDto.fromJson(Map<String, dynamic> json) {
-    double? asDouble(dynamic value) {
-      if (value == null) return null;
-      if (value is num) return value.toDouble();
-      return double.tryParse(value.toString());
-    }
-
-    int? asInt(dynamic value) {
-      if (value == null) return null;
-      if (value is int) return value;
-      if (value is num) return value.toInt();
-      return int.tryParse(value.toString());
-    }
-
-    return PortfolioSummaryResponseDto(
-      totalValue: asDouble(json['totalValue'] ?? json['currentValue']),
-      totalGainLoss: asDouble(json['totalGainLoss']),
-      totalGainLossPercentage: asDouble(json['totalGainLossPercentage']),
-      todayChange:
-          asDouble(json['todayChange'] ?? json['todayGainLoss']),
-      todayChangePercentage: asDouble(
-        json['todayChangePercentage'] ?? json['todayGainLossPercentage'],
-      ),
-      investedValue:
-          asDouble(json['investedValue'] ?? json['investmentValue']),
-      totalAssets: asInt(json['totalAssets']),
-      gainersCount: asInt(json['gainersCount']),
-    );
-  }
+  /// Prefer generated fromJson so CI `build_runner` emits `*.g.dart`.
+  /// am-portfolio V1 aliases (`currentValue` / `todayGainLoss` / …) are
+  /// normalized in [PortfolioOverviewDataSourceImpl.getPortfolioSummary].
+  factory PortfolioSummaryResponseDto.fromJson(Map<String, dynamic> json) =>
+      _$PortfolioSummaryResponseDtoFromJson(json);
 }
