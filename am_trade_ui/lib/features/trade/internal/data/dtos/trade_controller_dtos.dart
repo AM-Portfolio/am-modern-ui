@@ -115,6 +115,9 @@ class TradeMetricsDto {
   const TradeMetricsDto({
     this.profitLoss,
     this.profitLossPercentage,
+    this.todayProfitLoss,
+    this.todayProfitLossPercentage,
+    this.unrealizedBasis,
     this.returnOnEquity,
     this.riskAmount,
     this.rewardAmount,
@@ -130,6 +133,9 @@ class TradeMetricsDto {
 
   final double? profitLoss;
   final double? profitLossPercentage;
+  final double? todayProfitLoss;
+  final double? todayProfitLossPercentage;
+  final String? unrealizedBasis;
   final double? returnOnEquity;
   final double? riskAmount;
   final double? rewardAmount;

@@ -190,10 +190,12 @@ class TradePortfolioMobileCard extends StatelessWidget {
                     ),
                     _buildMetric(
                       context,
-                      'Win %',
+                      portfolio.hasClosedTradeSignal ? 'Win %' : 'Live Win',
                       portfolio.displayWinRate,
                       Icons.pie_chart,
-                      (portfolio.winRate ?? 0) >= 50 ? context.marketPositive : context.statusWarning,
+                      (portfolio.winRate ?? 0) >= 0.5
+                          ? context.marketPositive
+                          : context.statusWarning,
                     ),
                   ],
                 ),

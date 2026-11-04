@@ -1,6 +1,5 @@
 import '../../internal/domain/entities/trade_controller_entities.dart';
 import '../../internal/domain/entities/trade_holding.dart';
-import '../../internal/domain/enums/trade_directions.dart';
 
 /// View model for presenting trade holding data in UI
 /// Flattens nested domain structure for easier template consumption
@@ -23,6 +22,9 @@ class TradeHoldingViewModel {
     this.currentValue,
     this.profitLoss,
     this.profitLossPercentage,
+    this.todayProfitLoss,
+    this.todayProfitLossPercentage,
+    this.unrealizedBasis,
     this.riskAmount,
     this.rewardAmount,
     this.riskRewardRatio,
@@ -97,14 +99,26 @@ class TradeHoldingViewModel {
       status: entity.status.name,
       tradePositionType: entity.tradePositionType.name,
       quantity: entity.entryInfo.quantity ?? exitInfo?.quantity,
-      entryPrice: entity.entryInfo.price,
+      // Treat 0/negative entry as unknown (email demat imports) — never surface ₹0.00 as cost.
+      entryPrice: _positiveOrNull(entity.entryInfo.price),
       exitPrice: exitInfo?.price,
-      currentPrice: entity.currentPrice ?? exitInfo?.price ?? entity.entryInfo.price,
-      avgPrice: entity.entryInfo.price,
-      currentValue:
-          (exitInfo?.quantity ?? entity.entryInfo.quantity ?? 0) * (entity.currentPrice ?? exitInfo?.price ?? entity.entryInfo.price ?? 0),
+      currentPrice: _positiveOrNull(entity.currentPrice) ??
+          _positiveOrNull(exitInfo?.price) ??
+          _positiveOrNull(entity.entryInfo.price),
+      avgPrice: _positiveOrNull(entity.entryInfo.price),
+      currentValue: () {
+        final qty = exitInfo?.quantity ?? entity.entryInfo.quantity ?? 0;
+        final px = _positiveOrNull(entity.currentPrice) ??
+            _positiveOrNull(exitInfo?.price) ??
+            _positiveOrNull(entity.entryInfo.price);
+        if (px == null || qty == 0) return null;
+        return qty * px;
+      }(),
       profitLoss: metrics?.profitLoss,
       profitLossPercentage: metrics?.profitLossPercentage,
+      todayProfitLoss: metrics?.todayProfitLoss,
+      todayProfitLossPercentage: metrics?.todayProfitLossPercentage,
+      unrealizedBasis: metrics?.unrealizedBasis,
       riskAmount: metrics?.riskAmount,
       rewardAmount: metrics?.rewardAmount,
       riskRewardRatio: metrics?.riskRewardRatio,
@@ -165,6 +179,9 @@ class TradeHoldingViewModel {
   final double? currentValue;
   final double? profitLoss;
   final double? profitLossPercentage;
+  final double? todayProfitLoss;
+  final double? todayProfitLossPercentage;
+  final String? unrealizedBasis;
   final double? riskAmount;
   final double? rewardAmount;
   final double? riskRewardRatio;
@@ -220,22 +237,127 @@ class TradeHoldingViewModel {
   String get displayExchange => exchange ?? 'Unknown';
   String get displayStatus => status ?? 'Unknown';
 
-  String get displayQuantity => quantity != null ? quantity!.toStringAsFixed(0) : '0';
-  String get displayEntryPrice => entryPrice != null ? '₹${entryPrice!.toStringAsFixed(2)}' : 'N/A';
-  String get displayExitPrice => exitPrice != null ? '₹${exitPrice!.toStringAsFixed(2)}' : 'N/A';
-  String get displayCurrentPrice => currentPrice != null ? '₹${currentPrice!.toStringAsFixed(2)}' : 'N/A';
-  String get displayAvgPrice => avgPrice != null ? '₹${avgPrice!.toStringAsFixed(2)}' : 'N/A';
-  String get displayCurrentValue => currentValue != null ? '₹${currentValue!.toStringAsFixed(2)}' : 'N/A';
+  String get displayQuantity => quantity != null ? quantity!.toStringAsFixed(0) : '—';
+  String get displayEntryPrice =>
+      entryPrice != null && entryPrice! > 0 ? '₹${entryPrice!.toStringAsFixed(2)}' : '—';
+  String get displayExitPrice => exitPrice != null ? '₹${exitPrice!.toStringAsFixed(2)}' : '—';
+  String get displayCurrentPrice =>
+      currentPrice != null && currentPrice! > 0 ? '₹${currentPrice!.toStringAsFixed(2)}' : '—';
+  String get displayAvgPrice =>
+      avgPrice != null && avgPrice! > 0 ? '₹${avgPrice!.toStringAsFixed(2)}' : '—';
+  String get displayCurrentValue =>
+      currentValue != null ? '₹${currentValue!.toStringAsFixed(2)}' : '—';
 
-  // Computed values
+  // Aggregates stay nullable-aware — callers must not treat missing as flat 0.
+  double? get totalGainLossOrNull => profitLoss;
+  double? get totalGainLossPercentageOrNull => profitLossPercentage;
+  double? get todayChangeOrNull => todayProfitLoss;
+  double? get todayChangePercentageOrNull => todayProfitLossPercentage;
+
+  @Deprecated('Use totalGainLossOrNull — inventing 0 hides unknown cost')
   double get totalGainLoss => profitLoss ?? 0.0;
+  @Deprecated('Use totalGainLossPercentageOrNull')
   double get totalGainLossPercentage => profitLossPercentage ?? 0.0;
-  double get todayChange => 0.0; // Not available in new structure
-  double get todayChangePercentage => 0.0; // Not available in new structure
+  @Deprecated('Use todayChangeOrNull')
+  double get todayChange => todayProfitLoss ?? 0.0;
+  @Deprecated('Use todayChangePercentageOrNull')
+  double get todayChangePercentage => todayProfitLossPercentage ?? 0.0;
 
-  String get displayProfitLoss => profitLoss != null ? '₹${profitLoss!.toStringAsFixed(2)}' : r'₹0.00';
+  String get displayProfitLoss =>
+      profitLoss != null ? '₹${profitLoss!.toStringAsFixed(2)}' : '—';
   String get displayProfitLossPercentage =>
-      profitLossPercentage != null ? '${profitLossPercentage!.toStringAsFixed(2)}%' : '0.00%';
+      profitLossPercentage != null
+          ? '${profitLossPercentage!.toStringAsFixed(2)}%'
+          : '—';
+  String get displayTodayProfitLoss =>
+      todayProfitLoss != null ? '₹${todayProfitLoss!.toStringAsFixed(2)}' : '—';
+  String get displayTodayProfitLossPercentage =>
+      todayProfitLossPercentage != null
+          ? '${todayProfitLossPercentage!.toStringAsFixed(2)}%'
+          : '—';
+  String get displayUnrealizedBasis {
+    switch (unrealizedBasis) {
+      case 'COST':
+        return 'Cost';
+      case 'IMPORT_MARK':
+        return 'Since import';
+      default:
+        return '—';
+    }
+  }
+
+  TradeHoldingViewModel copyWith({
+    double? todayProfitLoss,
+    double? todayProfitLossPercentage,
+    double? currentPrice,
+    double? currentValue,
+    double? profitLoss,
+    double? profitLossPercentage,
+  }) =>
+      TradeHoldingViewModel(
+        tradeId: tradeId,
+        portfolioId: portfolioId,
+        symbol: symbol,
+        companyName: companyName,
+        sector: sector,
+        industry: industry,
+        exchange: exchange,
+        status: status,
+        tradePositionType: tradePositionType,
+        quantity: quantity,
+        entryPrice: entryPrice,
+        exitPrice: exitPrice,
+        currentPrice: currentPrice ?? this.currentPrice,
+        avgPrice: avgPrice,
+        currentValue: currentValue ?? this.currentValue,
+        profitLoss: profitLoss ?? this.profitLoss,
+        profitLossPercentage: profitLossPercentage ?? this.profitLossPercentage,
+        todayProfitLoss: todayProfitLoss ?? this.todayProfitLoss,
+        todayProfitLossPercentage:
+            todayProfitLossPercentage ?? this.todayProfitLossPercentage,
+        unrealizedBasis: unrealizedBasis,
+        riskAmount: riskAmount,
+        rewardAmount: rewardAmount,
+        riskRewardRatio: riskRewardRatio,
+        holdingDays: holdingDays,
+        entryTimestamp: entryTimestamp,
+        exitTimestamp: exitTimestamp,
+        broker: broker,
+        orderType: orderType,
+        executionCount: executionCount,
+        strategy: strategy,
+        notes: notes,
+        tags: tags,
+        userId: userId,
+        returnOnEquity: returnOnEquity,
+        maxAdverseExcursion: maxAdverseExcursion,
+        maxFavorableExcursion: maxFavorableExcursion,
+        isin: isin,
+        rawSymbol: rawSymbol,
+        marketSegment: marketSegment,
+        series: series,
+        indexType: indexType,
+        description: description,
+        currency: currency,
+        lotSize: lotSize,
+        derivativeType: derivativeType,
+        strikePrice: strikePrice,
+        expiryDate: expiryDate,
+        optionType: optionType,
+        underlyingSymbol: underlyingSymbol,
+        entryFees: entryFees,
+        exitFees: exitFees,
+        entryReason: entryReason,
+        exitReason: exitReason,
+        entryTotalValue: entryTotalValue,
+        exitTotalValue: exitTotalValue,
+        psychologyData: psychologyData,
+        entryReasoning: entryReasoning,
+        exitReasoning: exitReasoning,
+        attachments: attachments,
+      );
+
+  bool get isTodayProfit => (todayProfitLoss ?? 0) >= 0;
 
   String get displayRiskAmount => riskAmount != null ? '₹${riskAmount!.toStringAsFixed(2)}' : 'N/A';
   String get displayRewardAmount => rewardAmount != null ? '₹${rewardAmount!.toStringAsFixed(2)}' : 'N/A';
@@ -300,6 +422,9 @@ class TradeHoldingViewModel {
 
     return viewModels;
   }
+
+  static double? _positiveOrNull(double? value) =>
+      value != null && value > 0 ? value : null;
 }
 
 /// View model for holdings collection
@@ -338,3 +463,11 @@ class TradeHoldingsViewModel {
   int get displayCount => holdings.length;
   String get displayTotal => '$totalElements total trades';
 }
+
+/// True when the holding has a usable entry / avg cost.
+bool tradeHoldingHasEntryPrice(TradeHoldingViewModel h) =>
+    h.entryPrice != null && h.entryPrice! > 0;
+
+/// Show Entry column only when at least one holding has cost basis.
+bool showHoldingsEntryColumns(Iterable<TradeHoldingViewModel> holdings) =>
+    holdings.any(tradeHoldingHasEntryPrice);

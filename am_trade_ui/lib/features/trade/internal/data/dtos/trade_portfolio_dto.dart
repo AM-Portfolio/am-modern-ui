@@ -41,8 +41,13 @@ class TradePortfolioDto {
       modifiedJson['openPositions'] ??= metrics['openPositions'];
       
       modifiedJson['totalValue'] ??= json['currentCapital'] ?? metrics['totalValue'];
-      modifiedJson['totalGainLoss'] ??= metrics['netProfitLoss'];
-      modifiedJson['totalGainLossPercentage'] ??= metrics['netProfitLossPercentage'];
+      // Do NOT seed Live P&L from realized netProfitLoss — that made open-only
+      // mail books look like Live ₹0 before am-portfolio / holdings heal runs.
+      modifiedJson['totalGainLoss'] ??=
+          metrics['totalGainLoss'] ?? metrics['unrealizedProfitLoss'];
+      modifiedJson['totalGainLossPercentage'] ??=
+          metrics['totalGainLossPercentage'] ??
+              metrics['unrealizedProfitLossPercentage'];
       
       return _$TradePortfolioDtoFromJson(modifiedJson);
     }

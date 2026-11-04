@@ -63,6 +63,9 @@ class EquityHoldingDto {
     required this.percentageChange,
     required this.brokerPortfolios,
     this.assetClass = 'EQUITY',
+    this.hasInvestmentCost = false,
+    this.hasGainLoss = false,
+    this.hasTodayGainLoss = false,
   });
 
   /// Create from JSON response
@@ -75,15 +78,19 @@ class EquityHoldingDto {
         industry: json['industry'] as String? ?? '',
         marketCap: json['marketCap'] as String? ?? '',
         quantity: _parseDouble(json['quantity']),
-        investmentCost: _parseDouble(json['investmentCost']),
+        investmentCost: _parseDoubleOrNull(json['investmentCost']) ?? 0.0,
         currentValue: _parseDouble(json['currentValue']),
         weightInPortfolio: _parseDouble(json['weightInPortfolio']),
-        gainLoss: _parseDouble(json['gainLoss']),
-        gainLossPercentage: _parseDouble(json['gainLossPercentage']),
-        todayGainLoss: _parseDouble(json['todayGainLoss']),
-        todayGainLossPercentage: _parseDouble(json['todayGainLossPercentage']),
+        gainLoss: _parseDoubleOrNull(json['gainLoss']) ?? 0.0,
+        gainLossPercentage: _parseDoubleOrNull(json['gainLossPercentage']) ?? 0.0,
+        todayGainLoss: _parseDoubleOrNull(json['todayGainLoss']) ?? 0.0,
+        todayGainLossPercentage:
+            _parseDoubleOrNull(json['todayGainLossPercentage']) ?? 0.0,
         currentPrice: _parseDouble(json['currentPrice']),
-        percentageChange: _parseDouble(json['percentageChange']),
+        percentageChange: _parseDoubleOrNull(json['percentageChange']) ?? 0.0,
+        hasInvestmentCost: json['investmentCost'] != null,
+        hasGainLoss: json['gainLoss'] != null,
+        hasTodayGainLoss: json['todayGainLoss'] != null,
         brokerPortfolios: json['brokerPortfolios'] is List
             ? (json['brokerPortfolios'] as List)
                   .map(
@@ -115,6 +122,9 @@ class EquityHoldingDto {
   final double percentageChange;
   final List<BrokerHoldingDto> brokerPortfolios;
   final String assetClass;
+  final bool hasInvestmentCost;
+  final bool hasGainLoss;
+  final bool hasTodayGainLoss;
 
   /// Helper method to safely parse double values from API
   static double _parseDouble(dynamic value) {
@@ -124,6 +134,13 @@ class EquityHoldingDto {
       return double.tryParse(value) ?? 0.0;
     }
     return 0.0;
+  }
+
+  static double? _parseDoubleOrNull(dynamic value) {
+    if (value == null) return null;
+    if (value is num) return value.toDouble();
+    if (value is String) return double.tryParse(value);
+    return null;
   }
 
   /// Convert to JSON for API requests
