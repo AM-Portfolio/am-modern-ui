@@ -25,7 +25,7 @@ enum ChartTimeframe {
     );
   }
 
-  /// Phase 1 chips shown in the toolbar.
+  /// Phase 1 chips shown in the toolbar (symbols / indices).
   static const phase1 = [
     ChartTimeframe.m5,
     ChartTimeframe.m15,
@@ -35,4 +35,38 @@ enum ChartTimeframe {
     ChartTimeframe.mo1,
     ChartTimeframe.y1,
   ];
+
+  /// Portfolio wealth charts: daily+ only (no intraday chips).
+  static const phase1Portfolio = [
+    ChartTimeframe.d1,
+    ChartTimeframe.w1,
+    ChartTimeframe.mo1,
+    ChartTimeframe.y1,
+  ];
+
+  static bool isPortfolioChartSymbol(String? symbol) {
+    final u = (symbol ?? '').trim().toUpperCase();
+    if (u.isEmpty) return false;
+    return u.startsWith('PORTFOLIO:') ||
+        u == 'OVERALL' ||
+        u == 'OVERALL - NSE' ||
+        u == 'OVERALL - BSE';
+  }
+
+  static bool isIntradayPhase1(ChartTimeframe tf) =>
+      tf == ChartTimeframe.m5 ||
+      tf == ChartTimeframe.m15 ||
+      tf == ChartTimeframe.h1;
+
+  /// Toolbar chips for the active chart symbol.
+  static List<ChartTimeframe> phase1ForSymbol(String? symbol) =>
+      isPortfolioChartSymbol(symbol) ? phase1Portfolio : phase1;
+
+  /// Snap intraday TFs to 1D when a portfolio is selected.
+  static ChartTimeframe coerceForSymbol(String? symbol, ChartTimeframe tf) {
+    if (isPortfolioChartSymbol(symbol) && isIntradayPhase1(tf)) {
+      return ChartTimeframe.d1;
+    }
+    return tf;
+  }
 }

@@ -8,8 +8,8 @@ import '../timeframe/chart_timeframe.dart';
 
 final chartTerminalProvider =
     NotifierProvider<ChartTerminalController, ChartTerminalState>(
-      ChartTerminalController.new,
-    );
+  ChartTerminalController.new,
+);
 
 class ChartPaneState {
   const ChartPaneState({
@@ -74,9 +74,8 @@ class ChartPaneState {
       comparisonSymbols: clearComparisons
           ? const []
           : (comparisonSymbols ?? this.comparisonSymbols),
-      comparisonBars: clearComparisons
-          ? const {}
-          : (comparisonBars ?? this.comparisonBars),
+      comparisonBars:
+          clearComparisons ? const {} : (comparisonBars ?? this.comparisonBars),
       loadingComparisons: loadingComparisons ?? this.loadingComparisons,
     );
   }
@@ -225,14 +224,14 @@ class ChartTerminalController extends Notifier<ChartTerminalState> {
   }
 
   static ChartPaneState _emptyPane(String id, String symbol) => ChartPaneState(
-    id: id,
-    symbol: symbol,
-    exchange: _exchangeFor(symbol),
-    timeframe: ChartTimeframe.y1,
-    chartType: ChartTypeId.candlestick,
-    bars: const [],
-    loading: true,
-  );
+        id: id,
+        symbol: symbol,
+        exchange: _exchangeFor(symbol),
+        timeframe: ChartTimeframe.y1,
+        chartType: ChartTypeId.candlestick,
+        bars: const [],
+        loading: true,
+      );
 
   Future<void> bootstrap({String? symbol, String? timeframeCode}) async {
     final saved = await _store.load();
@@ -285,6 +284,13 @@ class ChartTerminalController extends Notifier<ChartTerminalState> {
           ),
       ];
     }
+
+    panes = [
+      for (final p in panes)
+        p.copyWith(
+          timeframe: ChartTimeframe.coerceForSymbol(p.symbol, p.timeframe),
+        ),
+    ];
 
     final active = (saved?.activePaneIndex ?? 0).clamp(0, panes.length - 1);
     final recent = await _store.loadRecentSymbols();
@@ -376,13 +382,18 @@ class ChartTerminalController extends Notifier<ChartTerminalState> {
     final filteredComparisons = currentPane.comparisonSymbols
         .where((s) => s.toUpperCase() != symbol.toUpperCase())
         .toList();
-    final filteredBars = Map<String, List<ChartBar>>.from(currentPane.comparisonBars)
-      ..removeWhere((k, _) => k.toUpperCase() == symbol.toUpperCase());
+    final filteredBars =
+        Map<String, List<ChartBar>>.from(currentPane.comparisonBars)
+          ..removeWhere((k, _) => k.toUpperCase() == symbol.toUpperCase());
+    final resolvedTf = ChartTimeframe.coerceForSymbol(
+      symbol,
+      timeframe ?? ChartTimeframe.y1,
+    );
 
     panes[i] = currentPane.copyWith(
       symbol: symbol,
       exchange: exchange ?? _exchangeFor(symbol),
-      timeframe: timeframe ?? ChartTimeframe.y1,
+      timeframe: resolvedTf,
       comparisonSymbols: filteredComparisons,
       comparisonBars: filteredBars,
       loading: true,
@@ -406,7 +417,8 @@ class ChartTerminalController extends Notifier<ChartTerminalState> {
     }
     final i = paneIndex ?? state.activePaneIndex;
     final panes = [...state.panes];
-    panes[i] = panes[i].copyWith(timeframe: tf, loading: true);
+    final resolved = ChartTimeframe.coerceForSymbol(panes[i].symbol, tf);
+    panes[i] = panes[i].copyWith(timeframe: resolved, loading: true);
     state = state.copyWith(panes: panes, clearSyncedCrosshair: true);
     await reloadPane(i);
     await _persist();
@@ -414,7 +426,11 @@ class ChartTerminalController extends Notifier<ChartTerminalState> {
 
   Future<void> setTimeframeForAll(ChartTimeframe tf) async {
     final panes = [
-      for (final p in state.panes) p.copyWith(timeframe: tf, loading: true),
+      for (final p in state.panes)
+        p.copyWith(
+          timeframe: ChartTimeframe.coerceForSymbol(p.symbol, tf),
+          loading: true,
+        ),
     ];
     state = state.copyWith(panes: panes, clearSyncedCrosshair: true);
     await Future.wait([for (var i = 0; i < panes.length; i++) reloadPane(i)]);
@@ -584,9 +600,7 @@ class ChartTerminalController extends Notifier<ChartTerminalState> {
   }) {
     if (index < 0 || index >= state.panes.length) return false;
     final p = state.panes[index];
-    return p.id == paneId &&
-        p.symbol == symbol &&
-        p.timeframe == timeframe;
+    return p.id == paneId && p.symbol == symbol && p.timeframe == timeframe;
   }
 
   Future<void> toggleComparison(String symbol, {int? paneIndex}) async {
@@ -626,7 +640,8 @@ class ChartTerminalController extends Notifier<ChartTerminalState> {
         timeframe: pane.timeframe.code,
       );
       final currentPane = state.panes[i];
-      final newBarsMap = Map<String, List<ChartBar>>.from(currentPane.comparisonBars);
+      final newBarsMap =
+          Map<String, List<ChartBar>>.from(currentPane.comparisonBars);
       newBarsMap[clean] = bars;
       final updatedPanes = [...state.panes];
       updatedPanes[i] = currentPane.copyWith(
@@ -673,6 +688,69 @@ class ChartTerminalController extends Notifier<ChartTerminalState> {
     state = state.copyWith(panes: panes);
   }
 
+  /// Replace the comparison set (multi-select Done). Loads any new symbols.
+  Future<void> setComparisons(
+    List<String> symbols, {
+    int? paneIndex,
+  }) async {
+    final i = paneIndex ?? state.activePaneIndex;
+    if (i < 0 || i >= state.panes.length) return;
+    final pane = state.panes[i];
+    final primary = pane.symbol.trim().toUpperCase();
+    final next = <String>[];
+    final seen = <String>{};
+    for (final raw in symbols) {
+      final clean = raw.trim().toUpperCase();
+      if (clean.isEmpty || clean == primary) continue;
+      if (seen.add(clean)) next.add(clean);
+    }
+
+    final prev = {
+      for (final s in pane.comparisonSymbols) s.trim().toUpperCase(),
+    };
+    final nextSet = next.toSet();
+    final removed = prev.difference(nextSet);
+    final added = nextSet.difference(prev);
+
+    final bars = Map<String, List<ChartBar>>.from(pane.comparisonBars)
+      ..removeWhere((k, _) => removed.contains(k.toUpperCase()));
+
+    final panes = [...state.panes];
+    panes[i] = pane.copyWith(
+      comparisonSymbols: next,
+      comparisonBars: bars,
+      loadingComparisons: added.isNotEmpty,
+    );
+    state = state.copyWith(panes: panes);
+
+    if (added.isEmpty) {
+      await _persist();
+      return;
+    }
+
+    final history = ref.read(chartHistoricalProvider);
+    final loaded = Map<String, List<ChartBar>>.from(
+      state.panes[i].comparisonBars,
+    );
+    for (final sym in added) {
+      try {
+        loaded[sym] = await history.getBars(
+          symbol: sym,
+          timeframe: state.panes[i].timeframe.code,
+        );
+      } catch (_) {}
+    }
+    if (i >= state.panes.length) return;
+    final current = state.panes[i];
+    final updated = [...state.panes];
+    updated[i] = current.copyWith(
+      comparisonBars: loaded,
+      loadingComparisons: false,
+    );
+    state = state.copyWith(panes: updated);
+    await _persist();
+  }
+
   Future<void> _persist() async {
     await _store.save(
       WorkspaceSnapshot(
@@ -693,7 +771,9 @@ class ChartTerminalController extends Notifier<ChartTerminalState> {
   static String _exchangeFor(String symbol) {
     final raw = symbol.trim();
     final u = raw.toUpperCase();
-    if (u.startsWith('PORTFOLIO:') || u == 'OVERALL' || raw.toLowerCase() == 'overall') {
+    if (u.startsWith('PORTFOLIO:') ||
+        u == 'OVERALL' ||
+        raw.toLowerCase() == 'overall') {
       return 'PORTFOLIO';
     }
     if (u.contains('SENSEX') || u.startsWith('BSE:')) return 'BSE';

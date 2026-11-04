@@ -167,6 +167,13 @@ class MarketSdkMarketDataProvider implements MarketDataProvider {
 
   @override
   Future<ChartQuote?> getQuote(String symbol) async {
+    final u = symbol.trim().toUpperCase();
+    if (u.startsWith('PORTFOLIO:') ||
+        u == 'OVERALL' ||
+        u == 'OVERALL - NSE' ||
+        u == 'OVERALL - BSE') {
+      return null;
+    }
     await _auth();
     final isIndex = MarketSdkHistoricalProvider._isIndex(symbol);
     try {

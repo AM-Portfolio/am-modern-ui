@@ -344,7 +344,8 @@ class _ChartTerminalBodyState extends ConsumerState<_ChartTerminalBody>
         name: sel.name,
       ),
       exchange: 'PORTFOLIO',
-      timeframe: ChartTimeframe.d1,
+      // Match Portfolio overview default (1M daily history — not /intraday).
+      timeframe: ChartTimeframe.mo1,
     );
   }
 
@@ -619,8 +620,9 @@ class _ChartTerminalBodyState extends ConsumerState<_ChartTerminalBody>
                           _region == IndicesRegion.global
                               ? 'No global indices found'
                               : 'No indices found',
-                          style:
-                              TextStyle(fontSize: AppTypeScale.sm, color: context.colors.textMuted),
+                          style: TextStyle(
+                              fontSize: AppTypeScale.sm,
+                              color: context.colors.textMuted),
                         ),
                 )
               : ListView.separated(
