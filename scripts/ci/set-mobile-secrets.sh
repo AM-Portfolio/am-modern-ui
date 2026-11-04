@@ -70,6 +70,36 @@ else
   echo "WARN: IOS_CERTIFICATE_PASSWORD not found (needed only for p12 path)"
 fi
 
+# Distribution private key PEM (Codemagic CERTIFICATE_PRIVATE_KEY) — ASC fetch when cert already exists in Apple portal
+CERT_PEM=""
+for cand in \
+  "${APPLE_DIR}/ios_distribution_private_key" \
+  "${APPLE_DIR}/ios_distribution_private_key.pem" \
+  "${SECRETS_DIR}/ios_distribution_private_key" \
+  "${SECRETS_DIR}/ios_distribution_private_key.pem"; do
+  if [[ -f "$cand" ]]; then CERT_PEM="$cand"; break; fi
+done
+if [[ -n "$CERT_PEM" ]]; then
+  gh secret set CERTIFICATE_PRIVATE_KEY < "$CERT_PEM" --repo "$REPO"
+  echo "OK: CERTIFICATE_PRIVATE_KEY set from ${CERT_PEM}"
+elif [[ -n "$P12" ]] && command -v openssl >/dev/null 2>&1; then
+  TMP_PEM="$(mktemp)"
+  if openssl pkcs12 -in "$P12" -nodes -nocerts -passin "pass:${CERT_PASS:-}" -out "$TMP_PEM" 2>/dev/null \
+    || openssl pkcs12 -in "$P12" -nodes -nocerts -passin "pass:${CERT_PASS:-}" -legacy -out "$TMP_PEM" 2>/dev/null; then
+    if grep -q "PRIVATE KEY" "$TMP_PEM" 2>/dev/null; then
+      gh secret set CERTIFICATE_PRIVATE_KEY < "$TMP_PEM" --repo "$REPO"
+      echo "OK: CERTIFICATE_PRIVATE_KEY extracted from ${P12}"
+    else
+      echo "WARN: openssl ran but no PRIVATE KEY block — set ${APPLE_DIR}/ios_distribution_private_key manually"
+    fi
+  else
+    echo "WARN: could not extract key from p12 (password?) — ASC fetch needs CERTIFICATE_PRIVATE_KEY PEM"
+  fi
+  rm -f "$TMP_PEM"
+else
+  echo "WARN: no ios_distribution_private_key PEM — ASC fetch may fail if Apple already has a Distribution cert"
+fi
+
 # Provisioning profile
 PROFILE=""
 for cand in \
