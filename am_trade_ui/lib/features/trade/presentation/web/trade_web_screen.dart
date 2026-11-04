@@ -889,8 +889,7 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
                   // so a failed/partial backend delete cannot leave a ghost card.
                   final repository = ref.read(tradeRepositoryProvider).value;
                   repository?.removeCachedPortfolio(portfolio.id);
-                  ref.invalidate(tradePortfoliosStreamProvider);
-                  ref.invalidate(enrichedTradePortfoliosProvider);
+                  invalidateTradePortfolios(ref);
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
                       content: Text('Portfolio deleted successfully'),
@@ -907,10 +906,7 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
                 }
               }
             },
-            onRefresh: () {
-              ref.invalidate(tradePortfoliosStreamProvider);
-              ref.invalidate(enrichedTradePortfoliosProvider);
-            },
+            onRefresh: () => invalidateTradePortfolios(ref),
               );
             }
 
@@ -934,10 +930,7 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
                 onPortfolioSelected: (portfolio) {
                   _onPortfolioSelected(portfolio.id, portfolio.name);
                 },
-                onRefresh: () {
-                  ref.invalidate(tradePortfoliosStreamProvider);
-                  ref.invalidate(enrichedTradePortfoliosProvider);
-                },
+                onRefresh: () => invalidateTradePortfolios(ref),
               );
             }
             return TradePortfolioDiscoveryTemplate(
@@ -955,10 +948,7 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
             onPortfolioSelected: (portfolio) {
               _onPortfolioSelected(portfolio.id, portfolio.name);
             },
-            onRefresh: () {
-              ref.invalidate(tradePortfoliosStreamProvider);
-              ref.invalidate(enrichedTradePortfoliosProvider);
-            },
+            onRefresh: () => invalidateTradePortfolios(ref),
           ),
         );
       },

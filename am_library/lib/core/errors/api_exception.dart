@@ -1,3 +1,5 @@
+import 'dart:async';
+
 /// Exception thrown when API calls fail
 class ApiException implements Exception {
   /// Constructor
@@ -19,4 +21,16 @@ class ApiException implements Exception {
     }
     return 'ApiException: $message';
   }
+}
+
+/// True when [e] is a transport/request timeout (raw or wrapped as [ApiException]).
+/// Used so `retryOnTimeout: false` is honored after timeouts are wrapped as ApiException.
+bool isApiTimeoutError(Object e) {
+  if (e is TimeoutException) return true;
+  if (e is ApiException) {
+    if (e.statusCode == 408) return true;
+    final message = e.message.toLowerCase();
+    return message.contains('timed out') || message.contains('timeout');
+  }
+  return false;
 }
