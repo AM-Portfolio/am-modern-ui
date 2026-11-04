@@ -101,50 +101,26 @@ class PhaseTrackingWidget extends StatelessWidget {
               children: [
                 if (isEditMode || hasMood)
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Mood',
-                          style: context.text.caption(compact: true).copyWith(
-                                color: colors.textSecondary,
-                                fontWeight: FontWeight.w600,
-                              ),
-                        ),
-                        const SizedBox(height: AppSpacing.xs),
-                        IgnorePointer(
-                          ignoring: !isEditMode,
-                          child: MoodSelector(
-                            selectedMood: mood,
-                            onMoodSelected: onMoodChanged,
-                          ),
-                        ),
-                      ],
+                    child: IgnorePointer(
+                      ignoring: !isEditMode,
+                      child: MoodSelector(
+                        selectedMood: mood,
+                        onMoodSelected: onMoodChanged,
+                        compact: true,
+                      ),
                     ),
                   ),
                 if ((isEditMode || hasMood) && (isEditMode || hasSentiment))
                   const SizedBox(width: AppSpacing.sm + AppSpacing.xxs),
                 if (isEditMode || hasSentiment)
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Sentiment',
-                          style: context.text.caption(compact: true).copyWith(
-                                color: colors.textSecondary,
-                                fontWeight: FontWeight.w600,
-                              ),
-                        ),
-                        const SizedBox(height: AppSpacing.xs),
-                        IgnorePointer(
-                          ignoring: !isEditMode,
-                          child: SentimentSelector(
-                            selectedSentiment: sentiment,
-                            onSentimentSelected: onSentimentChanged,
-                          ),
-                        ),
-                      ],
+                    child: IgnorePointer(
+                      ignoring: !isEditMode,
+                      child: SentimentSelector(
+                        selectedSentiment: sentiment,
+                        onSentimentSelected: onSentimentChanged,
+                        compact: true,
+                      ),
                     ),
                   ),
               ],

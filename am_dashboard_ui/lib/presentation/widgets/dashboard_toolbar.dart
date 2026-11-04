@@ -1,6 +1,7 @@
 import 'package:am_common/am_common.dart';
 import 'package:am_dashboard_ui/presentation/layout/dashboard_customize_sheet.dart';
 import 'package:am_dashboard_ui/presentation/layout/dashboard_layout_store.dart';
+import 'package:am_dashboard_ui/presentation/widgets/dashboard_portfolio_selector.dart';
 import 'package:am_dashboard_ui/presentation/widgets/paper_trading_nav_chip.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
@@ -12,6 +13,7 @@ import 'package:flutter/material.dart';
 class DashboardToolbar extends StatelessWidget {
   const DashboardToolbar({
     super.key,
+    required this.userId,
     this.onSearch,
     this.onOpenPaper,
     this.onQuickAdd,
@@ -20,6 +22,7 @@ class DashboardToolbar extends StatelessWidget {
     this.onSurface,
   });
 
+  final String userId;
   final VoidCallback? onSearch;
   final VoidCallback? onOpenPaper;
   final ValueChanged<GlobalAddActionKind>? onQuickAdd;
@@ -83,6 +86,8 @@ class DashboardToolbar extends StatelessWidget {
           const Spacer()
         else
           const SizedBox(width: AppSpacing.sm),
+        DashboardPortfolioSelector(userId: userId),
+        const SizedBox(width: AppSpacing.sm),
         GlobalTimeFrameBar(
           variant: GlobalTimeFrameVariant.dropdown,
           dropdownWidth: hideTfLeading ? 72 : 96,

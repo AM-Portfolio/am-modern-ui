@@ -1,12 +1,11 @@
 import 'package:am_design_system/am_design_system.dart';
 import 'package:am_market_ui/features/ipo/models/ipo_models.dart';
+import 'package:am_market_ui/features/ipo/ipo_subscription_sorting.dart';
 import 'package:am_market_ui/features/ipo/providers/ipo_providers.dart';
 import 'package:am_market_ui/features/ipo/widgets/ipo_board_badge.dart';
 import 'package:am_market_ui/features/ipo/widgets/ipo_documents_card.dart';
-import 'package:am_market_ui/features/ipo/widgets/ipo_eligible_investors_card.dart';
 import 'package:am_market_ui/features/ipo/widgets/ipo_overview_header_card.dart';
 import 'package:am_market_ui/features/ipo/widgets/ipo_registrar_card.dart';
-import 'package:am_market_ui/features/ipo/widgets/ipo_subscription_status_card.dart';
 import 'package:am_market_ui/features/ipo/widgets/ipo_timeline_stepper.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -64,15 +63,14 @@ class _IpoDetailsScreenState extends ConsumerState<IpoDetailsScreen>
             Text(
               'Failed to load IPO details',
               style: TextStyle(
-                fontSize: 16,
+                fontSize: AppTypeScale.xl,
                 fontWeight: FontWeight.w600,
                 color: context.textPrimary,
               ),
             ),
             const SizedBox(height: 12),
             FilledButton(
-              onPressed: () =>
-                  ref.invalidate(ipoDetailsProvider(widget.ipoId)),
+              onPressed: () => ref.invalidate(ipoDetailsProvider(widget.ipoId)),
               child: const Text('Retry'),
             ),
           ],
@@ -104,9 +102,10 @@ class _IpoDetailsScreenState extends ConsumerState<IpoDetailsScreen>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildBackButton(context),
-            const SizedBox(height: 12),
-            IpoOverviewHeaderCard(ipo: ipo),
+            IpoOverviewHeaderCard(
+              ipo: ipo,
+              onListTap: () => Navigator.of(context).pop(),
+            ),
             const SizedBox(height: 16),
             IpoTimelineStepper(
               timeline: ipo.timeline,
@@ -132,16 +131,16 @@ class _IpoDetailsScreenState extends ConsumerState<IpoDetailsScreen>
           controller: _tabController,
           isScrollable: true,
           tabAlignment: TabAlignment.start,
-          labelColor: ModuleColors.market,
+          labelColor: ModuleColorProvider.of(context),
           unselectedLabelColor: context.textSecondary,
-          indicatorColor: ModuleColors.market,
+          indicatorColor: ModuleColorProvider.of(context),
           indicatorWeight: 2.5,
           labelStyle: const TextStyle(
-            fontSize: 13.5,
+            fontSize: AppTypeScale.md,
             fontWeight: FontWeight.w700,
           ),
           unselectedLabelStyle: const TextStyle(
-            fontSize: 13.5,
+            fontSize: AppTypeScale.md,
             fontWeight: FontWeight.w500,
           ),
           tabs: const [
@@ -166,15 +165,6 @@ class _IpoDetailsScreenState extends ConsumerState<IpoDetailsScreen>
                       dailyStartTime: ipo.dailyStartTime,
                       dailyEndTime: ipo.dailyEndTime,
                       listingExchange: ipo.listingExchange,
-                    ),
-                    const SizedBox(height: 12),
-                    IpoSubscriptionStatusCard(
-                      totalSubscription: ipo.totalSubscription,
-                      eligibleInvestors: ipo.eligibleInvestors ?? const [],
-                    ),
-                    const SizedBox(height: 12),
-                    IpoEligibleInvestorsCard(
-                      eligibleInvestors: ipo.eligibleInvestors,
                     ),
                     const SizedBox(height: 12),
                     IpoRegistrarCard(registrar: ipo.registrarInfo),
@@ -207,97 +197,132 @@ class _IpoDetailsScreenState extends ConsumerState<IpoDetailsScreen>
     final initials = _getInitials(ipo.companyName ?? ipo.symbol ?? 'IP');
     final avatarColor = IpoColors.avatarColorFor(initials);
 
-    return Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        IconButton(
-          onPressed: () => Navigator.of(context).pop(),
-          icon: const Icon(Icons.arrow_back_rounded, size: 22),
-          visualDensity: VisualDensity.compact,
-        ),
-        Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: avatarColor.withValues(alpha: 0.15),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          alignment: Alignment.center,
-          child: Text(
-            initials,
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w800,
-              color: avatarColor,
+        AmNavigationTrail(
+          items: [
+            AmNavigationTrailItem(
+              label: 'IPOs',
+              onTap: () => Navigator.of(context).pop(),
             ),
-          ),
+            AmNavigationTrailItem(label: ipo.companyName ?? 'IPO Details'),
+          ],
         ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                ipo.companyName ?? 'IPO Details',
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w800,
-                  color: context.textPrimary,
-                  letterSpacing: -0.2,
-                ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: avatarColor.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(AppRadii.sm),
               ),
-              const SizedBox(height: 3),
-              Row(
+              alignment: Alignment.center,
+              child: Text(
+                initials,
+                style: TextStyle(
+                  fontSize: AppTypeScale.md,
+                  fontWeight: FontWeight.w800,
+                  color: avatarColor,
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (ipo.symbol != null && ipo.symbol!.isNotEmpty) ...[
-                    Flexible(
-                      child: Text(
-                        ipo.symbol!,
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: context.textSecondary,
+                  Text(
+                    ipo.companyName ?? 'IPO Details',
+                    style: TextStyle(
+                      fontSize: AppTypeScale.lg,
+                      fontWeight: FontWeight.w800,
+                      color: context.textPrimary,
+                      letterSpacing: -0.2,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 3),
+                  Row(
+                    children: [
+                      if (ipo.symbol != null && ipo.symbol!.isNotEmpty) ...[
+                        Flexible(
+                          child: Text(
+                            ipo.symbol!,
+                            style: TextStyle(
+                              fontSize: AppTypeScale.sm,
+                              fontWeight: FontWeight.w600,
+                              color: context.textSecondary,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    Text(
-                      ' • ',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: context.textTertiary,
-                      ),
-                    ),
-                  ],
-                  IpoBoardBadge(issueType: ipo.issueType),
+                        Text(
+                          ' • ',
+                          style: TextStyle(
+                            fontSize: AppTypeScale.sm,
+                            color: context.textTertiary,
+                          ),
+                        ),
+                      ],
+                      IpoBoardBadge(issueType: ipo.issueType),
+                    ],
+                  ),
                 ],
               ),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: statusColor.withValues(alpha: isDark ? 0.18 : 0.12),
+                borderRadius: BorderRadius.circular(AppRadii.md),
+                border: Border.all(
+                  color: statusColor.withValues(alpha: isDark ? 0.45 : 0.35),
+                  width: 0.9,
+                ),
+              ),
+              child: Text(
+                status,
+                style: TextStyle(
+                  fontSize: AppTypeScale.xs,
+                  fontWeight: FontWeight.w700,
+                  color: statusColor,
+                  letterSpacing: 0.4,
+                ),
+              ),
+            ),
+          ],
+        ),
+        if ((ipo.industry?.trim().isNotEmpty ?? false) ||
+            _eligibleInvestorLabels(ipo).isNotEmpty) ...[
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: [
+              if (ipo.industry?.trim().isNotEmpty ?? false)
+                _buildMobileTag(context, ipo.industry!.trim()),
+              ..._eligibleInvestorLabels(ipo)
+                  .map((label) => _buildMobileTag(context, label)),
             ],
           ),
-        ),
-        const SizedBox(width: 8),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-          decoration: BoxDecoration(
-            color: statusColor.withValues(alpha: isDark ? 0.18 : 0.12),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: statusColor.withValues(alpha: isDark ? 0.45 : 0.35),
-              width: 0.9,
-            ),
+        ],
+        if (_parseSubscription(ipo.totalSubscription) case final subscription?) ...[
+          const SizedBox(height: 10),
+          AmValueMeter(
+            value: subscription,
+            maxValue: ipoSubscriptionMeterMax(subscription),
+            label: 'Overall subscription',
+            suffix: '×',
+            showSurface: false,
+            accentColor: ModuleColorProvider.of(context),
           ),
-          child: Text(
-            status,
-            style: TextStyle(
-              fontSize: 10.5,
-              fontWeight: FontWeight.w700,
-              color: statusColor,
-              letterSpacing: 0.4,
-            ),
-          ),
-        ),
+        ],
       ],
     );
   }
@@ -325,24 +350,6 @@ class _IpoDetailsScreenState extends ConsumerState<IpoDetailsScreen>
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: IpoSubscriptionStatusCard(
-                      totalSubscription: ipo.totalSubscription,
-                      eligibleInvestors: ipo.eligibleInvestors ?? const [],
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: IpoEligibleInvestorsCard(
-                      eligibleInvestors: ipo.eligibleInvestors,
-                    ),
-                  ),
-                ],
-              ),
             ],
           );
         }
@@ -355,29 +362,49 @@ class _IpoDetailsScreenState extends ConsumerState<IpoDetailsScreen>
             ),
             const SizedBox(height: 16),
             IpoRegistrarCard(registrar: ipo.registrarInfo),
-            const SizedBox(height: 16),
-            IpoSubscriptionStatusCard(
-              totalSubscription: ipo.totalSubscription,
-              eligibleInvestors: ipo.eligibleInvestors ?? const [],
-            ),
-            const SizedBox(height: 16),
-            IpoEligibleInvestorsCard(
-              eligibleInvestors: ipo.eligibleInvestors,
-            ),
           ],
         );
       },
     );
   }
 
-  Widget _buildBackButton(BuildContext context) {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: IconButton(
-        onPressed: () => Navigator.of(context).pop(),
-        icon: const Icon(Icons.arrow_back_rounded, size: 22),
-        visualDensity: VisualDensity.compact,
-        tooltip: 'Back',
+  double? _parseSubscription(String? raw) {
+    final value = raw?.trim();
+    if (value == null || value.isEmpty) return null;
+    final parsed = double.tryParse(
+      value.replaceAll('×', '').replaceAll('x', '').replaceAll('X', '').trim(),
+    );
+    if (parsed == null || !parsed.isFinite || parsed < 0) return null;
+    return parsed;
+  }
+
+  List<String> _eligibleInvestorLabels(AsraxIpoDetailsDto ipo) {
+    final labels = <String>[];
+    final seen = <String>{};
+    for (final investor in ipo.eligibleInvestors ?? const []) {
+      final category = investor.category.trim();
+      if (category.isNotEmpty && seen.add(category.toLowerCase())) {
+        labels.add(category);
+      }
+    }
+    return labels;
+  }
+
+  Widget _buildMobileTag(BuildContext context, String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+      decoration: BoxDecoration(
+        color: context.surfaceColor,
+        borderRadius: BorderRadius.circular(AppRadii.xs),
+        border: Border.all(color: context.borderColor),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: AppTypeScale.xs,
+          fontWeight: FontWeight.w600,
+          color: context.textSecondary,
+        ),
       ),
     );
   }

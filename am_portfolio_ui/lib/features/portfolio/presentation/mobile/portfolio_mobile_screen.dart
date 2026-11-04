@@ -42,10 +42,27 @@ class PortfolioMobileScreen extends ConsumerStatefulWidget {
   final VoidCallback? onBack;
   final String? initialTab;
   final ValueChanged<String>? onTabChanged;
-  final Widget Function(BuildContext context, String portfolioId, String? portfolioName, VoidCallback onComplete)? addTradeBuilder;
-  final Widget Function(String portfolioId, String? portfolioName, VoidCallback onCancel)? uploadPortfolioBuilder;
+  final Widget Function(
+    BuildContext context,
+    String portfolioId,
+    String? portfolioName,
+    VoidCallback onComplete,
+  )?
+  addTradeBuilder;
+  final Widget Function(
+    String portfolioId,
+    String? portfolioName,
+    VoidCallback onCancel,
+  )?
+  uploadPortfolioBuilder;
   final VoidCallback? onOpenDocIntel;
-  final Widget Function(BuildContext context, String portfolioId, String? portfolioName, VoidCallback onComplete)? addAssetClassBuilder;
+  final Widget Function(
+    BuildContext context,
+    String portfolioId,
+    String? portfolioName,
+    VoidCallback onComplete,
+  )?
+  addAssetClassBuilder;
   final ValueChanged<GlobalAddActionKind>? onQuickAdd;
 
   @override
@@ -54,8 +71,39 @@ class PortfolioMobileScreen extends ConsumerStatefulWidget {
 }
 
 class _PortfolioMobileScreenState extends ConsumerState<PortfolioMobileScreen> {
+  PortfolioAnalyticsCubit? _analyticsCubit;
+
+  @override
+  void dispose() {
+    _analyticsCubit?.close();
+    super.dispose();
+  }
+
+  Widget _buildMobileView() => PortfolioMobileView(
+    selectedPortfolioId: widget.selectedPortfolioId,
+    selectedPortfolioName: widget.selectedPortfolioName,
+    portfolios: widget.portfolios,
+    onPortfolioChanged: widget.onPortfolioChanged,
+    onBack: widget.onBack,
+    initialTab: widget.initialTab,
+    onTabChanged: widget.onTabChanged,
+    addTradeBuilder: widget.addTradeBuilder,
+    uploadPortfolioBuilder: widget.uploadPortfolioBuilder,
+    onOpenDocIntel: widget.onOpenDocIntel,
+    addAssetClassBuilder: widget.addAssetClassBuilder,
+    onQuickAdd: widget.onQuickAdd,
+  );
+
   @override
   Widget build(BuildContext context) {
+    // Reuse PortfolioAnalyticsCubit from GlobalPortfolioWrapper when present (am_app shell).
+    try {
+      context.read<PortfolioAnalyticsCubit>();
+      return _buildMobileView();
+    } catch (_) {
+      // Not provided by parent, fallback to local provider for standalone usage
+    }
+
     final portfolioServiceAsync = ref.watch(portfolioServiceProvider);
 
     return portfolioServiceAsync.when(
@@ -65,23 +113,13 @@ class _PortfolioMobileScreenState extends ConsumerState<PortfolioMobileScreen> {
         );
 
         return analyticsServiceAsync.when(
-          data: (analyticsService) => BlocProvider(
-            create: (context) => PortfolioAnalyticsCubit(analyticsService),
-            child: PortfolioMobileView(
-              selectedPortfolioId: widget.selectedPortfolioId,
-              selectedPortfolioName: widget.selectedPortfolioName,
-              portfolios: widget.portfolios,
-              onPortfolioChanged: widget.onPortfolioChanged,
-              onBack: widget.onBack,
-              initialTab: widget.initialTab,
-              onTabChanged: widget.onTabChanged,
-              addTradeBuilder: widget.addTradeBuilder,
-              uploadPortfolioBuilder: widget.uploadPortfolioBuilder,
-              onOpenDocIntel: widget.onOpenDocIntel,
-              addAssetClassBuilder: widget.addAssetClassBuilder,
-              onQuickAdd: widget.onQuickAdd,
-            ),
-          ),
+          data: (analyticsService) {
+            _analyticsCubit ??= PortfolioAnalyticsCubit(analyticsService);
+            return BlocProvider<PortfolioAnalyticsCubit>.value(
+              value: _analyticsCubit!,
+              child: _buildMobileView(),
+            );
+          },
           loading: () =>
               const Scaffold(body: Center(child: CircularProgressIndicator())),
           error: (error, stack) => Scaffold(
@@ -151,10 +189,27 @@ class PortfolioMobileView extends ConsumerStatefulWidget {
   final VoidCallback? onBack;
   final String? initialTab;
   final ValueChanged<String>? onTabChanged;
-  final Widget Function(BuildContext context, String portfolioId, String? portfolioName, VoidCallback onComplete)? addTradeBuilder;
-  final Widget Function(String portfolioId, String? portfolioName, VoidCallback onCancel)? uploadPortfolioBuilder;
+  final Widget Function(
+    BuildContext context,
+    String portfolioId,
+    String? portfolioName,
+    VoidCallback onComplete,
+  )?
+  addTradeBuilder;
+  final Widget Function(
+    String portfolioId,
+    String? portfolioName,
+    VoidCallback onCancel,
+  )?
+  uploadPortfolioBuilder;
   final VoidCallback? onOpenDocIntel;
-  final Widget Function(BuildContext context, String portfolioId, String? portfolioName, VoidCallback onComplete)? addAssetClassBuilder;
+  final Widget Function(
+    BuildContext context,
+    String portfolioId,
+    String? portfolioName,
+    VoidCallback onComplete,
+  )?
+  addAssetClassBuilder;
   final ValueChanged<GlobalAddActionKind>? onQuickAdd;
 
   @override
@@ -171,6 +226,7 @@ class _PortfolioMobileViewState extends ConsumerState<PortfolioMobileView>
   bool _isUploadingPortfolio = false;
   bool _operationDirty = false;
   bool _wasOnBasketsTab = false;
+  String? _lastReportedSlug;
 
   bool _isBasketsTab(String? slug) => slug?.toLowerCase() == 'baskets';
 
@@ -225,8 +281,12 @@ class _PortfolioMobileViewState extends ConsumerState<PortfolioMobileView>
         ? 0
         : _tabIndexFromSlug(widget.initialTab);
     _wasOnBasketsTab = _isBasketsTab(widget.initialTab);
-    _tabController =
-        TabController(length: 4, vsync: this, initialIndex: initialIndex);
+    _lastReportedSlug = widget.initialTab;
+    _tabController = TabController(
+      length: 4,
+      vsync: this,
+      initialIndex: initialIndex,
+    );
     _tabController.addListener(() {
       if (mounted && !_tabController.indexIsChanging) {
         setState(() {});
@@ -235,15 +295,16 @@ class _PortfolioMobileViewState extends ConsumerState<PortfolioMobileView>
           // Collapse holdings filters when leaving the Holdings tab.
           if (slug != 'holdings' &&
               ref.read(mobileHoldingsFiltersExpandedProvider)) {
-            ref
-                .read(mobileHoldingsFiltersExpandedProvider.notifier)
-                .set(false);
+            ref.read(mobileHoldingsFiltersExpandedProvider.notifier).set(false);
           }
           if (_wasOnBasketsTab && !_isBasketsTab(slug)) {
             _loadPortfolioDetailIfNeeded(context.read<PortfolioCubit>());
           }
           _wasOnBasketsTab = _isBasketsTab(slug);
-          widget.onTabChanged?.call(slug);
+          if (_lastReportedSlug != slug) {
+            _lastReportedSlug = slug;
+            widget.onTabChanged?.call(slug);
+          }
         }
       }
     });
@@ -324,6 +385,7 @@ class _PortfolioMobileViewState extends ConsumerState<PortfolioMobileView>
         }
       }
       _wasOnBasketsTab = _isBasketsTab(widget.initialTab);
+      _lastReportedSlug = widget.initialTab;
     }
   }
 
@@ -348,7 +410,8 @@ class _PortfolioMobileViewState extends ConsumerState<PortfolioMobileView>
   }
 
   Future<bool> _promptDiscardChanges() async {
-    final inFocusedFlow = _isAddingTrade ||
+    final inFocusedFlow =
+        _isAddingTrade ||
         _isUploadingPortfolio ||
         _isAddingAssetClass ||
         _isAddAssetClassRoute;
@@ -392,8 +455,14 @@ class _PortfolioMobileViewState extends ConsumerState<PortfolioMobileView>
   Future<void> _selectTab(int index) async {
     if (!await _promptDiscardChanges()) return;
     if (!mounted) return;
+    if (_tabController.index != index) {
+      _tabController.animateTo(index);
+    }
+    if (index == 2) {
+      GlobalBottomNavVisibility.suppressChromeTapReveal = true;
+      GlobalBottomNavVisibility.requestHide();
+    }
     setState(() {
-      _tabController.index = index;
       _clearActiveOperation();
     });
     final slug = _tabSlugFromIndex(index);
@@ -401,7 +470,10 @@ class _PortfolioMobileViewState extends ConsumerState<PortfolioMobileView>
       _loadPortfolioDetailIfNeeded(context.read<PortfolioCubit>());
     }
     _wasOnBasketsTab = _isBasketsTab(slug);
-    widget.onTabChanged?.call(slug);
+    if (_lastReportedSlug != slug) {
+      _lastReportedSlug = slug;
+      widget.onTabChanged?.call(slug);
+    }
   }
 
   @override
@@ -445,9 +517,9 @@ class _PortfolioMobileViewState extends ConsumerState<PortfolioMobileView>
           currency: 'INR',
         );
         await context.read<PortfolioCubit>().updatePortfolio(
-              portfolio.portfolioId,
-              request,
-            );
+          portfolio.portfolioId,
+          request,
+        );
       },
     );
   }
@@ -538,7 +610,8 @@ class _PortfolioMobileViewState extends ConsumerState<PortfolioMobileView>
             widget.onBack?.call();
           }
         },
-        mobilePillTrailing: (_isAddAssetClassRoute ||
+        mobilePillTrailing:
+            (_isAddAssetClassRoute ||
                 _currentPortfolioId == null ||
                 _currentPortfolioId == 'all')
             ? null
@@ -710,9 +783,7 @@ class _PortfolioMobileViewState extends ConsumerState<PortfolioMobileView>
             border: Border.all(
               color: lit
                   ? accent.withValues(alpha: 0.55)
-                  : (isDark
-                      ? context.glassOverlay(0.1)
-                      : context.borderColor),
+                  : (isDark ? context.glassOverlay(0.1) : context.borderColor),
             ),
           ),
           child: Icon(
@@ -738,8 +809,7 @@ class _PortfolioMobileViewState extends ConsumerState<PortfolioMobileView>
         final label = state.summary.priceLabel;
         if (label.isEmpty) return const SizedBox.shrink();
         // Tighter stamp under Paper (drop "As of " prefix when present).
-        final compact =
-            label.startsWith('As of ') ? label.substring(6) : label;
+        final compact = label.startsWith('As of ') ? label.substring(6) : label;
         return Padding(
           padding: const EdgeInsets.only(top: 2, left: 2),
           child: Text(
@@ -747,14 +817,13 @@ class _PortfolioMobileViewState extends ConsumerState<PortfolioMobileView>
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onSurface
-                      .withValues(alpha: 0.55),
-                  fontSize: 10,
-                  height: 1.1,
-                  fontWeight: FontWeight.w500,
-                ),
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.55),
+              fontSize: 10,
+              height: 1.1,
+              fontWeight: FontWeight.w500,
+            ),
           ),
         );
       },

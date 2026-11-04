@@ -6,7 +6,9 @@ import '../../../internal/domain/entities/journal_entry.dart';
 import '../../../presentation/models/trade_holding_view_model.dart';
 import '../../../providers/trade_internal_providers.dart';
 import '../../web/widgets/journal/components/journal_attachment_section.dart';
+import '../../web/widgets/journal/utils/journal_field_decoration.dart';
 import '../../web/widgets/journal/utils/journal_form_helpers.dart';
+import '../utils/journal_entry_validation.dart';
 import 'journal_form_surface.dart';
 import 'journal_preset_or_custom_field.dart';
 import 'journal_workflow_field_theme.dart';
@@ -18,18 +20,32 @@ class ExecuteTradeStep extends ConsumerStatefulWidget {
     required this.onUpdate,
     this.portfolioId,
     this.onLinkTrade,
+    this.fillHeight = false,
+    this.omitSurface = false,
   });
 
   final JournalEntry entry;
   final ValueChanged<JournalEntry> onUpdate;
   final String? portfolioId;
   final Future<void> Function(String tradeId)? onLinkTrade;
+  final bool fillHeight;
+  final bool omitSurface;
 
   @override
-  ConsumerState<ExecuteTradeStep> createState() => _ExecuteTradeStepState();
+  ConsumerState<ExecuteTradeStep> createState() => ExecuteTradeStepState();
 }
 
-class _ExecuteTradeStepState extends ConsumerState<ExecuteTradeStep> {
+class ExecuteTradeStepState extends ConsumerState<ExecuteTradeStep> {
+  final _formKey = GlobalKey<FormState>();
+
+  bool validate() {
+    final fieldsOk = _formKey.currentState?.validate() ?? true;
+    if (!fieldsOk) return false;
+    return JournalEntryValidation.validateExecute(widget.entry) == null;
+  }
+
+  String? validationMessage() =>
+      JournalEntryValidation.validateExecute(widget.entry);
   List<TradeHoldingViewModel> _availableTrades = [];
   var _loadingTrades = false;
   String? _loadError;
@@ -79,7 +95,8 @@ class _ExecuteTradeStepState extends ConsumerState<ExecuteTradeStep> {
     super.dispose();
   }
 
-  Widget _gap() => const SizedBox(height: 14);
+  /// Room between border-labeled fields so floating titles are not cramped.
+  Widget _gap() => const SizedBox(height: AppSpacing.md + 4);
 
   Widget _row(Widget left, Widget right) {
     return Row(
@@ -94,21 +111,32 @@ class _ExecuteTradeStepState extends ConsumerState<ExecuteTradeStep> {
 
   Widget _field({
     required TextEditingController controller,
-    required String placeholder,
+    required String label,
     required ValueChanged<String> onChanged,
+    String? hintText,
     String? prefixText,
     TextInputType? keyboardType,
     int maxLines = 1,
+    FormFieldValidator<String>? validator,
+    bool required = false,
   }) {
     final theme = Theme.of(context);
     return TextFormField(
       controller: controller,
-      style: theme.textTheme.bodyLarge,
+      style: theme.textTheme.bodyMedium?.copyWith(
+        fontSize: 14,
+        height: 1.3,
+        fontWeight: FontWeight.w500,
+        color: context.colors.textPrimary,
+      ),
       keyboardType: keyboardType,
       maxLines: maxLines,
+      validator: validator,
       decoration: journalWorkflowDecoration(
         context,
-        hintText: placeholder,
+        label: label,
+        required: required,
+        hintText: hintText,
         prefixText: prefixText,
         alignLabelWithHint: maxLines > 1,
       ),
@@ -312,159 +340,179 @@ class _ExecuteTradeStepState extends ConsumerState<ExecuteTradeStep> {
     final colors = context.colors;
     final imageUrls = entry.attachments.map((a) => a.fileUrl).toList();
 
-    return JournalFormSurface(
-      child: Column(
+    final plan = entry.preTradePlan;
+    final form = Form(
+        key: _formKey,
+        child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Instrument | linked-trade card on one row.
-          _row(
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  'Instrument',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: colors.textSecondary,
-                    fontWeight: FontWeight.w600,
+          // Full-width stacked — border labels match Pre/Post field chrome.
+          Builder(
+            builder: (context) {
+              final symbol = entry.symbol?.trim() ?? '';
+              final hasSymbol = symbol.isNotEmpty;
+              final displaySymbol = hasSymbol ? symbol : 'No symbol yet';
+              return InputDecorator(
+                decoration: JournalFieldDecoration.borderLabel(
+                  context,
+                  label: 'Instrument',
+                  contentPadding: const EdgeInsets.fromLTRB(
+                    AppSpacing.sm,
+                    AppSpacing.sm,
+                    AppSpacing.sm,
+                    AppSpacing.sm,
                   ),
                 ),
-                const SizedBox(height: 6),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 12,
-                  ),
-                  decoration: BoxDecoration(
-                    color: colors.cardSurface,
-                    borderRadius: BorderRadius.circular(AppRadii.md),
-                    border: Border.all(
-                      color: colors.border.withValues(alpha: 0.4),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.search_rounded,
+                      size: 18,
+                      color: colors.textSecondary,
                     ),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.search_rounded,
-                        size: 18,
-                        color: colors.textSecondary,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Tooltip(
+                        message: displaySymbol,
                         child: Text(
-                          (entry.symbol?.trim().isNotEmpty == true)
-                              ? entry.symbol!.trim()
-                              : 'No symbol yet',
-                          style: theme.textTheme.bodyLarge?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: ModuleColors.trade.withValues(alpha: 0.18),
-                          borderRadius: BorderRadius.circular(999),
-                        ),
-                        child: Text(
-                          (entry.tradeDirection ?? 'LONG').toUpperCase(),
-                          style: theme.textTheme.labelMedium?.copyWith(
-                            color: ModuleColors.trade,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  'Linked to',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: colors.textSecondary,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: ModuleColors.trade.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(AppRadii.md),
-                    border: Border.all(
-                      color: ModuleColors.trade.withValues(alpha: 0.35),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(Icons.link, color: ModuleColors.trade, size: 18),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          entry.tradeId == null
-                              ? 'No fill linked'
-                              : entry.tradeId!,
+                          displaySymbol,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: theme.textTheme.bodyMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                            height: 1.3,
+                            fontWeight: FontWeight.w500,
+                            color: hasSymbol
+                                ? colors.textPrimary
+                                : colors.textTertiary,
                           ),
                         ),
                       ),
-                      TextButton(
-                        onPressed: () => _showLinkDialog(context),
-                        style: TextButton.styleFrom(
-                          foregroundColor: ModuleColors.trade,
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
-                          minimumSize: Size.zero,
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        ),
-                        child: Text(
-                          entry.tradeId == null ? 'Link' : 'Change',
-                          style: const TextStyle(fontWeight: FontWeight.w700),
-                        ),
+                    ),
+                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
                       ),
-                    ],
-                  ),
-                ),
-                if (portfolioId != null && portfolioId!.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: Text(
-                      _loadingTrades
-                          ? 'Loading fills…'
-                          : '${_availableTrades.length} recent in portfolio',
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: colors.textTertiary,
+                      decoration: BoxDecoration(
+                        color: ModuleColors.trade.withValues(alpha: 0.18),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Text(
+                        (entry.tradeDirection ?? 'LONG').toUpperCase(),
+                        style: theme.textTheme.labelMedium?.copyWith(
+                          color: ModuleColors.trade,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
+                  ],
+                ),
+              );
+            },
+          ),
+          // Extra gap so "Linked to" border label clears Instrument below.
+          const SizedBox(height: AppSpacing.lg),
+          InputDecorator(
+            decoration: JournalFieldDecoration.borderLabel(
+              context,
+              label: 'Linked to',
+              contentPadding: const EdgeInsets.fromLTRB(
+                AppSpacing.sm,
+                AppSpacing.sm,
+                AppSpacing.sm,
+                AppSpacing.sm,
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.link, color: ModuleColors.trade, size: 18),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    entry.tradeId == null ? 'No fill linked' : entry.tradeId!,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontSize: 14,
+                      height: 1.3,
+                      fontWeight: FontWeight.w500,
+                      color: colors.textPrimary,
+                    ),
                   ),
+                ),
+                TextButton(
+                  onPressed: () => _showLinkDialog(context),
+                  style: TextButton.styleFrom(
+                    foregroundColor: ModuleColors.trade,
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  child: Text(
+                    entry.tradeId == null ? 'Link' : 'Change',
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                ),
               ],
             ),
           ),
+          if (portfolioId != null &&
+              portfolioId!.isNotEmpty &&
+              (_loadingTrades || _availableTrades.isNotEmpty))
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                _loadingTrades
+                    ? 'Loading fills…'
+                    : '${_availableTrades.length} recent in portfolio',
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: colors.textTertiary,
+                ),
+              ),
+            ),
           _gap(),
           _row(
             _field(
               controller: _entryPrice,
-              placeholder: 'Actual entry price',
+              label: 'Actual entry price',
+              required: true,
               prefixText: '₹ ',
               keyboardType:
                   const TextInputType.numberWithOptions(decimal: true),
+              validator: (v) {
+                if ((v ?? '').trim().isNotEmpty) {
+                  return JournalEntryValidation.positiveNumber(
+                    v,
+                    label: 'Actual entry price',
+                  );
+                }
+                final planned = plan?.plannedEntryPrice;
+                if (planned != null && planned > 0) return null;
+                return 'Actual entry price is required';
+              },
               onChanged: (v) => _updateExec(
                 exec.copyWith(actualEntryPrice: double.tryParse(v)),
               ),
             ),
             _field(
               controller: _qty,
-              placeholder: 'Quantity',
+              label: 'Quantity',
+              required: true,
               keyboardType:
                   const TextInputType.numberWithOptions(decimal: true),
+              validator: (v) {
+                if ((v ?? '').trim().isNotEmpty) {
+                  return JournalEntryValidation.positiveNumber(
+                    v,
+                    label: 'Quantity',
+                  );
+                }
+                final planned = plan?.plannedQuantity;
+                if (planned != null && planned > 0) return null;
+                return 'Quantity is required';
+              },
               onChanged: (v) =>
                   _updateExec(exec.copyWith(quantity: double.tryParse(v))),
             ),
@@ -487,15 +535,15 @@ class _ExecuteTradeStepState extends ConsumerState<ExecuteTradeStep> {
           _gap(),
           _field(
             controller: _externalId,
-            placeholder: 'Order / trade ID',
+            label: 'Order / trade ID',
             onChanged: (v) =>
                 _updateExec(exec.copyWith(externalOrderId: v)),
           ),
           _gap(),
           _field(
             controller: _notes,
-            placeholder: 'Live trade notes',
-            maxLines: 4,
+            label: 'Live trade notes',
+            maxLines: 3,
             onChanged: (v) =>
                 _updateExec(exec.copyWith(notes: v), content: v),
           ),
@@ -510,6 +558,12 @@ class _ExecuteTradeStepState extends ConsumerState<ExecuteTradeStep> {
           ),
         ],
       ),
+    );
+
+    if (widget.omitSurface) return form;
+    return JournalFormSurface(
+      fillHeight: widget.fillHeight,
+      child: form,
     );
   }
 }

@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'modern_datetime_picker.dart';
+
+final _decimalInputFormatters = <TextInputFormatter>[
+  FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+];
 
 /// Combined Entry/Exit details card with tabs
 class EntryExitCard extends StatefulWidget {
@@ -149,9 +154,9 @@ class _EntryExitCardState extends State<EntryExitCard> with SingleTickerProvider
   }
 
   double _tabContentHeight(bool isMobile) {
-    if (!isMobile) return 280;
-    // Date/time + price/qty + slim attach button (~40px)
-    return widget.entryFooter != null ? 168 : 148;
+    if (!isMobile) return 300;
+    // Date label + picker + price/qty + slim attach button
+    return widget.entryFooter != null ? 188 : 168;
   }
 
   Widget _buildEntryContent(ThemeData theme) => SingleChildScrollView(
@@ -159,6 +164,18 @@ class _EntryExitCardState extends State<EntryExitCard> with SingleTickerProvider
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        Row(
+          children: [
+            Text(
+              'Entry date *',
+              style: theme.textTheme.labelMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: theme.colorScheme.onSurface.withOpacity(0.7),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
         ModernDateTimePicker(initialDateTime: widget.entryDate, onDateTimeChanged: widget.onEntryDateChanged),
         const SizedBox(height: 10),
         Row(
@@ -166,6 +183,7 @@ class _EntryExitCardState extends State<EntryExitCard> with SingleTickerProvider
             Expanded(
               child: TextField(
                 controller: widget.entryPriceController,
+                inputFormatters: _decimalInputFormatters,
                 decoration: InputDecoration(
                   labelText: 'Price *',
                   prefixIcon: const Icon(Icons.currency_rupee, size: 18),
@@ -182,13 +200,14 @@ class _EntryExitCardState extends State<EntryExitCard> with SingleTickerProvider
                     borderSide: BorderSide(color: theme.colorScheme.primary, width: 1.5),
                   ),
                 ),
-                keyboardType: TextInputType.number,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
               ),
             ),
             const SizedBox(width: 8),
             Expanded(
               child: TextField(
                 controller: widget.entryQuantityController,
+                inputFormatters: _decimalInputFormatters,
                 decoration: InputDecoration(
                   labelText: 'Qty *',
                   prefixIcon: const Icon(Icons.numbers, size: 18),
@@ -205,7 +224,7 @@ class _EntryExitCardState extends State<EntryExitCard> with SingleTickerProvider
                     borderSide: BorderSide(color: theme.colorScheme.primary, width: 1.5),
                   ),
                 ),
-                keyboardType: TextInputType.number,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
               ),
             ),
           ],
@@ -223,6 +242,14 @@ class _EntryExitCardState extends State<EntryExitCard> with SingleTickerProvider
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        Text(
+          'Exit date *',
+          style: theme.textTheme.labelMedium?.copyWith(
+            fontWeight: FontWeight.w600,
+            color: theme.colorScheme.onSurface.withOpacity(0.7),
+          ),
+        ),
+        const SizedBox(height: 6),
         ModernDateTimePicker(initialDateTime: widget.exitDate, onDateTimeChanged: widget.onExitDateChanged),
         const SizedBox(height: 16),
         Row(
@@ -230,8 +257,9 @@ class _EntryExitCardState extends State<EntryExitCard> with SingleTickerProvider
             Expanded(
               child: TextField(
                 controller: widget.exitPriceController,
+                inputFormatters: _decimalInputFormatters,
                 decoration: InputDecoration(
-                  labelText: 'Price',
+                  labelText: 'Price *',
                   prefixIcon: const Icon(Icons.currency_rupee, size: 18),
                   isDense: true,
                   filled: true,
@@ -246,15 +274,16 @@ class _EntryExitCardState extends State<EntryExitCard> with SingleTickerProvider
                     borderSide: BorderSide(color: theme.colorScheme.primary, width: 1.5),
                   ),
                 ),
-                keyboardType: TextInputType.number,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
               ),
             ),
             const SizedBox(width: 8),
             Expanded(
               child: TextField(
                 controller: widget.exitQuantityController,
+                inputFormatters: _decimalInputFormatters,
                 decoration: InputDecoration(
-                  labelText: 'Qty',
+                  labelText: 'Qty *',
                   prefixIcon: const Icon(Icons.numbers, size: 18),
                   isDense: true,
                   filled: true,
@@ -269,7 +298,7 @@ class _EntryExitCardState extends State<EntryExitCard> with SingleTickerProvider
                     borderSide: BorderSide(color: theme.colorScheme.primary, width: 1.5),
                   ),
                 ),
-                keyboardType: TextInputType.number,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
               ),
             ),
           ],

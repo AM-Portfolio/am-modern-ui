@@ -40,6 +40,8 @@ import '../../features/shell/skeletons/module_skeletons.dart';
 import '../di/injection.dart';
 import 'deferred_module_loader.dart';
 
+const Duration _kModuleLoadTimeout = Duration(seconds: 25);
+
 Future<void> _ensureFeatureDi() => configureFeatureDependencies();
 
 Future<void> _loadPortfolioLibraries() => Future.wait([
@@ -55,7 +57,12 @@ Future<void> _loadPortfolio() async {
     trade_ui.loadLibrary(),
     trade_add.loadLibrary(),
     trade_providers.loadLibrary(),
-  ]);
+  ]).timeout(
+    _kModuleLoadTimeout,
+    onTimeout: () => throw TimeoutException(
+      'Portfolio module failed to load within 25s. Please check connection.',
+    ),
+  );
 }
 
 typedef PortfolioAddTradeBuilder = Widget Function(
@@ -87,7 +94,8 @@ Widget _defaultPortfolioAddTradeBuilder(
             data: theme.copyWith(
               colorScheme: theme.colorScheme.copyWith(
                 primary: ModuleColors.portfolio,
-                primaryContainer: ModuleColors.portfolio.withOpacity(0.12),
+                primaryContainer:
+                    ModuleColors.portfolio.withValues(alpha: 0.12),
               ),
               primaryColor: ModuleColors.portfolio,
             ),
@@ -123,7 +131,12 @@ Future<void> _loadTrade() async {
   await Future.wait([
     _loadPortfolioLibraries(),
     trade_ui.loadLibrary(),
-  ]);
+  ]).timeout(
+    _kModuleLoadTimeout,
+    onTimeout: () => throw TimeoutException(
+      'Trade module failed to load within 25s. Please check connection.',
+    ),
+  );
 }
 
 Future<void> _loadMarket() async {
@@ -132,7 +145,12 @@ Future<void> _loadMarket() async {
     market_ui.loadLibrary(),
     market_deps.loadLibrary(),
     paper_ui.loadLibrary(),
-  ]);
+  ]).timeout(
+    _kModuleLoadTimeout,
+    onTimeout: () => throw TimeoutException(
+      'Market module failed to load within 25s. Please check connection.',
+    ),
+  );
   market_deps.registerMarketAnalysisServiceDi();
 }
 
@@ -140,14 +158,34 @@ Future<void> _loadAnalysis() async {
   await Future.wait([
     analysis_ui.loadLibrary(),
     analysis_svc.loadLibrary(),
-  ]);
+  ]).timeout(
+    _kModuleLoadTimeout,
+    onTimeout: () => throw TimeoutException(
+      'Analysis module failed to load within 25s. Please check connection.',
+    ),
+  );
 }
 
-Future<void> _loadDocIntel() => doc_intel_ui.loadLibrary();
+Future<void> _loadDocIntel() => doc_intel_ui.loadLibrary().timeout(
+      _kModuleLoadTimeout,
+      onTimeout: () => throw TimeoutException(
+        'Doc Intelligence failed to load within 25s. Please check connection.',
+      ),
+    );
 
-Future<void> _loadUser() => user_ui.loadLibrary();
+Future<void> _loadUser() => user_ui.loadLibrary().timeout(
+      _kModuleLoadTimeout,
+      onTimeout: () => throw TimeoutException(
+        'User module failed to load within 25s. Please check connection.',
+      ),
+    );
 
-Future<void> _loadDiagnostic() => diagnostic_ui.loadLibrary();
+Future<void> _loadDiagnostic() => diagnostic_ui.loadLibrary().timeout(
+      _kModuleLoadTimeout,
+      onTimeout: () => throw TimeoutException(
+        'Diagnostic module failed to load within 25s. Please check connection.',
+      ),
+    );
 
 Widget buildPortfolioRoute({
   required String? portfolioId,

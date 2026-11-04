@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:am_design_system/am_design_system.dart';
+import 'package:am_portfolio_ui/features/portfolio/internal/domain/entities/portfolio_list.dart';
+import 'package:am_portfolio_ui/features/portfolio/presentation/cubit/portfolio_cubit.dart';
 
 import 'package:am_common/am_common.dart';
 import '../../internal/domain/entities/trade_controller_entities.dart';
@@ -11,8 +13,11 @@ import '../calendar/pages/trade_calendar_analytics_web_page.dart';
 import '../components/templates/trade_portfolio_discovery_template.dart';
 import '../components/portfolio_selection_prompt.dart';
 import '../holdings/pages/trade_holdings_dashboard_web_page.dart';
+import '../../journal_providers.dart';
 import '../journal/pages/journal_web_page.dart';
+import '../journal/utils/journal_this_trade.dart';
 import '../models/trade_portfolio_view_model.dart';
+import '../models/visible_trade_portfolios.dart';
 import '../trades/pages/trade_list_web_page.dart';
 import '../analysis/trade_analysis_page.dart';
 import 'package:am_market_ui/shared/widgets/trading_view_chart_widget.dart';
@@ -22,19 +27,10 @@ import '../pages/trade_unified_view_page.dart';
 import '../trade_navigation.dart';
 import '../../providers/trade_controller_providers.dart';
 import '../../trade_calendar_providers.dart';
-import '../../internal/domain/enums/exchange_types.dart';
-import '../../internal/domain/enums/market_segments.dart';
-import '../../internal/domain/enums/series_types.dart';
-import '../../internal/domain/enums/index_types.dart';
-import '../../internal/domain/enums/derivative_types.dart';
-import '../../internal/domain/enums/option_types.dart';
-import '../../internal/domain/enums/trade_statuses.dart';
-import '../../internal/domain/enums/trade_directions.dart';
-import '../../internal/domain/enums/broker_types.dart';
-import '../../internal/domain/enums/order_types.dart';
 import '../cubit/trade_controller_cubit.dart';
 import '../cubit/trade_controller_state.dart';
 import '../models/trade_holding_view_model.dart';
+import '../models/trade_holding_edit_mapper.dart';
 import '../add_trade/pages/add_trade_web_page.dart';
 import '../paper/paper_wallet_banner.dart';
 import '../paper/paper_portfolio.dart';
@@ -45,7 +41,6 @@ import '../../providers/oms_providers.dart';
 import '../../internal/data/dtos/oms_dto.dart';
 import 'package:am_portfolio_ui/features/portfolio/presentation/mobile/widgets/portfolio_form_modal.dart';
 import 'package:am_portfolio_ui/features/portfolio/internal/data/dtos/portfolio_update_request_dto.dart';
-import 'package:am_portfolio_ui/features/portfolio/internal/domain/entities/portfolio_list.dart';
 import 'package:am_portfolio_ui/features/portfolio/providers/portfolio_providers.dart';
 
 /// Trade view types for navigation
@@ -98,10 +93,62 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
   late SwipeNavigationController _swipeController;
   String? _currentPortfolioId;
   String? _currentPortfolioName;
+  String? _selectedTradeIdForTrades;
+
   /// When true, Journal loads across all portfolios (other tabs still need a book).
   bool _journalAllPortfolios = false;
   late TextEditingController _symbolController;
   TradeDetails? _existingTradeToEdit;
+  int? _lastNotifiedTabIndex;
+  String? _handledGhostPortfolioId;
+  bool _hasAutoSelectedFirstPortfolio = false;
+
+  void _onHoldingSelected(TradeHoldingViewModel holding) {
+    setState(() {
+      _selectedTradeIdForTrades = holding.tradeId;
+      _swipeController.updateItems(_buildNavigationItems());
+    });
+    final tradesIndex = _swipeController.items
+        .indexWhere((item) => item.title == 'Trades');
+    if (tradesIndex != -1) {
+      _swipeController.navigateTo(tradesIndex);
+    }
+  }
+
+  /// Create/open journal for [holding], then jump to Journal tab with that entry focused.
+  Future<void> _onJournalHolding(TradeHoldingViewModel holding) async {
+    if (_journalNavigating) return;
+    _journalNavigating = true;
+    try {
+      final cubit = await ref.read(journalCubitProvider.future);
+      if (!mounted) return;
+      final entry = await journalThisTrade(
+        cubit: cubit,
+        tradeId: holding.tradeId,
+        portfolioId: _currentPortfolioId ?? holding.portfolioId,
+        holding: holding,
+      );
+      if (!mounted) return;
+      // Do not set _journalInitialTab — keeps Journal ValueKey stable so focus
+      // survives onInitialTabApplied clearing the pending focus id.
+      setState(() {
+        _journalFocusEntryId = entry.id;
+        _swipeController.updateItems(_buildNavigationItems());
+      });
+      final journalIndex =
+          _swipeController.items.indexWhere((item) => item.title == 'Journal');
+      if (journalIndex != -1) {
+        _swipeController.navigateTo(journalIndex);
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not open journal: $e')),
+      );
+    } finally {
+      _journalNavigating = false;
+    }
+  }
 
   @override
   void initState() {
@@ -134,22 +181,43 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
   void didUpdateWidget(TradeWebScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
     // Keep local selection in sync with route props (portfolio switch).
-    if (widget.selectedPortfolioId != oldWidget.selectedPortfolioId &&
-        widget.selectedPortfolioId != null) {
+    final idChanged = widget.selectedPortfolioId != oldWidget.selectedPortfolioId &&
+        widget.selectedPortfolioId != null;
+    final nameChanged = widget.selectedPortfolioName != oldWidget.selectedPortfolioName &&
+        widget.selectedPortfolioName != null &&
+        widget.selectedPortfolioName!.isNotEmpty;
+    if (idChanged || nameChanged) {
+      if (widget.selectedPortfolioId != _handledGhostPortfolioId) {
+        _handledGhostPortfolioId = null;
+      }
       setState(() {
-        _currentPortfolioId = widget.selectedPortfolioId;
-        _currentPortfolioName = widget.selectedPortfolioName;
+        if (widget.selectedPortfolioId != null) {
+          _currentPortfolioId = widget.selectedPortfolioId;
+        }
+        if (widget.selectedPortfolioName != null &&
+            widget.selectedPortfolioName!.isNotEmpty) {
+          _currentPortfolioName = widget.selectedPortfolioName;
+        }
       });
+      if (idChanged) {
+        // Holdings, Calendar, Analysis, Trades, and Journal read this id.
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          _swipeController.updateItems(_buildNavigationItems());
+        });
+      }
     }
     if (widget.initialTabIndex != null &&
         widget.initialTabIndex != oldWidget.initialTabIndex &&
         widget.initialTabIndex != _swipeController.currentIndex) {
+      _lastNotifiedTabIndex = widget.initialTabIndex;
       _swipeController.navigateTo(widget.initialTabIndex!);
     }
   }
 
   void _initializeSwipeController() {
     final initialIndex = _getInitialIndex();
+    _lastNotifiedTabIndex = initialIndex;
     _swipeController = SwipeNavigationController(
       items: _buildNavigationItems(),
       initialIndex: initialIndex,
@@ -158,9 +226,14 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
     // Listen to controller changes to update sidebar selection
     _swipeController.addListener(() {
       if (mounted) {
-        setState(() {});
-        // Notify parent about tab changes for cross-layout state sync
-        widget.onTabChanged?.call(_swipeController.currentIndex);
+        final currentIndex = _swipeController.currentIndex;
+        if (currentIndex != _lastNotifiedTabIndex) {
+          _lastNotifiedTabIndex = currentIndex;
+          setState(() {});
+          widget.onTabChanged?.call(currentIndex);
+        } else {
+          setState(() {});
+        }
       }
     });
   }
@@ -183,6 +256,12 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
 
   /// Journal hub sub-tab requested by Analysis context strip (Insights).
   String? _journalInitialTab;
+
+  /// Pending journal entry id to select after navigating to Journal tab.
+  String? _journalFocusEntryId;
+
+  /// Guards against double-taps on Holdings → Journal.
+  bool _journalNavigating = false;
 
   void _openJournalInsights() {
     setState(() {
@@ -239,6 +318,8 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
                 key: ValueKey('holdings_$_currentPortfolioId'),
                 portfolioId: _currentPortfolioId!,
                 onNavigateToChart: null,
+                onSelectTrade: _onHoldingSelected,
+                onJournalThis: _onJournalHolding,
               ),
         accentColor: ModuleColors.trade,
       ),
@@ -269,8 +350,10 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
                 onViewPortfolioList: () => _swipeController.navigateTo(0),
               )
             : TradeListWebPage(
-                key: ValueKey('trades_$_currentPortfolioId'),
+                key: ValueKey(
+                    'trades_${_currentPortfolioId}_$_selectedTradeIdForTrades'),
                 portfolioId: _currentPortfolioId!,
+                initialTradeId: _selectedTradeIdForTrades,
                 onNavigateToChart: null,
               ),
         accentColor: ModuleColors.trade,
@@ -298,10 +381,15 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
                 portfolioId:
                     _journalAllPortfolios ? null : _currentPortfolioId,
                 initialTab: _journalInitialTab ?? 'entries',
+                initialFocusEntryId: _journalFocusEntryId,
                 onOpenAnalysis: _openAnalysis,
                 onInitialTabApplied: () {
-                  if (_journalInitialTab != null) {
-                    setState(() => _journalInitialTab = null);
+                  if (_journalInitialTab != null ||
+                      _journalFocusEntryId != null) {
+                    setState(() {
+                      _journalInitialTab = null;
+                      _journalFocusEntryId = null;
+                    });
                   }
                 },
               ),
@@ -395,6 +483,74 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
     ];
   }
 
+  Future<void> _openEditOrAddTrade(Object? existingTrade) async {
+    List<TradeDetails>? knownTrades;
+    final cubitAsync = ref.read(tradeControllerCubitProvider);
+    if (cubitAsync is AsyncData<TradeControllerCubit>) {
+      cubitAsync.value.state.mapOrNull(
+        loaded: (state) => knownTrades = state.trades,
+      );
+    }
+
+    TradeDetails? tradeToEdit;
+    TradeHoldingViewModel? holding;
+    String? tradeIdForFetch;
+
+    if (existingTrade is TradeDetails) {
+      tradeToEdit = existingTrade;
+      tradeIdForFetch = existingTrade.tradeId;
+    } else if (existingTrade is TradeHoldingViewModel) {
+      holding = existingTrade;
+      tradeIdForFetch = holding.tradeId;
+    } else if (existingTrade is String) {
+      tradeIdForFetch = existingTrade;
+      try {
+        tradeToEdit = knownTrades?.firstWhere((t) => t.tradeId == existingTrade);
+      } catch (_) {
+        AppLogger.warning('Trade $existingTrade not found in cubit list',
+            tag: 'TradeWebScreen');
+      }
+    }
+
+    TradeDetails? fetched;
+    if (tradeIdForFetch != null && tradeIdForFetch.isNotEmpty) {
+      try {
+        final repo =
+            await ref.read(tradeControllerRepositoryProvider.future);
+        final list =
+            await repo.getTradeDetailsByTradeIds([tradeIdForFetch]);
+        if (list.isNotEmpty) fetched = list.first;
+      } catch (e, st) {
+        AppLogger.warning(
+          'Failed to fetch trade $tradeIdForFetch for edit — using local merge',
+          tag: 'TradeWebScreen',
+          error: e,
+          stackTrace: st,
+        );
+      }
+    }
+
+    if (holding != null) {
+      tradeToEdit = resolveTradeForEdit(
+        holding: holding,
+        knownTrades: knownTrades,
+        fetchedTrade: fetched,
+        portfolioNameHint: _currentPortfolioName,
+      );
+    } else if (fetched != null) {
+      tradeToEdit = fetched;
+    }
+
+    if (!mounted) return;
+    setState(() => _existingTradeToEdit = tradeToEdit);
+
+    final addTradeIndex = _swipeController.items
+        .indexWhere((item) => item.title == addTradeTitle);
+    if (addTradeIndex != -1) {
+      _swipeController.navigateTo(addTradeIndex);
+    }
+  }
+
   void _onPortfolioSelected(String portfolioId, String portfolioName,
       {bool autoSelect = false}) {
     final currentIndex = _swipeController.currentIndex;
@@ -422,10 +578,33 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
         tag: 'TradeWebScreen');
   }
 
+  List<PortfolioItem> _shellPortfolios(BuildContext context) {
+    try {
+      return context.watch<PortfolioCubit>().state.portfolioList?.portfolios ??
+          const [];
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  List<TradePortfolioViewModel> _visiblePortfolios(
+    BuildContext context,
+    List<TradePortfolioViewModel> trade,
+  ) {
+    return mergeVisibleTradePortfolios(
+      trade: trade,
+      shell: _shellPortfolios(context),
+      selectedId: _currentPortfolioId,
+      selectedName: _currentPortfolioName,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final brokerPortfolios =
-        ref.watch(tradePortfoliosStreamProvider).asData?.value ?? const [];
+    final brokerPortfolios = _visiblePortfolios(
+      context,
+      ref.watch(tradePortfoliosStreamProvider).asData?.value ?? const [],
+    );
     final omsCubit = ref.watch(omsCubitProvider).asData?.value;
 
     Widget tree(List<TradePortfolioViewModel> portfolios, OmsWallet? paper) {
@@ -438,16 +617,20 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
         _currentPortfolioId != 'all' &&
         !portfolios.any((p) => p.id == _currentPortfolioId)) {
       final ghostId = _currentPortfolioId!;
-      final fallback = portfolios.first;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
-        context.clearPortfolioSelectionIf(ghostId);
-        _onPortfolioSelected(fallback.id, fallback.name, autoSelect: true);
-      });
+      if (_handledGhostPortfolioId != ghostId) {
+        _handledGhostPortfolioId = ghostId;
+        final fallback = portfolios.first;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          context.clearPortfolioSelectionIf(ghostId);
+          _onPortfolioSelected(fallback.id, fallback.name, autoSelect: true);
+        });
+      }
     }
 
     // Automatically select the first portfolio if none is selected
-    if (portfolios.isNotEmpty && _currentPortfolioId == null) {
+    if (portfolios.isNotEmpty && _currentPortfolioId == null && !_hasAutoSelectedFirstPortfolio) {
+      _hasAutoSelectedFirstPortfolio = true;
       final defaultPortfolio = portfolios.first;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
@@ -460,138 +643,7 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
     return NotificationListener<OpenAddTradeNotification>(
       onNotification: (notification) {
         notification.handled = true;
-
-        TradeDetails? tradeToEdit;
-        if (notification.existingTrade is TradeDetails) {
-          tradeToEdit = notification.existingTrade as TradeDetails;
-        } else if (notification.existingTrade is TradeHoldingViewModel) {
-          final holding = notification.existingTrade as TradeHoldingViewModel;
-
-          T? parseEnum<T extends Enum>(Iterable<T> values, String? str) {
-            if (str == null) return null;
-            final normalized = str.toLowerCase().replaceAll('_', '');
-            for (final v in values) {
-              if (v.name.toLowerCase() == normalized) return v;
-            }
-            return null;
-          }
-
-          tradeToEdit = TradeDetails(
-            tradeId: holding.tradeId,
-            portfolioId: holding.portfolioId,
-            instrumentInfo: InstrumentInfo(
-              symbol: holding.symbol,
-              rawSymbol: holding.rawSymbol,
-              exchange: parseEnum(ExchangeTypes.values, holding.exchange),
-              segment: parseEnum(MarketSegments.values, holding.marketSegment),
-              series: parseEnum(SeriesTypes.values, holding.series),
-              indexType: parseEnum(IndexTypes.values, holding.indexType),
-              derivativeInfo: holding.strikePrice != null
-                  ? DerivativeInfo(
-                      strikePrice: holding.strikePrice,
-                      expiryDate: holding.expiryDate,
-                      optionType:
-                          parseEnum(OptionTypes.values, holding.optionType),
-                      underlyingSymbol: holding.underlyingSymbol,
-                      derivativeType: parseEnum(
-                          DerivativeTypes.values, holding.derivativeType),
-                    )
-                  : null,
-              description: holding.description,
-              currency: holding.currency,
-              lotSize: holding.lotSize,
-              isin: holding.isin,
-            ),
-            status: parseEnum(TradeStatuses.values, holding.status) ??
-                TradeStatuses.open,
-            tradePositionType:
-                parseEnum(TradeDirections.values, holding.tradePositionType) ??
-                    TradeDirections.long,
-            entryInfo: EntryExitInfo(
-              timestamp: holding.entryTimestamp,
-              price: holding.entryPrice,
-              quantity: holding.quantity,
-              totalValue: holding.entryTotalValue,
-              fees: holding.entryFees,
-              reason: holding.entryReason,
-            ),
-            symbol: holding.symbol,
-            strategy: holding.strategy,
-            exitInfo:
-                (holding.exitTimestamp != null || holding.exitPrice != null)
-                    ? EntryExitInfo(
-                        timestamp: holding.exitTimestamp,
-                        price: holding.exitPrice,
-                        quantity: holding.quantity,
-                        totalValue: holding.exitTotalValue,
-                        fees: holding.exitFees,
-                        reason: holding.exitReason,
-                      )
-                    : null,
-            metrics: TradeMetrics(
-              profitLoss: holding.profitLoss,
-              profitLossPercentage: holding.profitLossPercentage,
-              returnOnEquity: holding.returnOnEquity,
-              riskAmount: holding.riskAmount,
-              rewardAmount: holding.rewardAmount,
-              riskRewardRatio: holding.riskRewardRatio,
-              holdingTimeDays: holding.holdingDays,
-              maxAdverseExcursion: holding.maxAdverseExcursion,
-              maxFavorableExcursion: holding.maxFavorableExcursion,
-            ),
-            tradeExecutions: (holding.broker != null ||
-                    holding.orderType != null)
-                ? [
-                    TradeModel(
-                      basicInfo: holding.broker != null
-                          ? BasicInfo(
-                              brokerType:
-                                  parseEnum(BrokerTypes.values, holding.broker),
-                            )
-                          : null,
-                      executionInfo: holding.orderType != null
-                          ? ExecutionInfo(
-                              orderType: parseEnum(
-                                  OrderTypes.values, holding.orderType),
-                            )
-                          : null,
-                    )
-                  ]
-                : null,
-            notes: holding.notes,
-            tags: holding.tags,
-            userId: holding.userId,
-            psychologyData: holding.psychologyData,
-          );
-        } else if (notification.existingTrade is String) {
-          final String tradeId = notification.existingTrade as String;
-          final cubitAsync = ref.read(tradeControllerCubitProvider);
-          if (cubitAsync is AsyncData<TradeControllerCubit>) {
-            final cubit = cubitAsync.value;
-            cubit.state.mapOrNull(
-              loaded: (state) {
-                try {
-                  tradeToEdit =
-                      state.trades.firstWhere((t) => t.tradeId == tradeId);
-                } catch (e) {
-                  AppLogger.warning('Trade $tradeId not found for edit',
-                      tag: 'TradeWebScreen');
-                }
-              },
-            );
-          }
-        }
-
-        setState(() {
-          // Pass it to AddTradeWebPage by adding a state variable (will define shortly)
-          _existingTradeToEdit = tradeToEdit;
-        });
-
-        final addTradeIndex = _swipeController.items
-            .indexWhere((item) => item.title == addTradeTitle);
-        if (addTradeIndex != -1) {
-          _swipeController.navigateTo(addTradeIndex);
-        }
+        _openEditOrAddTrade(notification.existingTrade);
         return true;
       },
       child: UnifiedSidebarScaffold(
@@ -692,8 +744,10 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
       builder: (context, ref, child) {
         final portfoliosAsyncValue = ref.watch(enrichedTradePortfoliosProvider);
         // Progressive: stream often has realized cards before enrichment finishes.
-        final streamPortfolios =
-            ref.watch(tradePortfoliosStreamProvider).asData?.value;
+        final streamPortfolios = _visiblePortfolios(
+          context,
+          ref.watch(tradePortfoliosStreamProvider).asData?.value ?? const [],
+        );
 
         return portfoliosAsyncValue.when(
           data: (portfolios) {
@@ -745,85 +799,112 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
               bool deleteTrades = false;
               final confirm = await showDialog<bool>(
                 context: context,
-                builder: (ctx) => StatefulBuilder(
-                  builder: (ctx, setDialogState) => AlertDialog(
-                    title: Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: Colors.red.withValues(alpha: 0.1),
-                            shape: BoxShape.circle,
+                builder: (dialogContext) {
+                  final colors = dialogContext.colors;
+                  final textTheme = Theme.of(dialogContext).textTheme;
+                  return StatefulBuilder(
+                    builder: (ctx, setDialogState) => AlertDialog(
+                      title: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color:
+                                  colors.statusError.withValues(alpha: 0.1),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(Icons.delete_outline_rounded,
+                                color: colors.statusError, size: 20),
                           ),
-                          child: const Icon(Icons.delete_outline_rounded,
-                              color: Colors.red, size: 20),
+                          const SizedBox(width: 12),
+                          const Text('Delete Portfolio'),
+                        ],
+                      ),
+                      content: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Are you sure you want to delete "${portfolio.name}"?',
+                            style: textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'This action cannot be undone.',
+                            style: textTheme.bodySmall?.copyWith(
+                              color: colors.textSecondary,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          CheckboxListTile(
+                            value: deleteTrades,
+                            onChanged: (v) => setDialogState(
+                                () => deleteTrades = v ?? false),
+                            title: Text(
+                              'Also delete all associated trades',
+                              style: textTheme.bodyMedium,
+                            ),
+                            subtitle: Text(
+                              'If unchecked, trades remain in the database but will be unassigned.',
+                              style: textTheme.bodySmall,
+                            ),
+                            controlAffinity: ListTileControlAffinity.leading,
+                            activeColor: colors.statusError,
+                            contentPadding: EdgeInsets.zero,
+                            visualDensity: VisualDensity.compact,
+                          ),
+                        ],
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.of(ctx).pop(false),
+                          child: const Text('Cancel'),
                         ),
-                        const SizedBox(width: 12),
-                        const Text('Delete Portfolio'),
+                        FilledButton.icon(
+                          onPressed: () => Navigator.of(ctx).pop(true),
+                          icon: const Icon(Icons.delete_rounded, size: 18),
+                          label: const Text('Delete'),
+                          style: FilledButton.styleFrom(
+                            backgroundColor: colors.statusError,
+                            foregroundColor: colors.actionPrimaryFg,
+                          ),
+                        ),
                       ],
                     ),
-                    content: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Are you sure you want to delete "${portfolio.name}"?',
-                          style: const TextStyle(fontWeight: FontWeight.w500),
-                        ),
-                        const SizedBox(height: 8),
-                        const Text(
-                          'This action cannot be undone.',
-                          style: TextStyle(color: Colors.grey, fontSize: 13),
-                        ),
-                        const SizedBox(height: 16),
-                        CheckboxListTile(
-                          value: deleteTrades,
-                          onChanged: (v) =>
-                              setDialogState(() => deleteTrades = v ?? false),
-                          title: const Text(
-                            'Also delete all associated trades',
-                            style: TextStyle(fontSize: 14),
-                          ),
-                          subtitle: const Text(
-                            'If unchecked, trades remain in the database but will be unassigned.',
-                            style: TextStyle(fontSize: 12),
-                          ),
-                          controlAffinity: ListTileControlAffinity.leading,
-                          activeColor: Colors.red,
-                          contentPadding: EdgeInsets.zero,
-                          visualDensity: VisualDensity.compact,
-                        ),
-                      ],
-                    ),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.of(ctx).pop(false),
-                        child: const Text('Cancel'),
-                      ),
-                      FilledButton.icon(
-                        onPressed: () => Navigator.of(ctx).pop(true),
-                        icon: const Icon(Icons.delete_rounded, size: 18),
-                        label: const Text('Delete'),
-                        style: FilledButton.styleFrom(
-                          backgroundColor: Colors.red,
-                          foregroundColor: Colors.white,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                  );
+                },
               );
               if (confirm == true && mounted) {
                 final service = ref.read(portfolioServiceProvider).value;
                 if (service == null) return;
-                await service.deletePortfolio(
-                  portfolio.id,
-                  deleteTrades: deleteTrades,
-                );
-                // Optimistically remove from local cache
-                final repository = ref.read(tradeRepositoryProvider).value;
-                repository?.removeCachedPortfolio(portfolio.id);
-                // We explicitly DO NOT call ref.invalidate here
+                try {
+                  await service.deletePortfolio(
+                    portfolio.id,
+                    deleteTrades: deleteTrades,
+                  );
+                  if (!mounted) return;
+                  // Optimistically remove from local cache, then refresh streams
+                  // so a failed/partial backend delete cannot leave a ghost card.
+                  final repository = ref.read(tradeRepositoryProvider).value;
+                  repository?.removeCachedPortfolio(portfolio.id);
+                  ref.invalidate(tradePortfoliosStreamProvider);
+                  ref.invalidate(enrichedTradePortfoliosProvider);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Portfolio deleted successfully'),
+                    ),
+                  );
+                } catch (e) {
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Failed to delete portfolio: $e'),
+                      backgroundColor: context.colors.statusError,
+                    ),
+                  );
+                }
               }
             },
             onRefresh: () {
@@ -833,19 +914,20 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
               );
             }
 
+            final visible = _visiblePortfolios(context, portfolios);
             if (omsCubit == null) {
-              return template(portfolios, null);
+              return template(visible, null);
             }
             return BlocProvider<OmsCubit>.value(
               value: omsCubit,
               child: BlocBuilder<OmsCubit, OmsState>(
                 builder: (context, oms) =>
-                    template(portfolios, oms.paperWallet),
+                    template(visible, oms.paperWallet),
               ),
             );
           },
           loading: () {
-            if (streamPortfolios != null && streamPortfolios.isNotEmpty) {
+            if (streamPortfolios.isNotEmpty) {
               return TradePortfolioDiscoveryTemplate(
                 portfolios: streamPortfolios,
                 isLoading: false,
@@ -865,9 +947,9 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
             );
           },
           error: (error, _) => TradePortfolioDiscoveryTemplate(
-            portfolios: streamPortfolios ?? const [],
+            portfolios: streamPortfolios,
             isLoading: false,
-            errorMessage: streamPortfolios == null || streamPortfolios.isEmpty
+            errorMessage: streamPortfolios.isEmpty
                 ? 'Failed to load portfolios: $error'
                 : null,
             onPortfolioSelected: (portfolio) {

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:am_common/core/config/config_service.dart';
 import 'package:am_common/core/config/app_config.dart';
@@ -24,6 +26,7 @@ import '../internal/domain/usecases/get_trade_summary.dart';
 import '../presentation/models/trade_calendar_view_model.dart';
 import '../presentation/models/trade_holding_view_model.dart';
 import '../presentation/models/trade_portfolio_view_model.dart';
+import 'portfolio_bridge_providers.dart';
 
 /// Provider for trade remote data source
 final _tradeRemoteDataSourceProvider =
@@ -176,13 +179,54 @@ final tradeCalendarProvider = FutureProvider.family<TradeCalendar, String>((
   return result;
 });
 
-/// Provider for watching trade holdings (stream) - returns view models
+/// Provider for watching trade holdings (stream) - returns view models.
+/// Emits Trade data immediately; Portfolio 1D overlay is best-effort and timed out.
 final tradeHoldingsStreamProvider =
     StreamProvider.family<TradeHoldingsViewModel, String>(
         (ref, portfolioId) async* {
   if (portfolioId.isEmpty) return;
   final useCase = await ref.watch(_getTradeHoldingsProvider.future);
-  yield* useCase.watch(portfolioId).map(TradeHoldingsViewModel.fromEntity);
+  await for (final entity in useCase.watch(portfolioId)) {
+    final base = TradeHoldingsViewModel.fromEntity(entity);
+    // Never block the spinner on am-portfolio — show Trade rows first.
+    yield base;
+
+    try {
+      final overviewDs = await ref
+          .read(portfolioOverviewDataSourceProvider.future)
+          .timeout(const Duration(seconds: 3));
+      final overlays = await overviewDs
+          .getHoldingDayOverlays(portfolioId)
+          .timeout(const Duration(seconds: 4), onTimeout: () => const {});
+      if (overlays.isEmpty) continue;
+
+      final needsOverlay = base.holdings.any((h) => h.todayProfitLoss == null);
+      if (!needsOverlay) continue;
+
+      yield TradeHoldingsViewModel(
+        portfolioId: base.portfolioId,
+        holdings: [
+          for (final h in base.holdings)
+            h.copyWith(
+              todayProfitLoss: h.todayProfitLoss ??
+                  overlays[h.symbol.toUpperCase()]?.todayChange,
+              todayProfitLossPercentage: h.todayProfitLossPercentage ??
+                  overlays[h.symbol.toUpperCase()]?.todayChangePercentage,
+              currentPrice: h.currentPrice ??
+                  overlays[h.symbol.toUpperCase()]?.currentPrice,
+              currentValue: h.currentValue ??
+                  overlays[h.symbol.toUpperCase()]?.currentValue,
+            ),
+        ],
+        totalElements: base.totalElements,
+        totalPages: base.totalPages,
+        currentPage: base.currentPage,
+        hasMore: base.hasMore,
+      );
+    } catch (_) {
+      // Keep base yield — overlay is optional.
+    }
+  }
 });
 
 /// Provider for watching trade summary (stream)

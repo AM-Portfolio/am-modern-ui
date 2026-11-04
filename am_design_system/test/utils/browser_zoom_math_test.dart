@@ -21,7 +21,7 @@ void main() {
       expect(BrowserZoomMath.nearestStep(1.0), 1.0);
     });
 
-    test('150% chrome on 1280 css keeps desktop layout width 1920', () {
+    test('150% chrome keeps the real 1280 css layout width', () {
       final chrome = BrowserZoomMath.detectChromeZoom(
         innerWidth: 1280,
         outerWidth: 1920,
@@ -29,11 +29,11 @@ void main() {
         baselineDpr: 1.0,
       );
       expect(chrome, closeTo(1.5, 0.02));
-      expect(BrowserZoomMath.layoutWidth(1280, chrome), closeTo(1920, 1));
+      expect(BrowserZoomMath.layoutWidth(1280, chrome), closeTo(1280, 1));
       expect(BrowserZoomMath.layoutWidth(1280, chrome), greaterThan(1100));
     });
 
-    test('80% zoom uses unzoomed width for chrome', () {
+    test('80% zoom keeps the real css viewport width', () {
       final chrome = BrowserZoomMath.detectChromeZoom(
         innerWidth: 1600,
         outerWidth: 1280,
@@ -41,7 +41,7 @@ void main() {
         baselineDpr: 1.0,
       );
       expect(chrome, closeTo(0.8, 0.05));
-      expect(BrowserZoomMath.layoutWidth(1600, 0.8), closeTo(1280, 1));
+      expect(BrowserZoomMath.layoutWidth(1600, 0.8), closeTo(1600, 1));
     });
 
     test('OS 125% scale at Chrome 100% is not chrome zoom', () {
@@ -54,7 +54,8 @@ void main() {
       expect(chrome, closeTo(1.0, 0.02));
     });
 
-    test('OS 125% + Chrome 110% uses dpr ratio when outer/inner is in 100% band',
+    test(
+        'OS 125% + Chrome 110% uses dpr ratio when outer/inner is in 100% band',
         () {
       final chrome = BrowserZoomMath.detectChromeZoom(
         innerWidth: 1920,
@@ -63,6 +64,17 @@ void main() {
         baselineDpr: 1.25,
       );
       expect(chrome, closeTo(1.10, 0.03));
+    });
+
+    test('embedded browser ignores host-window outer width while zooming', () {
+      final chrome = BrowserZoomMath.detectChromeZoom(
+        innerWidth: 420,
+        outerWidth: 1440,
+        devicePixelRatio: 1.5,
+        baselineDpr: 1.0,
+      );
+      expect(chrome, closeTo(1.5, 0.02));
+      expect(BrowserZoomMath.layoutWidth(420, chrome), closeTo(420, 1));
     });
 
     test('innerWidth 0 returns 1.0', () {
@@ -84,7 +96,8 @@ void main() {
       );
     });
 
-    test('pageLayoutSize at 80% is larger so FittedBox can shrink the whole page',
+    test(
+        'pageLayoutSize at 80% is larger so FittedBox can shrink the whole page',
         () {
       final layout = BrowserZoomMath.pageLayoutSize(const Size(1280, 720), 0.8);
       expect(layout.width, closeTo(1600, 0.5));

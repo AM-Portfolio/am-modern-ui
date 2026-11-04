@@ -42,6 +42,15 @@ class BrowserZoomPlatform {
     } catch (_) {}
   }
 
+  /// Match the document background to the active Flutter theme. Native page
+  /// pinch zoom can reveal the document around Flutter's painted viewport.
+  static void setPageBackground(String cssColor) {
+    try {
+      html.document.documentElement?.style.backgroundColor = cssColor;
+      html.document.body?.style.backgroundColor = cssColor;
+    } catch (_) {}
+  }
+
   /// Charts set this so Ctrl+wheel zooms the chart, not the browser page.
   static void setChartOwnsCtrlWheel(bool value) {
     try {

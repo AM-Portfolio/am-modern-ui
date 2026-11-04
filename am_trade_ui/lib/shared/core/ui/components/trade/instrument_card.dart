@@ -147,9 +147,10 @@ class _InstrumentCardState extends State<InstrumentCard> {
                       Expanded(
                         child: CustomDropdown<ExchangeTypes>(
                           value: widget.selectedExchange,
-                          hint: 'Exchange',
+                          hint: 'Exchange *',
                           items: ExchangeTypes.values
-                              .map((exchange) => exchange.toSimpleDropdownItem(text: exchange.toString().split('.').last.toUpperCase()))
+                              .map((exchange) => exchange.toSimpleDropdownItem(
+                                  text: exchange.displayName))
                               .toList(),
                           onChanged: widget.onExchangeChanged,
                           icon: Icons.account_balance,
@@ -158,10 +159,15 @@ class _InstrumentCardState extends State<InstrumentCard> {
                       const SizedBox(width: 8),
                       Expanded(
                         child: CustomDropdown<MarketSegments>(
-                          value: widget.selectedSegment,
-                          hint: 'Segment',
+                          value: widget.selectedSegment ==
+                                  MarketSegments.unknown
+                              ? null
+                              : widget.selectedSegment,
+                          hint: 'Segment *',
                           items: MarketSegments.values
-                              .map((segment) => segment.toSimpleDropdownItem(text: segment.toString().split('.').last.toUpperCase()))
+                              .where((s) => s != MarketSegments.unknown)
+                              .map((segment) => segment.toSimpleDropdownItem(
+                                  text: segment.displayName))
                               .toList(),
                           onChanged: widget.onSegmentChanged,
                           icon: Icons.pie_chart,

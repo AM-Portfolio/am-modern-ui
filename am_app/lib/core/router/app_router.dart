@@ -465,11 +465,20 @@ GoRouter createAppRouter({
                 portfolioId: portfolioId,
                 tab: tab,
                 onTabChanged: (slug) {
-                  if (slug == 'portfolios' && portfolioId.isEmpty) {
-                    context.go(AppRoutes.tradeDiscovery);
+                  final activePortfolioId =
+                      context.selectedPortfolioId ?? portfolioId;
+                  if (slug == 'portfolios' && activePortfolioId.isEmpty) {
+                    final currentLoc = GoRouterState.of(context).matchedLocation;
+                    if (currentLoc != AppRoutes.tradeDiscovery) {
+                      context.go(AppRoutes.tradeDiscovery);
+                    }
                     return;
                   }
-                  context.go(AppRoutes.tradePath(portfolioId, slug));
+                  final target = AppRoutes.tradePath(activePortfolioId, slug);
+                  final currentLoc = GoRouterState.of(context).matchedLocation;
+                  if (currentLoc != target) {
+                    context.go(target);
+                  }
                 },
                 onPortfolioChanged: (id, name) {
                   _patchPortfolioSession(context, id, name);
@@ -477,7 +486,11 @@ GoRouter createAppRouter({
                         GoRouterState.of(context).matchedLocation,
                       ) ??
                       tab;
-                  context.go(AppRoutes.tradePath(id, currentTab));
+                  final target = AppRoutes.tradePath(id, currentTab);
+                  final currentLoc = GoRouterState.of(context).matchedLocation;
+                  if (currentLoc != target) {
+                    context.go(target);
+                  }
                 },
                 onQuickAdd: (kind) => requestGlobalAddAction(
                   context,
@@ -493,11 +506,20 @@ GoRouter createAppRouter({
               final tab = state.pathParameters['tab'] ?? 'portfolios';
               return buildTradeLegacyTabRoute(
                 tab: tab,
-                onTabChanged: (slug) =>
-                    context.go(AppRoutes.tradeLegacyTabPath(slug)),
+                onTabChanged: (slug) {
+                  final target = AppRoutes.tradeLegacyTabPath(slug);
+                  final currentLoc = GoRouterState.of(context).matchedLocation;
+                  if (currentLoc != target) {
+                    context.go(target);
+                  }
+                },
                 onPortfolioChanged: (id, name) {
                   _patchPortfolioSession(context, id, name);
-                  context.go(AppRoutes.tradePath(id, tab));
+                  final target = AppRoutes.tradePath(id, tab);
+                  final currentLoc = GoRouterState.of(context).matchedLocation;
+                  if (currentLoc != target) {
+                    context.go(target);
+                  }
                 },
                 onQuickAdd: (kind) => requestGlobalAddAction(
                   context,

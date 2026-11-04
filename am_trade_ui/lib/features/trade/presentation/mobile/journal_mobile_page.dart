@@ -65,6 +65,8 @@ class _JournalMobilePageState extends ConsumerState<JournalMobilePage> {
   int _composerNonce = 0;
 
   final _playbooksKey = GlobalKey<TemplateBrowserMobilePageState>();
+  final _logComposerKey = GlobalKey<JournalLogDayMobilePageState>();
+  final _tradeComposerKey = GlobalKey<JournalTradeWorkflowMobilePageState>();
 
   @override
   void initState() {
@@ -113,17 +115,16 @@ class _JournalMobilePageState extends ConsumerState<JournalMobilePage> {
     required bool trade,
     JournalEntry? entry,
   }) async {
-    // Tap the already-open mode (new create) → warn then return to list.
+    // Tap the already-open mode (new create) → flush draft then return to list.
     if (_composerOpen &&
         _composerIsTrade == trade &&
         entry == null &&
         _composerEntry == null) {
       final leave = await _confirmLeaveComposer();
       if (!leave || !mounted) return;
-      setState(() {
-        _composerOpen = false;
-        _showFab = true;
-      });
+      final cubit = await ref.read(journalCubitProvider.future);
+      if (!mounted) return;
+      await _closeComposer(cubit: cubit, reload: true);
       return;
     }
 
@@ -138,30 +139,13 @@ class _JournalMobilePageState extends ConsumerState<JournalMobilePage> {
     });
   }
 
+  /// Flushes autosave draft, then allows leave. Empty composers leave cleanly.
   Future<bool> _confirmLeaveComposer() async {
-    final discard = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Leave journal?'),
-        content: const Text(
-          'Leave without saving? Unsaved journal work will be lost.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Keep editing'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: ModuleColors.trade,
-            ),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Leave'),
-          ),
-        ],
-      ),
-    );
-    return discard == true;
+    if (!_composerOpen) return true;
+    if (_composerIsTrade) {
+      return _tradeComposerKey.currentState?.confirmLeaveIfUnsaved() ?? true;
+    }
+    return _logComposerKey.currentState?.confirmLeaveIfUnsaved() ?? true;
   }
 
   Future<void> _closeComposer({
@@ -327,6 +311,8 @@ class _JournalMobilePageState extends ConsumerState<JournalMobilePage> {
                     if (_composerOpen && tab != _JournalMobileTab.entries) {
                       final leave = await _confirmLeaveComposer();
                       if (!leave || !mounted) return;
+                      // Draft already flushed; keep list current when leaving Entries.
+                      unawaited(cubit.loadJournalEntries());
                     }
                     if (_activeTab == _JournalMobileTab.playbooks &&
                         (_playbooksKey.currentState?.isUsingTemplateInline ??
@@ -438,20 +424,32 @@ class _JournalMobilePageState extends ConsumerState<JournalMobilePage> {
       key: ValueKey('composer-$_composerNonce-$_composerIsTrade'),
       child: _composerIsTrade
           ? JournalTradeWorkflowMobilePage(
+              key: _tradeComposerKey,
               journalCubit: cubit,
               portfolioId: widget.portfolioId,
               initialEntry: _composerEntry,
               embedded: true,
+              initialReadOnly: _composerEntry != null &&
+                  JournalFolderFilter.isCompletedTradeJournal(_composerEntry!),
               onDone: () => _closeComposer(cubit: cubit, reload: true),
-              onCancel: () => _closeComposer(cubit: cubit, reload: false),
+              onCancel: () async {
+                final leave = await _confirmLeaveComposer();
+                if (!leave || !mounted) return;
+                await _closeComposer(cubit: cubit, reload: true);
+              },
             )
           : JournalLogDayMobilePage(
+              key: _logComposerKey,
               journalCubit: cubit,
               portfolioId: widget.portfolioId,
               initialEntry: _composerEntry,
               embedded: true,
               onDone: () => _closeComposer(cubit: cubit, reload: true),
-              onCancel: () => _closeComposer(cubit: cubit, reload: false),
+              onCancel: () async {
+                final leave = await _confirmLeaveComposer();
+                if (!leave || !mounted) return;
+                await _closeComposer(cubit: cubit, reload: true);
+              },
             ),
     );
   }
@@ -547,9 +545,15 @@ class _JournalMobilePageState extends ConsumerState<JournalMobilePage> {
                                     label: isTrade ? 'Trade journal' : 'Log',
                                     trade: isTrade,
                                   ),
-                                  if (status.isNotEmpty)
+                                  if (_isDemoJournalEntry(entry))
+                                    const _EntryTypeChip(
+                                      label: 'Demo',
+                                      trade: false,
+                                      info: true,
+                                    ),
+                                  if (_draftStatusLabel(status) != null)
                                     _EntryTypeChip(
-                                      label: status.toUpperCase(),
+                                      label: _draftStatusLabel(status)!,
                                       trade: false,
                                       muted: true,
                                     ),
@@ -601,32 +605,51 @@ class _JournalMobilePageState extends ConsumerState<JournalMobilePage> {
   }
 }
 
+bool _isDemoJournalEntry(JournalEntry entry) {
+  final raw = entry.customFields['demo'];
+  return raw == true || raw?.toString().toLowerCase() == 'true';
+}
+
+String? _draftStatusLabel(String rawStatus) {
+  final status = rawStatus.trim().toUpperCase();
+  if (status == 'DRAFT' || status == 'PLANNED') return 'Draft';
+  if (status == 'OPEN') return 'Open';
+  return null;
+}
+
 class _EntryTypeChip extends StatelessWidget {
   const _EntryTypeChip({
     required this.label,
     required this.trade,
     this.muted = false,
+    this.info = false,
   });
 
   final String label;
   final bool trade;
   final bool muted;
+  final bool info;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
     final accent =
         ModuleColorProvider.maybeOf(context) ?? ModuleColors.trade;
-    final bg = muted
-        ? colors.border.withValues(alpha: 0.25)
-        : trade
-            ? accent.withValues(alpha: 0.14)
-            : colors.statusNeutral.withValues(alpha: 0.18);
-    final fg = muted
-        ? colors.textSecondary
-        : trade
-            ? accent
-            : colors.textSecondary;
+    final Color bg;
+    final Color fg;
+    if (info) {
+      bg = colors.statusInfo.withValues(alpha: 0.16);
+      fg = colors.statusInfo;
+    } else if (muted) {
+      bg = colors.border.withValues(alpha: 0.25);
+      fg = colors.textSecondary;
+    } else if (trade) {
+      bg = accent.withValues(alpha: 0.14);
+      fg = accent;
+    } else {
+      bg = colors.statusNeutral.withValues(alpha: 0.18);
+      fg = colors.textSecondary;
+    }
     return Container(
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.sm - AppSpacing.xxs,

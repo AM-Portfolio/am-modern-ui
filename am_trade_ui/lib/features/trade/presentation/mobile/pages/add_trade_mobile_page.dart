@@ -143,6 +143,11 @@ class _AddTradeMobilePageState extends State<AddTradeMobilePage> {
         child: Stack(
           children: [
             AddTradeForm(
+              key: ValueKey(
+                widget.existingTrade?.tradeId.isNotEmpty == true
+                    ? 'edit-${widget.existingTrade!.tradeId}'
+                    : 'new-${widget.portfolioId}',
+              ),
               onSave: _handleSave,
               onCancel: _handleCancel,
               isLoading: _isLoading,

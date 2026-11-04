@@ -1,12 +1,15 @@
+import 'dart:async';
+
 import 'package:am_design_system/am_design_system.dart';
-import 'package:am_design_system/shared/widgets/navigation/step_indicator.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../internal/domain/entities/journal_entry.dart';
 import '../../cubit/journal/journal_cubit.dart';
 import '../utils/journal_calc_helper.dart';
+import '../utils/journal_entry_validation.dart';
 import '../widgets/execute_trade_step.dart';
+import '../widgets/journal_form_surface.dart';
 import '../widgets/journal_trade_header.dart';
 import '../widgets/post_trade_review_step.dart';
 import '../widgets/pre_trade_plan_step.dart';
@@ -42,10 +45,11 @@ class TradeJournalWorkflowPage extends ConsumerStatefulWidget {
   final VoidCallback? onEmbeddedCancel;
   final VoidCallback? onEmbeddedDeleted;
 
-  /// Optional override for initial wizard step (e.g. Edit from completed → 2).
+  /// Optional override for initial wizard step (defaults via [stepFromStatus]).
   final int? startAtStep;
 
-  /// Same Pre/Execute/Post template, fields locked until user taps Edit.
+  /// Same Pre/Execute/Post template; completed journals stay locked until
+  /// the user double-clicks / double-taps a field to edit.
   final bool initialReadOnly;
 
   @override
@@ -63,8 +67,22 @@ class TradeJournalWorkflowPageState
   /// True after local edits since last successful Save Draft / Save Journal.
   var _dirty = false;
   final _stepScrollController = ScrollController();
-
-  static const _stepLabels = ['Pre-Trade', 'Execute', 'Post-Trade'];
+  final _preColScrollController = ScrollController();
+  final _execColScrollController = ScrollController();
+  final _postColScrollController = ScrollController();
+  final _preStepKey = GlobalKey<PreTradePlanStepState>();
+  final _preStepMobileKey = GlobalKey<PreTradePlanStepMobileState>();
+  final _execStepKey = GlobalKey<ExecuteTradeStepState>();
+  final _postStepKey = GlobalKey<PostTradeReviewStepState>();
+  final _preSectionKey = GlobalKey();
+  final _execSectionKey = GlobalKey();
+  final _postSectionKey = GlobalKey();
+  static const _threeColBreakpoint = 900.0;
+  static const _autosaveDelay = Duration(seconds: 20);
+  Timer? _autosaveTimer;
+  Future<void>? _autosaveFuture;
+  DateTime? _lastDraftSavedAt;
+  String _lastSavedFingerprint = '';
 
   static const _defaultChecklist = [
     'Trend aligned with setup',
@@ -81,13 +99,18 @@ class TradeJournalWorkflowPageState
     switch ((status ?? 'DRAFT').toUpperCase()) {
       case 'OPEN':
         return 1;
+      // Completed demos / reviews still open on Pre-Trade so the plan is first.
       case 'COMPLETED':
-        return 2;
       case 'PLANNED':
       case 'DRAFT':
       default:
         return 0;
     }
+  }
+
+  void _unlockEdit() {
+    if (!_readOnly) return;
+    setState(() => _readOnly = false);
   }
 
   @override
@@ -99,17 +122,80 @@ class TradeJournalWorkflowPageState
 
   @override
   void dispose() {
+    _autosaveTimer?.cancel();
     _stepScrollController.dispose();
+    _preColScrollController.dispose();
+    _execColScrollController.dispose();
+    _postColScrollController.dispose();
     super.dispose();
   }
 
-  void _goToStep(int step) {
-    final next = step.clamp(0, 2);
-    setState(() => _currentStep = next);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!_stepScrollController.hasClients) return;
-      _stepScrollController.jumpTo(0);
-    });
+  void _scrollToSection(int step) {
+    final key = switch (step.clamp(0, 2)) {
+      0 => _preSectionKey,
+      1 => _execSectionKey,
+      _ => _postSectionKey,
+    };
+    final colScroll = switch (step.clamp(0, 2)) {
+      0 => _preColScrollController,
+      1 => _execColScrollController,
+      _ => _postColScrollController,
+    };
+    if (colScroll.hasClients) {
+      colScroll.animateTo(
+        0,
+        duration: const Duration(milliseconds: 280),
+        curve: Curves.easeOutCubic,
+      );
+    }
+    final ctx = key.currentContext;
+    if (ctx == null) return;
+    Scrollable.ensureVisible(
+      ctx,
+      duration: const Duration(milliseconds: 280),
+      curve: Curves.easeOutCubic,
+      alignment: 0.05,
+    );
+  }
+
+  bool _validateAllStepsForSave() {
+    if (_readOnly) return true;
+    for (var step = 0; step <= 2; step++) {
+      final ok = switch (step) {
+        0 => widget.useMobileLayout
+            ? (_preStepMobileKey.currentState?.validate() ?? true)
+            : (_preStepKey.currentState?.validate() ?? true),
+        1 => _execStepKey.currentState?.validate() ?? true,
+        2 => _postStepKey.currentState?.validate() ?? true,
+        _ => true,
+      };
+      final message = ok
+          ? JournalEntryValidation.validateTradeStep(_entry, step)
+          : (switch (step) {
+                0 => widget.useMobileLayout
+                    ? _preStepMobileKey.currentState?.validationMessage()
+                    : _preStepKey.currentState?.validationMessage(),
+                1 => _execStepKey.currentState?.validationMessage(),
+                2 => _postStepKey.currentState?.validationMessage(),
+                _ => null,
+              } ??
+              JournalEntryValidation.validateTradeStep(_entry, step) ??
+              'Please fix the highlighted fields');
+      if (!ok || message != null) {
+        setState(() => _currentStep = step);
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _scrollToSection(step);
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(message ?? 'Please fix the highlighted fields'),
+            backgroundColor: context.colors.statusWarning,
+          ),
+        );
+        return false;
+      }
+    }
+    return true;
   }
 
   @override
@@ -122,11 +208,15 @@ class TradeJournalWorkflowPageState
     final next = widget.initialEntry;
     final prev = oldWidget.initialEntry;
     if (next == null) return;
+    // Don't clobber in-progress edits when the list reloads after autosave.
+    if (_dirty && prev?.id == next.id) return;
     if (prev == null ||
         prev.id != next.id ||
         prev.updatedAt != next.updatedAt) {
       _readOnly = widget.initialReadOnly;
       _hydrateFrom(next, isNew: false, keepStep: prev?.id == next.id);
+      _lastSavedFingerprint = _entryFingerprint(_entry);
+      _dirty = false;
     }
   }
 
@@ -152,13 +242,14 @@ class TradeJournalWorkflowPageState
       );
     }
     _entry = entry;
+    _lastSavedFingerprint = _entryFingerprint(entry);
     if (!keepStep) {
       _currentStep = widget.startAtStep ?? stepFromStatus(entry.journalStatus);
     }
   }
 
   JournalEntry _createNewEntry() {
-    return JournalEntry(
+    final entry = JournalEntry(
       id: 'temp-${DateTime.now().millisecondsSinceEpoch}',
       userId: '',
       title: 'New Trade',
@@ -172,6 +263,8 @@ class TradeJournalWorkflowPageState
       tradeExecution: const TradeExecution(),
       postTradeReview: const PostTradeReview(),
     );
+    _lastSavedFingerprint = _entryFingerprint(entry);
+    return entry;
   }
 
   void _updateEntry(JournalEntry updated) {
@@ -179,85 +272,97 @@ class TradeJournalWorkflowPageState
       _entry = _recalc(updated);
       _dirty = true;
     });
+    _scheduleAutosave();
   }
 
   bool get hasUnsavedChanges => !_readOnly && _dirty && !_saving;
 
-  /// Public for parent shell (list selection / mode toggle) leave guards.
-  ///
-  /// [force] — Cancel always warns; system back only when dirty.
+  String _entryFingerprint(JournalEntry e) {
+    final plan = e.preTradePlan;
+    final exec = e.tradeExecution;
+    final review = e.postTradeReview;
+    return [
+      e.title,
+      e.symbol,
+      e.setup,
+      e.content,
+      e.tradeDirection,
+      plan?.strategy,
+      plan?.setup,
+      plan?.plannedEntryPrice,
+      plan?.plannedStopLoss,
+      plan?.plannedTarget,
+      plan?.plannedQuantity,
+      plan?.setupDescription,
+      plan?.entryRationale,
+      plan?.marketContext,
+      plan?.setupChecklist.join(','),
+      exec?.actualEntryPrice,
+      exec?.quantity,
+      exec?.notes,
+      exec?.broker,
+      review?.actualExitPrice,
+      review?.whatWentWell,
+      review?.whatCouldBeImproved,
+      review?.lessonLearned,
+      review?.followedStopLoss,
+      review?.followedTarget,
+      review?.mistakeCategory,
+      review?.emotionalState,
+      review?.executionScore,
+      e.attachments.map((a) => a.fileUrl).join(','),
+    ].join('\u241F');
+  }
+
+  bool get _hasMeaningfulContent {
+    final e = _entry;
+    final plan = e.preTradePlan;
+    final exec = e.tradeExecution;
+    final review = e.postTradeReview;
+    return (e.symbol?.trim().isNotEmpty ?? false) ||
+        (e.setup?.trim().isNotEmpty ?? false) ||
+        (e.content?.trim().isNotEmpty ?? false) ||
+        (e.title.trim().isNotEmpty && e.title.trim() != 'New Trade') ||
+        plan?.plannedEntryPrice != null ||
+        plan?.plannedStopLoss != null ||
+        plan?.plannedTarget != null ||
+        plan?.plannedQuantity != null ||
+        (plan?.setupDescription?.trim().isNotEmpty ?? false) ||
+        (plan?.entryRationale?.trim().isNotEmpty ?? false) ||
+        (plan?.strategy?.trim().isNotEmpty ?? false) ||
+        exec?.actualEntryPrice != null ||
+        (exec?.notes?.trim().isNotEmpty ?? false) ||
+        review?.actualExitPrice != null ||
+        (review?.whatWentWell?.trim().isNotEmpty ?? false) ||
+        (review?.whatCouldBeImproved?.trim().isNotEmpty ?? false) ||
+        (review?.lessonLearned?.trim().isNotEmpty ?? false) ||
+        e.attachments.isNotEmpty;
+  }
+
+  void _scheduleAutosave() {
+    if (_readOnly || _saving || !mounted) return;
+    if (!_hasMeaningfulContent) return;
+    if (_entryFingerprint(_entry) == _lastSavedFingerprint) return;
+    _autosaveTimer?.cancel();
+    _autosaveTimer = Timer(_autosaveDelay, () {
+      _autosaveFuture = _save(complete: false, silent: true);
+    });
+  }
+
+  /// Auto-saves a draft when leaving with unsaved work. Empty journals leave
+  /// without creating a row. Returns false only if the flush fails.
   Future<bool> confirmLeaveIfUnsaved({bool force = false}) async {
+    if (_saving) return true;
     if (!force && !hasUnsavedChanges) return true;
-
-    if (!hasUnsavedChanges) {
-      final discard = await showDialog<bool>(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: const Text('Leave journal?'),
-          content: const Text('Leave without saving this trade journal?'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Keep editing'),
-            ),
-            FilledButton(
-              style: FilledButton.styleFrom(
-                backgroundColor: ModuleColors.trade,
-              ),
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Leave'),
-            ),
-          ],
-        ),
-      );
-      return discard == true;
-    }
-
-    final action = await showDialog<String>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Unsaved journal'),
-        content: const Text(
-          'Your journal may be lost if you leave now. '
-          'Save it as a draft, or save completely.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, 'stay'),
-            child: const Text('Keep editing'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, 'discard'),
-            child: const Text('Discard'),
-          ),
-          OutlinedButton(
-            onPressed: () => Navigator.pop(ctx, 'draft'),
-            child: const Text('Save draft'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: ModuleColors.trade,
-            ),
-            onPressed: () => Navigator.pop(ctx, 'complete'),
-            child: const Text('Save completely'),
-          ),
-        ],
-      ),
-    );
-    if (!mounted) return false;
-    switch (action) {
-      case 'discard':
-        return true;
-      case 'draft':
-        await _save(complete: false);
-        return !_dirty;
-      case 'complete':
-        await _save(complete: true);
-        return !_dirty;
-      case 'stay':
-      default:
-        return false;
-    }
+    if (!hasUnsavedChanges) return true;
+    if (!_hasMeaningfulContent) return true;
+    _autosaveTimer?.cancel();
+    try {
+      await _autosaveFuture;
+    } catch (_) {}
+    if (!hasUnsavedChanges) return true;
+    await _save(complete: false, silent: true);
+    return !hasUnsavedChanges;
   }
 
   JournalEntry _recalc(JournalEntry e) {
@@ -303,17 +408,26 @@ class TradeJournalWorkflowPageState
     );
   }
 
-  Future<void> _save({required bool complete}) async {
+  Future<void> _save({required bool complete, bool silent = false}) async {
+    if (_saving) return;
+    if (complete && !silent && !_validateAllStepsForSave()) return;
+    final fingerprintAtStart = _entryFingerprint(_entry);
     setState(() => _saving = true);
     try {
-      var status = _entry.journalStatus ?? 'DRAFT';
+      var status = (_entry.journalStatus ?? 'DRAFT').toUpperCase();
       if (complete) {
         status = 'COMPLETED';
-      } else if (_currentStep == 0 && status == 'DRAFT') {
-        status = 'PLANNED';
-      } else if (_currentStep == 1 &&
-          (status == 'DRAFT' || status == 'PLANNED')) {
-        status = 'OPEN';
+      } else if (!silent) {
+        // Explicit Save Draft advances from filled sections (not wizard index).
+        final hasExec =
+            (_entry.tradeExecution?.actualEntryPrice ?? 0) > 0;
+        if (hasExec && (status == 'DRAFT' || status == 'PLANNED')) {
+          status = 'OPEN';
+        } else if (status == 'DRAFT') {
+          status = 'PLANNED';
+        }
+      } else if (status.isEmpty) {
+        status = 'DRAFT';
       }
 
       final plan = _entry.preTradePlan;
@@ -323,7 +437,7 @@ class TradeJournalWorkflowPageState
       final setup = (_entry.setup ?? plan?.setup)?.trim();
       final title = (symbol != null && symbol.isNotEmpty)
           ? '$symbol ${setup?.isNotEmpty == true ? setup : 'Trade'}'
-          : (_entry.title.trim().isNotEmpty ? _entry.title : 'New Trade');
+          : (_entry.title.trim().isNotEmpty ? _entry.title : 'Untitled draft');
 
       final localAttachments = List<JournalAttachment>.from(_entry.attachments);
       var saved = await widget.journalCubit.saveEntryFull(
@@ -361,22 +475,36 @@ class TradeJournalWorkflowPageState
         saved = saved.copyWith(attachments: localAttachments);
       }
       if (!mounted) return;
+      final stillSame = _entryFingerprint(_entry) == fingerprintAtStart;
       setState(() {
-        _entry = saved;
+        if (stillSame) {
+          _entry = saved;
+          _dirty = false;
+          _lastSavedFingerprint = _entryFingerprint(saved);
+        } else {
+          // Keep local edits; adopt server id so later saves update.
+          _entry = _entry.copyWith(
+            id: saved.id,
+            journalStatus: saved.journalStatus,
+            updatedAt: saved.updatedAt,
+          );
+          _dirty = true;
+          _lastSavedFingerprint = fingerprintAtStart;
+        }
         _isNew = false;
         _saving = false;
-        _dirty = false;
+        if (silent) _lastDraftSavedAt = DateTime.now();
       });
-      if (widget.embedded) {
+      if (!silent && widget.embedded) {
         widget.onEmbeddedDone?.call(saved.id, complete: complete);
-      } else if (complete) {
+      } else if (!silent && complete) {
         Navigator.of(context).pop();
       }
-      if (!complete && mounted) {
+      if (!silent && !complete && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Draft saved')),
         );
-      } else if (complete && widget.embedded && mounted) {
+      } else if (!silent && complete && widget.embedded && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Journal saved')),
         );
@@ -384,9 +512,11 @@ class TradeJournalWorkflowPageState
     } catch (e) {
       if (!mounted) return;
       setState(() => _saving = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Save failed: $e')),
-      );
+      if (!silent) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Save failed: $e')),
+        );
+      }
     }
   }
 
@@ -439,79 +569,258 @@ class TradeJournalWorkflowPageState
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
+  static const _columnTitles = [
+    'Pre-Trade',
+    'Execute',
+    'Post-Trade',
+  ];
 
-    final body = Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(
-            AppSpacing.lg,
-            AppSpacing.sm,
-            AppSpacing.lg,
-            AppSpacing.xs,
-          ),
-          child: StepIndicator(
-            currentStep: _currentStep,
-            stepLabels: _stepLabels,
-            activeColor: ModuleColors.trade,
-            inactiveColor: colors.textSecondary,
-            compact: true,
-          ),
-        ),
-        Expanded(
-          child: IgnorePointer(
-            ignoring: _readOnly,
-            child: Opacity(
-              opacity: _readOnly ? 0.92 : 1,
+  Widget _preStep({bool omitSurface = false}) {
+    if (widget.useMobileLayout) {
+      return PreTradePlanStepMobile(
+        key: _preStepMobileKey,
+        entry: _entry,
+        onUpdate: _updateEntry,
+        applyDefaultChecklist: _isNew && !_readOnly,
+      );
+    }
+    return PreTradePlanStep(
+      key: _preStepKey,
+      entry: _entry,
+      onUpdate: _updateEntry,
+      applyDefaultChecklist: _isNew && !_readOnly,
+      // Web Pre always uses Symbol | Long/Short row (mockup); mobile uses Mobile step.
+      omitSurface: omitSurface,
+    );
+  }
+
+  Widget _execStep({bool omitSurface = false}) => ExecuteTradeStep(
+        key: _execStepKey,
+        entry: _entry,
+        onUpdate: _updateEntry,
+        portfolioId: widget.portfolioId,
+        onLinkTrade: _readOnly ? null : _linkTrade,
+        omitSurface: omitSurface,
+      );
+
+  Widget _postStep({bool omitSurface = false}) => PostTradeReviewStep(
+        key: _postStepKey,
+        entry: _entry,
+        onUpdate: _updateEntry,
+        omitSurface: omitSurface,
+      );
+
+  Widget _stepBadge(BuildContext context, int stepIndex, {required bool active}) {
+    final colors = context.colors;
+    final accent = ModuleColors.trade;
+    const size = 28.0;
+    return Container(
+      width: size,
+      height: size,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: active ? accent : colors.border.withValues(alpha: 0.35),
+        shape: BoxShape.circle,
+      ),
+      child: Text(
+        '${stepIndex + 1}',
+        style: Theme.of(context).textTheme.labelLarge?.copyWith(
+              color: active ? colors.actionPrimaryFg : colors.textSecondary,
+              fontWeight: FontWeight.w700,
+            ),
+      ),
+    );
+  }
+
+  /// Equal-height design-system cards; scroll only when content overflows.
+  Widget _columnScroll({
+    required Key sectionKey,
+    required ScrollController controller,
+    required int stepIndex,
+    required Widget child,
+  }) {
+    final active = stepIndex == _currentStep;
+    return KeyedSubtree(
+      key: sectionKey,
+      child: Padding(
+        // Right-only gap between columns; flush to entries-rail toggle on the left.
+        padding: const EdgeInsets.only(right: AppSpacing.sm),
+        // Listener so clicking an input still updates the active card badge.
+        child: Listener(
+          behavior: HitTestBehavior.translucent,
+          onPointerDown: (_) {
+            if (_currentStep != stepIndex) {
+              setState(() => _currentStep = stepIndex);
+            }
+          },
+          child: JournalFormSurface(
+            fillHeight: true,
+            centerHeader: true,
+            title: _columnTitles[stepIndex],
+            leading: _stepBadge(context, stepIndex, active: active),
+            // Clip scroll to the card; top pad keeps floating border labels inside.
+            // Read-only unlock overlay lives on the parent Stack (not here).
+            child: ClipRect(
               child: SingleChildScrollView(
-                controller: _stepScrollController,
-                // Extra bottom inset so last fields clear the sticky action row.
-                padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.md,
-                  AppSpacing.sm,
-                  AppSpacing.md,
-                  AppSpacing.xxl + AppSpacing.lg,
+                controller: controller,
+                primary: false,
+                physics: const ClampingScrollPhysics(),
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 10, bottom: 8),
+                  child: child,
                 ),
-                // Stable step keys — remounting on entry id change (temp→real)
-                // disposed AttachmentPicker and wiped visible uploads.
-                child: _currentStep == 0
-                    ? (widget.useMobileLayout
-                        ? PreTradePlanStepMobile(
-                            key: const ValueKey('pre-step-mobile'),
-                            entry: _entry,
-                            onUpdate: _updateEntry,
-                            applyDefaultChecklist: _isNew && !_readOnly,
-                          )
-                        : PreTradePlanStep(
-                            key: const ValueKey('pre-step'),
-                            entry: _entry,
-                            onUpdate: _updateEntry,
-                            applyDefaultChecklist: _isNew && !_readOnly,
-                          ))
-                    : _currentStep == 1
-                        ? ExecuteTradeStep(
-                            key: const ValueKey('exec-step'),
-                            entry: _entry,
-                            onUpdate: _updateEntry,
-                            portfolioId: widget.portfolioId,
-                            onLinkTrade: _readOnly ? null : _linkTrade,
-                          )
-                        : PostTradeReviewStep(
-                            key: const ValueKey('post-step'),
-                            entry: _entry,
-                            onUpdate: _updateEntry,
-                          ),
               ),
             ),
           ),
         ),
-        _buildBottomActions(context),
+      ),
+    );
+  }
+
+  Widget _buildThreeColumns(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Expanded(
+          child: _columnScroll(
+            sectionKey: _preSectionKey,
+            controller: _preColScrollController,
+            stepIndex: 0,
+            child: _preStep(omitSurface: true),
+          ),
+        ),
+        Expanded(
+          child: _columnScroll(
+            sectionKey: _execSectionKey,
+            controller: _execColScrollController,
+            stepIndex: 1,
+            child: _execStep(omitSurface: true),
+          ),
+        ),
+        Expanded(
+          child: _columnScroll(
+            sectionKey: _postSectionKey,
+            controller: _postColScrollController,
+            stepIndex: 2,
+            child: _postStep(omitSurface: true),
+          ),
+        ),
       ],
     );
+  }
 
-    // Mobile/embedded: form scroll must not collapse Trade module pill tabs.
+  Widget _buildStackedSections(BuildContext context) {
+    Widget section({
+      required Key key,
+      required int stepIndex,
+      required Widget child,
+    }) {
+      return KeyedSubtree(
+        key: key,
+        child: Listener(
+          behavior: HitTestBehavior.translucent,
+          onPointerDown: (_) {
+            if (_currentStep != stepIndex) {
+              setState(() => _currentStep = stepIndex);
+            }
+          },
+          child: JournalFormSurface(
+            centerHeader: true,
+            title: _columnTitles[stepIndex],
+            leading: _stepBadge(
+              context,
+              stepIndex,
+              active: stepIndex == _currentStep,
+            ),
+            child: child,
+          ),
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        section(
+          key: _preSectionKey,
+          stepIndex: 0,
+          child: _preStep(omitSurface: true),
+        ),
+        const SizedBox(height: AppSpacing.lg),
+        section(
+          key: _execSectionKey,
+          stepIndex: 1,
+          child: _execStep(omitSurface: true),
+        ),
+        const SizedBox(height: AppSpacing.lg),
+        section(
+          key: _postSectionKey,
+          stepIndex: 2,
+          child: _postStep(omitSurface: true),
+        ),
+      ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+
+    final body = LayoutBuilder(
+      builder: (context, constraints) {
+        final threeCol = !widget.useMobileLayout &&
+            constraints.maxWidth >= _threeColBreakpoint;
+
+        return Column(
+          children: [
+            Expanded(
+              child: Stack(
+                children: [
+                  IgnorePointer(
+                    ignoring: _readOnly,
+                    child: Opacity(
+                      opacity: _readOnly ? 0.92 : 1,
+                      child: threeCol
+                          ? Padding(
+                              // Flush to entries-rail toggle; keep right/top breathing room.
+                              padding: const EdgeInsets.fromLTRB(
+                                0,
+                                AppSpacing.sm,
+                                AppSpacing.sm,
+                                AppSpacing.xs,
+                              ),
+                              child: _buildThreeColumns(context),
+                            )
+                          : SingleChildScrollView(
+                              controller: _stepScrollController,
+                              physics: const ClampingScrollPhysics(),
+                              padding: const EdgeInsets.fromLTRB(
+                                AppSpacing.md,
+                                AppSpacing.sm,
+                                AppSpacing.md,
+                                AppSpacing.xxl + AppSpacing.lg,
+                              ),
+                              child: _buildStackedSections(context),
+                            ),
+                    ),
+                  ),
+                  if (_readOnly)
+                    Positioned.fill(
+                      child: GestureDetector(
+                        behavior: HitTestBehavior.translucent,
+                        onDoubleTap: _unlockEdit,
+                        child: const SizedBox.expand(),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            _buildBottomActions(context),
+          ],
+        );
+      },
+    );
+
     final scrollIsolated = widget.useMobileLayout
         ? NotificationListener<ScrollNotification>(
             onNotification: (notification) =>
@@ -536,8 +845,9 @@ class TradeJournalWorkflowPageState
     );
 
     if (widget.embedded) {
-      return ColoredBox(
-        color: colors.surface,
+      // Let the hub background show through — no solid white slab.
+      return Material(
+        type: MaterialType.transparency,
         child: wrapped,
       );
     }
@@ -573,11 +883,12 @@ class TradeJournalWorkflowPageState
         child: Row(
           children: [
             AppButton(
-              text: _readOnly ? 'Close' : 'Cancel',
+              text: 'Close',
               type: AppButtonType.secondary,
               isOutlined: true,
-              height: 36,
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              textColor: ModuleColors.trade,
+              height: 40,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               onPressed: () async {
                 if (_readOnly) {
                   if (widget.embedded) {
@@ -596,11 +907,6 @@ class TradeJournalWorkflowPageState
                 }
               },
             ),
-            if (_currentStep > 0)
-              TextButton(
-                onPressed: () => _goToStep(_currentStep - 1),
-                child: const Text('Back'),
-              ),
             if (!_readOnly && !_isNew && !_entry.id.startsWith('temp-'))
               TextButton(
                 onPressed: _saving ? null : _confirmDelete,
@@ -611,49 +917,42 @@ class TradeJournalWorkflowPageState
               ),
             const Spacer(),
             if (_readOnly) ...[
-              if (_currentStep < 2)
-                OutlinedButton(
-                  onPressed: () => _goToStep(_currentStep + 1),
-                  child: const Text('Next'),
-                ),
-              const SizedBox(width: 8),
-              FilledButton.icon(
-                style: FilledButton.styleFrom(
-                  backgroundColor: ModuleColors.trade,
-                ),
-                onPressed: () => setState(() => _readOnly = false),
-                icon: const Icon(Icons.edit_outlined, size: 18),
-                label: const Text('Edit'),
+              Text(
+                'Double-click a field to edit',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: colors.textSecondary,
+                    ),
               ),
             ] else ...[
+              if (_lastDraftSavedAt != null) ...[
+                Text(
+                  'Draft saved',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: colors.textSecondary,
+                      ),
+                ),
+                const SizedBox(width: 8),
+              ],
               AppButton(
                 text: 'Save Draft',
                 type: AppButtonType.secondary,
                 isOutlined: true,
-                backgroundColor: ModuleColors.trade,
+                textColor: ModuleColors.trade,
                 onPressed: _saving ? null : () => _save(complete: false),
-                height: 36,
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                height: 40,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               ),
               const SizedBox(width: AppSpacing.sm),
               AppButton(
-                text: _currentStep == 2 ? 'Save' : 'Next',
-                icon: _currentStep == 2
-                    ? Icons.check_rounded
-                    : Icons.arrow_forward_rounded,
+                text: 'Save',
+                icon: Icons.check_rounded,
                 backgroundColor: ModuleColors.trade,
                 isLoading: _saving,
-                onPressed: _saving
-                    ? null
-                    : () {
-                        if (_currentStep < 2) {
-                          _goToStep(_currentStep + 1);
-                        } else {
-                          _save(complete: true);
-                        }
-                      },
-                height: 36,
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                onPressed: _saving ? null : () => _save(complete: true),
+                height: 40,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               ),
             ],
           ],
@@ -661,12 +960,14 @@ class TradeJournalWorkflowPageState
       );
     }
 
+    final hPad = widget.embedded ? AppSpacing.sm : AppSpacing.md;
+
     if (navReserveFull <= 0) {
       return buildRow(
         EdgeInsets.fromLTRB(
-          AppSpacing.md,
+          hPad,
           AppSpacing.sm,
-          AppSpacing.md,
+          hPad,
           AppSpacing.md + keyboardInset,
         ),
       );
@@ -681,9 +982,9 @@ class TradeJournalWorkflowPageState
             : AppSpacing.sm + (navReserveFull * t);
         return buildRow(
           EdgeInsets.fromLTRB(
-            AppSpacing.md,
+            hPad,
             AppSpacing.sm,
-            AppSpacing.md,
+            hPad,
             bottomPad,
           ),
         );

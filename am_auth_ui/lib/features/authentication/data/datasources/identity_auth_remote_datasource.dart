@@ -35,6 +35,7 @@ class IdentityAuthRemoteDataSource implements AuthDataSource {
         id: userId.toString(),
         email: email.toString(),
         displayName: name.toString().isNotEmpty ? name.toString() : null,
+        photoUrl: _photoUrlFromMap(claims),
         authMethod: 'identity',
       );
     } catch (e) {
@@ -46,6 +47,15 @@ class IdentityAuthRemoteDataSource implements AuthDataSource {
         authMethod: 'identity',
       );
     }
+  }
+
+  String? _photoUrlFromMap(Map<dynamic, dynamic> data) {
+    final value = data['picture'] ??
+        data['photo_url'] ??
+        data['photoUrl'] ??
+        data['avatar_url'] ??
+        data['avatar'];
+    return value is String && value.trim().isNotEmpty ? value.trim() : null;
   }
 
   String _parseErrorMessage(

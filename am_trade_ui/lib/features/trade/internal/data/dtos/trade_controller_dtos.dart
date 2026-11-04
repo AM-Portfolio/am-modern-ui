@@ -1,13 +1,16 @@
 import 'package:json_annotation/json_annotation.dart';
 
 import '../../domain/enums/broker_types.dart';
+import '../../domain/enums/broker_types_converter.dart';
 import '../../domain/enums/derivative_types.dart';
 import '../../domain/enums/exchange_types.dart';
+import '../../domain/enums/exchange_types_converter.dart';
 import '../../domain/enums/fundamental_reasons.dart';
 import '../../domain/enums/index_types.dart';
 import '../../domain/enums/market_segments.dart';
 import '../../domain/enums/option_types.dart';
 import '../../domain/enums/order_types.dart';
+import '../../domain/enums/order_types_converter.dart';
 import '../../domain/enums/psychology_factors.dart';
 import '../../domain/enums/series_types.dart';
 import '../../domain/enums/technical_reasons.dart';
@@ -71,6 +74,7 @@ class InstrumentInfoDto {
   final String? isin;
   final String? rawSymbol;
   final String? baseSymbol;
+  @ExchangeTypesConverter()
   final ExchangeTypes? exchange;
   @MarketSegmentsConverter()
   final MarketSegments? segment;
@@ -111,6 +115,9 @@ class TradeMetricsDto {
   const TradeMetricsDto({
     this.profitLoss,
     this.profitLossPercentage,
+    this.todayProfitLoss,
+    this.todayProfitLossPercentage,
+    this.unrealizedBasis,
     this.returnOnEquity,
     this.riskAmount,
     this.rewardAmount,
@@ -126,6 +133,9 @@ class TradeMetricsDto {
 
   final double? profitLoss;
   final double? profitLossPercentage;
+  final double? todayProfitLoss;
+  final double? todayProfitLossPercentage;
+  final String? unrealizedBasis;
   final double? returnOnEquity;
   final double? riskAmount;
   final double? rewardAmount;
@@ -240,6 +250,7 @@ class BasicInfoDto {
   final String? orderId;
   final String? tradeDate; // format: "yyyy-MM-dd"
   final String? orderExecutionTime; // format: "yyyy-MM-dd'T'HH:mm:ss'Z'"
+  @BrokerTypesConverter()
   final BrokerTypes? brokerType;
   @TradeDirectionsConverter()
   final TradeDirections? tradeType;
@@ -256,6 +267,7 @@ class ExecutionInfoDto {
 
   final int? quantity;
   final double? price;
+  @OrderTypesConverter()
   final OrderTypes? orderType;
 
   Map<String, dynamic> toJson() => _$ExecutionInfoDtoToJson(this);

@@ -8,7 +8,7 @@ import '../../internal/domain/enums/metric_types.dart';
 import '../../providers/trade_metrics_providers.dart';
 import 'tabs/timing_analysis_tab.dart';
 
-enum _AnalysisTab { timing, strategy, direction, holding, risk }
+enum _AnalysisTab { timing }
 
 /// Trade module accent — prefers [ModuleColorProvider], falls back to
 /// [ModuleColors.trade] (brand-synced).
@@ -245,16 +245,14 @@ class _TradeAnalysisPageState extends ConsumerState<TradeAnalysisPage> {
                       spacing: AppSpacing.sm,
                       crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
-                        if (_tab == _AnalysisTab.timing) ...[
-                          _HoldingStyleFilter(
-                            selected: _holdingStyle,
-                            onChanged: _onHoldingStyleChanged,
-                            filled: false,
-                            stacked: false,
-                            accent: accent,
-                          ),
-                          const SizedBox(width: AppSpacing.xs),
-                        ],
+                        _HoldingStyleFilter(
+                          selected: _holdingStyle,
+                          onChanged: _onHoldingStyleChanged,
+                          filled: false,
+                          stacked: false,
+                          accent: accent,
+                        ),
+                        const SizedBox(width: AppSpacing.xs),
                         _DateApplyBar(
                           dateLabel: _dateLabel(context),
                           usingAllTime: _usingAllTime,
@@ -282,15 +280,12 @@ class _TradeAnalysisPageState extends ConsumerState<TradeAnalysisPage> {
                     onRetry: _loadMetrics,
                   ),
                   data: (cubit) {
-                    if (_tab == _AnalysisTab.timing) {
-                      return TimingAnalysisTab(
-                        cubit: cubit,
-                        onApply: _loadMetrics,
-                        compact: mobile,
-                        accent: accent,
-                      );
-                    }
-                    return _ComingSoonTab(tab: _tab);
+                    return TimingAnalysisTab(
+                      cubit: cubit,
+                      onApply: _loadMetrics,
+                      compact: mobile,
+                      accent: accent,
+                    );
                   },
                 ),
               ),
@@ -364,35 +359,33 @@ class _MobileAnalysisChrome extends StatelessWidget {
         const SizedBox(height: AppSpacing.md),
         Row(
           children: [
-            if (tab == _AnalysisTab.timing) ...[
-              Expanded(
-                flex: 3,
-                child: CustomDropdown<String>(
-                  value: styleKey,
-                  hint: 'Style',
-                  height: 40,
-                  fontSize: AppTypeScale.md,
-                  borderRadius: AppRadii.sm,
-                  primaryColor: accent,
-                  backgroundColor: colors.cardSurface,
-                  menuBackgroundColor: colors.cardSurface,
-                  borderColor: colors.border.withValues(alpha: 0.45),
-                  textColor: colors.textPrimary,
-                  items: [
-                    for (final o in _styleOptions)
-                      DropdownMenuItem<String>(
-                        value: o.key,
-                        child: Text(o.label),
-                      ),
-                  ],
-                  onChanged: (key) {
-                    if (key == null) return;
-                    onHoldingStyleChanged(key.isEmpty ? null : key);
-                  },
-                ),
+            Expanded(
+              flex: 3,
+              child: CustomDropdown<String>(
+                value: styleKey,
+                hint: 'Style',
+                height: 40,
+                fontSize: AppTypeScale.md,
+                borderRadius: AppRadii.sm,
+                primaryColor: accent,
+                backgroundColor: colors.cardSurface,
+                menuBackgroundColor: colors.cardSurface,
+                borderColor: colors.border.withValues(alpha: 0.45),
+                textColor: colors.textPrimary,
+                items: [
+                  for (final o in _styleOptions)
+                    DropdownMenuItem<String>(
+                      value: o.key,
+                      child: Text(o.label),
+                    ),
+                ],
+                onChanged: (key) {
+                  if (key == null) return;
+                  onHoldingStyleChanged(key.isEmpty ? null : key);
+                },
               ),
-              const SizedBox(width: AppSpacing.sm),
-            ],
+            ),
+            const SizedBox(width: AppSpacing.sm),
             Expanded(
               flex: 4,
               child: _DateRangeChip(
@@ -734,46 +727,5 @@ class _AnalysisTabBar extends StatelessWidget {
 
   String _label(_AnalysisTab tab) => switch (tab) {
         _AnalysisTab.timing => 'Timing',
-        _AnalysisTab.strategy => 'Strategy',
-        _AnalysisTab.direction => 'Direction',
-        _AnalysisTab.holding => 'Holding',
-        _AnalysisTab.risk => 'Risk',
       };
-}
-
-class _ComingSoonTab extends StatelessWidget {
-  const _ComingSoonTab({required this.tab});
-
-  final _AnalysisTab tab;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-    final name = switch (tab) {
-      _AnalysisTab.timing => 'Timing',
-      _AnalysisTab.strategy => 'Strategy',
-      _AnalysisTab.direction => 'Direction',
-      _AnalysisTab.holding => 'Holding',
-      _AnalysisTab.risk => 'Risk',
-    };
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Icons.construction_outlined,
-            size: 40,
-            color: colors.textSecondary,
-          ),
-          const SizedBox(height: AppSpacing.md),
-          Text(
-            '$name analytics coming next',
-            style: context.text.sectionTitle(compact: true).copyWith(
-                  color: colors.textSecondary,
-                ),
-          ),
-        ],
-      ),
-    );
-  }
 }

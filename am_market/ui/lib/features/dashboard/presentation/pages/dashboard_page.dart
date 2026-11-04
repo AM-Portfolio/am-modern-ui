@@ -26,7 +26,9 @@ import 'user_dashboard_page.dart';
 import 'package:am_market_ui/features/market_analysis/presentation/widgets/heatmap_explorer_view.dart';
 import 'package:am_common/am_common.dart';
 import 'package:am_market_ui/features/equity_insider/presentation/pages/equity_insider_page.dart';
+import 'package:am_market_ui/features/equity_insider/providers/equity_insider_provider.dart';
 import 'package:am_market_ui/features/f_o/presentation/pages/fo_page.dart';
+import 'package:am_market_ui/shared/widgets/market_stream_surface_scope.dart';
 
 /// Market feature page with Swipe Navigation
 class MarketPage extends StatelessWidget {
@@ -135,10 +137,46 @@ class MarketContent extends ConsumerStatefulWidget {
 
 class _MarketContentState extends ConsumerState<MarketContent> {
   late SwipeNavigationController _swipeController;
-  late final Widget _dashboardPage = const UserDashboardPage();
+  late final Widget _dashboardPage = UserDashboardPage(
+    onTopMoverSelected: _openEquityInsiderForSymbol,
+  );
   final GlobalKey<EquityInsiderPageState> _equityInsiderKey =
       GlobalKey<EquityInsiderPageState>();
   final GlobalKey<FoPageState> _foPageKey = GlobalKey<FoPageState>();
+
+  void _openEquityInsiderForSymbol(String rawSymbol) {
+    final symbol = rawSymbol.trim().toUpperCase();
+    if (symbol.isEmpty) return;
+
+    final items = _swipeController.items;
+    final index = _indexForSlug('equity-insider', items);
+    if (items.isEmpty ||
+        index >= items.length ||
+        _slugForTitle(items[index].title) != 'equity-insider') {
+      return;
+    }
+
+    // Seed shared state before changing surfaces so a cold Equity Insider
+    // page cannot resolve its unrelated default symbol first.
+    ref.read(equityInsiderActiveSymbolProvider.notifier).state = symbol;
+    final provider = context.read<MarketProvider>();
+    provider.selectIndex('Equity Insider');
+
+    if (_swipeController.currentIndex != index) {
+      _swipeController.navigateTo(index);
+    }
+
+    // Reuse the established Watch List handoff for a page that is not yet
+    // mounted, while updating immediately when it is already mounted.
+    final pageState = _equityInsiderKey.currentState;
+    if (pageState != null) {
+      pageState.navigateToSymbol(symbol);
+      return;
+    }
+    Future.delayed(const Duration(milliseconds: 100), () {
+      if (mounted) _equityInsiderKey.currentState?.navigateToSymbol(symbol);
+    });
+  }
 
   static const _staticTitleToSlug = {
     'Paper': 'paper',
@@ -198,6 +236,36 @@ class _MarketContentState extends ConsumerState<MarketContent> {
     widget.onTabChanged?.call(_slugForTitle(title));
   }
 
+  String _streamSurfaceForTitle(String title) {
+    switch (title) {
+      case 'Dashboard':
+        return MarketProvider.dashboardSurface;
+      case 'All Indices':
+        return MarketProvider.allIndicesSurface;
+      case 'Equity Insider':
+        return MarketProvider.equityInsiderSurface;
+      case 'Watch List':
+      case 'Watchlist':
+        return MarketProvider.watchListSurface;
+      case 'Paper':
+        return MarketProvider.paperSurface;
+      case 'Chart':
+        return MarketProvider.chartSurface;
+      case 'Futures & Options':
+        return MarketProvider.futuresOptionsSurface;
+      default:
+        return 'market.inactive:${_slugForTitle(title)}';
+    }
+  }
+
+  Widget _streamScope(Widget child, String surface, MarketProvider provider) {
+    return MarketStreamSurfaceScope(
+      onSymbolsChanged: (instruments) =>
+          unawaited(provider.setSurfaceInstruments(surface, instruments)),
+      child: child,
+    );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -206,6 +274,9 @@ class _MarketContentState extends ConsumerState<MarketContent> {
       if (!mounted) return;
       _syncTabFromUrl(notify: false);
       _bindPriceService();
+      final provider = context.read<MarketProvider>();
+      final title = _swipeController.currentItem.title;
+      unawaited(provider.activateSurface(_streamSurfaceForTitle(title)));
       _maybePromptAuthFromQuery();
     });
   }
@@ -329,6 +400,7 @@ class _MarketContentState extends ConsumerState<MarketContent> {
       if (provider.selectedIndex != currentTitle) {
         provider.selectIndex(currentTitle);
       }
+      unawaited(provider.activateSurface(_streamSurfaceForTitle(currentTitle)));
       _notifyTabChanged();
     });
   }
@@ -775,7 +847,11 @@ class _MarketContentState extends ConsumerState<MarketContent> {
           title: 'Chart',
           subtitle: 'Advanced chart terminal',
           icon: Icons.show_chart_rounded,
-          page: widget.chartDesk!,
+          page: _streamScope(
+            widget.chartDesk!,
+            MarketProvider.chartSurface,
+            provider,
+          ),
           accentColor: accentColor,
         ),
       NavigationItem(
@@ -789,7 +865,11 @@ class _MarketContentState extends ConsumerState<MarketContent> {
         title: 'Futures & Options',
         subtitle: 'Futures and Options',
         icon: Icons.candlestick_chart_rounded,
-        page: wrap(FoPage(key: _foPageKey)),
+        page: _streamScope(
+          wrap(FoPage(key: _foPageKey)),
+          MarketProvider.futuresOptionsSurface,
+          provider,
+        ),
         accentColor: accentColor,
       ),
       if (isIpoEnabled)
@@ -809,7 +889,11 @@ class _MarketContentState extends ConsumerState<MarketContent> {
           title: 'Paper',
           subtitle: 'Paper trading desk',
           icon: Icons.science_outlined,
-          page: paperDesk,
+          page: _streamScope(
+            paperDesk,
+            MarketProvider.paperSurface,
+            provider,
+          ),
           accentColor: accentColor,
         ),
       );
@@ -889,7 +973,11 @@ class _MarketContentState extends ConsumerState<MarketContent> {
           subtitle: 'Paper trading desk',
           icon: Icons.science_outlined,
           // Do not wrap — desk owns its scroll/layout.
-          page: paperDesk,
+          page: _streamScope(
+            paperDesk,
+            MarketProvider.paperSurface,
+            provider,
+          ),
           accentColor: accentColor,
         ),
       NavigationItem(
@@ -904,7 +992,11 @@ class _MarketContentState extends ConsumerState<MarketContent> {
           title: 'Chart',
           subtitle: 'Advanced chart terminal',
           icon: Icons.show_chart_rounded,
-          page: chartDesk,
+          page: _streamScope(
+            chartDesk,
+            MarketProvider.chartSurface,
+            provider,
+          ),
           accentColor: accentColor,
         ),
       NavigationItem(
@@ -918,7 +1010,11 @@ class _MarketContentState extends ConsumerState<MarketContent> {
         title: 'Futures & Options',
         subtitle: 'F&O contracts & chain',
         icon: Icons.candlestick_chart_rounded,
-        page: wrap(FoPage(key: _foPageKey)),
+        page: _streamScope(
+          wrap(FoPage(key: _foPageKey)),
+          MarketProvider.futuresOptionsSurface,
+          provider,
+        ),
         accentColor: accentColor,
       ),
       if (isIpoEnabled)

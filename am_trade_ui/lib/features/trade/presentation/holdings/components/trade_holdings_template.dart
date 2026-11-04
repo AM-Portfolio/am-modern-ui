@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:intl/intl.dart';
 
 import 'package:am_design_system/am_design_system.dart';
 import '../../models/trade_holding_view_model.dart';
@@ -29,11 +28,19 @@ class TradeHoldingsTemplate extends StatefulWidget {
 }
 
 class _TradeHoldingsTemplateState extends State<TradeHoldingsTemplate> {
-  final Set<String> _expandedItems = {};
   int _currentPage = 0;
   int? _sortColumnIndex;
   bool _sortAscending = true;
   List<TradeHoldingViewModel> _sortedHoldings = [];
+
+  bool get _showEntryColumns => showHoldingsEntryColumns(widget.holdings);
+
+  /// Map DataTable visible column index → stable sort index (Entry=4).
+  int _logicalSortColumn(int visibleIndex) {
+    if (_showEntryColumns) return visibleIndex;
+    if (visibleIndex < 4) return visibleIndex;
+    return visibleIndex + 1;
+  }
 
   @override
   void initState() {
@@ -51,18 +58,6 @@ class _TradeHoldingsTemplateState extends State<TradeHoldingsTemplate> {
       }
     }
   }
-
-  void _toggleExpanded(String tradeId) {
-    setState(() {
-      if (_expandedItems.contains(tradeId)) {
-        _expandedItems.remove(tradeId);
-      } else {
-        _expandedItems.add(tradeId);
-      }
-    });
-  }
-
-  bool _isExpanded(String tradeId) => _expandedItems.contains(tradeId);
 
   int get _totalPages => (_sortedHoldings.length / widget.itemsPerPage).ceil();
 
@@ -99,16 +94,26 @@ class _TradeHoldingsTemplateState extends State<TradeHoldingsTemplate> {
             result = (a.currentPrice ?? 0).compareTo(b.currentPrice ?? 0);
             break;
           case 6: // Current Value
-            result = (a.currentValue ?? 0).compareTo(b.currentValue ?? 0);
+            result = (a.currentValue ?? double.nan).compareTo(b.currentValue ?? double.nan);
             break;
-          case 7: // P&L
-            result = (a.profitLoss ?? 0).compareTo(b.profitLoss ?? 0);
+          case 7: // 1D P&L
+            result = (a.todayProfitLoss ?? double.nan)
+                .compareTo(b.todayProfitLoss ?? double.nan);
             break;
-          case 8: // P&L %
-            result = (a.profitLossPercentage ?? 0).compareTo(b.profitLossPercentage ?? 0);
+          case 8: // 1D %
+            result = (a.todayProfitLossPercentage ?? double.nan)
+                .compareTo(b.todayProfitLossPercentage ?? double.nan);
             break;
-          case 9: // R:R Ratio
-            result = (a.riskRewardRatio ?? 0).compareTo(b.riskRewardRatio ?? 0);
+          case 9: // Overall P&L
+            result = (a.profitLoss ?? double.nan).compareTo(b.profitLoss ?? double.nan);
+            break;
+          case 10: // Overall %
+            result = (a.profitLossPercentage ?? double.nan)
+                .compareTo(b.profitLossPercentage ?? double.nan);
+            break;
+          case 11: // R:R Ratio
+            result = (a.riskRewardRatio ?? double.nan)
+                .compareTo(b.riskRewardRatio ?? double.nan);
             break;
           default:
             result = 0;
@@ -135,9 +140,14 @@ class _TradeHoldingsTemplateState extends State<TradeHoldingsTemplate> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.error_outline, size: 48, color: Colors.red),
-            const SizedBox(height: 16),
-            Text(widget.errorMessage!, style: const TextStyle(color: Colors.red)),
+            Icon(Icons.error_outline, size: 48, color: context.statusError),
+            const SizedBox(height: AppSpacing.md),
+            Text(
+              widget.errorMessage!,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: context.statusError,
+                  ),
+            ),
             if (widget.onRefresh != null) ...[
               const SizedBox(height: 16),
               ElevatedButton(onPressed: widget.onRefresh, child: const Text('Retry')),
@@ -210,8 +220,12 @@ class _TradeHoldingsTemplateState extends State<TradeHoldingsTemplate> {
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
                   color: isCurrentPage ? ModuleColors.trade : Colors.transparent,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: isCurrentPage ? ModuleColors.trade : theme.dividerColor),
+                  borderRadius: AppRadii.button,
+                  border: Border.all(
+                    color: isCurrentPage
+                        ? ModuleColors.trade
+                        : context.colors.border,
+                  ),
                 ),
                 child: Text(
                   '${pageNumber + 1}',
@@ -242,19 +256,68 @@ class _TradeHoldingsTemplateState extends State<TradeHoldingsTemplate> {
         sortAscending: _sortAscending,
         headingRowHeight: 56,
         columns: [
-          DataColumn(label: const Text('Symbol'), onSort: _sort),
-          DataColumn(label: const Text('Company'), onSort: _sort),
-          DataColumn(label: const Text('Status'), onSort: _sort),
-          DataColumn(label: const Text('Quantity'), numeric: true, onSort: _sort),
-          DataColumn(label: const Text('Entry Price'), numeric: true, onSort: _sort),
-          DataColumn(label: const Text('Current Price'), numeric: true, onSort: _sort),
-          DataColumn(label: const Text('Current Value'), numeric: true, onSort: _sort),
-          DataColumn(label: const Text('P&L'), numeric: true, onSort: _sort),
-          DataColumn(label: const Text('P&L %'), numeric: true, onSort: _sort),
-          DataColumn(label: const Text('R:R Ratio'), numeric: true, onSort: _sort),
+          DataColumn(
+            label: const Text('Symbol'),
+            onSort: (i, asc) => _sort(_logicalSortColumn(i), asc),
+          ),
+          DataColumn(
+            label: const Text('Company'),
+            onSort: (i, asc) => _sort(_logicalSortColumn(i), asc),
+          ),
+          DataColumn(
+            label: const Text('Status'),
+            onSort: (i, asc) => _sort(_logicalSortColumn(i), asc),
+          ),
+          DataColumn(
+            label: const Text('Quantity'),
+            numeric: true,
+            onSort: (i, asc) => _sort(_logicalSortColumn(i), asc),
+          ),
+          if (_showEntryColumns)
+            DataColumn(
+              label: const Text('Entry Price'),
+              numeric: true,
+              onSort: (i, asc) => _sort(_logicalSortColumn(i), asc),
+            ),
+          DataColumn(
+            label: const Text('Current Price'),
+            numeric: true,
+            onSort: (i, asc) => _sort(_logicalSortColumn(i), asc),
+          ),
+          DataColumn(
+            label: const Text('Current Value'),
+            numeric: true,
+            onSort: (i, asc) => _sort(_logicalSortColumn(i), asc),
+          ),
+          DataColumn(
+            label: const Text('1D P&L'),
+            numeric: true,
+            onSort: (i, asc) => _sort(_logicalSortColumn(i), asc),
+          ),
+          DataColumn(
+            label: const Text('1D %'),
+            numeric: true,
+            onSort: (i, asc) => _sort(_logicalSortColumn(i), asc),
+          ),
+          DataColumn(
+            label: const Text('Overall P&L'),
+            numeric: true,
+            onSort: (i, asc) => _sort(_logicalSortColumn(i), asc),
+          ),
+          DataColumn(
+            label: const Text('Overall %'),
+            numeric: true,
+            onSort: (i, asc) => _sort(_logicalSortColumn(i), asc),
+          ),
+          DataColumn(
+            label: const Text('R:R Ratio'),
+            numeric: true,
+            onSort: (i, asc) => _sort(_logicalSortColumn(i), asc),
+          ),
         ],
         rows: _paginatedHoldings.map((holding) {
           final isPositive = holding.isProfit;
+          final isTodayPositive = holding.isTodayProfit;
 
           return DataRow(
             cells: [
@@ -262,19 +325,58 @@ class _TradeHoldingsTemplateState extends State<TradeHoldingsTemplate> {
               DataCell(Text(holding.displayCompanyName)),
               DataCell(Text(holding.displayStatus)),
               DataCell(Text(holding.displayQuantity)),
-              DataCell(Text(holding.displayEntryPrice)),
+              if (_showEntryColumns)
+                DataCell(Text(holding.displayEntryPrice)),
               DataCell(Text(holding.displayCurrentPrice)),
               DataCell(Text(holding.displayCurrentValue)),
               DataCell(
                 Text(
+                  holding.displayTodayProfitLoss,
+                  style: TextStyle(
+                    color: holding.todayProfitLoss == null
+                        ? null
+                        : (isTodayPositive
+                            ? context.marketPositive
+                            : context.marketNegative),
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              DataCell(
+                Text(
+                  holding.displayTodayProfitLossPercentage,
+                  style: TextStyle(
+                    color: holding.todayProfitLossPercentage == null
+                        ? null
+                        : (isTodayPositive
+                            ? context.marketPositive
+                            : context.marketNegative),
+                  ),
+                ),
+              ),
+              DataCell(
+                Text(
                   holding.displayProfitLoss,
-                  style: TextStyle(color: isPositive ? Colors.green : Colors.red, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    color: holding.profitLoss == null
+                        ? null
+                        : (isPositive
+                            ? context.marketPositive
+                            : context.marketNegative),
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
               DataCell(
                 Text(
                   holding.displayProfitLossPercentage,
-                  style: TextStyle(color: isPositive ? Colors.green : Colors.red),
+                  style: TextStyle(
+                    color: holding.profitLossPercentage == null
+                        ? null
+                        : (isPositive
+                            ? context.marketPositive
+                            : context.marketNegative),
+                  ),
                 ),
               ),
               DataCell(Text(holding.displayRiskRewardRatio)),
@@ -292,274 +394,188 @@ class _TradeHoldingsTemplateState extends State<TradeHoldingsTemplate> {
     itemBuilder: (context, index) {
       final holding = _paginatedHoldings[index];
       final isPositive = holding.isProfit;
-      final pnlColor = isPositive ? Colors.green : Colors.red;
-      final isExpanded = _isExpanded(holding.tradeId);
+      final pnlColor =
+          isPositive ? context.marketPositive : context.marketNegative;
+      final muted = context.textSecondary;
 
       return Card(
-        margin: const EdgeInsets.only(bottom: 8),
+        margin: const EdgeInsets.only(bottom: AppSpacing.sm),
         child: InkWell(
-          onTap: () => _toggleExpanded(holding.tradeId),
-          borderRadius: BorderRadius.circular(8),
+          onTap: widget.onHoldingSelected == null
+              ? null
+              : () => widget.onHoldingSelected!(holding),
+          borderRadius: AppRadii.button,
           child: Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(AppSpacing.md),
             child: Column(
               children: [
-                // Top Row - Matches Portfolio Holdings Pattern
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // Left Section - Icon + Symbol/Name
                     Row(
                       children: [
-                        // Symbol Icon (similar to portfolio)
                         Container(
                           width: 36,
                           height: 36,
                           decoration: BoxDecoration(
-                            color: pnlColor.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(18),
+                            color: pnlColor.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(AppRadii.pill),
                           ),
                           child: Center(
                             child: Text(
                               holding.displaySymbol.length >= 2
-                                  ? holding.displaySymbol.substring(0, 2).toUpperCase()
+                                  ? holding.displaySymbol
+                                      .substring(0, 2)
+                                      .toUpperCase()
                                   : holding.displaySymbol.toUpperCase(),
-                              style: TextStyle(
-                                color: pnlColor.withOpacity(0.8),
-                                fontWeight: FontWeight.bold,
-                                fontSize: 12,
-                              ),
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .labelMedium
+                                  ?.copyWith(
+                                    color: pnlColor.withValues(alpha: 0.8),
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: AppTypeScale.sm,
+                                  ),
                             ),
                           ),
                         ),
-                        const SizedBox(width: 12),
-                        // Symbol and Company Name
+                        const SizedBox(width: AppSpacing.sm + AppSpacing.xs),
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
                               holding.displaySymbol,
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleMedium
+                                  ?.copyWith(fontWeight: FontWeight.bold),
                             ),
                             Text(
                               holding.displayCompanyName,
-                              style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.copyWith(color: muted),
                             ),
                           ],
                         ),
                       ],
                     ),
-                    // Right Section - Current Value
                     Text(
                       holding.displayCurrentValue,
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      style: Theme.of(context)
+                          .textTheme
+                          .titleMedium
+                          ?.copyWith(fontWeight: FontWeight.bold),
                     ),
                   ],
                 ),
-
-                const SizedBox(height: 12),
-
-                // Bottom Row - Investment Details & Performance (matches portfolio pattern)
+                const SizedBox(height: AppSpacing.sm + AppSpacing.xs),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // Left - Investment Details
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Entry Price (like "Inv." in portfolio)
+                        if (_showEntryColumns &&
+                            tradeHoldingHasEntryPrice(holding)) ...[
+                          Row(
+                            children: [
+                              Text(
+                                'Entry ',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodySmall
+                                    ?.copyWith(color: muted),
+                              ),
+                              Text(
+                                holding.displayEntryPrice,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodySmall
+                                    ?.copyWith(fontWeight: FontWeight.w500),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: AppSpacing.xxs),
+                        ],
                         Row(
                           children: [
-                            Text('Entry ', style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
-                            Text(
-                              holding.displayEntryPrice,
-                              style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 12),
+                            Icon(
+                              isPositive
+                                  ? Icons.trending_up
+                                  : Icons.trending_down,
+                              color: pnlColor,
+                              size: 12,
                             ),
-                          ],
-                        ),
-                        const SizedBox(height: 2),
-                        // Current Price & Quantity (like Avg price and quantity in portfolio)
-                        Row(
-                          children: [
-                            Icon(isPositive ? Icons.trending_up : Icons.trending_down, color: pnlColor, size: 12),
-                            const SizedBox(width: 2),
+                            const SizedBox(width: AppSpacing.xxs),
                             Text(
                               'Current ${holding.displayCurrentPrice}',
-                              style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.copyWith(color: muted),
                             ),
-                            const SizedBox(width: 8),
-                            Icon(Icons.inventory_2_outlined, color: Colors.grey.shade600, size: 12),
-                            const SizedBox(width: 2),
-                            Text(holding.displayQuantity, style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
+                            const SizedBox(width: AppSpacing.sm),
+                            Icon(
+                              Icons.inventory_2_outlined,
+                              color: muted,
+                              size: 12,
+                            ),
+                            const SizedBox(width: AppSpacing.xxs),
+                            Text(
+                              holding.displayQuantity,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.copyWith(color: muted),
+                            ),
                           ],
                         ),
                       ],
                     ),
-                    // Right - Performance (matches portfolio pattern)
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
-                        // P&L Amount
                         Text(
                           holding.displayProfitLoss,
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: pnlColor),
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: holding.profitLoss == null
+                                    ? muted
+                                    : pnlColor,
+                              ),
                         ),
-                        const SizedBox(height: 2),
-                        // P&L Percentage
+                        const SizedBox(height: AppSpacing.xxs),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.sm - 2,
+                            vertical: AppSpacing.xxs,
+                          ),
                           decoration: BoxDecoration(
-                            color: pnlColor.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(4),
+                            color: pnlColor.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(AppRadii.xs),
                           ),
                           child: Text(
                             holding.displayProfitLossPercentage,
-                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: pnlColor),
+                            style: Theme.of(context)
+                                .textTheme
+                                .labelSmall
+                                ?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: pnlColor,
+                                ),
                           ),
                         ),
                       ],
                     ),
                   ],
                 ),
-
-                // Expanded Details - Trade-specific information
-                if (isExpanded) ...[
-                  const SizedBox(height: 16),
-                  const Divider(),
-                  const SizedBox(height: 12),
-                  // Entry & Exit Details
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildDetailRow(
-                          icon: Icons.login,
-                          label: 'Entry',
-                          value: holding.displayEntryPrice,
-                          subValue: holding.entryTimestamp != null
-                              ? DateFormat('MMM dd, yyyy').format(holding.entryTimestamp!)
-                              : null,
-                          color: Colors.blue,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: _buildDetailRow(
-                          icon: Icons.logout,
-                          label: 'Exit',
-                          value: holding.displayExitPrice,
-                          subValue: holding.exitTimestamp != null
-                              ? DateFormat('MMM dd, yyyy').format(holding.exitTimestamp!)
-                              : holding.displayStatus == 'ACTIVE'
-                              ? 'Active'
-                              : null,
-                          color: Colors.orange,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  // Period & R:R
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildDetailRow(
-                          icon: Icons.access_time,
-                          label: 'Period',
-                          value: holding.displayHoldingPeriod,
-                          color: Colors.purple,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: _buildDetailRow(
-                          icon: Icons.balance,
-                          label: 'R:R',
-                          value: holding.displayRiskRewardRatio,
-                          color: Colors.teal,
-                        ),
-                      ),
-                    ],
-                  ),
-                  // Info Chips
-                  if (holding.sector != null || holding.broker != null) ...[
-                    const SizedBox(height: 12),
-                    Wrap(
-                      spacing: 6,
-                      runSpacing: 6,
-                      children: [
-                        if (holding.sector != null) _buildChip(holding.displaySector, Icons.category, Colors.blue),
-                        if (holding.broker != null) _buildChip(holding.broker!, Icons.account_balance, Colors.green),
-                        if (holding.displayStatus != 'Unknown')
-                          _buildChip(
-                            holding.displayStatus,
-                            Icons.flag,
-                            holding.displayStatus == 'ACTIVE' ? Colors.green : Colors.grey,
-                          ),
-                      ],
-                    ),
-                  ],
-                ],
               ],
             ),
           ),
         ),
       ).animate().fadeIn(delay: (50 * index).ms).slideY(begin: 0.1, end: 0);
     },
-  );
-
-  Widget _buildDetailRow({
-    required IconData icon,
-    required String label,
-    required String value,
-    required Color color,
-    String? subValue,
-  }) => Container(
-    padding: const EdgeInsets.all(6),
-    decoration: BoxDecoration(
-      color: color.withOpacity(0.05),
-      borderRadius: BorderRadius.circular(6),
-      border: Border.all(color: color.withOpacity(0.2)),
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(icon, size: 10, color: color),
-            const SizedBox(width: 4),
-            Text(
-              label,
-              style: TextStyle(fontSize: 9, color: Colors.grey[700], fontWeight: FontWeight.w500),
-            ),
-          ],
-        ),
-        const SizedBox(height: 2),
-        Text(value, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-        if (subValue != null) ...[
-          const SizedBox(height: 1),
-          Text(subValue, style: TextStyle(fontSize: 8, color: Colors.grey[600])),
-        ],
-      ],
-    ),
-  );
-
-  Widget _buildChip(String label, IconData icon, Color color) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-    decoration: BoxDecoration(
-      color: color.withOpacity(0.1),
-      borderRadius: BorderRadius.circular(4),
-      border: Border.all(color: color.withOpacity(0.3)),
-    ),
-    child: Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 9, color: color),
-        const SizedBox(width: 3),
-        Text(
-          label,
-          style: TextStyle(fontSize: 9, fontWeight: FontWeight.w600, color: color),
-        ),
-      ],
-    ),
   );
 }

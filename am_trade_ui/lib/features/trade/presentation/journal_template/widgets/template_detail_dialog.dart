@@ -1,19 +1,22 @@
 import 'dart:ui';
+
 import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../internal/domain/entities/journal_template.dart';
 
-/// Dialog showing template details with use template action
+import '../../../internal/domain/entities/journal_template.dart';
+import '../../../journal_template_providers.dart';
+
+/// Single editable template dialog — fill fields here; no second "Use Template" page.
 class TemplateDetailDialog extends ConsumerStatefulWidget {
   const TemplateDetailDialog({
     required this.template,
-        this.onUseTemplate,
+    this.onUseTemplate,
     super.key,
   });
 
   final JournalTemplate template;
-    final Function(JournalTemplate)? onUseTemplate;
+  final ValueChanged<JournalTemplate>? onUseTemplate;
 
   @override
   ConsumerState<TemplateDetailDialog> createState() =>
@@ -22,9 +25,14 @@ class TemplateDetailDialog extends ConsumerStatefulWidget {
 
 class _TemplateDetailDialogState extends ConsumerState<TemplateDetailDialog>
     with SingleTickerProviderStateMixin {
-  late AnimationController _animationController;
-  late Animation<double> _scaleAnimation;
-  late Animation<double> _fadeAnimation;
+  late final AnimationController _animationController;
+  late final Animation<double> _scaleAnimation;
+  late final Animation<double> _fadeAnimation;
+
+  final _formKey = GlobalKey<FormState>();
+  final Map<String, dynamic> _fieldValues = {};
+  final Map<String, TextEditingController> _controllers = {};
+  var _submitting = false;
 
   @override
   void initState() {
@@ -42,16 +50,34 @@ class _TemplateDetailDialogState extends ConsumerState<TemplateDetailDialog>
       curve: Curves.easeIn,
     );
     _animationController.forward();
+
+    for (final field in widget.template.fields) {
+      final type = field.fieldType.value;
+      if (type == 'TEXT' || type == 'TEXTAREA' || type == 'NUMBER') {
+        _controllers[field.fieldId] = TextEditingController(
+          text: field.defaultValue ?? '',
+        );
+      }
+      if (type == 'CHECKBOX' || type == 'CHECKBOX_LIST') {
+        _fieldValues[field.fieldId] = field.defaultValue == 'true';
+      } else if (field.defaultValue != null) {
+        _fieldValues[field.fieldId] = field.defaultValue;
+      }
+    }
   }
 
   @override
   void dispose() {
     _animationController.dispose();
+    for (final c in _controllers.values) {
+      c.dispose();
+    }
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
     return FadeTransition(
       opacity: _fadeAnimation,
       child: ScaleTransition(
@@ -59,43 +85,54 @@ class _TemplateDetailDialogState extends ConsumerState<TemplateDetailDialog>
         child: Dialog(
           backgroundColor: Colors.transparent,
           child: Container(
-            constraints: const BoxConstraints(maxWidth: 600, maxHeight: 700),
+            constraints: const BoxConstraints(maxWidth: 600, maxHeight: 720),
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(24),
+              borderRadius: BorderRadius.circular(AppRadii.lg),
               child: BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
                 child: Container(
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        Theme.of(context).colorScheme.surface.withOpacity(0.9),
-                        Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.8),
-                      ],
-                    ),
-                    borderRadius: BorderRadius.circular(24),
+                    color: colors.surface.withValues(alpha: 0.96),
+                    borderRadius: BorderRadius.circular(AppRadii.lg),
                     border: Border.all(
-                      color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
-                      width: 1.5,
+                      color: colors.border.withValues(alpha: 0.35),
                     ),
                   ),
                   child: Column(
                     children: [
                       _buildHeader(context),
                       Expanded(
-                        child: SingleChildScrollView(
-                          padding: const EdgeInsets.all(24),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                        child: Form(
+                          key: _formKey,
+                          child: ListView(
+                            padding: const EdgeInsets.all(AppSpacing.lg),
                             children: [
                               _buildDescription(context),
-                              const SizedBox(height: 24),
+                              const SizedBox(height: AppSpacing.md),
                               _buildMetadata(context),
-                              const SizedBox(height: 24),
-                              _buildFields(context),
-                              const SizedBox(height: 24),
-                              _buildTags(context),
+                              if (widget.template.fields.isNotEmpty) ...[
+                                const SizedBox(height: AppSpacing.lg),
+                                Text(
+                                  'Template Fields',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .titleSmall
+                                      ?.copyWith(fontWeight: FontWeight.w700),
+                                ),
+                                const SizedBox(height: AppSpacing.sm),
+                                ...widget.template.fields.map(
+                                  (field) => Padding(
+                                    padding: const EdgeInsets.only(
+                                      bottom: AppSpacing.sm,
+                                    ),
+                                    child: _buildEditableField(context, field),
+                                  ),
+                                ),
+                              ],
+                              if (widget.template.tags.isNotEmpty) ...[
+                                const SizedBox(height: AppSpacing.md),
+                                _buildTags(context),
+                              ],
                             ],
                           ),
                         ),
@@ -113,14 +150,13 @@ class _TemplateDetailDialogState extends ConsumerState<TemplateDetailDialog>
   }
 
   Widget _buildHeader(BuildContext context) {
+    final colors = context.colors;
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
+        color: ModuleColors.trade.withValues(alpha: 0.1),
         border: Border(
-          bottom: BorderSide(
-            color: Theme.of(context).colorScheme.outline.withOpacity(0.1),
-          ),
+          bottom: BorderSide(color: colors.border.withValues(alpha: 0.25)),
         ),
       ),
       child: Row(
@@ -131,15 +167,16 @@ class _TemplateDetailDialogState extends ConsumerState<TemplateDetailDialog>
               children: [
                 Text(
                   widget.template.name,
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w700,
                       ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: AppSpacing.xxs),
                 Text(
                   widget.template.category.displayName,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.primary,
+                        color: ModuleColors.trade,
+                        fontWeight: FontWeight.w600,
                       ),
                 ),
               ],
@@ -147,7 +184,7 @@ class _TemplateDetailDialogState extends ConsumerState<TemplateDetailDialog>
           ),
           IconButton(
             icon: const Icon(Icons.close),
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: _submitting ? null : () => Navigator.of(context).pop(),
           ),
         ],
       ),
@@ -155,22 +192,23 @@ class _TemplateDetailDialogState extends ConsumerState<TemplateDetailDialog>
   }
 
   Widget _buildDescription(BuildContext context) {
-    if (widget.template.description == null) return const SizedBox.shrink();
-    
+    final desc = widget.template.description?.trim();
+    if (desc == null || desc.isEmpty) return const SizedBox.shrink();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           'Description',
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
+          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w700,
               ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: AppSpacing.xs),
         Text(
-          widget.template.description!,
+          desc,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8),
+                color: context.colors.textSecondary,
+                height: 1.4,
               ),
         ),
       ],
@@ -178,232 +216,312 @@ class _TemplateDetailDialogState extends ConsumerState<TemplateDetailDialog>
   }
 
   Widget _buildMetadata(BuildContext context) {
+    final colors = context.colors;
     return Wrap(
-      spacing: 16,
-      runSpacing: 12,
+      spacing: AppSpacing.sm,
+      runSpacing: AppSpacing.sm,
       children: [
-        _buildMetadataChip(
-          context,
+        _MetaChip(
           icon: Icons.people_outline,
           label: '${widget.template.usageCount} uses',
+          color: ModuleColors.trade,
         ),
         if (widget.template.isSystemTemplate)
-          _buildMetadataChip(
-            context,
+          _MetaChip(
             icon: Icons.verified,
             label: 'System Template',
-            color: Theme.of(context).colorScheme.secondary,
+            color: colors.statusWarning,
           ),
         if (widget.template.isRecommended)
-          _buildMetadataChip(
-            context,
+          _MetaChip(
             icon: Icons.star,
             label: 'Recommended',
-            color: ModuleColors.reports,
+            color: ModuleColors.trade,
           ),
       ],
     );
   }
 
-  Widget _buildMetadataChip(
-    BuildContext context, {
-    required IconData icon,
-    required String label,
-    Color? color,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: (color ?? Theme.of(context).colorScheme.primary).withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: (color ?? Theme.of(context).colorScheme.primary).withOpacity(0.3),
-        ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            icon,
-            size: 16,
-            color: color ?? Theme.of(context).colorScheme.primary,
-          ),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                  color: color ?? Theme.of(context).colorScheme.primary,
-                ),
-          ),
-        ],
-      ),
-    );
+  Widget _buildEditableField(BuildContext context, dynamic field) {
+    final type = field.fieldType.value as String;
+    switch (type) {
+      case 'CHECKBOX':
+      case 'CHECKBOX_LIST':
+        return _buildCheckboxField(context, field);
+      case 'NUMBER':
+        return _buildTextInput(context, field, number: true);
+      case 'TEXTAREA':
+        return _buildTextInput(context, field, maxLines: 4);
+      case 'TEXT':
+      default:
+        return _buildTextInput(context, field, maxLines: 1);
+    }
   }
 
-  Widget _buildFields(BuildContext context) {
-    if (widget.template.fields.isEmpty) return const SizedBox.shrink();
-    
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Template Fields',
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
+  /// Checkbox: interactive row — checklist item label only (no stacked title).
+  Widget _buildCheckboxField(BuildContext context, dynamic field) {
+    final colors = context.colors;
+    // Prefer the checklist item name; fall back to placeholder/help.
+    final label = (field.fieldLabel as String?)?.trim().isNotEmpty == true
+        ? field.fieldLabel as String
+        : ((field.placeholder as String?)?.trim().isNotEmpty == true
+            ? field.placeholder as String
+            : (field.helpText as String? ?? 'Item'));
+    final checked = _fieldValues[field.fieldId] as bool? ?? false;
+
+    return Material(
+      color: colors.surface.withValues(alpha: 0.55),
+      borderRadius: AppRadii.input,
+      child: InkWell(
+        borderRadius: AppRadii.input,
+        onTap: () => setState(() => _fieldValues[field.fieldId] = !checked),
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.sm,
+            vertical: AppSpacing.sm,
+          ),
+          decoration: BoxDecoration(
+            borderRadius: AppRadii.input,
+            border: Border.all(color: colors.border.withValues(alpha: 0.35)),
+          ),
+          child: Row(
+            children: [
+              Checkbox(
+                value: checked,
+                activeColor: ModuleColors.trade,
+                onChanged: (v) =>
+                    setState(() => _fieldValues[field.fieldId] = v ?? false),
               ),
-        ),
-        const SizedBox(height: 12),
-        ...widget.template.fields.map((field) {
-          return Container(
-            margin: const EdgeInsets.only(bottom: 12),
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: Theme.of(context).colorScheme.outline.withOpacity(0.1),
-              ),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  _getFieldIcon(field.fieldType.value),
-                  size: 20,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        field.fieldLabel,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
+              Expanded(
+                child: Text(
+                  label,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: colors.textPrimary,
                       ),
-                      if (field.helpText != null)
-                        Text(
-                          field.helpText!,
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                              ),
-                        ),
-                    ],
+                ),
+              ),
+              if (field.required == true)
+                Text(
+                  '*',
+                  style: TextStyle(
+                    color: colors.statusError,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
-                if (field.required)
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.error.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text(
-                      'Required',
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                            color: Theme.of(context).colorScheme.error,
-                          ),
-                    ),
-                  ),
-              ],
-            ),
-          );
-        }),
-      ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Text/notes: placeholder only (no title above the field).
+  Widget _buildTextInput(
+    BuildContext context,
+    dynamic field, {
+    int maxLines = 1,
+    bool number = false,
+  }) {
+    final colors = context.colors;
+    final hint = (field.placeholder as String?)?.trim().isNotEmpty == true
+        ? field.placeholder as String
+        : ((field.helpText as String?)?.trim().isNotEmpty == true
+            ? field.helpText as String
+            : field.fieldLabel as String);
+    final controller = _controllers.putIfAbsent(
+      field.fieldId as String,
+      () => TextEditingController(text: field.defaultValue ?? ''),
+    );
+
+    return TextFormField(
+      controller: controller,
+      maxLines: maxLines,
+      keyboardType: number
+          ? const TextInputType.numberWithOptions(decimal: true)
+          : TextInputType.text,
+      decoration: InputDecoration(
+        hintText: hint,
+        filled: true,
+        fillColor: colors.surface.withValues(alpha: 0.55),
+        border: OutlineInputBorder(borderRadius: AppRadii.input),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: AppRadii.input,
+          borderSide: BorderSide(color: colors.border.withValues(alpha: 0.35)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: AppRadii.input,
+          borderSide: BorderSide(color: ModuleColors.trade, width: 1.5),
+        ),
+      ),
+      validator: (value) {
+        if (field.required == true && (value == null || value.trim().isEmpty)) {
+          return 'Required';
+        }
+        if (number &&
+            value != null &&
+            value.trim().isNotEmpty &&
+            double.tryParse(value.trim()) == null) {
+          return 'Enter a valid number';
+        }
+        return null;
+      },
+      onChanged: (value) => _fieldValues[field.fieldId] = value,
     );
   }
 
   Widget _buildTags(BuildContext context) {
-    if (widget.template.tags.isEmpty) return const SizedBox.shrink();
-    
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Tags',
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-        ),
-        const SizedBox(height: 12),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: widget.template.tags.map((tag) {
-            return Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.tertiaryContainer.withOpacity(0.5),
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: Text(
-                tag,
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onTertiaryContainer,
-                    ),
-              ),
-            );
-          }).toList(),
-        ),
-      ],
+    final colors = context.colors;
+    return Wrap(
+      spacing: AppSpacing.sm,
+      runSpacing: AppSpacing.sm,
+      children: widget.template.tags.map((tag) {
+        return Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.sm,
+            vertical: AppSpacing.xs,
+          ),
+          decoration: BoxDecoration(
+            color: ModuleColors.trade.withValues(alpha: 0.12),
+            borderRadius: AppRadii.chip,
+          ),
+          child: Text(
+            tag,
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: ModuleColors.trade,
+                  fontWeight: FontWeight.w600,
+                ),
+          ),
+        );
+      }).toList(),
     );
   }
 
   Widget _buildActions(BuildContext context) {
+    final colors = context.colors;
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+        color: colors.cardSurface.withValues(alpha: 0.65),
         border: Border(
-          top: BorderSide(
-            color: Theme.of(context).colorScheme.outline.withOpacity(0.1),
-          ),
+          top: BorderSide(color: colors.border.withValues(alpha: 0.25)),
         ),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: _submitting ? null : () => Navigator.of(context).pop(),
             child: const Text('Cancel'),
           ),
-          const SizedBox(width: 12),
-          ElevatedButton.icon(
-            onPressed: () {
-              // Pop detail with a result; parent opens the form with a valid context.
-              Navigator.of(context).pop(true);
-            },
-            icon: const Icon(Icons.edit_note),
-            label: const Text('Use Template'),
+          const SizedBox(width: AppSpacing.sm),
+          FilledButton.icon(
+            style: FilledButton.styleFrom(backgroundColor: ModuleColors.trade),
+            onPressed: _submitting ? null : _submit,
+            icon: _submitting
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.check_rounded, size: 18),
+            label: Text(_submitting ? 'Saving…' : 'Create Entry'),
           ),
         ],
       ),
     );
   }
 
-  IconData _getFieldIcon(String fieldType) {
-    switch (fieldType) {
-      case 'TEXT':
-        return Icons.text_fields;
-      case 'TEXTAREA':
-        return Icons.notes;
-      case 'CHECKBOX':
-        return Icons.check_box_outlined;
-      case 'CHECKBOX_LIST':
-        return Icons.checklist;
-      case 'DROPDOWN':
-        return Icons.arrow_drop_down_circle_outlined;
-      case 'DATE':
-        return Icons.calendar_today;
-      case 'TIME':
-        return Icons.access_time;
-      case 'NUMBER':
-        return Icons.numbers;
-      case 'IMAGE_UPLOAD':
-        return Icons.image_outlined;
-      default:
-        return Icons.text_fields;
+  Future<void> _submit() async {
+    if (!_formKey.currentState!.validate()) return;
+    for (final entry in _controllers.entries) {
+      _fieldValues[entry.key] = entry.value.text;
     }
+    for (final field in widget.template.fields) {
+      final type = field.fieldType.value;
+      if ((type == 'CHECKBOX' || type == 'CHECKBOX_LIST') &&
+          field.required &&
+          _fieldValues[field.fieldId] != true) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Check “${_checkboxLabel(field)}” to continue'),
+            backgroundColor: context.colors.statusWarning,
+          ),
+        );
+        return;
+      }
+    }
+
+    setState(() => _submitting = true);
+    try {
+      final cubit = await ref.read(journalTemplateCubitProvider.future);
+      await cubit.useTemplate(
+        templateId: widget.template.id,
+        fieldValues: _fieldValues,
+      );
+      if (!mounted) return;
+      widget.onUseTemplate?.call(widget.template);
+      Navigator.of(context).pop(true);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _submitting = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Could not create entry: $e'),
+          backgroundColor: context.colors.statusError,
+        ),
+      );
+    }
+  }
+
+  String _checkboxLabel(dynamic field) {
+    // Prefer the checklist item name (unique); help/placeholder is often identical.
+    final label = (field.fieldLabel as String?)?.trim();
+    if (label != null && label.isNotEmpty) return label;
+    final placeholder = (field.placeholder as String?)?.trim();
+    if (placeholder != null && placeholder.isNotEmpty) return placeholder;
+    final help = (field.helpText as String?)?.trim();
+    if (help != null && help.isNotEmpty) return help;
+    return 'Required item';
+  }
+}
+
+class _MetaChip extends StatelessWidget {
+  const _MetaChip({
+    required this.icon,
+    required this.label,
+    required this.color,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.sm,
+        vertical: AppSpacing.xs,
+      ),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: AppRadii.chip,
+        border: Border.all(color: color.withValues(alpha: 0.35)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: AppSpacing.xs),
+          Text(
+            label,
+            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                  color: color,
+                  fontWeight: FontWeight.w600,
+                ),
+          ),
+        ],
+      ),
+    );
   }
 }

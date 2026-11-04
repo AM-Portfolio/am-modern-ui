@@ -6,6 +6,7 @@
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
   <meta name="description" content="AM Investment Platform">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
 
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
@@ -26,6 +27,14 @@
       height: 100%;
       background: #0b0f18;
       font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      touch-action: pan-x pan-y pinch-zoom;
+    }
+    /* The app handles pinch itself so it can keep the gesture focal point fixed. */
+    flt-glass-pane {
+      touch-action: none !important;
+    }
+    flutter-view {
+      overflow: visible !important;
     }
     #am-boot {
       display: flex;
@@ -186,15 +195,111 @@
     bootMark('html_loaded');
 
     // Flutter preventDefault's every wheel event, which blocks Brave/Chrome
-    // Ctrl+wheel page zoom. Stop the event before Flutter except over charts.
+    // Flutter's canvas does not reliably preserve native browser pinch focus.
+    // Scale the complete view around the cursor or the midpoint of the fingers.
     window.__amChartCtrlWheel = false;
+    var amPageZoom = 1;
+    var amPageZoomX = 0;
+    var amPageZoomY = 0;
+    var amTouchPinch = null;
+
+    function amZoomSurface() {
+      return document.querySelector('flutter-view');
+    }
+
+    function applyAmPageZoom(surface) {
+      surface.style.transformOrigin = '0 0';
+      surface.style.transform =
+        'translate(' + amPageZoomX + 'px, ' + amPageZoomY + 'px) ' +
+        'scale(' + amPageZoom + ')';
+    }
+
     window.addEventListener('wheel', function (e) {
       if (!(e.ctrlKey || e.metaKey)) return;
       if (window.__amChartCtrlWheel) {
         e.preventDefault();
         return;
       }
+      var surface = amZoomSurface();
+      if (!surface) return;
+      e.preventDefault();
       e.stopImmediatePropagation();
+      var delta = e.deltaY;
+      if (e.deltaMode === 1) delta *= 16;
+      if (e.deltaMode === 2) delta *= window.innerHeight;
+      if (!delta) return;
+
+      var zoomAmount = Math.min(0.15, Math.max(0.01, Math.abs(delta) * 0.008));
+      var nextZoom = Math.max(0.67, Math.min(
+        2.0,
+        amPageZoom * Math.exp(-Math.sign(delta) * zoomAmount)
+      ));
+      if (nextZoom === amPageZoom) return;
+      var bounds = surface.getBoundingClientRect();
+      var originX = bounds.left - amPageZoomX;
+      var originY = bounds.top - amPageZoomY;
+      var contentX = (e.clientX - originX - amPageZoomX) / amPageZoom;
+      var contentY = (e.clientY - originY - amPageZoomY) / amPageZoom;
+      amPageZoomX = e.clientX - originX - contentX * nextZoom;
+      amPageZoomY = e.clientY - originY - contentY * nextZoom;
+      amPageZoom = nextZoom;
+      applyAmPageZoom(surface);
+    }, { capture: true, passive: false });
+
+    function amTouchDistance(touches) {
+      var dx = touches[1].clientX - touches[0].clientX;
+      var dy = touches[1].clientY - touches[0].clientY;
+      return Math.sqrt(dx * dx + dy * dy);
+    }
+
+    function amTouchCenter(touches) {
+      return {
+        x: (touches[0].clientX + touches[1].clientX) / 2,
+        y: (touches[0].clientY + touches[1].clientY) / 2
+      };
+    }
+
+    window.addEventListener('touchstart', function (e) {
+      if (e.touches.length < 2) return;
+      var surface = amZoomSurface();
+      if (!surface) return;
+      var center = amTouchCenter(e.touches);
+      var bounds = surface.getBoundingClientRect();
+      var originX = bounds.left - amPageZoomX;
+      var originY = bounds.top - amPageZoomY;
+      amTouchPinch = {
+        distance: Math.max(1, amTouchDistance(e.touches)),
+        zoom: amPageZoom,
+        contentX: (center.x - originX - amPageZoomX) / amPageZoom,
+        contentY: (center.y - originY - amPageZoomY) / amPageZoom,
+        originX: originX,
+        originY: originY,
+        surface: surface
+      };
+      e.preventDefault();
+    }, { capture: true, passive: false });
+
+    window.addEventListener('touchmove', function (e) {
+      if (!amTouchPinch || e.touches.length < 2) return;
+      e.preventDefault();
+      var center = amTouchCenter(e.touches);
+      var nextZoom = Math.max(0.67, Math.min(
+        2.0,
+        amTouchPinch.zoom * amTouchDistance(e.touches) / amTouchPinch.distance
+      ));
+      amPageZoomX = center.x - amTouchPinch.originX -
+        amTouchPinch.contentX * nextZoom;
+      amPageZoomY = center.y - amTouchPinch.originY -
+        amTouchPinch.contentY * nextZoom;
+      amPageZoom = nextZoom;
+      applyAmPageZoom(amTouchPinch.surface);
+    }, { capture: true, passive: false });
+
+    window.addEventListener('touchend', function (e) {
+      if (e.touches.length < 2) amTouchPinch = null;
+    }, { capture: true, passive: false });
+    window.addEventListener('touchcancel', function () {
+      amTouchPinch = null;
     }, { capture: true, passive: false });
 
     // Only purge stale service workers when build version changes.

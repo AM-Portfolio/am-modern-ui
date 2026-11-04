@@ -1,8 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:am_common/am_common.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:am_news_ui/am_news_ui.dart';
+import 'package:provider/provider.dart';
+import 'package:am_market_common/providers/market_provider.dart';
 
 import '../../providers/equity_insider_provider.dart';
 import '../widgets/equity_insider_hero.dart';
@@ -108,7 +112,10 @@ class EquityInsiderPageState extends ConsumerState<EquityInsiderPage> {
     super.didUpdateWidget(oldWidget);
     final next = widget.initialSymbol?.trim().toUpperCase();
     final prev = oldWidget.initialSymbol?.trim().toUpperCase();
-    if (next != null && next.isNotEmpty && next != prev && next != _submittedSymbol) {
+    if (next != null &&
+        next.isNotEmpty &&
+        next != prev &&
+        next != _submittedSymbol) {
       navigateToSymbol(next);
     }
   }
@@ -123,6 +130,11 @@ class EquityInsiderPageState extends ConsumerState<EquityInsiderPage> {
 
     setState(() => _submittedSymbol = text);
     ref.read(equityInsiderActiveSymbolProvider.notifier).state = text;
+    final marketProvider = context.read<MarketProvider>();
+    unawaited(marketProvider.setSurfaceSymbols(
+      MarketProvider.equityInsiderSurface,
+      [text],
+    ));
   }
 
   void _handleBack() {
@@ -200,6 +212,7 @@ class _FundamentalsBody extends ConsumerStatefulWidget {
 
 class _FundamentalsBodyState extends ConsumerState<_FundamentalsBody> {
   static const double _stickyHeroExtentDesktop = 120;
+
   /// Compact mockup sticky bar (~logo + name/chips + LTP row).
   static const double _stickyHeroExtentMobile = 92;
   static const double _stickyNavExtent = 44;
@@ -227,7 +240,9 @@ class _FundamentalsBodyState extends ConsumerState<_FundamentalsBody> {
     if (widget.symbol != oldWidget.symbol) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
-          ref.read(recentlyViewedStocksProvider.notifier).recordView(widget.symbol);
+          ref
+              .read(recentlyViewedStocksProvider.notifier)
+              .recordView(widget.symbol);
         }
       });
     }
@@ -305,209 +320,210 @@ class _FundamentalsBodyState extends ConsumerState<_FundamentalsBody> {
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
-          builder: (context, constraints) {
-            final isMobile = constraints.maxWidth < 800;
-            final peersCompact = constraints.maxWidth < AmBreakpoints.tablet;
-            final shareholdingAsync =
-                ref.watch(fundamentalShareholdingProvider(widget.symbol));
-            final hasShareholding = shareholdingAsync.maybeWhen(
-              data: (rows) => rows != null && rows.isNotEmpty,
-              orElse: () => true,
-            );
-            final stickyHeroExtent =
-                isMobile ? _stickyHeroExtentMobile : _stickyHeroExtentDesktop;
-            final sectionGap = isMobile ? 12.0 : AppSpacing.md;
-            final bottomPad = isMobile
-                ? PlatformConstants.globalBottomNavReserve(context) + 32
-                : 32.0;
+      builder: (context, constraints) {
+        final isMobile = constraints.maxWidth < 800;
+        final peersCompact = constraints.maxWidth < AmBreakpoints.tablet;
+        final shareholdingAsync =
+            ref.watch(fundamentalShareholdingProvider(widget.symbol));
+        final hasShareholding = shareholdingAsync.maybeWhen(
+          data: (rows) => rows != null && rows.isNotEmpty,
+          orElse: () => true,
+        );
+        final stickyHeroExtent =
+            isMobile ? _stickyHeroExtentMobile : _stickyHeroExtentDesktop;
+        final sectionGap = isMobile ? 12.0 : AppSpacing.md;
+        final bottomPad = isMobile
+            ? PlatformConstants.globalBottomNavReserve(context) + 32
+            : 32.0;
 
-            return CustomScrollView(
-              controller: _scrollController,
-              physics: const BouncingScrollPhysics(),
-              slivers: [
-                SliverPersistentHeader(
-                  pinned: true,
-                  delegate: _StickySectionNavDelegate(
-                    extent: stickyHeroExtent,
-                    backgroundColor: context.colors.scaffoldBackground,
-                    child: Padding(
-                      padding: EdgeInsets.fromLTRB(
-                        isMobile ? 12 : 16,
-                        isMobile ? 4 : 16,
-                        isMobile ? 12 : 16,
-                        isMobile ? 4 : 8,
-                      ),
-                      child: EquityInsiderHeroBar(
-                        symbol: widget.symbol,
-                        onBack: widget.onBack,
-                      ),
-                    ),
+        return CustomScrollView(
+          controller: _scrollController,
+          physics: const BouncingScrollPhysics(),
+          slivers: [
+            SliverPersistentHeader(
+              pinned: true,
+              delegate: _StickySectionNavDelegate(
+                extent: stickyHeroExtent,
+                backgroundColor: context.colors.scaffoldBackground,
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    isMobile ? 12 : 16,
+                    isMobile ? 4 : 16,
+                    isMobile ? 12 : 16,
+                    isMobile ? 4 : 8,
+                  ),
+                  child: EquityInsiderHeroBar(
+                    symbol: widget.symbol,
+                    onBack: widget.onBack,
                   ),
                 ),
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: isMobile ? 12 : 16,
-                    ),
-                    child: EquityInsiderHeroDescription(
-                      symbol: widget.symbol,
-                    ),
+              ),
+            ),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: isMobile ? 12 : 16,
+                ),
+                child: EquityInsiderHeroDescription(
+                  symbol: widget.symbol,
+                ),
+              ),
+            ),
+            SliverPersistentHeader(
+              pinned: true,
+              delegate: _StickySectionNavDelegate(
+                extent: _stickyNavExtent,
+                backgroundColor: context.colors.scaffoldBackground,
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isMobile ? 12 : 16,
+                  ),
+                  child: EquityInsiderSectionNavBar(
+                    activeIndex: _activeIndex,
+                    onTabSelected: _scrollToSection,
+                    isMobile: isMobile,
+                    showPeers: widget.showPeers,
                   ),
                 ),
-                SliverPersistentHeader(
-                  pinned: true,
-                  delegate: _StickySectionNavDelegate(
-                    extent: _stickyNavExtent,
-                    backgroundColor: context.colors.scaffoldBackground,
-                    child: Padding(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: isMobile ? 12 : 16,
-                      ),
-                      child: EquityInsiderSectionNavBar(
-                        activeIndex: _activeIndex,
-                        onTabSelected: _scrollToSection,
+              ),
+            ),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(
+                  isMobile ? 12 : 16,
+                  isMobile ? 12 : 16,
+                  isMobile ? 12 : 16,
+                  bottomPad,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Row 1: Valuation & Key Metrics (Left 60%) + Price Performance & Chart (Right 40%)
+                    // Overview tab scrolls to KPIs (sectionKeys[0]).
+                    if (isMobile) ...[
+                      _buildSectionCard(
+                        sectionKey: _sectionKeys[0],
+                        context: context,
                         isMobile: isMobile,
-                        showPeers: widget.showPeers,
+                        testKey: const Key('ei-kpis-card'),
+                        child: EquityInsiderKpis(symbol: widget.symbol),
                       ),
-                    ),
-                  ),
-                ),
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: EdgeInsets.fromLTRB(
-                      isMobile ? 12 : 16,
-                      isMobile ? 12 : 16,
-                      isMobile ? 12 : 16,
-                      bottomPad,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        // Row 1: Valuation & Key Metrics (Left 60%) + Price Performance & Chart (Right 40%)
-                        // Overview tab scrolls to KPIs (sectionKeys[0]).
-                        if (isMobile) ...[
-                          _buildSectionCard(
-                            sectionKey: _sectionKeys[0],
-                            context: context,
-                            isMobile: isMobile,
-                            testKey: const Key('ei-kpis-card'),
-                            child: EquityInsiderKpis(symbol: widget.symbol),
-                          ),
-                          SizedBox(height: sectionGap),
-                          _buildSectionCard(
-                            sectionKey: _sectionKeys[1],
-                            context: context,
-                            isMobile: isMobile,
-                            testKey: const Key('ei-chart-card'),
-                            child: EquityInsiderChart(symbol: widget.symbol),
-                          ),
-                        ] else ...[
-                          EquityInsiderDesktopPair(
-                            matchHeight: false,
-                            matchFromRight: true,
-                            fallbackHeight: 362,
-                            gap: AppSpacing.md,
-                            left: _buildSectionCard(
-                              sectionKey: _sectionKeys[0],
-                              context: context,
-                              isMobile: false,
-                              testKey: const Key('ei-kpis-card'),
-                              child: EquityInsiderKpis(symbol: widget.symbol),
-                            ),
-                            right: _buildSectionCard(
-                              sectionKey: _sectionKeys[1],
-                              context: context,
-                              isMobile: false,
-                              testKey: const Key('ei-chart-card'),
-                              child: EquityInsiderChart(symbol: widget.symbol),
-                            ),
-                          ),
-                        ],
-                        SizedBox(height: sectionGap),
+                      SizedBox(height: sectionGap),
+                      _buildSectionCard(
+                        sectionKey: _sectionKeys[1],
+                        context: context,
+                        isMobile: isMobile,
+                        testKey: const Key('ei-chart-card'),
+                        child: EquityInsiderChart(symbol: widget.symbol),
+                      ),
+                    ] else ...[
+                      EquityInsiderDesktopPair(
+                        matchHeight: false,
+                        matchFromRight: true,
+                        fallbackHeight: 362,
+                        gap: AppSpacing.md,
+                        left: _buildSectionCard(
+                          sectionKey: _sectionKeys[0],
+                          context: context,
+                          isMobile: false,
+                          testKey: const Key('ei-kpis-card'),
+                          child: EquityInsiderKpis(symbol: widget.symbol),
+                        ),
+                        right: _buildSectionCard(
+                          sectionKey: _sectionKeys[1],
+                          context: context,
+                          isMobile: false,
+                          testKey: const Key('ei-chart-card'),
+                          child: EquityInsiderChart(symbol: widget.symbol),
+                        ),
+                      ),
+                    ],
+                    SizedBox(height: sectionGap),
 
-                        // Row 2: Financial Performance (Left 60%) + Shareholding Pattern (Right 40%)
-                        if (isMobile) ...[
-                          _buildSectionCard(
-                            sectionKey: _sectionKeys[2],
-                            context: context,
-                            isMobile: isMobile,
-                            testKey: const Key('ei-financials-card'),
-                            child: EquityInsiderFinancials(symbol: widget.symbol),
-                          ),
-                          if (hasShareholding) ...[
-                            SizedBox(height: sectionGap),
-                            _buildSectionCard(
-                              sectionKey: _sectionKeys[3],
-                              context: context,
-                              isMobile: isMobile,
-                              testKey: const Key('ei-shareholding-card'),
-                              child: EquityInsiderShareholding(
-                                symbol: widget.symbol,
-                              ),
-                            ),
-                          ],
-                        ] else if (hasShareholding) ...[
-                          EquityInsiderDesktopPair(
-                            matchHeight: false,
-                            gap: AppSpacing.md,
-                            left: _buildSectionCard(
-                              sectionKey: _sectionKeys[2],
-                              context: context,
-                              isMobile: false,
-                              testKey: const Key('ei-financials-card'),
-                              child: EquityInsiderFinancials(symbol: widget.symbol),
-                            ),
-                            right: _buildSectionCard(
-                              sectionKey: _sectionKeys[3],
-                              context: context,
-                              isMobile: false,
-                              testKey: const Key('ei-shareholding-card'),
-                              child: EquityInsiderShareholding(symbol: widget.symbol),
-                            ),
-                          ),
-                        ] else ...[
-                          _buildSectionCard(
-                            sectionKey: _sectionKeys[2],
-                            context: context,
-                            isMobile: false,
-                            testKey: const Key('ei-financials-card'),
-                            child: EquityInsiderFinancials(symbol: widget.symbol),
-                          ),
-                        ],
+                    // Row 2: Financial Performance (Left 60%) + Shareholding Pattern (Right 40%)
+                    if (isMobile) ...[
+                      _buildSectionCard(
+                        sectionKey: _sectionKeys[2],
+                        context: context,
+                        isMobile: isMobile,
+                        testKey: const Key('ei-financials-card'),
+                        child: EquityInsiderFinancials(symbol: widget.symbol),
+                      ),
+                      if (hasShareholding) ...[
                         SizedBox(height: sectionGap),
-
-                        // Row 3: Full-width Peer Comparison Section
-                        if (widget.showPeers) ...[
-                          _buildSectionCard(
-                            sectionKey: _sectionKeys[4],
-                            context: context,
-                            isMobile: isMobile,
-                            child: EquityInsiderPeers(
-                              symbol: widget.symbol,
-                              onPeerSelected: widget.onSelectSymbol,
-                              compact: peersCompact,
-                            ),
-                          ),
-                          SizedBox(height: sectionGap),
-                        ],
                         _buildSectionCard(
-                          sectionKey: _sectionKeys[_newsKeyIndex],
+                          sectionKey: _sectionKeys[3],
                           context: context,
                           isMobile: isMobile,
-                          child: SymbolNewsSection(
+                          testKey: const Key('ei-shareholding-card'),
+                          child: EquityInsiderShareholding(
                             symbol: widget.symbol,
-                            surface: NewsUiSurface.equityInsider,
-                            embedInScroll: true,
-                            compact: isMobile,
                           ),
                         ),
                       ],
+                    ] else if (hasShareholding) ...[
+                      EquityInsiderDesktopPair(
+                        matchHeight: false,
+                        gap: AppSpacing.md,
+                        left: _buildSectionCard(
+                          sectionKey: _sectionKeys[2],
+                          context: context,
+                          isMobile: false,
+                          testKey: const Key('ei-financials-card'),
+                          child: EquityInsiderFinancials(symbol: widget.symbol),
+                        ),
+                        right: _buildSectionCard(
+                          sectionKey: _sectionKeys[3],
+                          context: context,
+                          isMobile: false,
+                          testKey: const Key('ei-shareholding-card'),
+                          child:
+                              EquityInsiderShareholding(symbol: widget.symbol),
+                        ),
+                      ),
+                    ] else ...[
+                      _buildSectionCard(
+                        sectionKey: _sectionKeys[2],
+                        context: context,
+                        isMobile: false,
+                        testKey: const Key('ei-financials-card'),
+                        child: EquityInsiderFinancials(symbol: widget.symbol),
+                      ),
+                    ],
+                    SizedBox(height: sectionGap),
+
+                    // Row 3: Full-width Peer Comparison Section
+                    if (widget.showPeers) ...[
+                      _buildSectionCard(
+                        sectionKey: _sectionKeys[4],
+                        context: context,
+                        isMobile: isMobile,
+                        child: EquityInsiderPeers(
+                          symbol: widget.symbol,
+                          onPeerSelected: widget.onSelectSymbol,
+                          compact: peersCompact,
+                        ),
+                      ),
+                      SizedBox(height: sectionGap),
+                    ],
+                    _buildSectionCard(
+                      sectionKey: _sectionKeys[_newsKeyIndex],
+                      context: context,
+                      isMobile: isMobile,
+                      child: SymbolNewsSection(
+                        symbol: widget.symbol,
+                        surface: NewsUiSurface.equityInsider,
+                        embedInScroll: true,
+                        compact: isMobile,
+                      ),
                     ),
-                  ),
+                  ],
                 ),
-              ],
-            );
-          },
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }
@@ -557,4 +573,3 @@ class _StickySectionNavDelegate extends SliverPersistentHeaderDelegate {
         oldDelegate.extent != extent;
   }
 }
-

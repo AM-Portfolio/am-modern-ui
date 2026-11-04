@@ -9,6 +9,7 @@ class StepIndicator extends StatelessWidget {
     this.activeColor = const Color(0xFFFF9800),
     this.inactiveColor = Colors.grey,
     this.compact = false,
+    this.onStepTap,
   });
   final int currentStep;
   final List<String> stepLabels;
@@ -18,15 +19,18 @@ class StepIndicator extends StatelessWidget {
   /// Smaller dots/labels for embedded panes (e.g. trade journal workflow).
   final bool compact;
 
+  /// When set, each step becomes tappable (e.g. focus a column).
+  final ValueChanged<int>? onStepTap;
+
   @override
   Widget build(BuildContext context) => Row(
-    children: [
-      for (int i = 0; i < stepLabels.length; i++) ...[
-        Expanded(child: _buildStepDot(i, stepLabels[i])),
-        if (i < stepLabels.length - 1) _buildStepLine(i),
-      ],
-    ],
-  );
+        children: [
+          for (int i = 0; i < stepLabels.length; i++) ...[
+            Expanded(child: _buildStepDot(i, stepLabels[i])),
+            if (i < stepLabels.length - 1) _buildStepLine(i),
+          ],
+        ],
+      );
 
   Widget _buildStepDot(int step, String label) {
     final isActive = step <= currentStep;
@@ -46,7 +50,7 @@ class StepIndicator extends StatelessWidget {
             : (dotSize * 0.5).clamp(14.0, 20.0);
         final labelGap = compact ? 4.0 : screenWidth * 0.015;
 
-        return Column(
+        final column = Column(
           children: [
             Container(
               width: dotSize,
@@ -84,6 +88,13 @@ class StepIndicator extends StatelessWidget {
               textAlign: TextAlign.center,
             ),
           ],
+        );
+
+        if (onStepTap == null) return column;
+        return InkWell(
+          onTap: () => onStepTap!(step),
+          borderRadius: BorderRadius.circular(8),
+          child: column,
         );
       },
     );

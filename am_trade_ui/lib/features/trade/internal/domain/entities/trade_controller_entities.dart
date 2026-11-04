@@ -71,6 +71,9 @@ abstract class TradeMetrics with _$TradeMetrics {
   const factory TradeMetrics({
     double? profitLoss,
     double? profitLossPercentage,
+    double? todayProfitLoss,
+    double? todayProfitLossPercentage,
+    String? unrealizedBasis,
     double? returnOnEquity,
     double? riskAmount,
     double? rewardAmount,

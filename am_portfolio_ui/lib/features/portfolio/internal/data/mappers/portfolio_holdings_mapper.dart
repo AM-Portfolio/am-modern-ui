@@ -45,10 +45,14 @@ class PortfolioHoldingsMapper {
             brokerId: apiBroker.brokerType,
             brokerName: _formatBrokerName(apiBroker.brokerType),
             quantity: apiBroker.quantity,
-            avgPrice: apiHolding.quantity > 0
+            avgPrice: apiHolding.hasInvestmentCost &&
+                    apiHolding.investmentCost > 0 &&
+                    apiHolding.quantity > 0
                 ? apiHolding.investmentCost / apiHolding.quantity
                 : 0.0,
-            investedAmount: apiHolding.quantity > 0
+            investedAmount: apiHolding.hasInvestmentCost &&
+                    apiHolding.investmentCost > 0 &&
+                    apiHolding.quantity > 0
                 ? (apiBroker.quantity / apiHolding.quantity) *
                       apiHolding.investmentCost
                 : 0.0,
@@ -69,16 +73,23 @@ class PortfolioHoldingsMapper {
       sector: apiHolding.sector,
       industry: apiHolding.industry,
       quantity: apiHolding.quantity,
-      avgPrice: apiHolding.quantity > 0
+      avgPrice: apiHolding.hasInvestmentCost &&
+              apiHolding.investmentCost > 0 &&
+              apiHolding.quantity > 0
           ? apiHolding.investmentCost / apiHolding.quantity
           : 0.0,
       currentPrice: apiHolding.currentPrice,
-      investedAmount: apiHolding.investmentCost,
+      investedAmount:
+          apiHolding.hasInvestmentCost && apiHolding.investmentCost > 0
+              ? apiHolding.investmentCost
+              : 0.0,
       currentValue: apiHolding.currentValue,
-      todayChange: apiHolding.todayGainLoss,
-      todayChangePercentage: apiHolding.todayGainLossPercentage,
-      totalGainLoss: apiHolding.gainLoss,
-      totalGainLossPercentage: apiHolding.gainLossPercentage,
+      todayChange: apiHolding.hasTodayGainLoss ? apiHolding.todayGainLoss : 0.0,
+      todayChangePercentage:
+          apiHolding.hasTodayGainLoss ? apiHolding.todayGainLossPercentage : 0.0,
+      totalGainLoss: apiHolding.hasGainLoss ? apiHolding.gainLoss : 0.0,
+      totalGainLossPercentage:
+          apiHolding.hasGainLoss ? apiHolding.gainLossPercentage : 0.0,
       portfolioWeight: apiHolding.weightInPortfolio,
       assetClass: apiHolding.assetClass,
       brokerHoldings: brokerHoldings,

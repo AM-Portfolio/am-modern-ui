@@ -121,7 +121,7 @@ class _JournalRrRatioTakerState extends State<JournalRrRatioTaker> {
         side: BorderSide(color: colors.border.withValues(alpha: 0.4)),
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -132,13 +132,13 @@ class _JournalRrRatioTakerState extends State<JournalRrRatioTaker> {
                 color: colors.textSecondary,
               ),
             ),
-            const SizedBox(width: 6),
+            const SizedBox(width: 4),
             _SideField(
               controller: _rewardCtrl,
               onCommit: _commitReward,
             ),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 2),
               child: Text(
                 ':',
                 style: theme.textTheme.bodyMedium?.copyWith(

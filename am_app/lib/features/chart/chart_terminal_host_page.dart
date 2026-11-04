@@ -2,6 +2,7 @@ import 'package:am_chart_ui/am_chart_ui.dart';
 import 'package:am_common/am_common.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:am_market_ui/am_market_ui.dart';
+import 'package:am_market_ui/shared/widgets/market_stream_surface_scope.dart';
 import 'package:am_news_ui/am_news_ui.dart';
 import 'package:am_paper_ui/am_paper_ui.dart';
 import 'package:am_portfolio_ui/am_portfolio_ui.dart';
@@ -9,9 +10,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:am_dashboard_ui/presentation/providers/dashboard_provider.dart';
+
 import 'chart_portfolio_holdings_panel.dart';
 import 'chart_portfolio_sidebar.dart';
 import 'market_sdk_chart_providers.dart';
+import 'portfolio_wealth_chart_provider.dart';
 
 enum _ChartBottomSection {
   holdings,
@@ -30,7 +34,7 @@ enum _ChartBottomSection {
 
 /// Chart terminal host: live market OHLC, watchlist + portfolio sidebar,
 /// EI section tags (no hero / no Charts) + F&O bottom strip.
-class ChartTerminalHostPage extends ConsumerWidget {
+class ChartTerminalHostPage extends ConsumerStatefulWidget {
   const ChartTerminalHostPage({
     super.key,
     this.initialSymbol,
@@ -40,34 +44,52 @@ class ChartTerminalHostPage extends ConsumerWidget {
   final String? initialSymbol;
   final String? initialTimeframe;
 
-  static final _liveHistorical = MarketSdkHistoricalProvider();
-  static final _liveMarket = MarketSdkMarketDataProvider();
+  @override
+  ConsumerState<ChartTerminalHostPage> createState() =>
+      _ChartTerminalHostPageState();
+}
+
+class _ChartTerminalHostPageState extends ConsumerState<ChartTerminalHostPage> {
+  late final MarketSdkHistoricalProvider _marketHistorical;
+  late final PortfolioWealthHistoricalProvider _historical;
+  late final MarketSdkMarketDataProvider _market;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  void initState() {
+    super.initState();
+    _marketHistorical = MarketSdkHistoricalProvider();
+    _market = MarketSdkMarketDataProvider();
+    _historical = PortfolioWealthHistoricalProvider(
+      market: _marketHistorical,
+      getPortfolioClient: () => ref.read(portfolioApiClientProvider.future),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final omsAsync = ref.watch(paperOmsCubitProvider);
 
-    // Nested scope forces live Market SDK providers for this route only.
+    // Nested scope forces live Market SDK + portfolio-wealth providers.
     return ProviderScope(
       overrides: [
-        chartHistoricalProvider.overrideWithValue(_liveHistorical),
-        chartMarketProvider.overrideWithValue(_liveMarket),
+        chartHistoricalProvider.overrideWithValue(_historical),
+        chartMarketProvider.overrideWithValue(_market),
       ],
       child: omsAsync.when(
         loading: () => const Scaffold(
           body: Center(child: CircularProgressIndicator()),
         ),
         error: (e, _) => _ChartTerminalBody(
-          initialSymbol: initialSymbol,
-          initialTimeframe: initialTimeframe,
+          initialSymbol: widget.initialSymbol,
+          initialTimeframe: widget.initialTimeframe,
           paperEnabled: false,
         ),
         data: (cubit) {
           return BlocProvider<PaperOmsCubit>.value(
             value: cubit,
             child: _ChartTerminalBody(
-              initialSymbol: initialSymbol,
-              initialTimeframe: initialTimeframe,
+              initialSymbol: widget.initialSymbol,
+              initialTimeframe: widget.initialTimeframe,
               paperEnabled: cubit.state.wallet != null,
             ),
           );
@@ -101,6 +123,7 @@ class _ChartTerminalBodyState extends ConsumerState<_ChartTerminalBody>
   ChartTerminalController? _currentTerminalCtrl;
   String _indicesSearchQuery = '';
   IndicesRegion _region = IndicesRegion.indian;
+  String _lastPublishedStreamSymbols = '';
 
   static const _baseTags = <(_ChartBottomSection, String)>[
     (_ChartBottomSection.overview, 'Overview'),
@@ -271,7 +294,8 @@ class _ChartTerminalBodyState extends ConsumerState<_ChartTerminalBody>
     super.dispose();
   }
 
-  void _bindChartSearch(ChartTerminalController ctrl, ChartTerminalState state) {
+  void _bindChartSearch(
+      ChartTerminalController ctrl, ChartTerminalState state) {
     ChartSearchBridge.bind(
       recentSymbols: state.recentSearches,
       selectSymbol: (sym) {
@@ -303,9 +327,26 @@ class _ChartTerminalBodyState extends ConsumerState<_ChartTerminalBody>
     setState(() {
       _section = _ChartBottomSection.heatmap;
     });
-    if (mounted && MediaQuery.sizeOf(context).width < 768 && Navigator.of(context).canPop()) {
+    if (mounted &&
+        MediaQuery.sizeOf(context).width < 768 &&
+        Navigator.of(context).canPop()) {
       Navigator.of(context).maybePop();
     }
+  }
+
+  /// Load portfolio wealth into the main terminal (same feed as Portfolio section).
+  Future<void> _loadPortfolioWealthChart(ChartSelectedPortfolio sel) async {
+    if (sel.isPaper) return;
+    final ctrl = ref.read(chartTerminalProvider.notifier);
+    await ctrl.selectSymbol(
+      PortfolioWealthHistoricalProvider.encodePortfolioSymbol(
+        sel.id,
+        name: sel.name,
+      ),
+      exchange: 'PORTFOLIO',
+      // Match Portfolio overview default (1M daily history — not /intraday).
+      timeframe: ChartTimeframe.mo1,
+    );
   }
 
   Widget _sectionBody(
@@ -553,13 +594,13 @@ class _ChartTerminalBodyState extends ConsumerState<_ChartTerminalBody>
               fillColor: context.glassOverlay(0.06),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
-                borderSide:
-                    BorderSide(color: theme.dividerColor.withValues(alpha: 0.2)),
+                borderSide: BorderSide(
+                    color: theme.dividerColor.withValues(alpha: 0.2)),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
-                borderSide:
-                    BorderSide(color: theme.dividerColor.withValues(alpha: 0.2)),
+                borderSide: BorderSide(
+                    color: theme.dividerColor.withValues(alpha: 0.2)),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
@@ -579,7 +620,9 @@ class _ChartTerminalBodyState extends ConsumerState<_ChartTerminalBody>
                           _region == IndicesRegion.global
                               ? 'No global indices found'
                               : 'No indices found',
-                          style: TextStyle(fontSize: 12, color: theme.hintColor),
+                          style: TextStyle(
+                              fontSize: AppTypeScale.sm,
+                              color: context.colors.textMuted),
                         ),
                 )
               : ListView.separated(
@@ -698,6 +741,25 @@ class _ChartTerminalBodyState extends ConsumerState<_ChartTerminalBody>
     _currentTerminalCtrl = terminalCtrl;
     _bindChartSearch(terminalCtrl, terminalState);
     final activeSymbol = terminalState.symbol;
+    final chartInstruments = terminalState.panes
+        .map((pane) => pane.symbol.trim().toUpperCase())
+        .where((symbol) => symbol.isNotEmpty)
+        .map((symbol) => MarketStreamInstrument(
+              symbol: symbol,
+              isIndexSymbol: _isIndexSymbol(symbol),
+            ))
+        .toList(growable: false);
+    final streamKey = chartInstruments
+        .map((instrument) => '${instrument.symbol}:${instrument.isIndexSymbol}')
+        .join('|');
+    if (streamKey != _lastPublishedStreamSymbols) {
+      _lastPublishedStreamSymbols = streamKey;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          MarketStreamSurfaceScope.publish(context, chartInstruments);
+        }
+      });
+    }
     final isIndex = _isIndexSymbol(activeSymbol);
     final tags = _getTags(activeSymbol);
 
@@ -822,7 +884,11 @@ class _ChartTerminalBodyState extends ConsumerState<_ChartTerminalBody>
                   _buildIndicesSidebarTab(context, state, ctrl),
                   ChartPortfolioSidebar(
                     paperEnabled: widget.paperEnabled,
-                    onPortfolioSelected: (_) {
+                    onPortfolioSelected: (sel) {
+                      // Always load on tap (incl. re-tap of already-selected Dhan).
+                      // Provider listen covers first selection; this covers re-tap
+                      // and races where INDIA VIX reload would otherwise win.
+                      _loadPortfolioWealthChart(sel);
                       setState(() => _section = _ChartBottomSection.holdings);
                       if (MediaQuery.sizeOf(context).width < 768 &&
                           Navigator.of(context).canPop()) {
@@ -1005,8 +1071,7 @@ class _ChartBottomSectionBar extends StatelessWidget {
                 tooltip: 'Minimize bottom panel',
                 iconSize: 20,
                 padding: EdgeInsets.zero,
-                constraints:
-                    const BoxConstraints(minWidth: 34, minHeight: 34),
+                constraints: const BoxConstraints(minWidth: 34, minHeight: 34),
                 onPressed: onMinimize,
                 icon: Icon(
                   Icons.keyboard_arrow_down,
@@ -1047,10 +1112,12 @@ class _PortfolioCubitProvider extends ConsumerWidget {
     return MultiBlocProvider(
       providers: [
         BlocProvider<PortfolioCubit>(
-          create: (_) => PortfolioCubit(portfolioServiceAsync.requireValue)..loadPortfolioById(portfolioId),
+          create: (_) => PortfolioCubit(portfolioServiceAsync.requireValue)
+            ..loadPortfolioById(portfolioId),
         ),
         BlocProvider<PortfolioAnalyticsCubit>(
-          create: (_) => PortfolioAnalyticsCubit(analyticsServiceAsync.requireValue),
+          create: (_) =>
+              PortfolioAnalyticsCubit(analyticsServiceAsync.requireValue),
         ),
       ],
       child: child,
@@ -1108,9 +1175,8 @@ class _MaximizedChartPanelDialogState
   @override
   Widget build(BuildContext context) {
     final terminalState = ref.watch(chartTerminalProvider);
-    final activeSymbol = terminalState.symbol.isNotEmpty
-        ? terminalState.symbol
-        : widget.symbol;
+    final activeSymbol =
+        terminalState.symbol.isNotEmpty ? terminalState.symbol : widget.symbol;
 
     if (_lastSymbol != null && _lastSymbol != activeSymbol) {
       _currentSection = _ChartBottomSection.overview;
@@ -1169,8 +1235,7 @@ class _MaximizedChartPanelDialogState
                         fontSize: 12.5,
                         fontWeight:
                             isActive ? FontWeight.w700 : FontWeight.w500,
-                        color:
-                            isActive ? theme.colorScheme.onSurface : muted,
+                        color: isActive ? theme.colorScheme.onSurface : muted,
                         letterSpacing: 0.15,
                       ),
                     ),
@@ -1290,8 +1355,7 @@ class _MaximizedChartPanelDialogState
                 tooltip: 'Exit full view',
                 iconSize: 18,
                 padding: EdgeInsets.zero,
-                constraints:
-                    const BoxConstraints(minWidth: 36, minHeight: 36),
+                constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
                 icon: Icon(Icons.close_fullscreen, color: muted),
                 onPressed: () => Navigator.of(context).pop(),
               ),
@@ -1318,4 +1382,3 @@ class _MaximizedChartPanelDialogState
     );
   }
 }
-

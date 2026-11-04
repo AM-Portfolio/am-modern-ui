@@ -355,9 +355,17 @@ class JournalUseTemplateMobilePageState
     final type = field.fieldType as TemplateFieldType;
     final label = field.fieldLabel as String;
     final required = field.required == true;
+    final hint = () {
+      final placeholder = (field.placeholder as String?)?.trim();
+      if (placeholder != null && placeholder.isNotEmpty) return placeholder;
+      final help = (field.helpText as String?)?.trim();
+      if (help != null && help.isNotEmpty) return help;
+      return label;
+    }();
 
     if (type == TemplateFieldType.checkbox) {
       final checked = _values[field.fieldId] == true;
+      // Checklist item name only — no stacked help/title under it.
       return Container(
         decoration: BoxDecoration(
           color: colors.cardSurface,
@@ -375,10 +383,18 @@ class JournalUseTemplateMobilePageState
           title: Text(
             label,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
                   color: colors.textPrimary,
                 ),
           ),
+          secondary: required
+              ? Text(
+                  '*',
+                  style: TextStyle(
+                    color: colors.statusError,
+                    fontWeight: FontWeight.w700,
+                  ),
+                )
+              : null,
           controlAffinity: ListTileControlAffinity.leading,
           activeColor: ModuleColors.trade,
         ),
@@ -386,31 +402,20 @@ class JournalUseTemplateMobilePageState
     }
 
     final controller = _controllers[field.fieldId]!;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          required ? '$label *' : label,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-                color: colors.textPrimary,
-              ),
-        ),
-        const SizedBox(height: 6),
-        TextFormField(
-          controller: controller,
-          maxLines: type == TemplateFieldType.textarea ? 4 : 1,
-          decoration: InputDecoration(
-            filled: true,
-            fillColor: colors.cardSurface,
-            border: OutlineInputBorder(borderRadius: AppRadii.input),
-          ),
-          validator: required
-              ? (v) =>
-                  (v == null || v.trim().isEmpty) ? 'Required' : null
-              : null,
-        ),
-      ],
+    // Placeholder-only — no external field title above the input.
+    return TextFormField(
+      controller: controller,
+      maxLines: type == TemplateFieldType.textarea ? 4 : 1,
+      decoration: InputDecoration(
+        hintText: required ? '$hint *' : hint,
+        filled: true,
+        fillColor: colors.cardSurface,
+        border: OutlineInputBorder(borderRadius: AppRadii.input),
+      ),
+      onChanged: (_) => _markDirty(),
+      validator: required
+          ? (v) => (v == null || v.trim().isEmpty) ? 'Required' : null
+          : null,
     );
   }
 }

@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:am_design_system/am_design_system.dart';
 import 'package:am_common/am_common.dart';
 
@@ -135,6 +137,9 @@ class AuthRepositoryImpl implements AuthRepository {
     if (entity.user.displayName != null) {
       await _storageService.saveUserDisplayName(entity.user.displayName!);
     }
+    if (entity.user.photoUrl != null && entity.user.photoUrl!.isNotEmpty) {
+      await _storageService.saveUserPhotoUrl(entity.user.photoUrl!);
+    }
     await _storageService.saveTokenExpiry(entity.tokens.expiresAt);
 
     final enriched = _enrichedEntity(entity);
@@ -197,11 +202,29 @@ class AuthRepositoryImpl implements AuthRepository {
       );
 
       final attribution = await ReferralInstallStore.instance.signupAttribution();
-      final result = await _dataSource.googleLogin(
+      var result = await _dataSource.googleLogin(
         idToken,
         referralCode: attribution.referralCode,
         deviceId: attribution.deviceId,
       );
+
+      // Some backend auth paths do not echo Google's `picture` field. Keep
+      // the provider photo from the signed ID token in that case.
+      final picture = result.user.photoUrl ?? _pictureFromIdToken(idToken);
+      final resultWithPhoto = picture == result.user.photoUrl
+          ? result
+          : AuthResultModel(
+              user: UserModel(
+                id: result.user.id,
+                email: result.user.email,
+                displayName: result.user.displayName,
+                photoUrl: picture,
+                authMethod: result.user.authMethod,
+                isDemo: result.user.isDemo,
+              ),
+              tokens: result.tokens,
+            );
+      result = resultWithPhoto;
 
       CommonLogger.info('🟢 [GOOGLE OAUTH] Step 7: Backend response received!');
       CommonLogger.info('🟢 [GOOGLE OAUTH] User ID: ${result.user.id}');
@@ -221,6 +244,9 @@ class AuthRepositoryImpl implements AuthRepository {
       }
       await _storageService.saveUserId(result.user.id);
       await _storageService.saveUserEmail(result.user.email);
+      if (result.user.photoUrl != null && result.user.photoUrl!.isNotEmpty) {
+        await _storageService.saveUserPhotoUrl(result.user.photoUrl!);
+      }
       await _storageService.saveTokenExpiry(result.tokens.expiresAt);
 
       CommonLogger.info('🟢 [GOOGLE OAUTH] Step 9: All tokens saved successfully');
@@ -363,6 +389,7 @@ class AuthRepositoryImpl implements AuthRepository {
       final userId = await _storageService.getUserId();
       final email = await _storageService.getUserEmail();
       final displayName = await _storageService.getUserDisplayName();
+      final storedPhotoUrl = await _storageService.getUserPhotoUrl();
       final accessToken = await _storageService.getAccessToken();
       final refreshToken = await _storageService.getRefreshToken();
       final expiry = await _storageService.getTokenExpiry();
@@ -414,6 +441,7 @@ class AuthRepositoryImpl implements AuthRepository {
           id: userId,
           email: email,
           displayName: displayName,
+          photoUrl: storedPhotoUrl ?? _pictureFromIdToken(accessToken),
           authMethod: 'stored', // Could be tracked separately if needed
         ),
         accessToken,
@@ -460,6 +488,24 @@ class AuthRepositoryImpl implements AuthRepository {
       ...TokenExtractor.extractScopes(accessToken),
     ];
     return user.copyWith(roles: roles);
+  }
+
+  String? _pictureFromIdToken(String? token) {
+    if (token == null || token.isEmpty) return null;
+    try {
+      final parts = token.split('.');
+      if (parts.length < 2) return null;
+      final payload = jsonDecode(
+        utf8.decode(base64Url.decode(base64Url.normalize(parts[1]))),
+      );
+      if (payload is! Map<String, dynamic>) return null;
+      final picture = payload['picture'];
+      return picture is String && picture.trim().isNotEmpty
+          ? picture.trim()
+          : null;
+    } catch (_) {
+      return null;
+    }
   }
 
   AuthResultEntity _enrichedEntity(AuthResultEntity entity) => AuthResultEntity(

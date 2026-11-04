@@ -23,12 +23,9 @@ class MoodSelector extends StatelessWidget {
     if (compact) {
       final theme = Theme.of(context);
       final colors = context.colors;
-      // Floating label already says "Mood" — keep hint short for half-width row.
       return JournalThemedDropdown<String>(
         value: selectedMood,
-        label: 'Mood',
-        floatingLabel: true,
-        hint: 'Select',
+        hint: 'Mood',
         compact: true,
         height: AppSpacing.xl + AppSpacing.md,
         fontSize: AppTypeScale.md,

@@ -7,6 +7,7 @@ import '../dtos/trade_calendar_dto.dart';
 import '../dtos/trade_controller_dtos.dart';
 import '../dtos/trade_holding_dto.dart';
 import '../dtos/trade_portfolio_dto.dart';
+import '../portfolio_book_merge.dart';
 import '../dtos/trade_portfolio_summary_dto.dart';
 import '../../domain/enums/trade_directions.dart';
 import '../../domain/enums/trade_statuses.dart';
@@ -84,6 +85,30 @@ class TradeRemoteDataSourceImpl implements TradeRemoteDataSource {
   /// Only when config says so — never inject mock-pf-001 against dig/prod just because kDebugMode.
   final bool _useMockData;
 
+  /// Broker and email books live on the portfolio list, not the trade summary.
+  /// A failed portfolio call leaves the trade rows in place.
+  Future<TradePortfolioListDto> _mergePortfolioServiceBooks(
+    TradePortfolioListDto trade,
+  ) async {
+    final portfolio = _portfolioConfig;
+    if (portfolio == null || portfolio.baseUrl.isEmpty) return trade;
+    try {
+      final uri = _buildUri(portfolio.baseUrl, '/v1/portfolios/list');
+      final books = await _apiClient.get<List<TradePortfolioDto>>(
+        uri,
+        parser: parsePortfolioServiceBooks,
+      );
+      return mergePortfolioBooks(trade, books);
+    } catch (e) {
+      AppLogger.warning(
+        'Portfolio list unavailable; trade books only',
+        tag: 'TradeRemoteDataSource',
+        error: e,
+      );
+      return trade;
+    }
+  }
+
   /// Helper to safely build URI avoiding double slashes
   String _buildUri(String baseUrl, String resource) {
     final cleanBase = baseUrl.endsWith('/')
@@ -132,9 +157,12 @@ class TradeRemoteDataSourceImpl implements TradeRemoteDataSource {
 
     try {
       // Trade API: GET /v1/portfolio-summary/by-owner — owner from JWT (UserContext).
-      // Do not append userId: /by-owner/{id} is a different fallback endpoint (single summary).
-      final fullUri =
-          _buildUri(_tradeConfig.baseUrl, _tradeConfig.portfolioListResource);
+      // includePaper keeps PAPER books (Paper OMS test) so Calendar and Analysis
+      // can use that trade id. Do not append userId: /by-owner/{id} is a
+      // different fallback endpoint (single summary).
+      final fullUri = withIncludePaper(
+        _buildUri(_tradeConfig.baseUrl, _tradeConfig.portfolioListResource),
+      );
 
       final response = await _apiClient.get<TradePortfolioListDto>(
         fullUri,
@@ -168,12 +196,14 @@ class TradeRemoteDataSourceImpl implements TradeRemoteDataSource {
         },
       );
 
+      final merged = await _mergePortfolioServiceBooks(response);
+
       AppLogger.info('Trade portfolios fetched successfully from API',
           tag: 'TradeRemoteDataSource');
       AppLogger.methodExit('getTradePortfolios',
           tag: 'TradeRemoteDataSource', result: 'success');
 
-      return response;
+      return merged;
     } catch (e) {
       AppLogger.error(
         'Failed to fetch trade portfolios',
@@ -324,9 +354,14 @@ class TradeRemoteDataSourceImpl implements TradeRemoteDataSource {
           final currentPrice = _asDouble(json['currentPrice']);
           final gainLoss = _asDouble(json['gainLoss']);
           final gainLossPct = _asDouble(json['gainLossPercentage']);
-          final avgPrice = qty > 0 ? investment / qty : 0.0;
+          final todayGain = _asDouble(json['todayGainLoss']);
+          final todayGainPct = _asDouble(json['todayGainLossPercentage']);
+          // Unknown cost must stay null — never invent avgPrice=0 from investmentCost=0.
+          final avgPrice = (investment > 0 && qty > 0) ? investment / qty : null;
           final name = (json['name'] as String?)?.trim();
           final isin = (json['isin'] as String?)?.trim();
+          final hasOverall = json['gainLoss'] != null;
+          final hasToday = json['todayGainLoss'] != null;
 
           list.add(TradeDetailsDto(
             tradeId: 'demo-holding-$portfolioId-$symbol-$i',
@@ -342,12 +377,14 @@ class TradeRemoteDataSourceImpl implements TradeRemoteDataSource {
             entryInfo: EntryExitInfoDto(
               price: avgPrice,
               quantity: qty.round(),
-              totalValue: investment,
+              totalValue: investment > 0 ? investment : null,
             ),
-            currentPrice: currentPrice,
+            currentPrice: currentPrice > 0 ? currentPrice : null,
             metrics: TradeMetricsDto(
-              profitLoss: gainLoss,
-              profitLossPercentage: gainLossPct,
+              profitLoss: hasOverall ? gainLoss : (hasToday ? todayGain : null),
+              profitLossPercentage: hasOverall
+                  ? gainLossPct
+                  : (hasToday ? todayGainPct : null),
             ),
             notes: currentValue > 0 ? 'currentValue=$currentValue' : null,
           ));

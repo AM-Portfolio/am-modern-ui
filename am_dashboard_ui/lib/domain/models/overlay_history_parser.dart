@@ -17,8 +17,9 @@ PortfolioOverlayHistory parsePortfolioOverlayHistory(
       ? const ['value', 'close']
       : const ['close', 'value'];
 
-  final orderedIds = <String>[];
+    final orderedIds = <String>[];
   final rawNames = <String, String>{};
+  final rawBrokers = <String, String>{};
   final dates = <String>[];
   final perDay = <String, Map<String, double>>{};
   final aggregate = <OverlayPoint>[];
@@ -49,6 +50,10 @@ PortfolioOverlayHistory parsePortfolioOverlayHistory(
           id,
           () => _stringOf(map, const ['portfolioName', 'name']) ?? id,
         );
+        final broker = _stringOf(map, const ['brokerType', 'broker']);
+        if (broker != null && broker.isNotEmpty) {
+          rawBrokers.putIfAbsent(id, () => broker);
+        }
         final value = _numOf(map, entryValueKeys);
         if (value != null && value.isFinite) {
           dayMap[id] = value;
@@ -60,12 +65,20 @@ PortfolioOverlayHistory parsePortfolioOverlayHistory(
 
   final refs = [
     for (final id in orderedIds)
-      OverlayPortfolioRef(id: id, label: rawNames[id] ?? id),
+      OverlayPortfolioRef(
+        id: id,
+        label: rawNames[id] ?? id,
+        brokerType: rawBrokers[id],
+      ),
   ];
   final labels = uniquePortfolioLabels(refs);
   final labeledRefs = [
     for (final ref in refs)
-      OverlayPortfolioRef(id: ref.id, label: labels[ref.id] ?? ref.label),
+      OverlayPortfolioRef(
+        id: ref.id,
+        label: labels[ref.id] ?? ref.label,
+        brokerType: ref.brokerType,
+      ),
   ];
 
   final lastClose = <String, double>{};

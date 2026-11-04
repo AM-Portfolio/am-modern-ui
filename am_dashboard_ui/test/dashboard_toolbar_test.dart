@@ -35,6 +35,7 @@ Future<void> _pumpToolbar(
           body: SizedBox(
             width: size.width,
             child: DashboardToolbar(
+              userId: 'test-user',
               onSearch: onSearch ?? () {},
               onOpenPaper: onPaper ?? () => paperTaps++,
               onQuickAdd: onQuickAdd ?? (_) {},
@@ -110,6 +111,7 @@ void main() {
                 const Text('Dashboard'),
                 const Spacer(),
                 DashboardToolbar(
+                  userId: 'test-user',
                   glass: false,
                   onOpenPaper: () {},
                   onQuickAdd: (_) {},
@@ -180,6 +182,7 @@ void main() {
               builder: (context, ref, _) {
                 containerRef = ref;
                 return DashboardToolbar(
+                  userId: 'test-user',
                   onSearch: () {},
                   onOpenPaper: () {},
                 );

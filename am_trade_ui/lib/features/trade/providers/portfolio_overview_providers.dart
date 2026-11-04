@@ -1,32 +1,16 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:am_common/core/di/network_providers.dart';
 
 import '../internal/data/datasources/portfolio_overview_data_source.dart';
 import '../internal/data/dtos/portfolio_summary_response_dto.dart';
+import '../internal/domain/entities/trade_holding.dart';
 import '../internal/domain/entities/trade_portfolio.dart';
 import '../presentation/models/trade_portfolio_view_model.dart';
+import 'portfolio_bridge_providers.dart';
 import 'trade_internal_providers.dart';
 
-// ============================================================================
-// Infrastructure (private — not for direct UI consumption)
-// ============================================================================
-
-/// Private provider that wires up the PortfolioOverviewDataSource.
-///
-/// Uses the existing shared ApiClient (so auth headers are automatically
-/// forwarded) and the PortfolioApiConfig that is already in AppConfig.
-final _portfolioOverviewDataSourceProvider =
-    FutureProvider<PortfolioOverviewDataSource>((ref) async {
-  final apiClient = await ref.watch(apiClientProvider.future);
-  final appConfig = await ref.watch(appConfigProvider.future);
-
-  return PortfolioOverviewDataSourceImpl(
-    apiClient: apiClient,
-    portfolioConfig: appConfig.api.portfolio,
-  );
-});
+export 'portfolio_bridge_providers.dart';
 
 // ============================================================================
 // Public Providers (for UI consumption)
@@ -48,7 +32,7 @@ final portfolioLiveSummaryProvider =
   if (portfolioId.isEmpty) return null;
 
   final dataSource =
-      await ref.watch(_portfolioOverviewDataSourceProvider.future);
+      await ref.watch(portfolioOverviewDataSourceProvider.future);
 
   // The data source itself never throws — it returns null on errors.
   return dataSource.getPortfolioSummary(portfolioId);
@@ -107,7 +91,7 @@ final enrichedTradePortfoliosProvider =
   PortfolioOverviewDataSource? dataSource;
   try {
     dataSource = await ref
-        .watch(_portfolioOverviewDataSourceProvider.future)
+        .watch(portfolioOverviewDataSourceProvider.future)
         .timeout(const Duration(seconds: 8));
   } catch (_) {
     return realized;
@@ -116,7 +100,7 @@ final enrichedTradePortfoliosProvider =
   // Cap enrichment wait so Portfolios never sits behind slow am-portfolio calls.
   List<PortfolioSummaryResponseDto?> summaries;
   try {
-    summaries = await Future.wait(
+    summaries = await Future.wait<PortfolioSummaryResponseDto?>(
       tradePortfolioList.portfolios.map((portfolio) async {
         try {
           return await dataSource!
@@ -137,10 +121,45 @@ final enrichedTradePortfoliosProvider =
     return realized;
   }
 
-  return [
+  final merged = [
     for (var i = 0; i < realized.length; i++)
       _mergeViewModel(realized[i], summaries[i]),
   ];
+
+  // Mail/demat books often leave am-portfolio overall/1D at null/0 (no cost).
+  // Trade holdings enrich already computes todayProfitLoss + import-mark overall —
+  // sum those onto the card when live gain is still flat.
+  // Heal Live P&L and/or live Win Rate from Trade holdings enrich when flat.
+  final needsTradeHeal = merged.any(
+    (p) =>
+        p.totalTrades > 0 &&
+        (p.totalGainLoss == 0 || (p.winRate ?? 0) == 0),
+  );
+  if (!needsTradeHeal) return merged;
+
+  try {
+    return await Future.wait<TradePortfolioViewModel>(
+      merged.map((portfolio) async {
+        if (portfolio.totalTrades <= 0) return portfolio;
+        if (portfolio.totalGainLoss != 0 && (portfolio.winRate ?? 0) != 0) {
+          return portfolio;
+        }
+        try {
+          final holdings = await ref
+              .read(tradeHoldingsProvider(portfolio.id).future)
+              .timeout(const Duration(seconds: 8));
+          return _healLivePnlFromTradeHoldings(portfolio, holdings);
+        } catch (_) {
+          return portfolio;
+        }
+      }),
+    ).timeout(
+      const Duration(seconds: 12),
+      onTimeout: () => merged,
+    );
+  } catch (_) {
+    return merged;
+  }
 });
 
 // ============================================================================
@@ -150,42 +169,139 @@ final enrichedTradePortfoliosProvider =
 /// Merges a realized TradePortfolioViewModel with an optional live summary.
 ///
 /// **Rules:**
-/// - `totalValue`: live portfolio value wins over the stale trade value.
-/// - `totalGainLoss`: live unrealized P&L wins (this is what shows on the card bottom).
-/// - `totalGainLossPercentage`: live percentage wins.
-/// - `netProfitLoss`: ALWAYS kept from trade. This is Realized P&L and must
-///    never be overridden with the portfolio's unrealized figure.
-/// - `winRate`: Calculated as (winningTrades + gainersCount) / (totalTrades + totalAssets)
+/// - `totalValue`: positive live value wins; a live **0** must not clobber a
+///    positive trade ledger value when the book still has trades/open positions
+///    (unknown-cost demat books often get a zero am-portfolio overlay).
+/// - `totalGainLoss` / `%`: same positive-prefer rule.
+/// - `netProfitLoss`: ALWAYS kept from trade (realized).
+/// - `winRate`: (winningTrades + gainersCount) / (totalTrades + totalAssets)
 ///
-/// When `liveSummary` is null (am-portfolio down or no data), the realized-only
-/// view model is returned unchanged — the card degrades gracefully.
+/// When `liveSummary` is null, the realized-only view model is returned unchanged.
 TradePortfolioViewModel _mergeViewModel(
   TradePortfolioViewModel realized,
   PortfolioSummaryResponseDto? liveSummary,
 ) {
   if (liveSummary == null) {
-    // No live data — show what we have from the trade ledger
     return realized;
   }
 
-  // Calculate overall win rate using both closed trades and live holdings
-  final int totalWinning = realized.winningTrades + (liveSummary.gainersCount ?? 0);
-  final int totalItems = realized.totalTrades + (liveSummary.totalAssets ?? 0);
-  
-  double? overallWinRate = realized.winRate; // Default to existing if no trades/holdings
-  if (totalItems > 0) {
-    overallWinRate = totalWinning / totalItems;
+  // Closed win rate when there are closed trades; else live gainers / assets.
+  // Never dilute closed W/L with (trades + assets) — that forced 0% on mail books.
+  final closedCount = realized.winningTrades + realized.losingTrades;
+  double? overallWinRate = realized.winRate;
+  if (closedCount > 0) {
+    overallWinRate = realized.winRate;
+  } else if ((liveSummary.totalAssets ?? 0) > 0 &&
+      liveSummary.gainersCount != null) {
+    overallWinRate =
+        liveSummary.gainersCount! / liveSummary.totalAssets!;
   }
 
+  final hasOpenBook =
+      realized.totalTrades > 0 || realized.openPositions > 0;
+
+  // Do not let a flat overall 0 mask a non-zero 1D move (mail books often
+  // persist totalGainLoss=0 while todayGainLoss is real).
+  final liveGain = _firstNonZeroOrNull(
+        liveSummary.totalGainLoss,
+        liveSummary.todayChange,
+      );
+  final liveGainPct = _firstNonZeroOrNull(
+        liveSummary.totalGainLossPercentage,
+        liveSummary.todayChangePercentage,
+      );
+
   return realized.copyWith(
-    // Live portfolio metrics override stale trade ledger values
-    totalValue: liveSummary.totalValue ?? realized.totalValue,
-    totalGainLoss: liveSummary.totalGainLoss ?? realized.totalGainLoss,
-    totalGainLossPercentage:
-        liveSummary.totalGainLossPercentage ?? realized.totalGainLossPercentage,
-    // Overall win rate incorporates live gainers
+    totalValue: _preferLiveMetric(
+      live: liveSummary.totalValue,
+      realized: realized.totalValue,
+      hasOpenBook: hasOpenBook,
+    ),
+    totalGainLoss: _preferLiveMetric(
+      live: liveGain,
+      realized: realized.totalGainLoss,
+      hasOpenBook: hasOpenBook,
+    ),
+    totalGainLossPercentage: _preferLiveMetric(
+      live: liveGainPct,
+      realized: realized.totalGainLossPercentage,
+      hasOpenBook: hasOpenBook,
+    ),
     winRate: overallWinRate,
-    // NOTE: netProfitLoss is intentionally NOT overridden here.
-    // It remains as-is from the trade ledger (Realized metrics).
+  );
+}
+
+/// Prefer non-null live metrics (including losses). Only fall back to realized
+/// when live is missing or a flat 0 while realized still has a signal.
+double _preferLiveMetric({
+  required double? live,
+  required double realized,
+  required bool hasOpenBook,
+}) {
+  if (live == null) return realized;
+  if (live != 0) return live;
+  if (hasOpenBook && realized != 0) return realized;
+  return live;
+}
+
+/// First non-zero wins; else first non-null (may be 0); else null.
+double? _firstNonZeroOrNull(double? primary, double? fallback) {
+  if (primary != null && primary != 0) return primary;
+  if (fallback != null && fallback != 0) return fallback;
+  return primary ?? fallback;
+}
+
+/// Sum Trade holdings enrich metrics onto the discovery card Live P&L / Win %.
+TradePortfolioViewModel _healLivePnlFromTradeHoldings(
+  TradePortfolioViewModel card,
+  TradeHoldings holdings,
+) {
+  var daySum = 0.0;
+  var overallSum = 0.0;
+  var hasDay = false;
+  var hasOverall = false;
+  var scored = 0;
+  var winners = 0;
+
+  for (final trade in holdings.content) {
+    final metrics = trade.metrics;
+    if (metrics == null) continue;
+    final day = metrics.todayProfitLoss;
+    if (day != null) {
+      hasDay = true;
+      daySum += day;
+    }
+    final overall = metrics.profitLoss;
+    if (overall != null) {
+      hasOverall = true;
+      overallSum += overall;
+    }
+    final signal = overall ?? day;
+    if (signal != null) {
+      scored++;
+      if (signal > 0) winners++;
+    }
+  }
+
+  final live = hasOverall
+      ? overallSum
+      : (hasDay ? daySum : null);
+  final liveWinRate = scored > 0 ? winners / scored : null;
+
+  final value = card.totalValue;
+  final pct = live != null && value > 0
+      ? (live / value) * 100
+      : null;
+
+  return card.copyWith(
+    totalGainLoss: card.totalGainLoss == 0 && live != null
+        ? live
+        : null,
+    totalGainLossPercentage: card.totalGainLoss == 0 && pct != null
+        ? pct
+        : null,
+    winRate: (card.winRate ?? 0) == 0 && liveWinRate != null
+        ? liveWinRate
+        : null,
   );
 }
