@@ -103,9 +103,6 @@ InputDecoration journalWorkflowDecoration(
     errorStyle: theme.textTheme.bodySmall?.copyWith(
       color: colors.statusError,
     ),
-    errorStyle: theme.textTheme.bodySmall?.copyWith(
-      color: colors.statusError,
-    ),
     border: OutlineInputBorder(
       borderRadius: radius,
       borderSide: BorderSide(color: colors.border.withValues(alpha: 0.4)),
