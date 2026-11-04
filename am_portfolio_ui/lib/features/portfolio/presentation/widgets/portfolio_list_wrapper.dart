@@ -175,7 +175,11 @@ class _PortfolioListWrapperState extends ConsumerState<PortfolioListWrapper> {
           ),
         );
       }
-      final fallback = portfolios.first;
+      // Prefer Demo over Paper/broker when remapping a ghost URL id.
+      final fallback = portfolios.firstWhere(
+        (p) => p.isDummy,
+        orElse: () => portfolios.first,
+      );
       setState(() {
         selectedPortfolioId = fallback.portfolioId;
         selectedPortfolioName = fallback.portfolioName;

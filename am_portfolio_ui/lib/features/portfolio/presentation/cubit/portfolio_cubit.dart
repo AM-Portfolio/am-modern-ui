@@ -44,6 +44,7 @@ class PortfolioCubit extends Cubit<PortfolioState> {
 
   String? _loadingPortfolioId;
   String? _loadedPortfolioId;
+  int _portfolioLoadGeneration = 0;
 
   String _currentTimeFrame = 'all';
 
@@ -438,6 +439,7 @@ class PortfolioCubit extends Cubit<PortfolioState> {
     }
 
     _loadingPortfolioId = portfolioId;
+    final int loadGen = ++_portfolioLoadGeneration;
 
     CommonLogger.methodEntry(
       'loadPortfolioById',
@@ -453,6 +455,8 @@ class PortfolioCubit extends Cubit<PortfolioState> {
     try {
       final cachedHoldings = await _portfolioService.getCachedPortfolioHoldingsById(portfolioId);
       final cachedSummary = await _portfolioService.getCachedPortfolioSummaryById(portfolioId);
+
+      if (loadGen != _portfolioLoadGeneration) return;
 
       if (cachedHoldings != null && cachedSummary != null) {
         if (!isClosed) {
@@ -476,6 +480,7 @@ class PortfolioCubit extends Cubit<PortfolioState> {
         }
       }
     } catch (e) {
+      if (loadGen != _portfolioLoadGeneration) return;
       if (!isClosed) {
         if (state is PortfolioLoaded) {
           emit((state as PortfolioLoaded).copyWith(isStale: true, isHoldingsLoading: true));
@@ -498,6 +503,8 @@ class PortfolioCubit extends Cubit<PortfolioState> {
         _currentTimeFrame,
       );
 
+      if (loadGen != _portfolioLoadGeneration) return;
+
       if (!isClosed) {
         emit(
           PortfolioLoaded(
@@ -512,6 +519,7 @@ class PortfolioCubit extends Cubit<PortfolioState> {
 
       // Then fetch Holdings (Slow)
       final holdings = await _portfolioService.getPortfolioHoldingsById(portfolioId);
+      if (loadGen != _portfolioLoadGeneration) return;
       sw.stop();
       ProductTelemetry.instance.widgetTiming(
         widget: 'portfolio_holdings',
@@ -553,6 +561,7 @@ class PortfolioCubit extends Cubit<PortfolioState> {
       );
     } catch (error) {
       sw.stop();
+      if (loadGen != _portfolioLoadGeneration) return;
       ProductTelemetry.instance.widgetTiming(
         widget: 'portfolio_holdings',
         durationMs: sw.elapsedMilliseconds,
@@ -585,7 +594,8 @@ class PortfolioCubit extends Cubit<PortfolioState> {
         metadata: {'status': 'error'},
       );
     } finally {
-      if (_loadingPortfolioId == portfolioId) {
+      if (loadGen == _portfolioLoadGeneration &&
+          _loadingPortfolioId == portfolioId) {
         _loadingPortfolioId = null;
       }
     }
