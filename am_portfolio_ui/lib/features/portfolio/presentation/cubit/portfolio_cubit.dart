@@ -44,6 +44,7 @@ class PortfolioCubit extends Cubit<PortfolioState> {
 
   String? _loadingPortfolioId;
   String? _loadedPortfolioId;
+  int _loadGeneration = 0;
 
   String _currentTimeFrame = 'all';
 
@@ -437,12 +438,16 @@ class PortfolioCubit extends Cubit<PortfolioState> {
       return;
     }
 
+    final gen = ++_loadGeneration;
     _loadingPortfolioId = portfolioId;
+
+    bool stillCurrent() =>
+        !isClosed && gen == _loadGeneration && _loadingPortfolioId == portfolioId;
 
     CommonLogger.methodEntry(
       'loadPortfolioById',
       tag: 'PortfolioCubit',
-      metadata: {'portfolioId': portfolioId},
+      metadata: {'portfolioId': portfolioId, 'gen': gen},
     );
     CommonLogger.stateChange(
       '${state.runtimeType}',
@@ -454,34 +459,31 @@ class PortfolioCubit extends Cubit<PortfolioState> {
       final cachedHoldings = await _portfolioService.getCachedPortfolioHoldingsById(portfolioId);
       final cachedSummary = await _portfolioService.getCachedPortfolioSummaryById(portfolioId);
 
+      if (!stillCurrent()) return;
+
       if (cachedHoldings != null && cachedSummary != null) {
-        if (!isClosed) {
-          emit(
-            PortfolioLoaded(
-              portfolioId: portfolioId,
-              summary: cachedSummary,
-              holdings: cachedHoldings.holdings,
-              portfolioList: state.portfolioList,
-              isStale: true,
-            ),
-          );
-        }
+        emit(
+          PortfolioLoaded(
+            portfolioId: portfolioId,
+            summary: cachedSummary,
+            holdings: cachedHoldings.holdings,
+            portfolioList: state.portfolioList,
+            isStale: true,
+          ),
+        );
       } else {
-        if (!isClosed) {
-          if (state is PortfolioLoaded) {
-            emit((state as PortfolioLoaded).copyWith(isStale: true, isHoldingsLoading: true));
-          } else {
-            emit(PortfolioLoading(portfolioList: state.portfolioList));
-          }
-        }
-      }
-    } catch (e) {
-      if (!isClosed) {
         if (state is PortfolioLoaded) {
           emit((state as PortfolioLoaded).copyWith(isStale: true, isHoldingsLoading: true));
         } else {
           emit(PortfolioLoading(portfolioList: state.portfolioList));
         }
+      }
+    } catch (e) {
+      if (!stillCurrent()) return;
+      if (state is PortfolioLoaded) {
+        emit((state as PortfolioLoaded).copyWith(isStale: true, isHoldingsLoading: true));
+      } else {
+        emit(PortfolioLoading(portfolioList: state.portfolioList));
       }
     }
 
@@ -498,21 +500,24 @@ class PortfolioCubit extends Cubit<PortfolioState> {
         _currentTimeFrame,
       );
 
-      if (!isClosed) {
-        emit(
-          PortfolioLoaded(
-            portfolioId: portfolioId,
-            summary: summary,
-            holdings: const [],
-            portfolioList: state.portfolioList,
-            isHoldingsLoading: true,
-          ),
-        );
-      }
+      if (!stillCurrent()) return;
+
+      emit(
+        PortfolioLoaded(
+          portfolioId: portfolioId,
+          summary: summary,
+          holdings: const [],
+          portfolioList: state.portfolioList,
+          isHoldingsLoading: true,
+        ),
+      );
 
       // Then fetch Holdings (Slow)
       final holdings = await _portfolioService.getPortfolioHoldingsById(portfolioId);
       sw.stop();
+
+      if (!stillCurrent()) return;
+
       ProductTelemetry.instance.widgetTiming(
         widget: 'portfolio_holdings',
         durationMs: sw.elapsedMilliseconds,
@@ -533,18 +538,16 @@ class PortfolioCubit extends Cubit<PortfolioState> {
         tag: 'PortfolioCubit',
       );
 
-      if (!isClosed) {
-        _loadedPortfolioId = portfolioId;
-        emit(
-          PortfolioLoaded(
-            portfolioId: portfolioId,
-            summary: summary,
-            holdings: holdings.holdings,
-            portfolioList: state.portfolioList,
-            isHoldingsLoading: false,
-          ),
-        );
-      }
+      _loadedPortfolioId = portfolioId;
+      emit(
+        PortfolioLoaded(
+          portfolioId: portfolioId,
+          summary: summary,
+          holdings: holdings.holdings,
+          portfolioList: state.portfolioList,
+          isHoldingsLoading: false,
+        ),
+      );
 
       CommonLogger.methodExit(
         'loadPortfolioById',
@@ -553,6 +556,8 @@ class PortfolioCubit extends Cubit<PortfolioState> {
       );
     } catch (error) {
       sw.stop();
+      if (!stillCurrent()) return;
+
       ProductTelemetry.instance.widgetTiming(
         widget: 'portfolio_holdings',
         durationMs: sw.elapsedMilliseconds,
@@ -573,11 +578,9 @@ class PortfolioCubit extends Cubit<PortfolioState> {
         stackTrace: StackTrace.current,
       );
 
-      if (!isClosed) {
-        emit(
-          PortfolioError(error.toString(), portfolioList: state.portfolioList),
-        );
-      }
+      emit(
+        PortfolioError(error.toString(), portfolioList: state.portfolioList),
+      );
 
       CommonLogger.methodExit(
         'loadPortfolioById',
@@ -585,7 +588,7 @@ class PortfolioCubit extends Cubit<PortfolioState> {
         metadata: {'status': 'error'},
       );
     } finally {
-      if (_loadingPortfolioId == portfolioId) {
+      if (_loadingPortfolioId == portfolioId && gen == _loadGeneration) {
         _loadingPortfolioId = null;
       }
     }

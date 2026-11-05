@@ -30,6 +30,7 @@ class ChartWorkspacePage extends ConsumerStatefulWidget {
     this.sidebarWidth = 300,
     this.bottomPanelHeight = 320,
     this.showHeaderSearch = true,
+    this.showSidebar = true,
     this.accentColor,
   });
 
@@ -44,6 +45,9 @@ class ChartWorkspacePage extends ConsumerStatefulWidget {
 
   /// When true, shows a search icon that opens Global Omnisearch (no local symbol field).
   final bool showHeaderSearch;
+
+  /// When false, hides the Watchlist & Portfolio sidebar (e.g. paper desk embed).
+  final bool showSidebar;
 
   /// Optional module accent color override (defaults to [ModuleColors.market]).
   final Color? accentColor;
@@ -76,6 +80,10 @@ class _ChartWorkspacePageState extends ConsumerState<ChartWorkspacePage> {
         if (isMobile) {
           ctrl.setLayout(ChartGridLayout.one);
           ctrl.setBottomMinimized(true);
+        } else if (!widget.showSidebar) {
+          // Paper desk Chart tab: one pane, keep bottom panel (Overview / F&O).
+          ctrl.setLayout(ChartGridLayout.one);
+          ctrl.setBottomMinimized(false);
         }
       }
     });
@@ -192,10 +200,12 @@ class _ChartWorkspacePageState extends ConsumerState<ChartWorkspacePage> {
                   ctrl: ctrl,
                   analysisFocus: _analysisFocus,
                   showHeaderSearch: widget.showHeaderSearch,
+                  showSidebar: widget.showSidebar,
                   onToggleFocus: () =>
                       setState(() => _analysisFocus = !_analysisFocus),
-                  onOpenMobileSidebar: () =>
-                      _openMobileSidebar(sidebar, themedData),
+                  onOpenMobileSidebar: widget.showSidebar
+                      ? () => _openMobileSidebar(sidebar, themedData)
+                      : null,
                   onToggleDrawRail: () => setState(
                     () => _showMobileDrawRail = !_showMobileDrawRail,
                   ),
@@ -527,7 +537,9 @@ class _ChartWorkspacePageState extends ConsumerState<ChartWorkspacePage> {
                           },
                         ),
                       ),
-                      if (!_analysisFocus && !isMobile) ...[
+                      if (widget.showSidebar &&
+                          !_analysisFocus &&
+                          !isMobile) ...[
                         if (!state.sidebarMinimized) ...[
                           const VerticalDivider(width: 1),
                           SizedBox(
@@ -776,6 +788,7 @@ class _SlimTopBar extends ConsumerStatefulWidget {
     required this.analysisFocus,
     required this.onToggleFocus,
     this.showHeaderSearch = true,
+    this.showSidebar = true,
     this.onOpenMobileSidebar,
     this.onToggleDrawRail,
     this.showDrawRail = false,
@@ -785,6 +798,7 @@ class _SlimTopBar extends ConsumerStatefulWidget {
   final bool analysisFocus;
   final VoidCallback onToggleFocus;
   final bool showHeaderSearch;
+  final bool showSidebar;
   final VoidCallback? onOpenMobileSidebar;
   final VoidCallback? onToggleDrawRail;
   final bool showDrawRail;
@@ -877,15 +891,17 @@ class _SlimTopBarState extends ConsumerState<_SlimTopBar> {
         child: Row(
           children: [
             // Left: nav + layout + symbol + price badge
-            IconButton(
-              tooltip: 'Back',
-              iconSize: 20,
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-              icon: const Icon(Icons.arrow_back),
-              onPressed: () => Navigator.of(context).maybePop(),
-            ),
-            const SizedBox(width: 4),
+            if (widget.showSidebar) ...[
+              IconButton(
+                tooltip: 'Back',
+                iconSize: 20,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                icon: const Icon(Icons.arrow_back),
+                onPressed: () => Navigator.of(context).maybePop(),
+              ),
+              const SizedBox(width: 4),
+            ],
             _LayoutIconToggle(layout: state.layout, onChanged: ctrl.setLayout),
             const SizedBox(width: 8),
             _divider(theme),
@@ -972,24 +988,26 @@ class _SlimTopBarState extends ConsumerState<_SlimTopBar> {
                     : theme.colorScheme.primary,
               ),
             ),
-            const SizedBox(width: 2),
-            IconButton(
-              tooltip: state.sidebarMinimized
-                  ? 'Restore sidebar'
-                  : 'Minimize sidebar',
-              iconSize: 18,
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-              onPressed: ctrl.toggleSidebarMinimized,
-              icon: Icon(
-                state.sidebarMinimized
-                    ? Icons.view_sidebar_outlined
-                    : Icons.view_sidebar,
-                color: state.sidebarMinimized
-                    ? theme.hintColor
-                    : theme.colorScheme.primary,
+            if (widget.showSidebar) ...[
+              const SizedBox(width: 2),
+              IconButton(
+                tooltip: state.sidebarMinimized
+                    ? 'Restore sidebar'
+                    : 'Minimize sidebar',
+                iconSize: 18,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                onPressed: ctrl.toggleSidebarMinimized,
+                icon: Icon(
+                  state.sidebarMinimized
+                      ? Icons.view_sidebar_outlined
+                      : Icons.view_sidebar,
+                  color: state.sidebarMinimized
+                      ? theme.hintColor
+                      : theme.colorScheme.primary,
+                ),
               ),
-            ),
+            ],
             const SizedBox(width: 2),
             IconButton(
               tooltip: widget.analysisFocus

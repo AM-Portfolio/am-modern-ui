@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../core/navigation/swipe_navigation_controller.dart';
 
-
 /// A swipeable PageView widget that works with SwipeNavigationController
 /// Supports horizontal swiping, haptic feedback, and page indicators
 class SwipeablePageView extends StatefulWidget {
@@ -16,7 +15,8 @@ class SwipeablePageView extends StatefulWidget {
   final IndicatorPosition indicatorPosition;
 
   /// Custom indicator widget (overrides default dots)
-  final Widget Function(BuildContext, int currentIndex, int itemCount)? customIndicator;
+  final Widget Function(BuildContext, int currentIndex, int itemCount)?
+      customIndicator;
 
   /// Callback when page changes
   final void Function(int index)? onPageChanged;
@@ -39,21 +39,52 @@ class SwipeablePageView extends StatefulWidget {
 }
 
 class _SwipeablePageViewState extends State<SwipeablePageView> {
+  late int _itemsSignature;
+
+  static int _signatureFor(SwipeNavigationController controller) {
+    // itemsRevision bumps on updateItems; ignore index-only notifyListeners.
+    return Object.hash(controller.items.length, controller.itemsRevision);
+  }
+
   @override
   void initState() {
     super.initState();
+    _itemsSignature = _signatureFor(widget.controller);
+    widget.controller.addListener(_onControllerChanged);
     _checkPageSync();
   }
 
   @override
   void didUpdateWidget(SwipeablePageView oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (oldWidget.controller != widget.controller) {
+      oldWidget.controller.removeListener(_onControllerChanged);
+      _itemsSignature = _signatureFor(widget.controller);
+      widget.controller.addListener(_onControllerChanged);
+    }
     _checkPageSync();
   }
 
+  @override
+  void dispose() {
+    widget.controller.removeListener(_onControllerChanged);
+    super.dispose();
+  }
+
+  void _onControllerChanged() {
+    // Skip index-only notifies (sidebar highlight uses AnimatedBuilder).
+    if (!mounted) return;
+    final next = _signatureFor(widget.controller);
+    if (next != _itemsSignature) {
+      setState(() => _itemsSignature = next);
+    }
+  }
+
   void _checkPageSync() {
+    if (widget.controller.isProgrammaticNavigation) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
+      if (widget.controller.isProgrammaticNavigation) return;
       final pageController = widget.controller.pageController;
       final targetIndex = widget.controller.currentIndex;
       if (pageController.hasClients) {
@@ -69,30 +100,30 @@ class _SwipeablePageViewState extends State<SwipeablePageView> {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        if (widget.showIndicator && widget.indicatorPosition == IndicatorPosition.top)
+        if (widget.showIndicator &&
+            widget.indicatorPosition == IndicatorPosition.top)
           _buildIndicator(),
-
         Expanded(
-          child: AnimatedBuilder(
-            animation: widget.controller,
-            builder: (context, _) {
-              return PageView.builder(
-                scrollDirection: widget.scrollDirection,
-                controller: widget.controller.pageController,
-                onPageChanged: (index) {
-                  HapticFeedback.lightImpact();
-                  widget.controller.onPageChanged(index);
-                  widget.onPageChanged?.call(index);
-                },
-                itemCount: widget.controller.items.length,
-                // Wrap each page in SingleChildScrollView for vertical scrolling
-                itemBuilder: (context, index) => widget.controller.items[index].page,
-              );
+          // Keep PageView stable across index notifyListeners — only itemCount
+          // changes (via setState from _onControllerChanged) rebuild it.
+          child: PageView.builder(
+            key: ValueKey<int>(_itemsSignature),
+            scrollDirection: widget.scrollDirection,
+            controller: widget.controller.pageController,
+            // Higher motion threshold so tiny pans do not commit a tab change.
+            physics: const _DeliberatePageScrollPhysics(),
+            onPageChanged: (index) {
+              HapticFeedback.lightImpact();
+              widget.controller.onPageChanged(index);
+              widget.onPageChanged?.call(index);
             },
+            itemCount: widget.controller.items.length,
+            itemBuilder: (context, index) =>
+                widget.controller.items[index].page,
           ),
         ),
-
-        if (widget.showIndicator && widget.indicatorPosition == IndicatorPosition.bottom)
+        if (widget.showIndicator &&
+            widget.indicatorPosition == IndicatorPosition.bottom)
           _buildIndicator(),
       ],
     );
@@ -132,7 +163,7 @@ class _SwipeablePageViewState extends State<SwipeablePageView> {
     final color = item.accentColor;
 
     return GestureDetector(
-      onTap: () => widget.controller.navigateTo(index),
+      onTap: () => widget.controller.navigateTo(index, animate: false),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         curve: Curves.easeInOutCubic,
@@ -161,4 +192,17 @@ class _SwipeablePageViewState extends State<SwipeablePageView> {
 enum IndicatorPosition {
   top,
   bottom,
+}
+
+/// Page physics that ignores micro horizontal jitter before starting a drag.
+class _DeliberatePageScrollPhysics extends PageScrollPhysics {
+  const _DeliberatePageScrollPhysics({super.parent});
+
+  @override
+  _DeliberatePageScrollPhysics applyTo(ScrollPhysics? ancestor) {
+    return _DeliberatePageScrollPhysics(parent: buildParent(ancestor));
+  }
+
+  @override
+  double get dragStartDistanceMotionThreshold => 24;
 }

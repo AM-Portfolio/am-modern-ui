@@ -24,6 +24,7 @@ class EquityInsiderPage extends ConsumerStatefulWidget {
     super.key,
     this.initialSymbol,
     this.showPeers = true,
+    this.showHeroDescription = true,
   });
 
   /// When set (e.g. paper desk watchlist), loads this symbol instead of empty search.
@@ -31,6 +32,9 @@ class EquityInsiderPage extends ConsumerStatefulWidget {
 
   /// Paper desk hides Peers; Market Equity Insider keeps it (default true).
   final bool showPeers;
+
+  /// Paper desk hides company blurb; Market Equity Insider keeps it (default true).
+  final bool showHeroDescription;
 
   @override
   ConsumerState<EquityInsiderPage> createState() => EquityInsiderPageState();
@@ -189,6 +193,7 @@ class EquityInsiderPageState extends ConsumerState<EquityInsiderPage> {
       onSelectSymbol: navigateToSymbol,
       onBack: _symbolHistory.isNotEmpty ? _handleBack : null,
       showPeers: widget.showPeers,
+      showHeroDescription: widget.showHeroDescription,
     );
   }
 }
@@ -199,12 +204,14 @@ class _FundamentalsBody extends ConsumerStatefulWidget {
     required this.onSelectSymbol,
     this.onBack,
     this.showPeers = true,
+    this.showHeroDescription = true,
   });
 
   final String symbol;
   final ValueChanged<String> onSelectSymbol;
   final VoidCallback? onBack;
   final bool showPeers;
+  final bool showHeroDescription;
 
   @override
   ConsumerState<_FundamentalsBody> createState() => _FundamentalsBodyState();
@@ -359,16 +366,17 @@ class _FundamentalsBodyState extends ConsumerState<_FundamentalsBody> {
                 ),
               ),
             ),
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: isMobile ? 12 : 16,
-                ),
-                child: EquityInsiderHeroDescription(
-                  symbol: widget.symbol,
+            if (widget.showHeroDescription)
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isMobile ? 12 : 16,
+                  ),
+                  child: EquityInsiderHeroDescription(
+                    symbol: widget.symbol,
+                  ),
                 ),
               ),
-            ),
             SliverPersistentHeader(
               pinned: true,
               delegate: _StickySectionNavDelegate(

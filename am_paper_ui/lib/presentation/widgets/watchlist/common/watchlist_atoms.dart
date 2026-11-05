@@ -180,7 +180,7 @@ class WatchlistRow extends StatelessWidget {
     required this.onTap,
     required this.onBuy,
     required this.onSell,
-    required this.onFundamentals,
+    this.onOpenChart,
     required this.onRemove,
   });
 
@@ -193,7 +193,7 @@ class WatchlistRow extends StatelessWidget {
   final VoidCallback onTap;
   final VoidCallback onBuy;
   final VoidCallback onSell;
-  final VoidCallback onFundamentals;
+  final VoidCallback? onOpenChart;
   final VoidCallback onRemove;
 
   @override
@@ -242,7 +242,7 @@ class WatchlistRow extends StatelessWidget {
                 WatchlistActionToolbar(
                   onBuy: onBuy,
                   onSell: onSell,
-                  onFundamentals: onFundamentals,
+                  onOpenChart: onOpenChart,
                 ),
                 const SizedBox(width: 8),
               ],
@@ -311,12 +311,12 @@ class WatchlistActionToolbar extends StatelessWidget {
     super.key,
     required this.onBuy,
     required this.onSell,
-    required this.onFundamentals,
+    this.onOpenChart,
   });
 
   final VoidCallback onBuy;
   final VoidCallback onSell;
-  final VoidCallback onFundamentals;
+  final VoidCallback? onOpenChart;
 
   @override
   Widget build(BuildContext context) {
@@ -335,17 +335,19 @@ class WatchlistActionToolbar extends StatelessWidget {
           bg: colors.marketNegativeIndicator,
           onTap: onSell,
         ),
-        const SizedBox(width: 2),
-        IconButton(
-          tooltip: 'Fundamental analysis',
-          iconSize: 18,
-          visualDensity: VisualDensity.compact,
-          onPressed: onFundamentals,
-          icon: Icon(
-            Icons.analytics_outlined,
-            color: _watchlistAccent(context),
+        if (onOpenChart != null) ...[
+          const SizedBox(width: 2),
+          IconButton(
+            tooltip: 'Open chart',
+            iconSize: 18,
+            visualDensity: VisualDensity.compact,
+            onPressed: onOpenChart,
+            icon: Icon(
+              Icons.candlestick_chart,
+              color: _watchlistAccent(context),
+            ),
           ),
-        ),
+        ],
       ],
     );
   }

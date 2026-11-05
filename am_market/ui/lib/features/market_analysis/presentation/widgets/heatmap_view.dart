@@ -48,16 +48,11 @@ class HeatmapView extends StatelessWidget {
       );
     }
 
-    final indexLabel = data.indexName?.isNotEmpty == true
-        ? data.indexName!
-        : symbol;
-
     return IndexHeatmapPanel(
       indexSymbol: symbol,
       timeframe: timeframe,
       onSelectStock: onSelectStock,
       showPercentFilters: true,
-      title: 'Market Heatmap · $indexLabel',
     );
   }
 }

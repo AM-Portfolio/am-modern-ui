@@ -16,6 +16,7 @@ class WatchlistListBody extends StatelessWidget {
     required this.compact,
     required this.onBuySell,
     this.onOpenFundamentals,
+    this.onOpenChart,
     required this.onSelectSymbol,
   });
 
@@ -24,6 +25,7 @@ class WatchlistListBody extends StatelessWidget {
   final bool compact;
   final WatchlistSideCallback onBuySell;
   final ValueChanged<String>? onOpenFundamentals;
+  final ValueChanged<String>? onOpenChart;
   final ValueChanged<String> onSelectSymbol;
 
   @override
@@ -141,10 +143,15 @@ class WatchlistListBody extends StatelessWidget {
                                 },
                                 onBuy: () => onBuySell(stock.symbol, 'BUY'),
                                 onSell: () => onBuySell(stock.symbol, 'SELL'),
-                                onFundamentals: () {
-                                  final cb = onOpenFundamentals;
-                                  if (cb != null) {
-                                    cb(stock.symbol);
+                                onOpenChart: () {
+                                  final chart = onOpenChart;
+                                  if (chart != null) {
+                                    chart(stock.symbol);
+                                    return;
+                                  }
+                                  final fa = onOpenFundamentals;
+                                  if (fa != null) {
+                                    fa(stock.symbol);
                                   } else {
                                     onSelectSymbol(stock.symbol);
                                   }

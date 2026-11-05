@@ -300,36 +300,6 @@ class _PaperOrdersPaneState extends State<PaperOrdersPane> {
     );
   }
 
-  Widget _statChip(BuildContext context, String label, int n, {Color? valueColor}) {
-    final colors = context.colors;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        border: Border.all(color: colors.divider),
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Text.rich(
-        TextSpan(
-          children: [
-            TextSpan(
-              text: '$label: ',
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: colors.textSecondary,
-                  ),
-            ),
-            TextSpan(
-              text: '$n',
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: valueColor ?? colors.textPrimary,
-                    fontWeight: FontWeight.w700,
-                  ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _filterChip(
     BuildContext context, {
     required String label,
@@ -612,67 +582,14 @@ class _PaperOrdersPaneState extends State<PaperOrdersPane> {
 
         Future<void> refresh() => context.read<PaperOmsCubit>().refreshBooks();
 
-        final header = Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 8, 0),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Text(
-                          "Today's orders",
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.w700,
-                              ),
-                        ),
-                        IconButton(
-                          tooltip: 'Refresh',
-                          onPressed: refresh,
-                          icon: const Icon(Icons.refresh, size: 20),
-                          visualDensity: VisualDensity.compact,
-                        ),
-                      ],
-                    ),
-                    Text(
-                      'Executed, pending, and failed for today',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: colors.textSecondary,
-                          ),
-                    ),
-                  ],
-                ),
-              ),
-              _statChip(context, 'Total', all.length),
-              const SizedBox(width: 6),
-              _statChip(
-                context,
-                'Filled',
-                filled,
-                valueColor: colors.marketPositiveIndicator,
-              ),
-              const SizedBox(width: 6),
-              _statChip(
-                context,
-                'Working',
-                pending,
-                valueColor: colors.statusWarning,
-              ),
-              if (pending > 0) ...[
-                const SizedBox(width: 8),
-                TextButton(
-                  onPressed: state.submitting
-                      ? null
-                      : () => context.read<PaperOmsCubit>().cancelAllPending(),
-                  child: const Text('Cancel all'),
-                ),
-              ],
-            ],
-          ),
-        );
+        final cancelAll = pending > 0
+            ? TextButton(
+                onPressed: state.submitting
+                    ? null
+                    : () => context.read<PaperOmsCubit>().cancelAllPending(),
+                child: const Text('Cancel all'),
+              )
+            : null;
 
         final filters = Padding(
           padding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
@@ -685,6 +602,7 @@ class _PaperOrdersPaneState extends State<PaperOrdersPane> {
                     ..._filterChips(context, all.length, pending, filled, failed),
                     _searchField(context),
                     _typeDropdown(context),
+                    if (cancelAll != null) cancelAll,
                   ],
                 )
               : Row(
@@ -697,6 +615,10 @@ class _PaperOrdersPaneState extends State<PaperOrdersPane> {
                       failed,
                     )) ...[
                       chip,
+                      const SizedBox(width: 8),
+                    ],
+                    if (cancelAll != null) ...[
+                      cancelAll,
                       const SizedBox(width: 8),
                     ],
                     const Spacer(),
@@ -726,7 +648,6 @@ class _PaperOrdersPaneState extends State<PaperOrdersPane> {
               physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.only(bottom: 16),
               children: [
-                header,
                 filters,
                 if (filtered.isEmpty)
                   Padding(
@@ -751,7 +672,6 @@ class _PaperOrdersPaneState extends State<PaperOrdersPane> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            header,
             filters,
             Expanded(
               child: Padding(

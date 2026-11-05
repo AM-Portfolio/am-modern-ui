@@ -5,7 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../data/oms_models.dart';
 import '../paper_oms_cubit.dart';
 import '../paper_oms_state.dart';
-import '../widgets/paper_analyser_pane.dart';
+import '../widgets/paper_chart_embed.dart';
 import '../widgets/paper_order_ticket.dart';
 import '../widgets/paper_order_ticket_sheet.dart';
 import '../widgets/paper_orders_pane.dart';
@@ -19,7 +19,7 @@ enum _TicketPlacement {
   free,
 }
 
-enum _MidTab { wallet, overview, orders, positions }
+enum _MidTab { wallet, orders, chart, positions }
 
 class PaperDeskScreen extends StatefulWidget {
   const PaperDeskScreen({super.key});
@@ -50,6 +50,18 @@ class _PaperDeskScreenState extends State<PaperDeskScreen> {
 
   bool get _hasSymbol => _symbol.trim().isNotEmpty;
 
+  void _openChart(String symbol) {
+    final sym = symbol.trim().toUpperCase();
+    if (sym.isEmpty) return;
+    setState(() {
+      _symbol = sym;
+      _midTab = _MidTab.chart;
+      _orderOpen = false;
+      _narrowShowDesk = true;
+    });
+    _narrowTabs.currentState?.showDesk();
+  }
+
   bool _isWide(BuildContext context) =>
       MediaQuery.sizeOf(context).width >= _wideBreakpoint;
 
@@ -58,20 +70,15 @@ class _PaperDeskScreenState extends State<PaperDeskScreen> {
     if (sym.isEmpty) return;
     setState(() {
       _symbol = sym;
-      _midTab = _MidTab.overview;
+      if (_midTab == _MidTab.wallet) {
+        _midTab = _MidTab.chart;
+      }
     });
   }
 
   void _openFundamentalAnalysis([String? symbol]) {
-    final sym = (symbol ?? _symbol).trim().toUpperCase();
-    if (sym.isEmpty) return;
-    setState(() {
-      _symbol = sym;
-      _midTab = _MidTab.overview;
-      _orderOpen = false;
-      _narrowShowDesk = true;
-    });
-    _narrowTabs.currentState?.showDesk();
+    // Overview lives in the Chart bottom panel now.
+    _openChart(symbol ?? _symbol);
   }
 
   void _buySell(String symbol, String side) {
@@ -238,8 +245,8 @@ class _PaperDeskScreenState extends State<PaperDeskScreen> {
                     children: [
                       for (final t in const [
                         (_MidTab.wallet, 'Wallet'),
-                        (_MidTab.overview, 'Overview'),
                         (_MidTab.orders, 'Orders'),
+                        (_MidTab.chart, 'Chart'),
                         (_MidTab.positions, 'Positions'),
                       ])
                         _MidTabChip(
@@ -264,7 +271,9 @@ class _PaperDeskScreenState extends State<PaperDeskScreen> {
     switch (_midTab) {
       case _MidTab.wallet:
         return const PaperWalletPane();
-      case _MidTab.overview:
+      case _MidTab.orders:
+        return PaperOrdersPane(onReorder: _reorderOrder);
+      case _MidTab.chart:
         if (!_hasSymbol) {
           return Center(
             child: Padding(
@@ -279,11 +288,9 @@ class _PaperDeskScreenState extends State<PaperDeskScreen> {
             ),
           );
         }
-        return PaperAnalyserPane(symbol: _symbol);
-      case _MidTab.orders:
-        return PaperOrdersPane(onReorder: _reorderOrder);
+        return PaperChartEmbed(symbol: _symbol);
       case _MidTab.positions:
-        return const PaperPositionsPnlPane();
+        return PaperPositionsPnlPane(onBuySell: _buySell);
     }
   }
 
@@ -311,6 +318,7 @@ class _PaperDeskScreenState extends State<PaperDeskScreen> {
               onSelectSymbol: _selectSymbol,
               onBuySell: _buySell,
               onOpenFundamentals: _openFundamentalAnalysis,
+              onOpenChart: _openChart,
               midTabBar: (ctx) => _midPane(
                 ctx,
                 onBack: () => setState(() => _narrowShowDesk = false),
@@ -364,6 +372,7 @@ class _PaperDeskScreenState extends State<PaperDeskScreen> {
                                     onSelectSymbol: _selectSymbol,
                                     onBuySell: _buySell,
                                     onOpenFundamentals: _openFundamentalAnalysis,
+                                    onOpenChart: _openChart,
                                     showSearch: false,
                                   ),
                                 ),
@@ -447,6 +456,7 @@ class _NarrowDeskBody extends StatefulWidget {
     required this.onSelectSymbol,
     required this.onBuySell,
     required this.onOpenFundamentals,
+    required this.onOpenChart,
     required this.midTabBar,
   });
 
@@ -458,6 +468,7 @@ class _NarrowDeskBody extends StatefulWidget {
   final ValueChanged<String> onSelectSymbol;
   final void Function(String symbol, String side) onBuySell;
   final ValueChanged<String> onOpenFundamentals;
+  final ValueChanged<String> onOpenChart;
   final Widget Function(BuildContext context) midTabBar;
 
   @override
@@ -473,21 +484,22 @@ class _NarrowDeskBodyState extends State<_NarrowDeskBody> {
 
   @override
   Widget build(BuildContext context) {
-    final showOverview = widget.midTab == _MidTab.overview;
     final colors = context.colors;
     final accent = ModuleColors.market;
+    final showChart = widget.midTab == _MidTab.chart;
 
     Widget body;
     if (widget.showDesk) {
       body = widget.midTabBar(context);
     } else if (_surface == _NarrowSurface.positions) {
-      body = const PaperPositionsPnlPane();
+      body = PaperPositionsPnlPane(onBuySell: widget.onBuySell);
     } else {
       body = PaperWatchlistPane(
         selectedSymbol: widget.symbol,
         onSelectSymbol: widget.onSelectSymbol,
         onBuySell: widget.onBuySell,
         onOpenFundamentals: widget.onOpenFundamentals,
+        onOpenChart: widget.onOpenChart,
         compactChrome: true,
         showSearch: false,
       );
@@ -503,11 +515,11 @@ class _NarrowDeskBodyState extends State<_NarrowDeskBody> {
                 Offstage(
                   offstage: true,
                   child: TickerMode(
-                    enabled: !showOverview || !widget.showDesk,
+                    enabled: !showChart || !widget.showDesk,
                     child: SizedBox(
                       width: MediaQuery.sizeOf(context).width,
                       height: MediaQuery.sizeOf(context).height,
-                      child: PaperAnalyserPane(symbol: widget.symbol),
+                      child: PaperChartEmbed(symbol: widget.symbol),
                     ),
                   ),
                 ),

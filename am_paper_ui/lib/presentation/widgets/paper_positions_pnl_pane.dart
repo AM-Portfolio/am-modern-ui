@@ -9,6 +9,7 @@ import '../../data/watchlist_models.dart';
 import '../paper_oms_cubit.dart';
 import '../paper_oms_state.dart';
 import 'paper_position_mobile_card.dart';
+import 'watchlist/common/watchlist_atoms.dart';
 
 class _PosRow {
   const _PosRow({
@@ -30,7 +31,13 @@ class _PosRow {
 
 /// Open positions with today's P&L — adaptive table/card.
 class PaperPositionsPnlPane extends StatefulWidget {
-  const PaperPositionsPnlPane({super.key});
+  const PaperPositionsPnlPane({
+    super.key,
+    this.onBuySell,
+  });
+
+  /// Opens the order ticket for [symbol] with side BUY or SELL.
+  final void Function(String symbol, String side)? onBuySell;
 
   @override
   State<PaperPositionsPnlPane> createState() => _PaperPositionsPnlPaneState();
@@ -175,8 +182,31 @@ class _PaperPositionsPnlPaneState extends State<PaperPositionsPnlPane> {
     return colors.textPrimary;
   }
 
+  Widget _buySellActions(BuildContext context, String symbol) {
+    final colors = context.colors;
+    final onBuySell = widget.onBuySell;
+    if (onBuySell == null) return const SizedBox.shrink();
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        WatchlistSq(
+          label: 'B',
+          bg: ModuleColors.market,
+          onTap: () => onBuySell(symbol, 'BUY'),
+        ),
+        const SizedBox(width: 4),
+        WatchlistSq(
+          label: 'S',
+          bg: colors.marketNegativeIndicator,
+          onTap: () => onBuySell(symbol, 'SELL'),
+        ),
+      ],
+    );
+  }
+
   Widget _buildTable(BuildContext context, List<_PosRow> items) {
     final fmt = NumberFormat('#,##0.00');
+    final showActions = widget.onBuySell != null;
     return SortableTable<_PosRow>(
       items: items,
       initialSortColumnIndex: 0,
@@ -246,11 +276,21 @@ class _PaperPositionsPnlPaneState extends State<PaperPositionsPnlPane> {
                 ),
           ),
         ),
+        if (showActions)
+          SortableColumn(
+            title: '',
+            sortBy: (p) => p.symbol,
+            builder: (p) => Align(
+              alignment: Alignment.centerRight,
+              child: _buySellActions(context, p.symbol),
+            ),
+          ),
       ],
     );
   }
 
   Widget _buildCard(BuildContext context, _PosRow p, int index) {
+    final onBuySell = widget.onBuySell;
     return PaperPositionMobileCard(
       symbol: p.symbol,
       qty: p.qty,
@@ -258,6 +298,8 @@ class _PaperPositionsPnlPaneState extends State<PaperPositionsPnlPane> {
       ltp: p.ltp,
       unrealized: p.unrealized,
       unrealizedPct: p.unrealizedPct,
+      onBuy: onBuySell == null ? null : () => onBuySell(p.symbol, 'BUY'),
+      onSell: onBuySell == null ? null : () => onBuySell(p.symbol, 'SELL'),
     );
   }
 
@@ -380,37 +422,19 @@ class _PaperPositionsPnlPaneState extends State<PaperPositionsPnlPane> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 8, 0),
-              child: Row(
-                children: [
-                  Text(
-                    'Positions',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
+            if (_loadingLtp)
+              const Padding(
+                padding: EdgeInsets.only(top: 8),
+                child: Center(
+                  child: SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
                   ),
-                  const Spacer(),
-                  if (_loadingLtp)
-                    const Padding(
-                      padding: EdgeInsets.only(right: 8),
-                      child: SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
-                    )
-                  else
-                    IconButton(
-                      tooltip: 'Refresh',
-                      onPressed: refresh,
-                      icon: const Icon(Icons.refresh),
-                    ),
-                ],
+                ),
               ),
-            ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
               child: pnlCard,
             ),
             Expanded(

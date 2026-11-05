@@ -2,6 +2,8 @@ import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import 'watchlist/common/watchlist_atoms.dart';
+
 /// Compact single-row mobile card for an open paper position.
 class PaperPositionMobileCard extends StatelessWidget {
   const PaperPositionMobileCard({
@@ -12,6 +14,8 @@ class PaperPositionMobileCard extends StatelessWidget {
     required this.ltp,
     required this.unrealized,
     required this.unrealizedPct,
+    this.onBuy,
+    this.onSell,
   });
 
   final String symbol;
@@ -20,6 +24,8 @@ class PaperPositionMobileCard extends StatelessWidget {
   final double ltp;
   final double unrealized;
   final double unrealizedPct;
+  final VoidCallback? onBuy;
+  final VoidCallback? onSell;
 
   Color _pnlColor(BuildContext context, double v) {
     final colors = context.colors;
@@ -34,6 +40,7 @@ class PaperPositionMobileCard extends StatelessWidget {
     final fmt = NumberFormat('#,##0.00');
     final pnlColor = _pnlColor(context, unrealized);
     final textTheme = Theme.of(context).textTheme;
+    final showActions = onBuy != null || onSell != null;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -69,6 +76,27 @@ class PaperPositionMobileCard extends StatelessWidget {
               ],
             ),
           ),
+          if (showActions) ...[
+            const SizedBox(width: 8),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (onBuy != null)
+                  WatchlistSq(
+                    label: 'B',
+                    bg: ModuleColors.market,
+                    onTap: onBuy!,
+                  ),
+                if (onBuy != null && onSell != null) const SizedBox(width: 4),
+                if (onSell != null)
+                  WatchlistSq(
+                    label: 'S',
+                    bg: colors.marketNegativeIndicator,
+                    onTap: onSell!,
+                  ),
+              ],
+            ),
+          ],
           const SizedBox(width: 8),
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,

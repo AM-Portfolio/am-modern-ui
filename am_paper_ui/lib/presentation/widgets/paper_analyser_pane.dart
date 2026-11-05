@@ -1,7 +1,9 @@
 import 'package:am_market_ui/am_market_ui.dart';
 import 'package:flutter/material.dart';
 
-/// Reuses Market Equity Insider as the paper desk mid-pane analyser.
+import '../../data/paper_market_client.dart';
+
+/// Paper desk Overview: Equity Insider for stocks, F&O for index underliers.
 class PaperAnalyserPane extends StatelessWidget {
   const PaperAnalyserPane({super.key, this.symbol});
 
@@ -11,11 +13,23 @@ class PaperAnalyserPane extends StatelessWidget {
   Widget build(BuildContext context) {
     final sym = symbol?.trim().toUpperCase();
     final hasSymbol = sym != null && sym.isNotEmpty;
+    if (!hasSymbol) {
+      return const SizedBox.shrink();
+    }
+
+    if (PaperMarketClient.isIndexSymbol(sym)) {
+      final foSym = PaperMarketClient.toFoUnderlier(sym);
+      return FoPage(
+        key: ValueKey('fo-$foSym'),
+        initialSymbol: foSym,
+      );
+    }
 
     return EquityInsiderPage(
-      key: ValueKey(hasSymbol ? 'ei-$sym' : 'ei-empty'),
-      initialSymbol: hasSymbol ? sym : null,
+      key: ValueKey('ei-$sym'),
+      initialSymbol: sym,
       showPeers: false,
+      showHeroDescription: false,
     );
   }
 }

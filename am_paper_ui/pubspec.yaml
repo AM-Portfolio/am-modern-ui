@@ -16,6 +16,8 @@ dependencies:
     path: ../am_common
   am_library:
     path: ../am_library
+  am_chart_ui:
+    path: ../am_chart_ui
   am_market_ui:
     path: ../am_market/ui
   am_market_sdk:
