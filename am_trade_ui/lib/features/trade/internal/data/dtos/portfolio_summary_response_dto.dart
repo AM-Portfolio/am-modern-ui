@@ -37,6 +37,9 @@ abstract class PortfolioSummaryResponseDto with _$PortfolioSummaryResponseDto {
     int? gainersCount,
   }) = _PortfolioSummaryResponseDto;
 
+  /// Prefer generated fromJson so CI `build_runner` emits `*.g.dart`.
+  /// am-portfolio V1 aliases (`currentValue` / `todayGainLoss` / …) are
+  /// normalized in [PortfolioOverviewDataSourceImpl.getPortfolioSummary].
   factory PortfolioSummaryResponseDto.fromJson(Map<String, dynamic> json) =>
       _$PortfolioSummaryResponseDtoFromJson(json);
 }

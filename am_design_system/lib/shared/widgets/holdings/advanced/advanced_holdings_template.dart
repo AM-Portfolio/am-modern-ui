@@ -335,7 +335,6 @@ class _AdvancedHoldingsTemplateState extends State<AdvancedHoldingsTemplate>
     return Column(
       children: [
         _buildControlsHeader(),
-        const SizedBox(height: 8),
         Expanded(
           child: _viewMode == 'table'
               ? AdvancedHoldingsTable(

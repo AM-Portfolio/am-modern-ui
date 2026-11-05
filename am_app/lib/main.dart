@@ -14,6 +14,7 @@ import 'package:am_design_system/am_design_system.dart';
 import 'core/di/injection.dart';
 import 'app.dart';
 import 'features/chart/market_sdk_chart_providers.dart';
+import 'features/chart/portfolio_wealth_chart_provider.dart';
 import 'presentation/splash/app_splash_screen.dart';
 
 // Workflow CI verification trigger for Web, Android, and iOS builds
@@ -42,10 +43,21 @@ void main() {
     usePathUrlStrategy();
   }
 
-  // App-wide live Market SDK for charts (package default is mock for tests).
+  // App-wide live Market SDK + portfolio-wealth history (PORTFOLIO:… symbols).
+  // Without the wealth wrapper, market analytics returns empty bars for
+  // portfolio selections ("No chart data" on Market → Chart).
+  final marketHistorical = MarketSdkHistoricalProvider();
   runApp(ProviderScope(
     overrides: [
-      chartHistoricalProvider.overrideWithValue(MarketSdkHistoricalProvider()),
+      chartHistoricalProvider.overrideWithValue(
+        PortfolioWealthHistoricalProvider(
+          market: marketHistorical,
+          getPortfolioClient: () async {
+            final base = ConfigService.config.api.portfolio.baseUrl;
+            return ApiClient(baseUrl: base, category: 'PORTFOLIO');
+          },
+        ),
+      ),
       chartMarketProvider.overrideWithValue(MarketSdkMarketDataProvider()),
     ],
     child: _BootstrapApp(launchUri: launchUri),

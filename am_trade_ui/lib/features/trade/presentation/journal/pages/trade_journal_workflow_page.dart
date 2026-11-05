@@ -659,6 +659,7 @@ class TradeJournalWorkflowPageState
             title: _columnTitles[stepIndex],
             leading: _stepBadge(context, stepIndex, active: active),
             // Clip scroll to the card; top pad keeps floating border labels inside.
+            // Read-only unlock overlay lives on the parent Stack (not here).
             child: ClipRect(
               child: SingleChildScrollView(
                 controller: controller,

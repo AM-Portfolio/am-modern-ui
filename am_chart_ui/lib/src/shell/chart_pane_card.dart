@@ -6,6 +6,7 @@ import '../chart_types/chart_type_id.dart';
 import '../drawings/chart_draw_models.dart';
 import '../drawings/interactive_chart_surface.dart';
 import '../providers/chart_models.dart';
+import 'chart_symbol_display.dart';
 import 'chart_terminal_controller.dart';
 
 /// One chart card: optional thin identity strip (multi-pane) + canvas.
@@ -94,42 +95,43 @@ class _ChartPaneCardState extends ConsumerState<ChartPaneCard> {
                   pane.loading
                       ? const Center(child: CircularProgressIndicator())
                       : pane.error != null && pane.bars.isEmpty
-                      ? Center(
-                          child: Text(
-                            pane.error!,
-                            style: const TextStyle(fontSize: 12),
-                          ),
-                        )
-                      : pane.hasComparisons
-                      ? _buildComparisonChart(context, pane, ctrl)
-                      : InteractiveChartSurface(
-                          bars: pane.bars,
-                          chartType: pane.chartType,
-                          isMock: pane.isMock,
-                          viewEpoch: _viewEpoch,
-                          zoomEpoch: zoomEpoch,
-                          zoomDelta: zoomDelta,
-                          drawTool: widget.isActive
-                              ? widget.drawTool
-                              : ChartDrawTool.none,
-                          clearDrawingsEpoch: widget.isActive
-                              ? widget.clearDrawingsEpoch
-                              : 0,
-                          onDrawingsCountChanged: widget.isActive
-                              ? widget.onDrawingsCountChanged
-                              : null,
-                          onNeedOlderHistory: () {
-                            ctrl.setActivePane(widget.paneIndex);
-                            ctrl.widenHistoryForActivePane();
-                          },
-                          onCrosshair: (bar) {
-                            if (_hoverBar != bar) {
-                              setState(() => _hoverBar = bar);
-                            }
-                            if (multi) ctrl.setSyncedCrosshairTime(bar?.time);
-                          },
-                          externalCrosshairTime: syncedTime,
-                        ),
+                          ? Center(
+                              child: Text(
+                                pane.error!,
+                                style: const TextStyle(fontSize: 12),
+                              ),
+                            )
+                          : pane.hasComparisons
+                              ? _buildComparisonChart(context, pane, ctrl)
+                              : InteractiveChartSurface(
+                                  bars: pane.bars,
+                                  chartType: pane.chartType,
+                                  isMock: pane.isMock,
+                                  viewEpoch: _viewEpoch,
+                                  zoomEpoch: zoomEpoch,
+                                  zoomDelta: zoomDelta,
+                                  drawTool: widget.isActive
+                                      ? widget.drawTool
+                                      : ChartDrawTool.none,
+                                  clearDrawingsEpoch: widget.isActive
+                                      ? widget.clearDrawingsEpoch
+                                      : 0,
+                                  onDrawingsCountChanged: widget.isActive
+                                      ? widget.onDrawingsCountChanged
+                                      : null,
+                                  onNeedOlderHistory: () {
+                                    ctrl.setActivePane(widget.paneIndex);
+                                    ctrl.widenHistoryForActivePane();
+                                  },
+                                  onCrosshair: (bar) {
+                                    if (_hoverBar != bar) {
+                                      setState(() => _hoverBar = bar);
+                                    }
+                                    if (multi)
+                                      ctrl.setSyncedCrosshairTime(bar?.time);
+                                  },
+                                  externalCrosshairTime: syncedTime,
+                                ),
                   if (!widget.showIdentityStrip && !pane.hasComparisons)
                     Positioned(
                       top: 10,
@@ -159,10 +161,22 @@ class _ChartPaneCardState extends ConsumerState<ChartPaneCard> {
     final isBarChart = pane.chartType == ChartTypeId.columns ||
         pane.chartType == ChartTypeId.ohlcBar;
 
+    // Legend uses series keys — map to clean titles (no PORTFOLIO:uuid).
+    final labelFor = <String, String>{};
+    final rawForLabel = <String, String>{};
+    String displayKey(String raw) {
+      final label = ChartSymbolDisplay.title(raw);
+      labelFor[raw] = label;
+      rawForLabel.putIfAbsent(label, () => raw);
+      rawForLabel.putIfAbsent(label.toUpperCase(), () => raw);
+      return label;
+    }
+
     final seriesMap = <String, List<MultiSeriesPoint>>{};
 
     if (pane.bars.isNotEmpty) {
-      seriesMap[pane.symbol] = [
+      final key = displayKey(pane.symbol);
+      seriesMap[key] = [
         for (final b in pane.bars)
           MultiSeriesPoint(
             time: b.time.toIso8601String(),
@@ -174,7 +188,8 @@ class _ChartPaneCardState extends ConsumerState<ChartPaneCard> {
     for (final sym in pane.comparisonSymbols) {
       final bars = pane.comparisonBars[sym];
       if (bars != null && bars.isNotEmpty) {
-        seriesMap[sym] = [
+        final key = displayKey(sym);
+        seriesMap[key] = [
           for (final b in bars)
             MultiSeriesPoint(
               time: b.time.toIso8601String(),
@@ -183,6 +198,14 @@ class _ChartPaneCardState extends ConsumerState<ChartPaneCard> {
         ];
       }
     }
+
+    final primaryLabel =
+        labelFor[pane.symbol] ?? ChartSymbolDisplay.title(pane.symbol);
+    final selectedLabels = [
+      primaryLabel,
+      for (final sym in pane.comparisonSymbols)
+        labelFor[sym] ?? ChartSymbolDisplay.title(sym),
+    ];
 
     final multiData = MultiSeriesChartData(series: seriesMap);
 
@@ -194,7 +217,7 @@ class _ChartPaneCardState extends ConsumerState<ChartPaneCard> {
         error: pane.error,
         isBarChart: isBarChart,
         timeFrameCode: pane.timeframe.code,
-        selectedSeries: [pane.symbol, ...pane.comparisonSymbols],
+        selectedSeries: selectedLabels,
         accentColor: theme.colorScheme.primary,
         showExpandButton: false,
         showEndValuePills: true,
@@ -220,11 +243,14 @@ class _ChartPaneCardState extends ConsumerState<ChartPaneCard> {
             ),
           ),
         ),
-        onRemoveSeries: (symbol) {
-          if (symbol.toUpperCase() == pane.symbol.toUpperCase()) {
+        onRemoveSeries: (label) {
+          final raw =
+              rawForLabel[label] ?? rawForLabel[label.toUpperCase()] ?? label;
+          if (raw.toUpperCase() == pane.symbol.toUpperCase() ||
+              label == primaryLabel) {
             ctrl.clearComparisons(paneIndex: widget.paneIndex);
           } else {
-            ctrl.removeComparison(symbol, paneIndex: widget.paneIndex);
+            ctrl.removeComparison(raw, paneIndex: widget.paneIndex);
           }
         },
       ),
@@ -262,6 +288,7 @@ class _IdentityStrip extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = context.colors;
+    final isPortfolio = ChartSymbolDisplay.isPortfolioSymbol(pane.symbol);
 
     final activeBar =
         hoverBar ?? (pane.bars.isNotEmpty ? pane.bars.last : null);
@@ -330,8 +357,10 @@ class _IdentityStrip extends StatelessWidget {
                 ),
                 const SizedBox(width: 6),
               ],
-              Text(
-                '${_paneTitle(pane)} · ${pane.exchange}',
+              ChartSymbolDisplay.titleRow(
+                context,
+                pane.symbol,
+                logoSize: 14,
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w800,
@@ -339,6 +368,18 @@ class _IdentityStrip extends StatelessWidget {
                   letterSpacing: -0.2,
                 ),
               ),
+              if (!isPortfolio) ...[
+                Text(
+                  ' · ${pane.exchange}',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                    color:
+                        isActive ? context.textPrimary : context.textSecondary,
+                    letterSpacing: -0.2,
+                  ),
+                ),
+              ],
               const SizedBox(width: 6),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
@@ -539,9 +580,10 @@ class _ChartInGraphOverlay extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // Symbol Name
-          Text(
-            pane.symbol.trim().toUpperCase(),
+          ChartSymbolDisplay.titleRow(
+            context,
+            pane.symbol,
+            logoSize: isMobile ? 14 : 16,
             style: TextStyle(
               fontSize: isMobile ? 12 : 13.5,
               fontWeight: FontWeight.w900,
@@ -549,15 +591,17 @@ class _ChartInGraphOverlay extends StatelessWidget {
               letterSpacing: -0.2,
             ),
           ),
-          const SizedBox(width: 4),
-          Text(
-            '· ${pane.exchange}',
-            style: TextStyle(
-              fontSize: isMobile ? 10 : 11,
-              fontWeight: FontWeight.w600,
-              color: theme.hintColor,
+          if (!ChartSymbolDisplay.isPortfolioSymbol(pane.symbol)) ...[
+            const SizedBox(width: 4),
+            Text(
+              '· ${pane.exchange}',
+              style: TextStyle(
+                fontSize: isMobile ? 10 : 11,
+                fontWeight: FontWeight.w600,
+                color: theme.hintColor,
+              ),
             ),
-          ),
+          ],
           const SizedBox(width: 6),
           // Timeframe badge
           Container(

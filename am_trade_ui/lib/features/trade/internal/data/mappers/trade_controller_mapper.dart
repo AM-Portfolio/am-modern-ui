@@ -77,6 +77,9 @@ class TradeControllerMapper {
   static TradeMetrics toTradeMetricsEntity(TradeMetricsDto dto) => TradeMetrics(
     profitLoss: dto.profitLoss,
     profitLossPercentage: dto.profitLossPercentage,
+    todayProfitLoss: dto.todayProfitLoss,
+    todayProfitLossPercentage: dto.todayProfitLossPercentage,
+    unrealizedBasis: dto.unrealizedBasis,
     returnOnEquity: dto.returnOnEquity,
     riskAmount: dto.riskAmount,
     rewardAmount: dto.rewardAmount,
@@ -91,6 +94,9 @@ class TradeControllerMapper {
   static TradeMetricsDto toTradeMetricsDto(TradeMetrics entity) => TradeMetricsDto(
     profitLoss: entity.profitLoss,
     profitLossPercentage: entity.profitLossPercentage,
+    todayProfitLoss: entity.todayProfitLoss,
+    todayProfitLossPercentage: entity.todayProfitLossPercentage,
+    unrealizedBasis: entity.unrealizedBasis,
     returnOnEquity: entity.returnOnEquity,
     riskAmount: entity.riskAmount,
     rewardAmount: entity.rewardAmount,
