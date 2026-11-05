@@ -2,6 +2,7 @@ import 'package:am_common/am_common.dart';
 import 'package:am_dashboard_ui/domain/models/accounts_hub.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 /// Horizontal All | You | family persona cards with favorite star and delete.
 class PersonaCardStrip extends StatelessWidget {
@@ -15,6 +16,10 @@ class PersonaCardStrip extends StatelessWidget {
     required this.onFavorite,
     this.onDelete,
     this.compact = false,
+    this.householdTotalValue,
+    this.householdXirrPct,
+    this.primaryTotalValue,
+    this.primaryXirrPct,
   });
 
   final List<FamilyMemberRow> members;
@@ -30,6 +35,16 @@ class PersonaCardStrip extends StatelessWidget {
   final ValueChanged<FamilyMemberRow>? onDelete;
   final bool compact;
 
+  /// Metrics for the All / Household card (from hub stats).
+  final double? householdTotalValue;
+  final double? householdXirrPct;
+
+  /// Metrics for the You card (from hub stats).
+  final double? primaryTotalValue;
+  final double? primaryXirrPct;
+
+  static final _currency = NumberFormat.currency(symbol: '₹', decimalDigits: 0);
+
   @override
   Widget build(BuildContext context) {
     final cards = <Widget>[
@@ -37,6 +52,8 @@ class PersonaCardStrip extends StatelessWidget {
         label: 'All',
         subtitle: 'Household',
         initials: '∀',
+        balance: householdTotalValue,
+        xirrPct: householdXirrPct,
         selected: selectedId == FavoritePersonaStore.kAll,
         favorited: favoriteKey == FavoritePersonaStore.kAll,
         compact: compact,
@@ -47,6 +64,8 @@ class PersonaCardStrip extends StatelessWidget {
         label: primaryLabel,
         subtitle: 'You',
         initials: _initials(primaryLabel),
+        balance: primaryTotalValue,
+        xirrPct: primaryXirrPct,
         selected: selectedId == null,
         favorited: favoriteKey == FavoritePersonaStore.kYou,
         compact: compact,
@@ -67,6 +86,8 @@ class PersonaCardStrip extends StatelessWidget {
                   ? m.name!.trim()
                   : 'Family member',
             ),
+            balance: m.totalValue,
+            xirrPct: m.xirrPct,
             selected: selectedId == m.id,
             favorited: favoriteKey == m.id,
             compact: compact,
@@ -77,7 +98,7 @@ class PersonaCardStrip extends StatelessWidget {
     ];
 
     return SizedBox(
-      height: compact ? 72 : 88,
+      height: compact ? 108 : 124,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         itemCount: cards.length,
@@ -99,6 +120,17 @@ class PersonaCardStrip extends StatelessWidget {
             : parts.first)
         .toUpperCase();
   }
+
+  static String formatBalance(double? value) {
+    if (value == null) return '—';
+    return _currency.format(value);
+  }
+
+  static String formatXirr(double? pct) {
+    if (pct == null) return '—';
+    final sign = pct > 0 ? '+' : '';
+    return '$sign${pct.toStringAsFixed(1)}%';
+  }
 }
 
 class _PersonaCard extends StatelessWidget {
@@ -110,6 +142,8 @@ class _PersonaCard extends StatelessWidget {
     required this.favorited,
     required this.onTap,
     required this.onFavorite,
+    this.balance,
+    this.xirrPct,
     this.onDelete,
     this.compact = false,
   });
@@ -117,6 +151,8 @@ class _PersonaCard extends StatelessWidget {
   final String label;
   final String subtitle;
   final String initials;
+  final double? balance;
+  final double? xirrPct;
   final bool selected;
   final bool favorited;
   final VoidCallback onTap;
@@ -130,8 +166,13 @@ class _PersonaCard extends StatelessWidget {
     final border = selected
         ? accent
         : context.colors.border.withValues(alpha: 0.45);
-    final width = compact ? 118.0 : 136.0;
-    final avatar = compact ? 28.0 : 34.0;
+    final width = compact ? 132.0 : 148.0;
+    final avatar = compact ? 26.0 : 30.0;
+    final xirrColor = xirrPct == null
+        ? context.colors.textSecondary
+        : (xirrPct! >= 0
+            ? context.colors.statusSuccess
+            : context.colors.statusError);
 
     return Material(
       color: selected
@@ -153,85 +194,111 @@ class _PersonaCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(AppRadii.sm),
             border: Border.all(color: border, width: selected ? 1.5 : 1),
           ),
-          child: Row(
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: avatar,
-                height: avatar,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: accent.withValues(alpha: 0.16),
-                ),
-                child: Text(
-                  initials,
-                  style: TextStyle(
-                    fontSize: compact ? 10 : 11,
-                    fontWeight: FontWeight.w700,
-                    color: accent,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      label,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: context.text.label().copyWith(
-                            fontWeight: FontWeight.w700,
-                            fontSize: compact ? 11 : 12,
-                          ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      subtitle,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: context.text.caption().copyWith(
-                            color: context.colors.textSecondary,
-                            fontSize: compact ? 10 : 11,
-                          ),
-                    ),
-                  ],
-                ),
-              ),
-              Column(
-                mainAxisSize: MainAxisSize.min,
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  InkWell(
-                    onTap: onFavorite,
-                    customBorder: const CircleBorder(),
-                    child: Padding(
-                      padding: const EdgeInsets.all(2),
-                      child: Icon(
-                        favorited ? Icons.star_rounded : Icons.star_outline_rounded,
-                        size: compact ? 16 : 18,
-                        color: favorited
-                            ? const Color(0xFFEAB308)
-                            : context.colors.textSecondary,
+                  Container(
+                    width: avatar,
+                    height: avatar,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: accent.withValues(alpha: 0.16),
+                    ),
+                    child: Text(
+                      initials,
+                      style: TextStyle(
+                        fontSize: compact ? 9 : 10,
+                        fontWeight: FontWeight.w700,
+                        color: accent,
                       ),
                     ),
                   ),
-                  if (onDelete != null)
-                    InkWell(
-                      onTap: onDelete,
-                      customBorder: const CircleBorder(),
-                      child: Padding(
-                        padding: const EdgeInsets.all(2),
-                        child: Icon(
-                          Icons.delete_outline_rounded,
-                          size: compact ? 15 : 16,
-                          color: context.colors.textSecondary,
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          label,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: context.text.label().copyWith(
+                                fontWeight: FontWeight.w700,
+                                fontSize: compact ? 11 : 12,
+                              ),
+                        ),
+                        Text(
+                          subtitle,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: context.text.caption().copyWith(
+                                color: context.colors.textSecondary,
+                                fontSize: compact ? 9 : 10,
+                              ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      InkWell(
+                        onTap: onFavorite,
+                        customBorder: const CircleBorder(),
+                        child: Padding(
+                          padding: const EdgeInsets.all(2),
+                          child: Icon(
+                            favorited
+                                ? Icons.star_rounded
+                                : Icons.star_outline_rounded,
+                            size: compact ? 15 : 16,
+                            color: favorited
+                                ? const Color(0xFFEAB308)
+                                : context.colors.textSecondary,
+                          ),
                         ),
                       ),
-                    ),
+                      if (onDelete != null)
+                        InkWell(
+                          onTap: onDelete,
+                          customBorder: const CircleBorder(),
+                          child: Padding(
+                            padding: const EdgeInsets.all(2),
+                            child: Icon(
+                              Icons.delete_outline_rounded,
+                              size: compact ? 14 : 15,
+                              color: context.colors.textSecondary,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
                 ],
+              ),
+              const Spacer(),
+              Text(
+                PersonaCardStrip.formatBalance(balance),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: context.text.label().copyWith(
+                      fontWeight: FontWeight.w800,
+                      fontSize: compact ? 12 : 13,
+                    ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                'XIRR ${PersonaCardStrip.formatXirr(xirrPct)}',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: context.text.caption().copyWith(
+                      fontWeight: FontWeight.w700,
+                      fontSize: compact ? 10 : 11,
+                      color: xirrColor,
+                    ),
               ),
             ],
           ),

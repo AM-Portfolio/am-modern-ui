@@ -160,7 +160,8 @@ class _ChartBody extends ConsumerWidget {
         preferredSeriesOrder: selectedLabels,
         embedMode: true,
         timeFrameCode: tfCode,
-        showEndValuePills: false,
+        showEndValuePills: true,
+        streamDrawOnLoad: true,
         showExpandButton: true,
         expandedChartPath:
             '/app/market/chart?symbol=${Uri.encodeComponent(primarySymbol)}&tf=${Uri.encodeComponent(tfCode)}',

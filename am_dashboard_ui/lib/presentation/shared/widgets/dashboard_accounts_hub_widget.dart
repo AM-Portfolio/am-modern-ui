@@ -11,7 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
-/// Users peer panel: identity, count chips, Overview|Brokers|MF|Demat|NPS|Family.
+/// Users peer panel: identity, Overview|Family tabs, persona cards synced with toolbar.
 class DashboardUsersHubWidget extends ConsumerStatefulWidget {
   const DashboardUsersHubWidget({
     super.key,
@@ -33,19 +33,16 @@ class DashboardUsersHubWidget extends ConsumerStatefulWidget {
 @Deprecated('Use DashboardUsersHubWidget')
 typedef DashboardAccountsHubWidget = DashboardUsersHubWidget;
 
-enum _UsersPrimaryTab { overview, brokers, mf, demat, nps, family }
+enum _UsersPrimaryTab { overview, family }
 
 class _DashboardUsersHubWidgetState
     extends ConsumerState<DashboardUsersHubWidget> {
   _UsersPrimaryTab _primary = _UsersPrimaryTab.overview;
 
-  /// Secondary broker chip under Brokers / Demat / MF (`all` or broker key).
+  /// Secondary broker filter inside Overview (`all` or broker key).
   String _brokerFilter = 'all';
 
-  /// null = You (primary); [FavoritePersonaStore.kAll] = household; otherwise soft family member id.
-  String? _familyMemberId;
   String? _favoriteKey;
-  bool _favoriteApplied = false;
 
   @override
   void initState() {
@@ -56,13 +53,7 @@ class _DashboardUsersHubWidgetState
   Future<void> _loadFavorite() async {
     final key = await FavoritePersonaStore.instance.load(widget.userId);
     if (!mounted) return;
-    setState(() {
-      _favoriteKey = key;
-      if (!_favoriteApplied && key != null) {
-        _familyMemberId = FavoritePersonaStore.selectionFromKey(key);
-        _favoriteApplied = true;
-      }
-    });
+    setState(() => _favoriteKey = key);
   }
 
   Future<void> _setFavorite(String personaKey) async {
@@ -74,6 +65,8 @@ class _DashboardUsersHubWidgetState
   @override
   Widget build(BuildContext context) {
     final async = ref.watch(accountsHubProvider(widget.userId));
+    final filterKey = ref.watch(familyPortfolioFilterProvider);
+    final familyMemberId = FavoritePersonaStore.selectionFromKey(filterKey);
     final currency = NumberFormat.currency(symbol: '₹', decimalDigits: 0);
 
     return AmGlassCard(
@@ -103,15 +96,12 @@ class _DashboardUsersHubWidgetState
           ],
         ),
         data: (hub) {
-          final personaDemat = _filteredDematByFamily(hub.dematAccounts);
+          final personaDemat =
+              _filteredDematByFamily(hub.dematAccounts, familyMemberId);
           final hasCas = personaDemat.isNotEmpty;
-          final personaNps = _npsForFamily(hub);
+          final personaNps = _npsForFamily(hub, familyMemberId);
           final hasNps =
               personaNps?.pran != null && personaNps!.pran!.isNotEmpty;
-          final showNps = hasNps &&
-              (_primary == _UsersPrimaryTab.overview ||
-                  _primary == _UsersPrimaryTab.nps);
-          final brokerChips = _secondaryBrokerChips(hub);
           final demat = _filteredByBroker(personaDemat);
           final mfRows = demat
               .where((a) => (a.accountType ?? '').toLowerCase() == 'mf')
@@ -119,41 +109,20 @@ class _DashboardUsersHubWidgetState
           final dematOnly = demat
               .where((a) => (a.accountType ?? '').toLowerCase() != 'mf')
               .toList();
-          final portfolios = _filteredPortfolios(hub);
-          final showDematSection = _primary == _UsersPrimaryTab.demat ||
-              _primary == _UsersPrimaryTab.overview;
-          final showMfSection = _primary == _UsersPrimaryTab.mf ||
-              _primary == _UsersPrimaryTab.overview;
-          final showBrokersSection = _primary == _UsersPrimaryTab.brokers ||
-              _primary == _UsersPrimaryTab.overview;
-          final showCasCta = !hasCas &&
-              (_primary == _UsersPrimaryTab.overview ||
-                  _primary == _UsersPrimaryTab.demat ||
-                  _primary == _UsersPrimaryTab.mf);
+          final portfolios = _filteredPortfolios(hub, familyMemberId);
           final isFamily = _primary == _UsersPrimaryTab.family;
           final isOverview = _primary == _UsersPrimaryTab.overview;
           final familyMembers = hub.familyMembers;
-          final showFamilyNameFilter = familyMembers.isNotEmpty;
+          final showCasCta = isOverview && !hasCas;
 
-          final brokerCount = portfolios.where((p) => p.isRunningBroker).length;
-          final mfCount = personaDemat
-              .where((a) => (a.accountType ?? '').toLowerCase() == 'mf')
-              .length;
-          final dematCount = personaDemat
-              .where((a) => (a.accountType ?? '').toLowerCase() != 'mf')
-              .length;
           final scopeTotal = _scopeTotalValue(
             demat: personaDemat,
             brokers: portfolios,
             nps: personaNps,
-            allNps: _familyMemberId == FavoritePersonaStore.kAll ? hub.npsAccounts : null,
+            allNps: familyMemberId == FavoritePersonaStore.kAll
+                ? hub.npsAccounts
+                : null,
           );
-          final showBrokerSwitcher = !isFamily &&
-              (_primary == _UsersPrimaryTab.brokers ||
-                  _primary == _UsersPrimaryTab.demat ||
-                  _primary == _UsersPrimaryTab.mf ||
-                  _primary == _UsersPrimaryTab.overview) &&
-              brokerChips.length > 1;
 
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -161,47 +130,33 @@ class _DashboardUsersHubWidgetState
               _CompactHeader(
                 identity: hub.identity,
                 nps: personaNps,
-                xirrPct: hub.stats?.overallXirrPct,
-                familySharePct: hub.stats?.familySharePct,
                 onOpenUsers: widget.onOpenUsers,
-              ),
-              const SizedBox(height: 8),
-              _StatsChips(
-                stats: hub.stats,
-                highlightNps: _primary == _UsersPrimaryTab.nps,
-                showFamilyShare: _familyMemberId == FavoritePersonaStore.kAll ||
-                    _primary == _UsersPrimaryTab.family,
               ),
               const SizedBox(height: 8),
               _CompactFilterRow(
                 selected: _primary,
-                brokerCount: brokerCount,
-                mfCount: mfCount,
-                dematCount: dematCount,
-                hasNps: hasNps,
                 onTabSelected: (tab) => setState(() {
                   _primary = tab;
                   _brokerFilter = 'all';
                 }),
-                brokerOptions: showBrokerSwitcher ? brokerChips : const [],
-                brokerSelected: _brokerFilter,
-                onBrokerSelected: _onSecondaryBrokerSelected,
               ),
-              if (showFamilyNameFilter) ...[
-                const SizedBox(height: 8),
-                PersonaCardStrip(
-                  members: familyMembers,
-                  selectedId: _familyMemberId,
-                  primaryLabel: hub.identity?.name?.trim().isNotEmpty == true
-                      ? hub.identity!.name!.trim()
-                      : 'You',
-                  favoriteKey: _favoriteKey,
-                  compact: true,
-                  onSelected: (id) => _onFamilyMemberSelected(hub, id),
-                  onFavorite: _setFavorite,
-                  onDelete: (m) => _deleteFamilyMember(context, m),
-                ),
-              ],
+              const SizedBox(height: 8),
+              PersonaCardStrip(
+                members: familyMembers,
+                selectedId: familyMemberId,
+                primaryLabel: hub.identity?.name?.trim().isNotEmpty == true
+                    ? hub.identity!.name!.trim()
+                    : 'You',
+                favoriteKey: _favoriteKey,
+                compact: true,
+                householdTotalValue: hub.stats?.householdTotalValue,
+                householdXirrPct: hub.stats?.householdXirrPct,
+                primaryTotalValue: hub.stats?.primaryTotalValue,
+                primaryXirrPct: hub.stats?.overallXirrPct,
+                onSelected: (id) => _onFamilyMemberSelected(hub, id),
+                onFavorite: _setFavorite,
+                onDelete: (m) => _deleteFamilyMember(context, m),
+              ),
               const SizedBox(height: 8),
               Expanded(
                 child: SingleChildScrollView(
@@ -231,7 +186,7 @@ class _DashboardUsersHubWidgetState
                               ),
                             ),
                           ),
-                        if (showNps && personaNps != null) ...[
+                        if (hasNps && personaNps != null) ...[
                           _NpsStrip(
                             nps: personaNps,
                             currency: currency,
@@ -241,9 +196,7 @@ class _DashboardUsersHubWidgetState
                             ),
                           ),
                         ],
-                        if (showDematSection &&
-                            !isOverview &&
-                            dematOnly.isNotEmpty) ...[
+                        if (dematOnly.isNotEmpty) ...[
                           const SizedBox(height: 12),
                           Text(
                             'Demat accounts',
@@ -267,9 +220,7 @@ class _DashboardUsersHubWidgetState
                             ),
                           ),
                         ],
-                        if (showMfSection &&
-                            !isOverview &&
-                            mfRows.isNotEmpty) ...[
+                        if (mfRows.isNotEmpty) ...[
                           const SizedBox(height: 8),
                           Text(
                             'MF folios',
@@ -293,9 +244,7 @@ class _DashboardUsersHubWidgetState
                             ),
                           ),
                         ],
-                        if (showBrokersSection &&
-                            !isOverview &&
-                            portfolios.isNotEmpty) ...[
+                        if (portfolios.isNotEmpty) ...[
                           const SizedBox(height: 12),
                           Text(
                             'Brokers',
@@ -317,21 +266,13 @@ class _DashboardUsersHubWidgetState
                             ),
                           ),
                         ],
-                        if ((_primary == _UsersPrimaryTab.demat &&
-                                dematOnly.isNotEmpty) ||
-                            (_primary == _UsersPrimaryTab.mf &&
-                                mfRows.isNotEmpty) ||
-                            (_primary == _UsersPrimaryTab.nps && showNps)) ...[
+                        if (dematOnly.isNotEmpty ||
+                            mfRows.isNotEmpty ||
+                            hasNps) ...[
                           const SizedBox(height: 8),
                           _NomineeSection(
-                            accounts: [
-                              if (_primary == _UsersPrimaryTab.demat)
-                                ...dematOnly,
-                              if (_primary == _UsersPrimaryTab.mf) ...mfRows,
-                            ],
-                            nps: _primary == _UsersPrimaryTab.nps
-                                ? personaNps
-                                : null,
+                            accounts: [...dematOnly, ...mfRows],
+                            nps: personaNps,
                           ),
                         ],
                       ],
@@ -496,8 +437,13 @@ class _DashboardUsersHubWidgetState
     try {
       final client = await ref.read(portfolioApiClientProvider.future);
       await deleteFamilyMember(client: client, familyMemberId: id);
-      if (_familyMemberId == id) {
-        setState(() => _familyMemberId = null);
+      if (FavoritePersonaStore.selectionFromKey(
+            ref.read(familyPortfolioFilterProvider),
+          ) ==
+          id) {
+        ref
+            .read(familyPortfolioFilterProvider.notifier)
+            .select(FavoritePersonaStore.kYou);
       }
       if (_favoriteKey == id) {
         await FavoritePersonaStore.instance.clear(widget.userId);
@@ -518,44 +464,25 @@ class _DashboardUsersHubWidgetState
     }
   }
 
-  List<({String key, String label, String? portfolioId})> _secondaryBrokerChips(
-    AccountsHub hub,
-  ) {
-    final out = <({String key, String label, String? portfolioId})>[
-      (key: 'all', label: 'All', portfolioId: null),
-    ];
-    final seen = <String>{'all'};
-    for (final p in hub.portfolios) {
-      if (!p.isRunningBroker) continue;
-      final broker = (p.brokerType ?? p.displayName ?? '').trim();
-      if (broker.isEmpty) continue;
-      final key = broker.toUpperCase();
-      if (!seen.add(key)) continue;
-      out.add((
-        key: key,
-        label: p.displayName?.trim().isNotEmpty == true
-            ? p.displayName!.trim()
-            : broker,
-        portfolioId: p.portfolioId,
-      ));
-    }
-    return out;
-  }
-
-  bool _matchesPersona(String? rowFamilyId) {
-    if (_familyMemberId == FavoritePersonaStore.kAll) return true;
+  bool _matchesPersona(String? rowFamilyId, String? familyMemberId) {
+    if (familyMemberId == FavoritePersonaStore.kAll) return true;
     final primary = rowFamilyId == null || rowFamilyId.trim().isEmpty;
-    if (_familyMemberId == null) return primary;
-    return rowFamilyId == _familyMemberId;
+    if (familyMemberId == null) return primary;
+    return rowFamilyId == familyMemberId;
   }
 
-  List<DematAccountRow> _filteredDematByFamily(List<DematAccountRow> all) {
-    return all.where((a) => _matchesPersona(a.familyMemberId)).toList();
+  List<DematAccountRow> _filteredDematByFamily(
+    List<DematAccountRow> all,
+    String? familyMemberId,
+  ) {
+    return all
+        .where((a) => _matchesPersona(a.familyMemberId, familyMemberId))
+        .toList();
   }
 
-  NpsMetaRow? _npsForFamily(AccountsHub hub) {
+  NpsMetaRow? _npsForFamily(AccountsHub hub, String? familyMemberId) {
     final list = hub.npsAccounts;
-    if (_familyMemberId == FavoritePersonaStore.kAll) {
+    if (familyMemberId == FavoritePersonaStore.kAll) {
       // Prefer primary strip; household % uses allNps sum separately.
       for (final n in list) {
         if (n.familyMemberId == null || n.familyMemberId!.trim().isEmpty) {
@@ -564,7 +491,7 @@ class _DashboardUsersHubWidgetState
       }
       return hub.nps ?? (list.isNotEmpty ? list.first : null);
     }
-    if (_familyMemberId == null) {
+    if (familyMemberId == null) {
       for (final n in list) {
         if (n.familyMemberId == null || n.familyMemberId!.trim().isEmpty) {
           return n;
@@ -573,7 +500,7 @@ class _DashboardUsersHubWidgetState
       return hub.nps;
     }
     for (final n in list) {
-      if (n.familyMemberId == _familyMemberId) return n;
+      if (n.familyMemberId == familyMemberId) return n;
     }
     return null;
   }
@@ -586,9 +513,16 @@ class _DashboardUsersHubWidgetState
     }).toList();
   }
 
-  List<AccountsPortfolioRow> _filteredPortfolios(AccountsHub hub) {
+  List<AccountsPortfolioRow> _filteredPortfolios(
+    AccountsHub hub,
+    String? familyMemberId,
+  ) {
     var rows = hub.portfolios
-        .where((p) => p.isRunningBroker && _matchesPersona(p.familyMemberId))
+        .where(
+          (p) =>
+              p.isRunningBroker &&
+              _matchesPersona(p.familyMemberId, familyMemberId),
+        )
         .toList();
     if (_brokerFilter == 'all') return rows;
     return rows.where((p) {
@@ -631,10 +565,9 @@ class _DashboardUsersHubWidgetState
   }
 
   void _onFamilyMemberSelected(AccountsHub hub, String? memberId) {
-    setState(() {
-      _familyMemberId = memberId;
-      _brokerFilter = 'all';
-    });
+    final key = FavoritePersonaStore.keyFromSelection(memberId);
+    ref.read(familyPortfolioFilterProvider.notifier).select(key);
+    setState(() => _brokerFilter = 'all');
     final rows = hub.portfolios.where((p) {
       if (!p.isRunningBroker) return false;
       if (memberId == FavoritePersonaStore.kAll) return true;
@@ -651,17 +584,6 @@ class _DashboardUsersHubWidgetState
         ? first.displayName!.trim()
         : (first.brokerType ?? id);
     _scopePortfolio(id, label);
-  }
-
-  void _onSecondaryBrokerSelected(
-    String key,
-    String label,
-    String? portfolioId,
-  ) {
-    setState(() => _brokerFilter = key);
-    if (_primary != _UsersPrimaryTab.brokers) return;
-    if (key == 'all' || portfolioId == null || portfolioId.isEmpty) return;
-    _scopePortfolio(portfolioId, label);
   }
 
   void _selectPortfolio(AccountsPortfolioRow p) {
@@ -687,14 +609,10 @@ class _CompactHeader extends StatelessWidget {
     required this.onOpenUsers,
     this.identity,
     this.nps,
-    this.xirrPct,
-    this.familySharePct,
   });
 
   final AccountsIdentity? identity;
   final NpsMetaRow? nps;
-  final double? xirrPct;
-  final double? familySharePct;
   final VoidCallback? onOpenUsers;
 
   @override
@@ -747,39 +665,6 @@ class _CompactHeader extends StatelessWidget {
                 onPressed: onOpenUsers,
                 icon: Icon(Icons.open_in_new_rounded, size: 16, color: accent),
               ),
-            if (xirrPct != null) ...[
-              const SizedBox(width: 4),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: accent.withValues(alpha: 0.14),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: accent.withValues(alpha: 0.4)),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      xirrPct! >= 0
-                          ? Icons.trending_up_rounded
-                          : Icons.trending_down_rounded,
-                      size: 12,
-                      color: accent,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      'XIRR ${xirrPct!.toStringAsFixed(1)}%',
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w800,
-                        color: accent,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
           ],
         ),
         const SizedBox(height: 4),
@@ -790,16 +675,6 @@ class _CompactHeader extends StatelessWidget {
                 fontSize: 18,
               ),
         ),
-        if (familySharePct != null && familySharePct! > 0) ...[
-          const SizedBox(height: 4),
-          Text(
-            'Family ${familySharePct!.toStringAsFixed(familySharePct! >= 10 ? 0 : 1)}% of portfolio',
-            style: context.text.caption().copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: muted,
-                ),
-          ),
-        ],
         if (pran != null && pran.isNotEmpty) ...[
           const SizedBox(height: 6),
           Container(
@@ -841,34 +716,15 @@ class _CompactFilterRow extends StatelessWidget {
   const _CompactFilterRow({
     required this.selected,
     required this.onTabSelected,
-    required this.brokerCount,
-    required this.mfCount,
-    required this.dematCount,
-    required this.hasNps,
-    required this.brokerOptions,
-    required this.brokerSelected,
-    required this.onBrokerSelected,
   });
 
   final _UsersPrimaryTab selected;
   final ValueChanged<_UsersPrimaryTab> onTabSelected;
-  final int brokerCount;
-  final int mfCount;
-  final int dematCount;
-  final bool hasNps;
-  final List<({String key, String label, String? portfolioId})> brokerOptions;
-  final String brokerSelected;
-  final void Function(String key, String label, String? portfolioId)
-      onBrokerSelected;
 
   @override
   Widget build(BuildContext context) {
     final tabs = <(_UsersPrimaryTab, String)>[
       (_UsersPrimaryTab.overview, 'Overview'),
-      (_UsersPrimaryTab.brokers, 'Broker ($brokerCount)'),
-      (_UsersPrimaryTab.mf, 'MF ($mfCount)'),
-      (_UsersPrimaryTab.demat, 'Demat ($dematCount)'),
-      (_UsersPrimaryTab.nps, hasNps ? 'NPS (1)' : 'NPS (0)'),
       (_UsersPrimaryTab.family, 'Family'),
     ];
     return Wrap(
@@ -884,23 +740,6 @@ class _CompactFilterRow extends StatelessWidget {
             visualDensity: VisualDensity.compact,
             materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
           ),
-        if (brokerOptions.isNotEmpty) ...[
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 2),
-            child: Text(
-              '·',
-              style: TextStyle(color: context.colors.textTertiary),
-            ),
-          ),
-          for (final o in brokerOptions)
-            ChoiceChip(
-              label: Text(o.label, style: const TextStyle(fontSize: 11)),
-              selected: brokerSelected == o.key,
-              onSelected: (_) => onBrokerSelected(o.key, o.label, o.portfolioId),
-              visualDensity: VisualDensity.compact,
-              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            ),
-        ],
       ],
     );
   }
@@ -1072,73 +911,6 @@ class _PortfolioCard extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-class _Chip extends StatelessWidget {
-  const _Chip({required this.label, this.emphasized = false});
-
-  final String label;
-  final bool emphasized;
-
-  @override
-  Widget build(BuildContext context) {
-    final accent = ModuleColors.dashboard;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: emphasized ? accent : accent.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(AppRadii.xs),
-      ),
-      child: Text(
-        label,
-        style: context.text.caption().copyWith(
-              fontWeight: FontWeight.w700,
-              color: emphasized ? const Color(0xFF1A1208) : accent,
-              fontSize: 10,
-            ),
-      ),
-    );
-  }
-}
-
-class _StatsChips extends StatelessWidget {
-  const _StatsChips({
-    this.stats,
-    this.highlightNps = false,
-    this.showFamilyShare = false,
-  });
-
-  final AccountsStats? stats;
-  final bool highlightNps;
-  final bool showFamilyShare;
-
-  @override
-  Widget build(BuildContext context) {
-    if (stats == null) return const SizedBox.shrink();
-    final share = stats!.familySharePct;
-    final items = <(String, bool)>[
-      if (stats!.activeDematCount != null)
-        ('Demat ${stats!.activeDematCount}', false),
-      if (stats!.mfFolioCount != null) ('MF ${stats!.mfFolioCount}', false),
-      if (stats!.brokerPortfolioCount != null)
-        ('Brokers ${stats!.brokerPortfolioCount}', false),
-      if (stats!.npsLinked == true) ('NPS', highlightNps),
-      if (showFamilyShare && share != null && share > 0)
-        (
-          'Family ${share.toStringAsFixed(share >= 10 ? 0 : 1)}%',
-          true,
-        ),
-    ];
-    if (items.isEmpty) return const SizedBox.shrink();
-    return Wrap(
-      spacing: 6,
-      runSpacing: 6,
-      children: [
-        for (final item in items)
-          _Chip(label: item.$1, emphasized: item.$2),
-      ],
     );
   }
 }

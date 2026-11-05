@@ -6,6 +6,7 @@ import '../../../../core/theme/app_radii.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_type_scale.dart';
 import '../../../../core/theme/color_extensions.dart';
+import '../../inputs/app_segmented_control.dart';
 import '../../inputs/custom_dropdown.dart';
 import 'advanced_holding_row.dart';
 import 'advanced_holdings_cards.dart';

@@ -27,6 +27,7 @@ class MultiSeriesChartConfig extends Equatable {
     this.onOpenExpanded,
     this.expandedChartPath,
     this.showEndValuePills = true,
+    this.streamDrawOnLoad = false,
     this.preNormalizedPercent = false,
     this.initialShowAbsoluteValues = false,
     this.accentColor,
@@ -73,6 +74,9 @@ class MultiSeriesChartConfig extends Equatable {
   /// Colored % badges at the right edge of the line chart.
   final bool showEndValuePills;
 
+  /// Animate a left-to-right clip reveal when series/timeframe data loads.
+  final bool streamDrawOnLoad;
+
   /// Values are already % change from each series baseline (overlay charts).
   final bool preNormalizedPercent;
 
@@ -100,6 +104,7 @@ class MultiSeriesChartConfig extends Equatable {
         showExpandButton,
         expandedChartPath,
         showEndValuePills,
+        streamDrawOnLoad,
         preNormalizedPercent,
         initialShowAbsoluteValues,
         accentColor,

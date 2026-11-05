@@ -291,17 +291,9 @@ class _DashboardUsersPageState extends ConsumerState<DashboardUsersPage> {
                 nomineeDetails: personaNps?.nomineeDetails,
                 hasLinked: hasLinked,
                 hasCas: hasCasDirectory,
-                familySharePct: hub.stats?.familySharePct,
-                showKpis: true,
-                kpis: _tabKpis(
-                  tab: _tab,
-                  brokers: runningBrokers,
-                  demat: demat,
-                  mf: mf,
-                  hub: hub,
-                  hasNps: hasNps,
-                  personaNps: personaNps,
-                ),
+                familySharePct: null,
+                showKpis: false,
+                kpis: const [],
                 brokerSwatches: showBrokerSwitcher
                     ? _BrokerSwatches(
                         options: swatchOptions,
@@ -321,6 +313,10 @@ class _DashboardUsersPageState extends ConsumerState<DashboardUsersPage> {
                       ? hub.identity!.name!.trim()
                       : 'You',
                   favoriteKey: _favoriteKey,
+                  householdTotalValue: hub.stats?.householdTotalValue,
+                  householdXirrPct: hub.stats?.householdXirrPct,
+                  primaryTotalValue: hub.stats?.primaryTotalValue,
+                  primaryXirrPct: hub.stats?.overallXirrPct,
                   onSelected: _selectPersona,
                   onFavorite: _setFavorite,
                   onDelete: (m) => _deleteFamilyFromCard(context, m),
@@ -512,176 +508,6 @@ class _DashboardUsersPageState extends ConsumerState<DashboardUsersPage> {
           ),
       ],
     );
-  }
-
-  List<_KpiSpec> _tabKpis({
-    required _UsersPageTab tab,
-    required List<AccountsPortfolioRow> brokers,
-    required List<DematAccountRow> demat,
-    required List<DematAccountRow> mf,
-    required AccountsHub hub,
-    required bool hasNps,
-    NpsMetaRow? personaNps,
-  }) {
-    final dematStats = dematNomineeStats(demat);
-    final mfStats = dematNomineeStats(mf);
-    final brokerValue =
-        brokers.fold<double>(0, (s, p) => s + (p.current ?? 0));
-    final brokerAssets =
-        brokers.fold<int>(0, (s, p) => s + (p.assetCount ?? 0));
-    final npsValue = personaNps?.totalValue ?? hub.nps?.totalValue ?? 0;
-    final combined = brokerValue +
-        dematStats.totalValue +
-        mfStats.totalValue +
-        npsValue;
-
-    ({String value, String? sub, bool warn}) nomineeAudit({
-      required int ok,
-      required int missing,
-      required int total,
-    }) {
-      if (total == 0) {
-        return (value: '—', sub: null, warn: false);
-      }
-      final pct = ((ok / total) * 100).round();
-      return (
-        value: '$pct%',
-        sub: missing > 0 ? '$missing action needed' : null,
-        warn: missing > 0,
-      );
-    }
-
-    switch (tab) {
-      case _UsersPageTab.demat:
-        final audit = nomineeAudit(
-          ok: dematStats.nomineeOk,
-          missing: dematStats.nomineeMissing,
-          total: demat.length,
-        );
-        return [
-          _KpiSpec(
-            label: 'Total Demat Value',
-            value: _inr.format(dematStats.totalValue),
-          ),
-          _KpiSpec(
-            label: 'Linked Demats',
-            value: '${dematStats.linkedCount} Accounts',
-            sub: '${dematStats.brokersActive} Brokers active',
-          ),
-          _KpiSpec(
-            label: 'Nominee Audits',
-            value: audit.value,
-            sub: audit.sub,
-            warn: audit.warn,
-          ),
-        ];
-      case _UsersPageTab.brokers:
-        return [
-          _KpiSpec(
-            label: 'Total Broker Value',
-            value: _inr.format(brokerValue),
-          ),
-          _KpiSpec(
-            label: 'Active Brokers',
-            value: '${brokers.length}',
-          ),
-          _KpiSpec(
-            label: 'Assets',
-            value: '$brokerAssets',
-          ),
-        ];
-      case _UsersPageTab.mf:
-        final audit = nomineeAudit(
-          ok: mfStats.nomineeOk,
-          missing: mfStats.nomineeMissing,
-          total: mf.length,
-        );
-        return [
-          _KpiSpec(
-            label: 'Total MF Value',
-            value: _inr.format(mfStats.totalValue),
-          ),
-          _KpiSpec(
-            label: 'MF folios',
-            value: '${mf.length}',
-          ),
-          _KpiSpec(
-            label: 'Nominee Audits',
-            value: audit.value,
-            sub: audit.sub,
-            warn: audit.warn,
-          ),
-        ];
-      case _UsersPageTab.nps:
-        final n = personaNps ?? hub.nps;
-        return [
-          _KpiSpec(
-            label: 'NPS Total',
-            value: n?.totalValue != null ? _inr.format(n!.totalValue!) : '—',
-          ),
-          _KpiSpec(
-            label: 'PRAN linked',
-            value: hasNps ? 'Yes' : 'No',
-          ),
-          _KpiSpec(
-            label: 'Tiers',
-            value: [
-              if (n?.tier1Value != null) 'T-I',
-              if (n?.tier2Value != null) 'T-II',
-            ].join(' / ').ifEmpty('—'),
-          ),
-        ];
-      case _UsersPageTab.overview:
-        final ok = dematStats.nomineeOk + mfStats.nomineeOk;
-        final missing = dematStats.nomineeMissing + mfStats.nomineeMissing;
-        final total = demat.length + mf.length;
-        final audit =
-            nomineeAudit(ok: ok, missing: missing, total: total);
-        final share = hub.stats?.familySharePct;
-        return [
-          _KpiSpec(
-            label: 'Combined Value',
-            value: _inr.format(combined),
-            sub: share != null && share > 0
-                ? 'Family ${share.toStringAsFixed(share >= 10 ? 0 : 1)}%'
-                : null,
-          ),
-          _KpiSpec(
-            label: 'Accounts',
-            value:
-                '${brokers.length} Brokers / ${demat.length} Demats / ${mf.length} MF',
-          ),
-          _KpiSpec(
-            label: 'Nominee Audits',
-            value: audit.value,
-            sub: audit.sub,
-            warn: audit.warn,
-          ),
-        ];
-      case _UsersPageTab.family:
-        final members = hub.familyMembers;
-        final share = hub.stats?.familySharePct;
-        return [
-          _KpiSpec(
-            label: 'Family members',
-            value: '${members.length}',
-          ),
-          _KpiSpec(
-            label: 'Family share',
-            value: share != null
-                ? '${share.toStringAsFixed(share >= 10 ? 0 : 1)}%'
-                : '—',
-            sub: hub.stats?.familyTotalValue != null
-                ? _inr.format(hub.stats!.familyTotalValue!)
-                : null,
-          ),
-          _KpiSpec(
-            label: 'Demat accounts',
-            value:
-                '${members.fold<int>(0, (s, m) => s + (m.portfolioCount ?? 0))}',
-          ),
-        ];
-    }
   }
 
   String _tabLabel(
@@ -1217,14 +1043,6 @@ class _ProfileHeader extends StatelessWidget {
                               fontSize: 20,
                             ),
                       ),
-                      if (familySharePct != null && familySharePct! > 0)
-                        Text(
-                          'Family ${familySharePct!.toStringAsFixed(familySharePct! >= 10 ? 0 : 1)}% of portfolio',
-                          style: context.text.caption().copyWith(
-                                fontWeight: FontWeight.w600,
-                                color: muted,
-                              ),
-                        ),
                       if (hasLinked)
                         Container(
                           padding: const EdgeInsets.symmetric(

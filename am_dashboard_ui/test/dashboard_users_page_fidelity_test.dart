@@ -103,7 +103,7 @@ const _hub = AccountsHub(
 );
 
 void main() {
-  testWidgets('Demat tab shows header KPIs, zero-count swatch, table chrome',
+  testWidgets('Demat tab shows zero-count swatch and table chrome',
       (tester) async {
     tester.view.physicalSize = const Size(1400, 1000);
     tester.view.devicePixelRatio = 1;
@@ -144,12 +144,9 @@ void main() {
     await tester.tap(find.text('Demat (2)'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Total Demat Value'), findsOneWidget);
-    expect(find.text('Linked Demats'), findsOneWidget);
-    expect(find.text('2 Accounts'), findsOneWidget);
-    expect(find.text('Nominee Audits'), findsOneWidget);
-    expect(find.text('50%'), findsOneWidget);
-    expect(find.text('1 action needed'), findsOneWidget);
+    expect(find.text('Total Demat Value'), findsNothing);
+    expect(find.text('Linked Demats'), findsNothing);
+    expect(find.textContaining('Family'), findsWidgets);
 
     expect(find.text('All (2)'), findsOneWidget);
     expect(find.text('Dhan (0)'), findsOneWidget);

@@ -77,6 +77,8 @@ class FamilyMemberRow {
     this.email,
     this.portfolioCount,
     this.source,
+    this.totalValue,
+    this.xirrPct,
   });
 
   factory FamilyMemberRow.fromJson(Map<String, dynamic> json) =>
@@ -87,6 +89,8 @@ class FamilyMemberRow {
         email: json['email'] as String?,
         portfolioCount: (json['portfolioCount'] as num?)?.toInt(),
         source: json['source'] as String?,
+        totalValue: (json['totalValue'] as num?)?.toDouble(),
+        xirrPct: (json['xirrPct'] as num?)?.toDouble(),
       );
 
   final String? id;
@@ -94,6 +98,8 @@ class FamilyMemberRow {
   final String? email;
   final int? portfolioCount;
   final String? source;
+  final double? totalValue;
+  final double? xirrPct;
 }
 
 class AccountsIdentity {
@@ -129,6 +135,7 @@ class AccountsStats {
     this.npsLinked,
     this.brokerPortfolioCount,
     this.overallXirrPct,
+    this.householdXirrPct,
     this.primaryTotalValue,
     this.familyTotalValue,
     this.householdTotalValue,
@@ -142,6 +149,7 @@ class AccountsStats {
         npsLinked: json['npsLinked'] as bool?,
         brokerPortfolioCount: (json['brokerPortfolioCount'] as num?)?.toInt(),
         overallXirrPct: (json['overallXirrPct'] as num?)?.toDouble(),
+        householdXirrPct: (json['householdXirrPct'] as num?)?.toDouble(),
         primaryTotalValue: (json['primaryTotalValue'] as num?)?.toDouble(),
         familyTotalValue: (json['familyTotalValue'] as num?)?.toDouble(),
         householdTotalValue: (json['householdTotalValue'] as num?)?.toDouble(),
@@ -154,6 +162,7 @@ class AccountsStats {
   final bool? npsLinked;
   final int? brokerPortfolioCount;
   final double? overallXirrPct;
+  final double? householdXirrPct;
   final double? primaryTotalValue;
   final double? familyTotalValue;
   final double? householdTotalValue;

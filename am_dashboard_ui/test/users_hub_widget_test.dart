@@ -1,3 +1,4 @@
+import 'package:am_common/am_common.dart';
 import 'package:am_dashboard_ui/domain/models/accounts_hub.dart';
 import 'package:am_dashboard_ui/presentation/layout/dashboard_widget_id.dart';
 import 'package:am_dashboard_ui/presentation/providers/dashboard_provider.dart';
@@ -23,12 +24,19 @@ const _fixtureHub = AccountsHub(
     mfFolioCount: 2,
     brokerPortfolioCount: 1,
     npsLinked: true,
+    overallXirrPct: 8.1,
+    householdXirrPct: 10.2,
+    primaryTotalValue: 400000,
+    householdTotalValue: 1000000,
+    familySharePct: 60,
   ),
   familyMembers: [
     FamilyMemberRow(
       id: 'fm1',
       name: 'Priyanshu',
       portfolioCount: 1,
+      totalValue: 600000,
+      xirrPct: 12.5,
     ),
   ],
   portfolios: [
@@ -54,17 +62,22 @@ const _fixtureHub = AccountsHub(
   ),
 );
 
-Future<void> _pumpUsers(WidgetTester tester) async {
+Future<ProviderContainer> _pumpUsers(WidgetTester tester) async {
   tester.view.physicalSize = const Size(400, 900);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
 
+  final container = ProviderContainer(
+    overrides: [
+      accountsHubProvider('u1').overrideWith((ref) async => _fixtureHub),
+    ],
+  );
+  addTearDown(container.dispose);
+
   await tester.pumpWidget(
-    ProviderScope(
-      overrides: [
-        accountsHubProvider('u1').overrideWith((ref) async => _fixtureHub),
-      ],
+    UncontrolledProviderScope(
+      container: container,
       child: MaterialApp(
         theme: _theme(),
         home: const Scaffold(
@@ -77,6 +90,7 @@ Future<void> _pumpUsers(WidgetTester tester) async {
     ),
   );
   await tester.pumpAndSettle();
+  return container;
 }
 
 void main() {
@@ -92,24 +106,45 @@ void main() {
     expect(find.text('All'), findsWidgets);
     expect(find.text('Household'), findsOneWidget);
     expect(find.text('Priyanshu'), findsWidgets);
+    expect(find.widgetWithText(ChoiceChip, 'Overview'), findsOneWidget);
+    expect(find.widgetWithText(ChoiceChip, 'Family'), findsOneWidget);
+    expect(find.widgetWithText(ChoiceChip, 'Broker (1)'), findsNothing);
+    expect(find.widgetWithText(ChoiceChip, 'NPS (1)'), findsNothing);
+    expect(find.textContaining('Family 60% of portfolio'), findsNothing);
+    expect(find.textContaining('Demat 1'), findsNothing);
+    expect(find.textContaining('XIRR +10.2%'), findsOneWidget);
+    expect(find.textContaining('XIRR +8.1%'), findsOneWidget);
+    expect(find.textContaining('XIRR +12.5%'), findsOneWidget);
     await tester.tap(find.text('Family'));
     await tester.pumpAndSettle();
     expect(find.text('Add'), findsOneWidget);
     expect(find.text('Priyanshu'), findsWidgets);
   });
 
-  testWidgets('NPS strip is not under Brokers tab', (tester) async {
+  testWidgets('selecting persona card syncs familyPortfolioFilterProvider',
+      (tester) async {
+    final container = await _pumpUsers(tester);
+    expect(
+      container.read(familyPortfolioFilterProvider),
+      FavoritePersonaStore.kAll,
+    );
+
+    await tester.tap(find.text('Priyanshu').first);
+    await tester.pumpAndSettle();
+    expect(container.read(familyPortfolioFilterProvider), 'fm1');
+
+    await tester.tap(find.text('All').first);
+    await tester.pumpAndSettle();
+    expect(
+      container.read(familyPortfolioFilterProvider),
+      FavoritePersonaStore.kAll,
+    );
+  });
+
+  testWidgets('Overview shows NPS strip without Broker/NPS tabs', (tester) async {
     await _pumpUsers(tester);
-    // Overview may show NPS.
     expect(find.byKey(const Key('users_nps_strip')), findsOneWidget);
-
-    await tester.tap(find.widgetWithText(ChoiceChip, 'Broker (1)'));
-    await tester.pumpAndSettle();
-    expect(find.byKey(const Key('users_nps_strip')), findsNothing);
     expect(find.text('Zerodha'), findsWidgets);
-
-    await tester.tap(find.widgetWithText(ChoiceChip, 'NPS (1)'));
-    await tester.pumpAndSettle();
-    expect(find.byKey(const Key('users_nps_strip')), findsOneWidget);
+    expect(find.widgetWithText(ChoiceChip, 'Broker (1)'), findsNothing);
   });
 }

@@ -288,29 +288,14 @@ class _TradeHoldingsAdvancedTemplateState
                   _buildFilterPill('profit', 'Profit', context.marketPositive),
                   _buildFilterPill('loss', 'Loss', context.marketNegative),
                   const SizedBox(width: AppSpacing.xs),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: _accent.withValues(alpha: 0.06),
-                      borderRadius: AppRadii.button,
-                      border: Border.all(
-                        color: _accent.withValues(alpha: 0.2),
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        _buildViewModeButton(
-                          'table',
-                          Icons.table_chart_outlined,
-                          'Table',
-                        ),
-                        _buildViewModeButton(
-                          'card',
-                          Icons.grid_view_outlined,
-                          'Card',
-                        ),
-                      ],
-                    ),
+                  AppSegmentedControl<String>(
+                    selectedValue: _viewMode == 'card' ? 'card' : 'table',
+                    primaryColor: _accent,
+                    children: const {
+                      'card': 'Cards',
+                      'table': 'Table',
+                    },
+                    onValueChanged: (mode) => setState(() => _viewMode = mode),
                   ),
                 ],
               ),
@@ -391,46 +376,6 @@ class _TradeHoldingsAdvancedTemplateState
     if (Theme.of(context).brightness == Brightness.dark) return true;
     return ThemeData.estimateBrightnessForColor(scheme.surface) ==
         Brightness.dark;
-  }
-
-  Widget _buildViewModeButton(String mode, IconData icon, String label) {
-    final selected = _viewMode == mode;
-    final isDark = _isDarkChrome;
-    final muted = context.textSecondary;
-    return InkWell(
-      onTap: () => setState(() => _viewMode = mode),
-      borderRadius: AppRadii.button,
-      child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.sm + AppSpacing.xs,
-          vertical: AppSpacing.sm,
-        ),
-        decoration: BoxDecoration(
-          color: selected
-              ? _accent.withValues(alpha: isDark ? 0.28 : 0.15)
-              : Colors.transparent,
-          borderRadius: AppRadii.button,
-          border: selected
-              ? Border.all(color: _accent.withValues(alpha: 0.55))
-              : null,
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 16, color: selected ? _accent : muted),
-            const SizedBox(width: AppSpacing.xs),
-            Text(
-              label,
-              style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                    fontSize: AppTypeScale.sm,
-                    fontWeight: FontWeight.w500,
-                    color: selected ? _accent : muted,
-                  ),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 
   Widget _buildFilterPill(String value, String label, Color? color) {
@@ -1053,7 +998,7 @@ class _TradeHoldingsAdvancedTemplateState
   Widget _buildAdvancedCardView() => LayoutBuilder(
     builder: (context, constraints) {
       const spacing = 16.0;
-      const maxCardWidth = 360.0;
+      const maxCardWidth = 280.0;
       final usable = constraints.maxWidth - 24;
       var crossAxisCount = (usable / (maxCardWidth + spacing)).floor();
       if (crossAxisCount < 1) crossAxisCount = 1;

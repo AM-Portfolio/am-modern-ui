@@ -34,11 +34,17 @@ void main() {
                 id: 'fm1',
                 name: 'Priyanshu Kumar',
                 portfolioCount: 2,
+                totalValue: 600000,
+                xirrPct: 12.5,
               ),
             ],
             selectedId: selected,
             primaryLabel: 'Munish',
             favoriteKey: favorited,
+            householdTotalValue: 1000000,
+            householdXirrPct: 10.2,
+            primaryTotalValue: 400000,
+            primaryXirrPct: 8.1,
             onSelected: (id) => selected = id,
             onFavorite: (key) => favorited = key,
             onDelete: (m) => deleted = m,
@@ -53,6 +59,12 @@ void main() {
     expect(find.text('Priyanshu Kumar'), findsOneWidget);
     expect(find.text('Household'), findsOneWidget);
     expect(find.text('You'), findsOneWidget);
+    expect(find.textContaining('₹1,000,000'), findsOneWidget);
+    expect(find.textContaining('₹400,000'), findsOneWidget);
+    expect(find.textContaining('₹600,000'), findsOneWidget);
+    expect(find.textContaining('XIRR +10.2%'), findsOneWidget);
+    expect(find.textContaining('XIRR +8.1%'), findsOneWidget);
+    expect(find.textContaining('XIRR +12.5%'), findsOneWidget);
 
     await tester.tap(find.text('All'));
     await tester.pump();

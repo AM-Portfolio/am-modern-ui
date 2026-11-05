@@ -200,67 +200,18 @@ extension _AdvancedHoldingsHeaderBuilder on _AdvancedHoldingsTemplateState {
     );
   }
 
-  /// `[Table | Card]` — same chrome/selection as status pills.
+  /// IPO-style `[Cards | Table]` segment (default selection remains table).
   Widget _buildViewModeToggle() {
     return SizedBox(
       height: _controlHeight,
-      child: Container(
-        decoration: _segmentGroupDecoration,
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _buildSegmentButton(
-              selected: _viewMode == 'table',
-              accent: _accent,
-              onTap: () => _onViewModeChanged('table'),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.table_chart,
-                    size: 15,
-                    color: _viewMode == 'table'
-                        ? _accent
-                        : context.textSecondary,
-                  ),
-                  const SizedBox(width: AppSpacing.xs),
-                  Text(
-                    'Table',
-                    style: _segmentLabelStyle(
-                      selected: _viewMode == 'table',
-                      accent: _accent,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            _buildSegmentButton(
-              selected: _viewMode == 'card',
-              accent: _accent,
-              onTap: () => _onViewModeChanged('card'),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.dashboard,
-                    size: 15,
-                    color: _viewMode == 'card'
-                        ? _accent
-                        : context.textSecondary,
-                  ),
-                  const SizedBox(width: AppSpacing.xs),
-                  Text(
-                    'Card',
-                    style: _segmentLabelStyle(
-                      selected: _viewMode == 'card',
-                      accent: _accent,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
+      child: AppSegmentedControl<String>(
+        selectedValue: _viewMode == 'card' ? 'card' : 'table',
+        primaryColor: _accent,
+        children: const {
+          'card': 'Cards',
+          'table': 'Table',
+        },
+        onValueChanged: _onViewModeChanged,
       ),
     );
   }
