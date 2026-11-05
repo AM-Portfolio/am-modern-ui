@@ -81,9 +81,8 @@ class _ChartWorkspacePageState extends ConsumerState<ChartWorkspacePage> {
           ctrl.setLayout(ChartGridLayout.one);
           ctrl.setBottomMinimized(true);
         } else if (!widget.showSidebar) {
-          // Paper desk Chart tab: one pane, keep bottom panel (Overview / F&O).
+          // Paper desk Chart tab: one pane; leave bottom minimized as user left it.
           ctrl.setLayout(ChartGridLayout.one);
-          ctrl.setBottomMinimized(false);
         }
       }
     });

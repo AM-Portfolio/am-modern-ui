@@ -36,6 +36,8 @@ class _PaperDeskScreenState extends State<PaperDeskScreen> {
   static const _watchlistDefaultWidth = 300.0;
 
   String _symbol = '';
+  /// Order ticket symbol — independent of chart `_symbol` so B/S does not remount the chart.
+  String _ticketSymbol = '';
   String _side = 'BUY';
   _MidTab _midTab = _MidTab.wallet;
   bool _orderOpen = false;
@@ -49,6 +51,7 @@ class _PaperDeskScreenState extends State<PaperDeskScreen> {
   bool _narrowShowDesk = false;
 
   bool get _hasSymbol => _symbol.trim().isNotEmpty;
+  bool get _hasTicketSymbol => _ticketSymbol.trim().isNotEmpty;
 
   void _openChart(String symbol) {
     final sym = symbol.trim().toUpperCase();
@@ -88,7 +91,7 @@ class _PaperDeskScreenState extends State<PaperDeskScreen> {
 
     if (!_isWide(context)) {
       setState(() {
-        _symbol = sym;
+        _ticketSymbol = sym;
         _side = nextSide;
       });
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -100,7 +103,7 @@ class _PaperDeskScreenState extends State<PaperDeskScreen> {
           onSymbolChanged: (s) {
             final next = s.trim().toUpperCase();
             if (next.isEmpty) return;
-            setState(() => _symbol = next);
+            setState(() => _ticketSymbol = next);
           },
           onSideChanged: (s) => setState(() => _side = s),
           onOrderPlaced: _onOrderPlaced,
@@ -110,7 +113,7 @@ class _PaperDeskScreenState extends State<PaperDeskScreen> {
     }
 
     setState(() {
-      _symbol = sym;
+      _ticketSymbol = sym;
       _side = nextSide;
       _orderOpen = true;
       if (_ticketOffset == Offset.zero && _deskSize != Size.zero) {
@@ -132,7 +135,7 @@ class _PaperDeskScreenState extends State<PaperDeskScreen> {
   }
 
   void _cycleFloat() {
-    if (!_orderOpen || !_hasSymbol) return;
+    if (!_orderOpen || !_hasTicketSymbol) return;
     setState(() {
       switch (_placement) {
         case _TicketPlacement.floatTopRight:
@@ -193,12 +196,12 @@ class _PaperDeskScreenState extends State<PaperDeskScreen> {
 
   Widget _ticket({required bool floating}) {
     return PaperOrderTicket(
-      symbol: _symbol,
+      symbol: _ticketSymbol,
       side: _side,
       onSymbolChanged: (s) {
         final sym = s.trim().toUpperCase();
         if (sym.isEmpty) return;
-        setState(() => _symbol = sym);
+        setState(() => _ticketSymbol = sym);
       },
       onSideChanged: (s) => setState(() => _side = s),
       onOrderPlaced: _onOrderPlaced,
@@ -413,7 +416,7 @@ class _PaperDeskScreenState extends State<PaperDeskScreen> {
                               ),
                             ],
                           ),
-                          if (_orderOpen && _hasSymbol)
+                          if (_orderOpen && _hasTicketSymbol)
                             Positioned(
                               left: _ticketOffset.dx,
                               top: _ticketOffset.dy,

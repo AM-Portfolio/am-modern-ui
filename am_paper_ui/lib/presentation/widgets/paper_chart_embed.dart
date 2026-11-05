@@ -248,7 +248,7 @@ class _PaperChartEmbedState extends ConsumerState<PaperChartEmbed> {
         chartMarketProvider.overrideWithValue(_market),
       ],
       child: ChartWorkspacePage(
-        key: ValueKey('paper-chart-$sym'),
+        key: const ValueKey('paper-chart'),
         initialSymbol: sym.isEmpty ? null : sym,
         showSidebar: false,
         showHeaderSearch: false,
