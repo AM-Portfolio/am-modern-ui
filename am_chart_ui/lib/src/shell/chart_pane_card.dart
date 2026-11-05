@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../chart_types/chart_type_id.dart';
 import '../drawings/chart_draw_models.dart';
+import '../drawings/chart_trade_line_models.dart';
 import '../drawings/interactive_chart_surface.dart';
 import '../providers/chart_models.dart';
 import 'chart_symbol_display.dart';
@@ -22,6 +23,17 @@ class ChartPaneCard extends ConsumerStatefulWidget {
     this.clearDrawingsEpoch = 0,
     this.hasLeftExpandHandle = false,
     this.onDrawingsCountChanged,
+    this.tradeLines = const [],
+    this.tradeLinesEnabled = false,
+    this.tradeLinesAllowDrag = true,
+    this.pendingTradeSide,
+    this.pendingTradeHint,
+    this.onTradeLineMoved,
+    this.onTradeLineDragEnd,
+    this.onTradeLineRemoved,
+    this.onEditTradeLine,
+    this.onTradeLinePlaceAtPrice,
+    this.onCancelPendingTrade,
   });
 
   final int paneIndex;
@@ -34,6 +46,18 @@ class ChartPaneCard extends ConsumerStatefulWidget {
   final int clearDrawingsEpoch;
   final bool hasLeftExpandHandle;
   final ValueChanged<int>? onDrawingsCountChanged;
+  final List<ChartTradeLine> tradeLines;
+  final bool tradeLinesEnabled;
+  final bool tradeLinesAllowDrag;
+  final ChartTradeLineSide? pendingTradeSide;
+  final String? pendingTradeHint;
+  final void Function(String id, double newPrice)? onTradeLineMoved;
+  final void Function(String id)? onTradeLineDragEnd;
+  final void Function(String id)? onTradeLineRemoved;
+  final void Function(String id)? onEditTradeLine;
+  final void Function(ChartTradeLineSide side, double price, double anchorXNorm)?
+      onTradeLinePlaceAtPrice;
+  final VoidCallback? onCancelPendingTrade;
 
   @override
   ConsumerState<ChartPaneCard> createState() => _ChartPaneCardState();
@@ -119,6 +143,20 @@ class _ChartPaneCardState extends ConsumerState<ChartPaneCard> {
                                   onDrawingsCountChanged: widget.isActive
                                       ? widget.onDrawingsCountChanged
                                       : null,
+                                  tradeLines: widget.tradeLines,
+                                  tradeLinesEnabled: widget.tradeLinesEnabled,
+                                  tradeLinesAllowDrag:
+                                      widget.tradeLinesAllowDrag,
+                                  pendingTradeSide: widget.pendingTradeSide,
+                                  pendingTradeHint: widget.pendingTradeHint,
+                                  onTradeLineMoved: widget.onTradeLineMoved,
+                                  onTradeLineDragEnd: widget.onTradeLineDragEnd,
+                                  onTradeLineRemoved: widget.onTradeLineRemoved,
+                                  onEditTradeLine: widget.onEditTradeLine,
+                                  onTradeLinePlaceAtPrice:
+                                      widget.onTradeLinePlaceAtPrice,
+                                  onCancelPendingTrade:
+                                      widget.onCancelPendingTrade,
                                   onNeedOlderHistory: () {
                                     ctrl.setActivePane(widget.paneIndex);
                                     ctrl.widenHistoryForActivePane();

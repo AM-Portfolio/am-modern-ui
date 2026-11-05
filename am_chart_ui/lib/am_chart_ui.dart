@@ -11,4 +11,7 @@ export 'src/providers/chart_models.dart';
 export 'src/providers/chart_provider_bindings.dart';
 export 'src/persistence/workspace_store.dart';
 export 'src/drawings/chart_draw_models.dart';
+export 'src/drawings/chart_trade_line_models.dart';
+export 'src/drawings/chart_trade_lines_layer.dart';
 export 'src/drawings/interactive_chart_surface.dart';
+export 'src/chart_engine/chart_price_layout.dart';

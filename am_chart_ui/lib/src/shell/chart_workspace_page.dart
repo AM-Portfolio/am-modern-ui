@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../chart_types/chart_type_id.dart';
 import '../drawings/chart_draw_models.dart';
 import '../drawings/chart_draw_tools_rail.dart';
+import '../drawings/chart_trade_line_models.dart';
 import '../persistence/workspace_store.dart';
 import '../timeframe/chart_timeframe.dart';
 import 'chart_pane_card.dart';
@@ -31,7 +32,19 @@ class ChartWorkspacePage extends ConsumerStatefulWidget {
     this.bottomPanelHeight = 320,
     this.showHeaderSearch = true,
     this.showSidebar = true,
+    this.initialBottomMinimized = false,
     this.accentColor,
+    this.tradeLines = const [],
+    this.tradeLinesEnabled = false,
+    this.tradeLinesAllowDrag = true,
+    this.pendingTradeSide,
+    this.pendingTradeHint,
+    this.onTradeLineMoved,
+    this.onTradeLineDragEnd,
+    this.onTradeLineRemoved,
+    this.onEditTradeLine,
+    this.onTradeLinePlaceAtPrice,
+    this.onCancelPendingTrade,
   });
 
   final String? initialSymbol;
@@ -49,8 +62,24 @@ class ChartWorkspacePage extends ConsumerStatefulWidget {
   /// When false, hides the Watchlist & Portfolio sidebar (e.g. paper desk embed).
   final bool showSidebar;
 
+  /// When true, Overview / F&O starts collapsed (paper desk: chart-only until user opens panel).
+  final bool initialBottomMinimized;
+
   /// Optional module accent color override (defaults to [ModuleColors.market]).
   final Color? accentColor;
+
+  final List<ChartTradeLine> tradeLines;
+  final bool tradeLinesEnabled;
+  final bool tradeLinesAllowDrag;
+  final ChartTradeLineSide? pendingTradeSide;
+  final String? pendingTradeHint;
+  final void Function(String id, double newPrice)? onTradeLineMoved;
+  final void Function(String id)? onTradeLineDragEnd;
+  final void Function(String id)? onTradeLineRemoved;
+  final void Function(String id)? onEditTradeLine;
+  final void Function(ChartTradeLineSide side, double price, double anchorXNorm)?
+      onTradeLinePlaceAtPrice;
+  final VoidCallback? onCancelPendingTrade;
 
   @override
   ConsumerState<ChartWorkspacePage> createState() => _ChartWorkspacePageState();
@@ -81,8 +110,9 @@ class _ChartWorkspacePageState extends ConsumerState<ChartWorkspacePage> {
           ctrl.setLayout(ChartGridLayout.one);
           ctrl.setBottomMinimized(true);
         } else if (!widget.showSidebar) {
-          // Paper desk Chart tab: one pane; leave bottom minimized as user left it.
+          // Paper desk Chart tab: one pane; honor initial minimize (chart-only default).
           ctrl.setLayout(ChartGridLayout.one);
+          ctrl.setBottomMinimized(widget.initialBottomMinimized);
         }
       }
     });
@@ -308,6 +338,27 @@ class _ChartWorkspacePageState extends ConsumerState<ChartWorkspacePage> {
                                                       );
                                                     }
                                                   },
+                                                  tradeLines: widget.tradeLines,
+                                                  tradeLinesEnabled:
+                                                      widget.tradeLinesEnabled,
+                                                  tradeLinesAllowDrag:
+                                                      widget.tradeLinesAllowDrag,
+                                                  pendingTradeSide:
+                                                      widget.pendingTradeSide,
+                                                  pendingTradeHint:
+                                                      widget.pendingTradeHint,
+                                                  onTradeLineMoved:
+                                                      widget.onTradeLineMoved,
+                                                  onTradeLineDragEnd:
+                                                      widget.onTradeLineDragEnd,
+                                                  onTradeLineRemoved:
+                                                      widget.onTradeLineRemoved,
+                                                  onEditTradeLine:
+                                                      widget.onEditTradeLine,
+                                                  onTradeLinePlaceAtPrice: widget
+                                                      .onTradeLinePlaceAtPrice,
+                                                  onCancelPendingTrade:
+                                                      widget.onCancelPendingTrade,
                                                 ),
                                               ),
                                             ],
@@ -711,12 +762,35 @@ class _ChartGrid extends StatelessWidget {
     required this.clearDrawingsEpoch,
     this.hasLeftExpandHandle = false,
     this.onDrawingsCountChanged,
+    this.tradeLines = const [],
+    this.tradeLinesEnabled = false,
+    this.tradeLinesAllowDrag = true,
+    this.pendingTradeSide,
+    this.pendingTradeHint,
+    this.onTradeLineMoved,
+    this.onTradeLineDragEnd,
+    this.onTradeLineRemoved,
+    this.onEditTradeLine,
+    this.onTradeLinePlaceAtPrice,
+    this.onCancelPendingTrade,
   });
   final ChartTerminalState state;
   final ChartDrawTool drawTool;
   final int clearDrawingsEpoch;
   final bool hasLeftExpandHandle;
   final ValueChanged<int>? onDrawingsCountChanged;
+  final List<ChartTradeLine> tradeLines;
+  final bool tradeLinesEnabled;
+  final bool tradeLinesAllowDrag;
+  final ChartTradeLineSide? pendingTradeSide;
+  final String? pendingTradeHint;
+  final void Function(String id, double newPrice)? onTradeLineMoved;
+  final void Function(String id)? onTradeLineDragEnd;
+  final void Function(String id)? onTradeLineRemoved;
+  final void Function(String id)? onEditTradeLine;
+  final void Function(ChartTradeLineSide side, double price, double anchorXNorm)?
+      onTradeLinePlaceAtPrice;
+  final VoidCallback? onCancelPendingTrade;
 
   @override
   Widget build(BuildContext context) {
@@ -734,6 +808,18 @@ class _ChartGrid extends StatelessWidget {
           clearDrawingsEpoch: clearDrawingsEpoch,
           hasLeftExpandHandle: hasLeftExpandHandle,
           onDrawingsCountChanged: onDrawingsCountChanged,
+          tradeLines: tradeLines,
+          tradeLinesEnabled: tradeLinesEnabled && i == active,
+          tradeLinesAllowDrag: tradeLinesAllowDrag,
+          pendingTradeSide: i == active ? pendingTradeSide : null,
+          pendingTradeHint: i == active ? pendingTradeHint : null,
+          onTradeLineMoved: onTradeLineMoved,
+          onTradeLineDragEnd: onTradeLineDragEnd,
+          onTradeLineRemoved: onTradeLineRemoved,
+          onEditTradeLine: onEditTradeLine,
+          onTradeLinePlaceAtPrice: onTradeLinePlaceAtPrice,
+          onCancelPendingTrade:
+              i == active ? onCancelPendingTrade : null,
         );
 
     if (isMobile) {

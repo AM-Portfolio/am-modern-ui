@@ -379,12 +379,23 @@ class ChartTerminalController extends Notifier<ChartTerminalState> {
     final i = paneIndex ?? state.activePaneIndex;
     final panes = [...state.panes];
     final currentPane = panes[i];
+    final nextSym = symbol.trim().toUpperCase();
+    final sameSymbol =
+        currentPane.symbol.trim().toUpperCase() == nextSym && nextSym.isNotEmpty;
+    final sameExchange = exchange == null ||
+        (exchange.trim().toUpperCase() ==
+            currentPane.exchange.trim().toUpperCase());
+    // Same-symbol B/S / re-tap must not flash loading or reload candles.
+    if (sameSymbol && sameExchange && timeframe == null) {
+      await addRecentSearch(symbol);
+      return;
+    }
     final filteredComparisons = currentPane.comparisonSymbols
-        .where((s) => s.toUpperCase() != symbol.toUpperCase())
+        .where((s) => s.toUpperCase() != nextSym)
         .toList();
     final filteredBars =
         Map<String, List<ChartBar>>.from(currentPane.comparisonBars)
-          ..removeWhere((k, _) => k.toUpperCase() == symbol.toUpperCase());
+          ..removeWhere((k, _) => k.toUpperCase() == nextSym);
     final resolvedTf = ChartTimeframe.coerceForSymbol(
       symbol,
       timeframe ?? ChartTimeframe.y1,

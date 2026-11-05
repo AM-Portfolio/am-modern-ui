@@ -25,6 +25,7 @@ class PaperWatchlistPane extends ConsumerStatefulWidget {
     this.compactChrome = false,
     this.showRecentHistory = false,
     this.showSearch = true,
+    this.showBuySell = true,
     this.onOpenAllIndices,
     this.controller,
   });
@@ -32,6 +33,7 @@ class PaperWatchlistPane extends ConsumerStatefulWidget {
   final String selectedSymbol;
   final ValueChanged<String> onSelectSymbol;
   final WatchlistSideCallback onBuySell;
+  final bool showBuySell;
 
   /// Opens Equity Insider / fundamental analysis for the symbol.
   final ValueChanged<String>? onOpenFundamentals;
@@ -122,7 +124,11 @@ class _PaperWatchlistPaneState extends ConsumerState<PaperWatchlistPane> {
             }
           });
         }
-        if (widget.compactChrome) {
+        // Wide / pointer layouts use web list (hover B/S). compactChrome only
+        // strips desk title chrome — not hover behavior.
+        final useCompactList =
+            widget.compactChrome && MediaQuery.sizeOf(context).width < 768;
+        if (useCompactList) {
           final mobile = PaperWatchlistMobile(
             controller: _controller,
             selectedSymbol: widget.selectedSymbol,
@@ -131,6 +137,7 @@ class _PaperWatchlistPaneState extends ConsumerState<PaperWatchlistPane> {
             onOpenFundamentals: widget.onOpenFundamentals,
             onOpenChart: widget.onOpenChart,
             showSearch: widget.showSearch,
+            showBuySell: widget.showBuySell,
             onOpenAllIndices: widget.onOpenAllIndices,
           );
           if (!widget.showRecentHistory) return mobile;
@@ -153,6 +160,7 @@ class _PaperWatchlistPaneState extends ConsumerState<PaperWatchlistPane> {
           onOpenFundamentals: widget.onOpenFundamentals,
           onOpenChart: widget.onOpenChart,
           showSearch: widget.showSearch,
+          showBuySell: widget.showBuySell,
         );
         if (!widget.showRecentHistory) return web;
         return Column(

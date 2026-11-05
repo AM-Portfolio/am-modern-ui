@@ -6,6 +6,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:get_it/get_it.dart';
 
 import 'paper_chart_bottom_panel.dart';
+import 'paper_chart_trade_lines_controller.dart';
+import 'paper_trade_line_order_popover.dart';
 
 /// Live OHLC for the paper-desk chart column (same Market SDK path as chart tab).
 class _PaperChartHistoricalProvider implements HistoricalDataProvider {
@@ -207,9 +209,11 @@ class PaperChartEmbed extends ConsumerStatefulWidget {
   const PaperChartEmbed({
     super.key,
     required this.symbol,
+    this.tradeLinesController,
   });
 
   final String symbol;
+  final PaperChartTradeLinesController? tradeLinesController;
 
   @override
   ConsumerState<PaperChartEmbed> createState() => _PaperChartEmbedState();
@@ -224,11 +228,16 @@ class _PaperChartEmbedState extends ConsumerState<PaperChartEmbed> {
     super.initState();
     _historical = _PaperChartHistoricalProvider();
     _market = _PaperChartMarketProvider();
+    widget.tradeLinesController?.addListener(_onTradeLines);
   }
 
   @override
   void didUpdateWidget(covariant PaperChartEmbed oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (oldWidget.tradeLinesController != widget.tradeLinesController) {
+      oldWidget.tradeLinesController?.removeListener(_onTradeLines);
+      widget.tradeLinesController?.addListener(_onTradeLines);
+    }
     final next = widget.symbol.trim().toUpperCase();
     final prev = oldWidget.symbol.trim().toUpperCase();
     if (next.isNotEmpty && next != prev) {
@@ -240,8 +249,21 @@ class _PaperChartEmbedState extends ConsumerState<PaperChartEmbed> {
   }
 
   @override
+  void dispose() {
+    widget.tradeLinesController?.removeListener(_onTradeLines);
+    super.dispose();
+  }
+
+  void _onTradeLines() {
+    if (mounted) setState(() {});
+  }
+
+  @override
   Widget build(BuildContext context) {
     final sym = widget.symbol.trim().toUpperCase();
+    final tl = widget.tradeLinesController;
+    final cfg = tl?.config;
+    final enabled = cfg?.tradeLinesEnabled ?? false;
     return ProviderScope(
       overrides: [
         chartHistoricalProvider.overrideWithValue(_historical),
@@ -252,7 +274,63 @@ class _PaperChartEmbedState extends ConsumerState<PaperChartEmbed> {
         initialSymbol: sym.isEmpty ? null : sym,
         showSidebar: false,
         showHeaderSearch: false,
+        initialBottomMinimized: true,
         bottomPanelHeight: 360,
+        tradeLines: tl?.lines ?? const [],
+        tradeLinesEnabled: enabled,
+        tradeLinesAllowDrag: cfg?.replaceOnDrag ?? true,
+        pendingTradeSide: tl?.pendingSide,
+        pendingTradeHint: () {
+          final p = tl;
+          if (p?.pendingSide == null) return null;
+          final side =
+              p!.pendingSide == ChartTradeLineSide.sell ? 'SELL' : 'BUY';
+          final type = (p.pendingOrderType ??
+                  (cfg?.resolveDefaultOrderType() ?? 'LIMIT'))
+              .toUpperCase();
+          final qty = p.pendingQty ??
+              (cfg?.resolveDefaultQuantity() ?? '1');
+          return '$side $type ×$qty · move on chart, click to place';
+        }(),
+        onTradeLineMoved:
+            tl == null ? null : (id, price) => tl.onDragPrice(id, price),
+        onTradeLineDragEnd: tl == null ? null : (id) => tl.commitDrag(id),
+        onTradeLineRemoved: tl == null ? null : (id) => tl.removeLine(id),
+        onEditTradeLine: tl == null
+            ? null
+            : (id) async {
+                ChartTradeLine? line;
+                for (final l in tl.lines) {
+                  if (l.id == id) {
+                    line = l;
+                    break;
+                  }
+                }
+                if (line == null || cfg == null) return;
+                final side =
+                    line.side == ChartTradeLineSide.sell ? 'SELL' : 'BUY';
+                final result = await showPaperTradeLineOrderPopover(
+                  context: context,
+                  config: cfg,
+                  symbol: line.symbol,
+                  side: side,
+                  favoriteOrderType: line.orderType,
+                  initialQuantity: line.quantity,
+                  title: 'Edit line',
+                  confirmLabel: 'Update',
+                );
+                if (result == null || !context.mounted) return;
+                await tl.updateLineOrder(
+                  id,
+                  orderType: result.orderType,
+                  quantity: result.quantity,
+                );
+              },
+        onTradeLinePlaceAtPrice: tl == null
+            ? null
+            : (side, price, anchorXNorm) =>
+                tl.placeAtPrice(side, price, anchorXNorm: anchorXNorm),
+        onCancelPendingTrade: tl == null ? null : () => tl.clearPending(),
         bottomPanelBuilder: (_, state, ctrl) {
           final active = state.symbol.trim().isNotEmpty
               ? state.symbol.trim().toUpperCase()

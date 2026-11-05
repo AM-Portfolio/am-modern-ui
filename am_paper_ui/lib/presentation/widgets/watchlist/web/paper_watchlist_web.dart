@@ -15,6 +15,7 @@ class PaperWatchlistWeb extends StatefulWidget {
     this.onOpenFundamentals,
     this.onOpenChart,
     this.showSearch = true,
+    this.showBuySell = true,
   });
 
   final WatchlistController controller;
@@ -24,6 +25,7 @@ class PaperWatchlistWeb extends StatefulWidget {
   final ValueChanged<String>? onOpenFundamentals;
   final ValueChanged<String>? onOpenChart;
   final bool showSearch;
+  final bool showBuySell;
 
   @override
   State<PaperWatchlistWeb> createState() => _PaperWatchlistWebState();
@@ -83,6 +85,7 @@ class _PaperWatchlistWebState extends State<PaperWatchlistWeb> {
             onOpenFundamentals: widget.onOpenFundamentals,
             onOpenChart: widget.onOpenChart,
             onSelectSymbol: widget.onSelectSymbol,
+            showBuySell: widget.showBuySell,
           ),
         ],
       ),

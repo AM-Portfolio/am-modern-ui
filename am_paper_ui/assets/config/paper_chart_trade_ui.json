@@ -1,0 +1,19 @@
+{
+  "buySell": {
+    "showOnChartChrome": false,
+    "showOnWatchlist": true,
+    "watchlistOnlyWhenMidTab": "chart",
+    "showOnPortfolio": false,
+    "showOnPositions": true
+  },
+  "tradeLines": {
+    "enabled": true,
+    "defaultOrderType": "LIMIT",
+    "defaultQuantity": "1",
+    "enabledOrderTypes": ["MARKET", "LIMIT", "STOP", "SUPER", "TRAIL"],
+    "placeFromWatchlistBuySell": true,
+    "cancelOrderOnLineDelete": true,
+    "replaceOnDrag": true,
+    "marketKeepsLine": false
+  }
+}

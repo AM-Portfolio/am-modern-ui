@@ -182,6 +182,7 @@ class WatchlistRow extends StatelessWidget {
     required this.onSell,
     this.onOpenChart,
     required this.onRemove,
+    this.showBuySell = true,
   });
 
   final WatchlistStock stock;
@@ -195,6 +196,7 @@ class WatchlistRow extends StatelessWidget {
   final VoidCallback onSell;
   final VoidCallback? onOpenChart;
   final VoidCallback onRemove;
+  final bool showBuySell;
 
   @override
   Widget build(BuildContext context) {
@@ -238,14 +240,26 @@ class WatchlistRow extends StatelessWidget {
                   ],
                 ),
               ),
-              if (showActions) ...[
-                WatchlistActionToolbar(
-                  onBuy: onBuy,
-                  onSell: onSell,
-                  onOpenChart: onOpenChart,
+              // Keep action slot sized when hidden so hover→show does not
+              // shift layout under the cursor and fire onExit immediately.
+              Visibility(
+                visible: showActions,
+                maintainSize: true,
+                maintainAnimation: true,
+                maintainState: true,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    WatchlistActionToolbar(
+                      onBuy: onBuy,
+                      onSell: onSell,
+                      onOpenChart: onOpenChart,
+                      showBuySell: showBuySell,
+                    ),
+                    const SizedBox(width: 8),
+                  ],
                 ),
-                const SizedBox(width: 8),
-              ],
+              ),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
@@ -281,16 +295,22 @@ class WatchlistRow extends StatelessWidget {
                   ),
                 ],
               ),
-              if (showActions)
-                IconButton(
+              Visibility(
+                visible: showActions,
+                maintainSize: true,
+                maintainAnimation: true,
+                maintainState: true,
+                child: IconButton(
                   tooltip: 'Remove',
                   iconSize: 18,
                   visualDensity: VisualDensity.compact,
                   padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                  constraints:
+                      const BoxConstraints(minWidth: 28, minHeight: 28),
                   onPressed: onRemove,
                   icon: Icon(Icons.close, color: colors.textSecondary),
                 ),
+              ),
             ],
           ),
         ),
@@ -312,11 +332,13 @@ class WatchlistActionToolbar extends StatelessWidget {
     required this.onBuy,
     required this.onSell,
     this.onOpenChart,
+    this.showBuySell = true,
   });
 
   final VoidCallback onBuy;
   final VoidCallback onSell;
   final VoidCallback? onOpenChart;
+  final bool showBuySell;
 
   @override
   Widget build(BuildContext context) {
@@ -324,17 +346,19 @@ class WatchlistActionToolbar extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        WatchlistSq(
-          label: 'B',
-          bg: _watchlistAccent(context),
-          onTap: onBuy,
-        ),
-        const SizedBox(width: 4),
-        WatchlistSq(
-          label: 'S',
-          bg: colors.marketNegativeIndicator,
-          onTap: onSell,
-        ),
+        if (showBuySell) ...[
+          WatchlistSq(
+            label: 'B',
+            bg: _watchlistAccent(context),
+            onTap: onBuy,
+          ),
+          const SizedBox(width: 4),
+          WatchlistSq(
+            label: 'S',
+            bg: colors.marketNegativeIndicator,
+            onTap: onSell,
+          ),
+        ],
         if (onOpenChart != null) ...[
           const SizedBox(width: 2),
           IconButton(

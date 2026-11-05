@@ -1,23 +1,22 @@
+import 'dart:async';
+
+import 'package:am_chart_ui/am_chart_ui.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../config/paper_chart_trade_ui_config.dart';
 import '../../data/oms_models.dart';
 import '../paper_oms_cubit.dart';
 import '../paper_oms_state.dart';
 import '../widgets/paper_chart_embed.dart';
+import '../widgets/paper_chart_trade_lines_controller.dart';
 import '../widgets/paper_order_ticket.dart';
 import '../widgets/paper_order_ticket_sheet.dart';
 import '../widgets/paper_orders_pane.dart';
 import '../widgets/paper_positions_pnl_pane.dart';
 import '../widgets/paper_wallet_pane.dart';
 import '../widgets/paper_watchlist_pane.dart';
-
-enum _TicketPlacement {
-  floatTopRight,
-  floatBottomNearWatchlist,
-  free,
-}
 
 enum _MidTab { wallet, orders, chart, positions }
 
@@ -29,11 +28,12 @@ class PaperDeskScreen extends StatefulWidget {
 }
 
 class _PaperDeskScreenState extends State<PaperDeskScreen> {
-  static const _ticketWidth = 340.0;
   static const _wideBreakpoint = 1100.0;
   static const _watchlistMinWidth = 240.0;
   static const _watchlistMaxWidth = 520.0;
   static const _watchlistDefaultWidth = 300.0;
+  static const _ticketDockMaxHeight = 320.0;
+  static const _ticketDockMinHeight = 220.0;
 
   String _symbol = '';
   /// Order ticket symbol — independent of chart `_symbol` so B/S does not remount the chart.
@@ -41,10 +41,10 @@ class _PaperDeskScreenState extends State<PaperDeskScreen> {
   String _side = 'BUY';
   _MidTab _midTab = _MidTab.wallet;
   bool _orderOpen = false;
-  _TicketPlacement _placement = _TicketPlacement.floatTopRight;
-  Offset _ticketOffset = Offset.zero;
-  Size _deskSize = Size.zero;
   double _watchlistWidth = _watchlistDefaultWidth;
+
+  PaperChartTradeUiConfig _tradeUiConfig = PaperChartTradeUiConfig.defaults();
+  PaperChartTradeLinesController? _tradeLines;
 
   /// Narrow layout: show Desk (FA / orders) without Watchlist|Desk tabs.
   final _narrowTabs = GlobalKey<_NarrowDeskBodyState>();
@@ -52,6 +52,73 @@ class _PaperDeskScreenState extends State<PaperDeskScreen> {
 
   bool get _hasSymbol => _symbol.trim().isNotEmpty;
   bool get _hasTicketSymbol => _ticketSymbol.trim().isNotEmpty;
+
+  String get _midTabKey => switch (_midTab) {
+        _MidTab.wallet => 'wallet',
+        _MidTab.orders => 'orders',
+        _MidTab.chart => 'chart',
+        _MidTab.positions => 'positions',
+      };
+
+  bool get _showWatchlistBuySell => _tradeUiConfig.showBuySell(
+        PaperBuySellSurface.watchlist,
+        midTab: _midTabKey,
+      );
+
+  bool get _showPositionsBuySell =>
+      _tradeUiConfig.showBuySell(PaperBuySellSurface.positions);
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) unawaited(_bootstrapTradeUi());
+    });
+  }
+
+  Future<void> _bootstrapTradeUi() async {
+    final cfg = await PaperChartTradeUiConfig.loadAsset();
+    if (!mounted) return;
+    final cubit = context.read<PaperOmsCubit>();
+    final ctrl = PaperChartTradeLinesController(
+      config: cfg,
+      placeOrder: ({
+        required String symbol,
+        required String side,
+        required String orderType,
+        required String quantity,
+        String? limitPrice,
+        String? triggerPrice,
+        String? targetPrice,
+        String? stopLoss,
+        String? trailJump,
+        String? entryType,
+      }) =>
+          cubit.placeOrder(
+            symbol: symbol,
+            side: side,
+            orderType: orderType,
+            quantity: quantity,
+            limitPrice: limitPrice,
+            triggerPrice: triggerPrice,
+            targetPrice: targetPrice,
+            stopLoss: stopLoss,
+            trailJump: trailJump,
+            entryType: entryType,
+          ),
+      cancelOrder: cubit.cancel,
+    );
+    setState(() {
+      _tradeUiConfig = cfg;
+      _tradeLines = ctrl;
+    });
+  }
+
+  @override
+  void dispose() {
+    _tradeLines?.dispose();
+    super.dispose();
+  }
 
   void _openChart(String symbol) {
     final sym = symbol.trim().toUpperCase();
@@ -84,10 +151,46 @@ class _PaperDeskScreenState extends State<PaperDeskScreen> {
     _openChart(symbol ?? _symbol);
   }
 
-  void _buySell(String symbol, String side) {
+  Future<void> _buySell(String symbol, String side) async {
     final sym = symbol.trim().toUpperCase();
     if (sym.isEmpty) return;
     final nextSide = side.toUpperCase() == 'SELL' ? 'SELL' : 'BUY';
+
+    final tl = _tradeLines;
+    final useTradeLine = _isWide(context) &&
+        _midTab == _MidTab.chart &&
+        tl != null &&
+        _tradeUiConfig.tradeLinesEnabled &&
+        _tradeUiConfig.placeFromWatchlistBuySell;
+
+    if (useTradeLine) {
+      final fav = context
+          .read<PaperOmsCubit>()
+          .state
+          .orderTypeFavorite
+          .trim()
+          .toUpperCase();
+      var orderType = fav;
+      if (orderType.isEmpty ||
+          orderType == 'MARKET' ||
+          !_tradeUiConfig.enabledOrderTypes.contains(orderType)) {
+        orderType = _tradeUiConfig.resolveDefaultOrderType();
+        if (orderType == 'MARKET') orderType = 'LIMIT';
+      }
+      setState(() {
+        _symbol = sym;
+        _midTab = _MidTab.chart;
+      });
+      tl.armPending(
+        symbol: sym,
+        side: nextSide == 'SELL'
+            ? ChartTradeLineSide.sell
+            : ChartTradeLineSide.buy,
+        orderType: orderType,
+        quantity: _tradeUiConfig.resolveDefaultQuantity(),
+      );
+      return;
+    }
 
     if (!_isWide(context)) {
       setState(() {
@@ -116,13 +219,6 @@ class _PaperDeskScreenState extends State<PaperDeskScreen> {
       _ticketSymbol = sym;
       _side = nextSide;
       _orderOpen = true;
-      if (_ticketOffset == Offset.zero && _deskSize != Size.zero) {
-        _placement = _TicketPlacement.floatTopRight;
-        _ticketOffset = _snapTopRight(_deskSize);
-      } else if (_deskSize != Size.zero &&
-          _placement == _TicketPlacement.floatTopRight) {
-        _ticketOffset = _snapTopRight(_deskSize);
-      }
     });
   }
 
@@ -134,67 +230,16 @@ class _PaperDeskScreenState extends State<PaperDeskScreen> {
     setState(() => _orderOpen = false);
   }
 
-  void _cycleFloat() {
-    if (!_orderOpen || !_hasTicketSymbol) return;
-    setState(() {
-      switch (_placement) {
-        case _TicketPlacement.floatTopRight:
-          _placement = _TicketPlacement.floatBottomNearWatchlist;
-          _ticketOffset = _snapBottomNearWatchlist(_deskSize);
-        case _TicketPlacement.floatBottomNearWatchlist:
-          _placement = _TicketPlacement.floatTopRight;
-          _ticketOffset = _snapTopRight(_deskSize);
-        case _TicketPlacement.free:
-          _placement = _TicketPlacement.floatTopRight;
-          _ticketOffset = _snapTopRight(_deskSize);
-      }
-    });
-  }
-
-  Offset _snapTopRight(Size size) {
-    if (size.width <= 0 || size.height <= 0) return const Offset(12, 12);
-    return Offset(
-      (size.width - _ticketWidth - 12).clamp(0, size.width),
-      12,
-    );
-  }
-
-  Offset _snapBottomNearWatchlist(Size size) {
-    if (size.width <= 0 || size.height <= 0) return const Offset(12, 12);
-    const ticketApproxHeight = 520.0;
-    final left = 12.0;
-    final top =
-        (size.height - ticketApproxHeight - 12).clamp(12.0, size.height);
-    return Offset(left.clamp(0, _watchlistWidth), top);
-  }
-
-  Offset _clampOffset(Offset raw, Size size) {
-    if (size.width <= 0 || size.height <= 0) return raw;
-    const minVisible = 48.0;
-    final maxX = (size.width - minVisible).clamp(0.0, size.width);
-    final maxY = (size.height - minVisible).clamp(0.0, size.height);
-    return Offset(
-      raw.dx.clamp(0.0, maxX),
-      raw.dy.clamp(0.0, maxY),
-    );
-  }
-
-  void _onHeaderDragUpdate(DragUpdateDetails details) {
-    setState(() {
-      _placement = _TicketPlacement.free;
-      _ticketOffset = _clampOffset(_ticketOffset + details.delta, _deskSize);
-    });
-  }
-
   void _onOrderPlaced() {
     setState(() {
       _midTab = _MidTab.orders;
+      _orderOpen = false;
       _narrowShowDesk = true;
     });
     _narrowTabs.currentState?.showDesk();
   }
 
-  Widget _ticket({required bool floating}) {
+  Widget _ticket() {
     return PaperOrderTicket(
       symbol: _ticketSymbol,
       side: _side,
@@ -205,10 +250,45 @@ class _PaperDeskScreenState extends State<PaperDeskScreen> {
       },
       onSideChanged: (s) => setState(() => _side = s),
       onOrderPlaced: _onOrderPlaced,
-      floating: floating,
-      onToggleFloat: floating ? _cycleFloat : null,
-      onCloseFloat: floating ? _closeOrderPopup : null,
-      onHeaderDragUpdate: floating ? _onHeaderDragUpdate : null,
+      compact: true,
+      floating: false,
+      onCloseFloat: _closeOrderPopup,
+    );
+  }
+
+  Widget _dockedTicket(BuildContext context, double maxHeight) {
+    final colors = context.colors;
+    final h = maxHeight
+        .clamp(_ticketDockMinHeight, _ticketDockMaxHeight)
+        .toDouble();
+    return SizedBox(
+      height: h,
+      child: Material(
+        color: colors.scaffoldBackground,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Container(
+              height: 1,
+              color: colors.divider,
+            ),
+            SizedBox(
+              height: 10,
+              child: Center(
+                child: Container(
+                  width: 36,
+                  height: 3,
+                  decoration: BoxDecoration(
+                    color: colors.divider,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+            ),
+            Expanded(child: _ticket()),
+          ],
+        ),
+      ),
     );
   }
 
@@ -227,58 +307,78 @@ class _PaperDeskScreenState extends State<PaperDeskScreen> {
 
   Widget _midPane(BuildContext context, {VoidCallback? onBack}) {
     final colors = context.colors;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Material(
-          color: colors.surface,
-          child: Row(
-            children: [
-              if (onBack != null)
-                IconButton(
-                  tooltip: 'Back to watchlist',
-                  onPressed: onBack,
-                  icon: const Icon(Icons.arrow_back),
-                  visualDensity: VisualDensity.compact,
-                ),
-              Expanded(
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: [
-                      for (final t in const [
-                        (_MidTab.wallet, 'Wallet'),
-                        (_MidTab.orders, 'Orders'),
-                        (_MidTab.chart, 'Chart'),
-                        (_MidTab.positions, 'Positions'),
-                      ])
-                        _MidTabChip(
-                          label: t.$2,
-                          selected: _midTab == t.$1,
-                          onTap: () => setState(() => _midTab = t.$1),
-                        ),
-                    ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final showDock = _orderOpen && _hasTicketSymbol;
+        final dockCap = (constraints.maxHeight * 0.32)
+            .clamp(_ticketDockMinHeight, _ticketDockMaxHeight)
+            .toDouble();
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Material(
+              color: colors.surface,
+              child: Row(
+                children: [
+                  if (onBack != null)
+                    IconButton(
+                      tooltip: 'Back to watchlist',
+                      onPressed: onBack,
+                      icon: const Icon(Icons.arrow_back),
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: [
+                          for (final t in const [
+                            (_MidTab.wallet, 'Wallet'),
+                            (_MidTab.orders, 'Orders'),
+                            (_MidTab.chart, 'Chart'),
+                            (_MidTab.positions, 'Positions'),
+                          ])
+                            _MidTabChip(
+                              label: t.$2,
+                              selected: _midTab == t.$1,
+                              onTap: () => setState(() => _midTab = t.$1),
+                            ),
+                        ],
+                      ),
+                    ),
                   ),
-                ),
+                ],
               ),
-            ],
-          ),
-        ),
-        Divider(height: 1, color: colors.divider),
-        Expanded(child: _midBody(context)),
-      ],
+            ),
+            Divider(height: 1, color: colors.divider),
+            Expanded(child: _midBody(context)),
+            if (showDock) _dockedTicket(context, dockCap),
+          ],
+        );
+      },
     );
   }
 
   Widget _midBody(BuildContext context) {
-    switch (_midTab) {
-      case _MidTab.wallet:
-        return const PaperWalletPane();
-      case _MidTab.orders:
-        return PaperOrdersPane(onReorder: _reorderOrder);
-      case _MidTab.chart:
-        if (!_hasSymbol) {
-          return Center(
+    final index = switch (_midTab) {
+      _MidTab.wallet => 0,
+      _MidTab.orders => 1,
+      _MidTab.chart => 2,
+      _MidTab.positions => 3,
+    };
+    return IndexedStack(
+      index: index,
+      sizing: StackFit.expand,
+      children: [
+        const PaperWalletPane(),
+        PaperOrdersPane(onReorder: _reorderOrder),
+        if (_hasSymbol)
+          PaperChartEmbed(
+            symbol: _symbol,
+            tradeLinesController: _tradeLines,
+          )
+        else
+          Center(
             child: Padding(
               padding: const EdgeInsets.all(24),
               child: Text(
@@ -289,25 +389,37 @@ class _PaperDeskScreenState extends State<PaperDeskScreen> {
                     ),
               ),
             ),
-          );
-        }
-        return PaperChartEmbed(symbol: _symbol);
-      case _MidTab.positions:
-        return PaperPositionsPnlPane(onBuySell: _buySell);
-    }
+          ),
+        PaperPositionsPnlPane(
+          onBuySell: _showPositionsBuySell ? _buySell : null,
+        ),
+      ],
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<PaperOmsCubit, PaperOmsState>(
-      listenWhen: (p, c) => c.toast != null && c.toast != p.toast,
-      listener: (context, state) {
-        final toast = state.toast;
-        if (toast == null) return;
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(toast)));
-      },
-      child: LayoutBuilder(
+    return PaperChartTradeUiScope(
+      config: _tradeUiConfig,
+      child: MultiBlocListener(
+        listeners: [
+          BlocListener<PaperOmsCubit, PaperOmsState>(
+            listenWhen: (p, c) => c.toast != null && c.toast != p.toast,
+            listener: (context, state) {
+              final toast = state.toast;
+              if (toast == null) return;
+              ScaffoldMessenger.of(context)
+                  .showSnackBar(SnackBar(content: Text(toast)));
+            },
+          ),
+          BlocListener<PaperOmsCubit, PaperOmsState>(
+            listenWhen: (p, c) => p.orders != c.orders,
+            listener: (context, state) {
+              _tradeLines?.syncFromOrders(state.orders, _symbol);
+            },
+          ),
+        ],
+        child: LayoutBuilder(
         builder: (context, constraints) {
           final wide = constraints.maxWidth >= _wideBreakpoint;
           if (!wide) {
@@ -322,6 +434,7 @@ class _PaperDeskScreenState extends State<PaperDeskScreen> {
               onBuySell: _buySell,
               onOpenFundamentals: _openFundamentalAnalysis,
               onOpenChart: _openChart,
+              showBuySell: _showWatchlistBuySell,
               midTabBar: (ctx) => _midPane(
                 ctx,
                 onBack: () => setState(() => _narrowShowDesk = false),
@@ -334,112 +447,63 @@ class _PaperDeskScreenState extends State<PaperDeskScreen> {
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.all(12),
-                  child: LayoutBuilder(
-                    builder: (context, deskConstraints) {
-                      final deskSize = Size(
-                        deskConstraints.maxWidth,
-                        deskConstraints.maxHeight,
-                      );
-                      if (deskSize != _deskSize) {
-                        WidgetsBinding.instance.addPostFrameCallback((_) {
-                          if (!mounted) return;
-                          setState(() {
-                            _deskSize = deskSize;
-                            if (!_orderOpen) return;
-                            if (_placement ==
-                                _TicketPlacement.floatTopRight) {
-                              _ticketOffset = _snapTopRight(deskSize);
-                            } else if (_placement ==
-                                _TicketPlacement.floatBottomNearWatchlist) {
-                              _ticketOffset =
-                                  _snapBottomNearWatchlist(deskSize);
-                            } else if (_placement == _TicketPlacement.free) {
-                              _ticketOffset =
-                                  _clampOffset(_ticketOffset, deskSize);
-                            }
-                          });
-                        });
-                      }
-
-                      return Stack(
-                        clipBehavior: Clip.none,
-                        children: [
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              SizedBox(
-                                width: _watchlistWidth,
-                                child: _framed(
-                                  PaperWatchlistPane(
-                                    selectedSymbol: _symbol,
-                                    onSelectSymbol: _selectSymbol,
-                                    onBuySell: _buySell,
-                                    onOpenFundamentals: _openFundamentalAnalysis,
-                                    onOpenChart: _openChart,
-                                    showSearch: false,
-                                  ),
-                                ),
-                              ),
-                              MouseRegion(
-                                cursor: SystemMouseCursors.resizeColumn,
-                                child: GestureDetector(
-                                  behavior: HitTestBehavior.opaque,
-                                  onHorizontalDragUpdate: (details) {
-                                    setState(() {
-                                      _watchlistWidth = (_watchlistWidth +
-                                              details.delta.dx)
-                                          .clamp(
-                                        _watchlistMinWidth,
-                                        _watchlistMaxWidth,
-                                      );
-                                    });
-                                  },
-                                  child: SizedBox(
-                                    width: 6,
-                                    child: Center(
-                                      child: Container(
-                                        width: 2,
-                                        height: 48,
-                                        decoration: BoxDecoration(
-                                          color: context.colors.divider,
-                                          borderRadius:
-                                              BorderRadius.circular(1),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 6),
-                              Expanded(
-                                child: _framed(_midPane(context)),
-                              ),
-                            ],
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      SizedBox(
+                        width: _watchlistWidth,
+                        child: _framed(
+                          PaperWatchlistPane(
+                            selectedSymbol: _symbol,
+                            onSelectSymbol: _selectSymbol,
+                            onBuySell: _buySell,
+                            onOpenFundamentals: _openFundamentalAnalysis,
+                            onOpenChart: _openChart,
+                            showSearch: false,
+                            showBuySell: _showWatchlistBuySell,
                           ),
-                          if (_orderOpen && _hasTicketSymbol)
-                            Positioned(
-                              left: _ticketOffset.dx,
-                              top: _ticketOffset.dy,
-                              width: _ticketWidth,
-                              height: (deskSize.height * 0.92)
-                                  .clamp(320.0, deskSize.height),
-                              child: Material(
-                                elevation: 12,
-                                borderRadius: BorderRadius.circular(10),
-                                clipBehavior: Clip.antiAlias,
-                                color: context.colors.scaffoldBackground,
-                                child: _ticket(floating: true),
+                        ),
+                      ),
+                      MouseRegion(
+                        cursor: SystemMouseCursors.resizeColumn,
+                        child: GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onHorizontalDragUpdate: (details) {
+                            setState(() {
+                              _watchlistWidth =
+                                  (_watchlistWidth + details.delta.dx).clamp(
+                                _watchlistMinWidth,
+                                _watchlistMaxWidth,
+                              );
+                            });
+                          },
+                          child: SizedBox(
+                            width: 6,
+                            child: Center(
+                              child: Container(
+                                width: 2,
+                                height: 48,
+                                decoration: BoxDecoration(
+                                  color: context.colors.divider,
+                                  borderRadius: BorderRadius.circular(1),
+                                ),
                               ),
                             ),
-                        ],
-                      );
-                    },
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: _framed(_midPane(context)),
+                      ),
+                    ],
                   ),
                 ),
               ),
             ],
           );
         },
+      ),
       ),
     );
   }
@@ -461,6 +525,7 @@ class _NarrowDeskBody extends StatefulWidget {
     required this.onOpenFundamentals,
     required this.onOpenChart,
     required this.midTabBar,
+    this.showBuySell = true,
   });
 
   final String symbol;
@@ -473,6 +538,7 @@ class _NarrowDeskBody extends StatefulWidget {
   final ValueChanged<String> onOpenFundamentals;
   final ValueChanged<String> onOpenChart;
   final Widget Function(BuildContext context) midTabBar;
+  final bool showBuySell;
 
   @override
   State<_NarrowDeskBody> createState() => _NarrowDeskBodyState();
@@ -495,7 +561,9 @@ class _NarrowDeskBodyState extends State<_NarrowDeskBody> {
     if (widget.showDesk) {
       body = widget.midTabBar(context);
     } else if (_surface == _NarrowSurface.positions) {
-      body = PaperPositionsPnlPane(onBuySell: widget.onBuySell);
+      body = PaperPositionsPnlPane(
+        onBuySell: widget.showBuySell ? widget.onBuySell : null,
+      );
     } else {
       body = PaperWatchlistPane(
         selectedSymbol: widget.symbol,
@@ -505,6 +573,7 @@ class _NarrowDeskBodyState extends State<_NarrowDeskBody> {
         onOpenChart: widget.onOpenChart,
         compactChrome: true,
         showSearch: false,
+        showBuySell: widget.showBuySell,
       );
     }
 
