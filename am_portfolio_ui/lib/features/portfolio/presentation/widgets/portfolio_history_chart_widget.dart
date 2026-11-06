@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -964,11 +963,10 @@ class _PortfolioHistoryChartWidgetState
       return inner;
     }
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(18),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-        child: Container(
+    return webGlass(
+      sigma: 16,
+      clip: BorderRadius.circular(18),
+      child: Container(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
           decoration: BoxDecoration(
             gradient: LinearGradient(
@@ -991,7 +989,6 @@ class _PortfolioHistoryChartWidgetState
           ),
           child: inner,
         ),
-      ),
     );
   }
 

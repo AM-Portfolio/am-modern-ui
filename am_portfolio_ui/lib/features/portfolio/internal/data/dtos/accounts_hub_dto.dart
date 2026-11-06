@@ -183,6 +183,7 @@ class AccountsPortfolioRowDto {
     this.dummy,
     this.familyMemberId,
     this.familyMemberName,
+    this.dematBoid,
   });
 
   factory AccountsPortfolioRowDto.fromJson(Map<String, dynamic> json) =>
@@ -199,6 +200,7 @@ class AccountsPortfolioRowDto {
         dummy: json['dummy'] as bool?,
         familyMemberId: json['familyMemberId'] as String?,
         familyMemberName: json['familyMemberName'] as String?,
+        dematBoid: json['dematBoid'] as String?,
       );
 
   final String? portfolioId;
@@ -213,4 +215,5 @@ class AccountsPortfolioRowDto {
   final bool? dummy;
   final String? familyMemberId;
   final String? familyMemberName;
+  final String? dematBoid;
 }

@@ -24,6 +24,31 @@ class FamilyPortfolioFilterNotifier extends Notifier<String> {
   void resetToAll() => state = FavoritePersonaStore.kAll;
 }
 
+/// Query value for all-books holdings, summary, and analytics.
+/// `you` is primary books, `household` is every book, otherwise the member id.
+String holdingsPersonaParam(String filterKey) {
+  if (filterKey == FavoritePersonaStore.kYou) return 'you';
+  if (filterKey == FavoritePersonaStore.kAll) return 'household';
+  return filterKey;
+}
+
+/// Cache and request id for the All row. A specific book id is unchanged.
+String scopedAllPortfolioId(String portfolioId, String filterKey) {
+  if (portfolioId != 'all') return portfolioId;
+  return 'all|${holdingsPersonaParam(filterKey)}';
+}
+
+/// Label for the All row under the active family filter.
+String allPortfoliosLabel({
+  required String filterKey,
+  String? memberName,
+}) {
+  if (filterKey == FavoritePersonaStore.kYou) return 'All yours';
+  if (filterKey == FavoritePersonaStore.kAll) return 'All household';
+  final short = (memberName ?? '').trim().split(RegExp(r'\s+')).first;
+  return short.isEmpty ? 'All' : 'All $short';
+}
+
 /// True when the Family dropdown should be shown.
 bool showFamilyPortfolioFilter(Iterable<({String? id, String? name})> members) {
   return members.any((m) {

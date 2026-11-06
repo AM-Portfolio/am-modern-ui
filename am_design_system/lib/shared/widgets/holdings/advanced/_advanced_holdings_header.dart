@@ -37,8 +37,14 @@ extension _AdvancedHoldingsHeaderBuilder on _AdvancedHoldingsTemplateState {
         ),
         child: Row(
           children: [
-            _buildStatusPills(),
-            const SizedBox(width: AppSpacing.sm),
+            if (widget.leadingControls != null) ...[
+              widget.leadingControls!,
+              const SizedBox(width: AppSpacing.sm),
+            ],
+            if (widget.showPnlStatusFilter) ...[
+              _buildStatusPills(),
+              const SizedBox(width: AppSpacing.sm),
+            ],
             _buildViewModeToggle(),
             if (_hasPriceFreshnessLabel) ...[
               const SizedBox(width: AppSpacing.sm),
@@ -92,8 +98,14 @@ extension _AdvancedHoldingsHeaderBuilder on _AdvancedHoldingsTemplateState {
                     child: ListView(
                       scrollDirection: Axis.horizontal,
                       children: [
-                        _buildStatusPills(),
-                        const SizedBox(width: AppSpacing.sm),
+                        if (widget.leadingControls != null) ...[
+                          widget.leadingControls!,
+                          const SizedBox(width: AppSpacing.sm),
+                        ],
+                        if (widget.showPnlStatusFilter) ...[
+                          _buildStatusPills(),
+                          const SizedBox(width: AppSpacing.sm),
+                        ],
                         _buildViewModeToggle(),
                         if (_hasPriceFreshnessLabel) ...[
                           const SizedBox(width: AppSpacing.sm),

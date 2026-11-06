@@ -98,26 +98,43 @@ class _DashboardUsersHubWidgetState
         data: (hub) {
           final personaDemat =
               _filteredDematByFamily(hub.dematAccounts, familyMemberId);
-          final hasCas = personaDemat.isNotEmpty;
+          final personaBooks = hub.portfolios
+              .where((p) => _matchesPersona(p.familyMemberId, familyMemberId))
+              .toList();
+          final casDemat = personaBooks
+              .where((p) => p.isDematBook)
+              .map(_bookAsAccount)
+              .toList();
+          final casMf = personaBooks
+              .where((p) => p.isMutualFundBook)
+              .map(_bookAsAccount)
+              .toList();
+          final hasCas = personaDemat.isNotEmpty ||
+              casDemat.isNotEmpty ||
+              casMf.isNotEmpty;
           final personaNps = _npsForFamily(hub, familyMemberId);
           final hasNps =
               personaNps?.pran != null && personaNps!.pran!.isNotEmpty;
           final demat = _filteredByBroker(personaDemat);
-          final mfRows = demat
+          final directoryMf = demat
               .where((a) => (a.accountType ?? '').toLowerCase() == 'mf')
               .toList();
-          final dematOnly = demat
+          final directoryDemat = demat
               .where((a) => (a.accountType ?? '').toLowerCase() != 'mf')
               .toList();
+          final mfRows = casMf.isNotEmpty ? casMf : directoryMf;
+          final dematOnly = casDemat.isNotEmpty ? casDemat : directoryDemat;
           final portfolios = _filteredPortfolios(hub, familyMemberId);
+          final valueBooks =
+              personaBooks.where((p) => !p.isNps).toList();
           final isFamily = _primary == _UsersPrimaryTab.family;
           final isOverview = _primary == _UsersPrimaryTab.overview;
           final familyMembers = hub.familyMembers;
           final showCasCta = isOverview && !hasCas;
 
           final scopeTotal = _scopeTotalValue(
-            demat: personaDemat,
-            brokers: portfolios,
+            demat: const [],
+            brokers: valueBooks,
             nps: personaNps,
             allNps: familyMemberId == FavoritePersonaStore.kAll
                 ? hub.npsAccounts
@@ -462,6 +479,19 @@ class _DashboardUsersHubWidgetState
         );
       }
     }
+  }
+
+  DematAccountRow _bookAsAccount(AccountsPortfolioRow p) {
+    return DematAccountRow(
+      accountNo: p.portfolioId ?? p.displayName ?? 'cas',
+      accountType: p.isMutualFundBook ? 'mf' : 'demat',
+      dpName: p.displayName,
+      holdingValue: p.current,
+      boid: p.dematBoid,
+      familyMemberId: p.familyMemberId,
+      portfolioId: p.portfolioId,
+      status: 'Active',
+    );
   }
 
   bool _matchesPersona(String? rowFamilyId, String? familyMemberId) {

@@ -8,10 +8,8 @@ import 'package:go_router/go_router.dart';
 import '../../../internal/domain/entities/portfolio_holding.dart';
 import '../../../providers/portfolio_providers.dart';
 import '../mappers/advanced_holding_row_mapper.dart';
-import '../widgets/cas_account_directory_panel.dart';
 import '../widgets/cas_asset_class_filter.dart';
 import '../widgets/cas_folio_panel.dart';
-import '../widgets/cas_status_banner.dart';
 import '../widgets/nps_status_banner.dart';
 
 /// Portfolio Holdings tab — advanced DS template + portfolio holdings API.
@@ -50,8 +48,10 @@ class _PortfolioHoldingsWebPageState
 
   @override
   Widget build(BuildContext context) {
-    final activePortfolioId =
-        context.selectedPortfolioId ?? widget.portfolioId;
+    final shellId = context.selectedPortfolioId;
+    final activePortfolioId = widget.portfolioId.isNotEmpty
+        ? widget.portfolioId
+        : (shellId != null && shellId.isNotEmpty ? shellId : widget.portfolioId);
     final holdingsAsync =
         ref.watch(portfolioHoldingsProvider(activePortfolioId));
     String symbolQuery = '';
@@ -68,17 +68,27 @@ class _PortfolioHoldingsWebPageState
       _assetClassFilter = 'nps';
     }
 
+    final assetFilter = CasAssetClassFilter(
+      value: _assetClassFilter,
+      compact: true,
+      onChanged: (v) => setState(() => _assetClassFilter = v),
+    );
+
     return holdingsAsync.when(
       loading: () => AdvancedHoldingsTemplate(
         holdings: const [],
         isLoading: true,
         accentColor: ModuleColors.portfolio,
+        showPnlStatusFilter: false,
+        leadingControls: assetFilter,
       ),
       error: (err, _) => AdvancedHoldingsTemplate(
         holdings: const [],
         isLoading: false,
         errorMessage: err.toString(),
         accentColor: ModuleColors.portfolio,
+        showPnlStatusFilter: false,
+        leadingControls: assetFilter,
         onRefresh: () =>
             ref.invalidate(portfolioHoldingsProvider(activePortfolioId)),
       ),
@@ -109,13 +119,7 @@ class _PortfolioHoldingsWebPageState
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const CasStatusBanner(),
             const NpsStatusBanner(),
-            CasAssetClassFilter(
-              value: _assetClassFilter,
-              onChanged: (v) => setState(() => _assetClassFilter = v),
-            ),
-            const CasAccountDirectoryPanel(),
             CasFolioPanel(portfolioId: activePortfolioId),
             Expanded(
               child: AdvancedHoldingsTemplate(
@@ -124,6 +128,8 @@ class _PortfolioHoldingsWebPageState
                 accentColor: ModuleColors.portfolio,
                 priceFreshnessLabel: portfolioHoldings.priceLabel,
                 viewOnly: true,
+                showPnlStatusFilter: false,
+                leadingControls: assetFilter,
                 showCostColumns:
                     showHoldingsCostColumns(portfolioHoldings.holdings),
                 initialSearchQuery: symbolQuery,

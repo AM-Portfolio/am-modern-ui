@@ -1,6 +1,5 @@
+import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
-import 'dart:ui';
 
 class GlossyCard extends StatelessWidget {
   final Widget child;
@@ -39,11 +38,10 @@ class GlossyCard extends StatelessWidget {
         child: InkWell(
           onTap: onTap,
           borderRadius: borderRadius ?? BorderRadius.circular(20),
-          child: ClipRRect(
-            borderRadius: borderRadius ?? BorderRadius.circular(20),
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-              child: Container(
+          child: webGlass(
+            sigma: 10,
+            clip: borderRadius ?? BorderRadius.circular(20),
+            child: Container(
                 padding: padding ?? const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   borderRadius: borderRadius ?? BorderRadius.circular(20),
@@ -72,7 +70,6 @@ class GlossyCard extends StatelessWidget {
               ),
             ),
           ),
-        ),
     );
   }
 }

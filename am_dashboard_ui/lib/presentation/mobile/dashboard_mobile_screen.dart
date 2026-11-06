@@ -9,7 +9,6 @@ import 'package:am_design_system/am_design_system.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'dart:ui';
 
 bool _dashboardDataMarkedMobile = false;
 
@@ -184,12 +183,6 @@ class _DashboardMobileScreenState
                     ],
                   ),
                 ),
-              ),
-            ),
-            Positioned.fill(
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 50, sigmaY: 50),
-                child: Container(color: Colors.transparent),
               ),
             ),
           ],

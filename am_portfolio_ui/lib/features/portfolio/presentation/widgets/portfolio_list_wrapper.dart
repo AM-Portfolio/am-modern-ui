@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:am_library/am_library.dart';
 import '../cubit/portfolio_cubit.dart';
 import '../cubit/portfolio_state.dart';
+import '../../providers/cas_providers.dart';
 import '../../providers/portfolio_providers.dart';
 import '../../internal/domain/entities/portfolio_list.dart';
 import 'package:am_common/am_common.dart';
@@ -545,42 +546,55 @@ class _PortfolioListWrapperState extends ConsumerState<PortfolioListWrapper> {
         ),
       );
 
-  /// Builds empty portfolios screen
-  Widget _buildEmptyPortfoliosScreen() => Scaffold(
-    body: Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 420),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.account_balance_wallet_outlined,
-              size: 64,
-              color: context.textTertiary,
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'No portfolios found',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Upload a brokerage statement to create your first portfolio.',
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-            if (widget.onOpenDocIntel != null) ...[
-              ElevatedButton.icon(
-                onPressed: widget.onOpenDocIntel,
-                icon: const Icon(Icons.upload_file_outlined),
-                label: const Text('Upload portfolio'),
+  /// Builds empty portfolios screen (CAS-aware when directory exists).
+  Widget _buildEmptyPortfoliosScreen() {
+    final cas = ref.watch(casLatestProvider).asData?.value;
+    final demat = ref.watch(casAccountsProvider).asData?.value ?? const [];
+    final hasCas = cas != null || demat.isNotEmpty;
+    final title = hasCas ? 'CAS imported' : 'No portfolios found';
+    final subtitle = hasCas
+        ? 'Your CDSL statement is in Accounts. Open Users to review demat accounts, or import a broker statement for a named portfolio.'
+        : 'Upload a brokerage statement to create your first portfolio.';
+    final ctaLabel = hasCas ? 'Open import / Doc Intel' : 'Upload portfolio';
+
+    return Scaffold(
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 420),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                hasCas
+                    ? Icons.folder_shared_outlined
+                    : Icons.account_balance_wallet_outlined,
+                size: 64,
+                color: context.textTertiary,
               ),
+              const SizedBox(height: 16),
+              Text(
+                title,
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                subtitle,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              if (widget.onOpenDocIntel != null) ...[
+                ElevatedButton.icon(
+                  onPressed: widget.onOpenDocIntel,
+                  icon: const Icon(Icons.upload_file_outlined),
+                  label: Text(ctaLabel),
+                ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
-    ),
-  );
+    );
+  }
 
   /// Builds error screen for service initialization failure
   Widget _buildErrorScreen(Object error, StackTrace? stack) => Scaffold(

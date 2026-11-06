@@ -32,6 +32,7 @@ class PortfolioAnalyticsLoading extends PortfolioAnalyticsState {
 /// Loaded state with analytics data
 class PortfolioAnalyticsLoaded extends PortfolioAnalyticsState {
   const PortfolioAnalyticsLoaded({
+    this.portfolioId,
     this.sectorAllocation,
     this.marketCapAllocation,
     this.heatmap,
@@ -40,6 +41,7 @@ class PortfolioAnalyticsLoaded extends PortfolioAnalyticsState {
     this.loadingTypes = const {},
     this.errors = const {},
   });
+  final String? portfolioId;
   final SectorAllocation? sectorAllocation;
   final MarketCapAllocation? marketCapAllocation;
   final Heatmap? heatmap;
@@ -49,6 +51,7 @@ class PortfolioAnalyticsLoaded extends PortfolioAnalyticsState {
   final Map<AnalyticsDataType, String> errors;
 
   PortfolioAnalyticsLoaded copyWith({
+    String? portfolioId,
     SectorAllocation? sectorAllocation,
     MarketCapAllocation? marketCapAllocation,
     Heatmap? heatmap,
@@ -57,6 +60,7 @@ class PortfolioAnalyticsLoaded extends PortfolioAnalyticsState {
     Set<AnalyticsDataType>? loadingTypes,
     Map<AnalyticsDataType, String>? errors,
   }) => PortfolioAnalyticsLoaded(
+    portfolioId: portfolioId ?? this.portfolioId,
     sectorAllocation: sectorAllocation ?? this.sectorAllocation,
     marketCapAllocation: marketCapAllocation ?? this.marketCapAllocation,
     heatmap: heatmap ?? this.heatmap,
@@ -88,6 +92,7 @@ class PortfolioAnalyticsLoaded extends PortfolioAnalyticsState {
 
   @override
   List<Object?> get props => [
+    portfolioId,
     sectorAllocation,
     marketCapAllocation,
     heatmap,

@@ -77,6 +77,20 @@ List<XrayWeight> _portfolioWeightsFromHub(
   );
 }
 
+/// Blank, dash, and Unknown are the same X-Ray bucket.
+@visibleForTesting
+bool xrayGroupMatches(String? holdingValue, String weightName) {
+  String key(String? raw) {
+    final t = (raw ?? '').trim().toLowerCase();
+    if (t.isEmpty || t == '-' || t == 'unknown' || t == 'unknown sector') {
+      return 'unknown';
+    }
+    return t;
+  }
+
+  return key(holdingValue) == key(weightName);
+}
+
 /// Normalize Class-tab / holdings `assetClass` for expand matching.
 String _normalizeAssetClassKey(String raw) {
   final key = raw.trim().toUpperCase();
@@ -260,6 +274,10 @@ class _PortfolioXrayPanelState extends ConsumerState<PortfolioXrayPanel>
   }
 
   void _ensurePulse() {
+    if (kIsWeb) {
+      _stopPulse();
+      return;
+    }
     if (_hoveredIndex != null || _selectedName != null) {
       _stopPulse();
       return;
@@ -979,9 +997,9 @@ class _XrayBody extends StatelessWidget {
     // Tabs: Sector(0), Industry(1), Cap(2), Class(3), By Portfolio(4).
     Iterable<PortfolioHolding> filtered;
     if (tab == 0) {
-      filtered = all.where((h) => h.sector == weight.name);
+      filtered = all.where((h) => xrayGroupMatches(h.sector, weight.name));
     } else if (tab == 1) {
-      filtered = all.where((h) => h.industry == weight.name);
+      filtered = all.where((h) => xrayGroupMatches(h.industry, weight.name));
     } else if (tab == 2) {
       final display = xrayDisplayName(weight.name);
       final tops = marketCapAllocation?.segments

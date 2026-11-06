@@ -55,17 +55,24 @@ class _PortfolioAnalysisWebPageState
 
   @override
   Widget build(BuildContext context) {
-    final activePortfolioId = context.selectedPortfolioId ?? widget.portfolioId;
+    final shellId = context.selectedPortfolioId;
+    final activePortfolioId = widget.portfolioId.isNotEmpty
+        ? widget.portfolioId
+        : (shellId != null && shellId.isNotEmpty ? shellId : widget.portfolioId);
     final timeFrameCode = ref.watch(appTimeFrameProvider).code;
+    final filterKey = ref.watch(familyPortfolioFilterProvider);
+    final requestPortfolioId = activePortfolioId == 'all'
+        ? scopedAllPortfolioId(activePortfolioId, filterKey)
+        : activePortfolioId;
     ref.listen(appTimeFrameProvider, (previous, next) {
       if (previous != next) {
-        ref.invalidate(portfolioSummaryProvider(activePortfolioId));
-        ref.invalidate(portfolioHoldingsProvider(activePortfolioId));
+        ref.invalidate(portfolioSummaryProvider(requestPortfolioId));
+        ref.invalidate(portfolioHoldingsProvider(requestPortfolioId));
       }
     });
     
     final analyticsRequest = PortfolioAnalyticsRequest(
-      coreIdentifiers: CoreIdentifiers(portfolioId: activePortfolioId),
+      coreIdentifiers: CoreIdentifiers(portfolioId: requestPortfolioId),
       featureToggles: _baseAnalyticsRequest.featureToggles,
       featureConfiguration: _baseAnalyticsRequest.featureConfiguration,
       pagination: _baseAnalyticsRequest.pagination,
@@ -75,11 +82,11 @@ class _PortfolioAnalysisWebPageState
     );
 
     final summaryAsync = ref.watch(
-      portfolioSummaryProvider(activePortfolioId),
+      portfolioSummaryProvider(requestPortfolioId),
     );
     final analyticsAsync = ref.watch(portfolioAnalyticsProvider(analyticsRequest));
     final holdingsAsync = ref.watch(
-      portfolioHoldingsProvider(activePortfolioId),
+      portfolioHoldingsProvider(requestPortfolioId),
     );
 
     return Scaffold(

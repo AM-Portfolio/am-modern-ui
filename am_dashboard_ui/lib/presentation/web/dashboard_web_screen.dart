@@ -9,7 +9,6 @@ import 'package:am_common/am_common.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'dart:ui';
 
 bool _dashboardDataMarked = false;
 
@@ -115,12 +114,6 @@ class DashboardWebScreen extends ConsumerWidget {
                     ],
                   ),
                 ),
-              ),
-            ),
-            Positioned.fill(
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 60, sigmaY: 60),
-                child: Container(color: Colors.transparent),
               ),
             ),
           ],

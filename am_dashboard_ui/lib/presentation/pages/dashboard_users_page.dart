@@ -67,6 +67,19 @@ class _DashboardUsersPageState extends ConsumerState<DashboardUsersPage> {
     });
   }
 
+  DematAccountRow _bookAsAccount(AccountsPortfolioRow p) {
+    return DematAccountRow(
+      accountNo: p.portfolioId ?? p.displayName ?? 'cas',
+      accountType: p.isMutualFundBook ? 'mf' : 'demat',
+      dpName: p.displayName,
+      holdingValue: p.current,
+      boid: p.dematBoid,
+      familyMemberId: p.familyMemberId,
+      portfolioId: p.portfolioId,
+      status: 'Active',
+    );
+  }
+
   bool _matchesPersona(String? rowFamilyId) {
     if (_familyMemberId == FavoritePersonaStore.kAll) return true;
     final primary = rowFamilyId == null || rowFamilyId.trim().isEmpty;
@@ -121,15 +134,25 @@ class _DashboardUsersPageState extends ConsumerState<DashboardUsersPage> {
     final personaDemat = hub.dematAccounts
         .where((a) => _matchesPersona(a.familyMemberId))
         .toList();
-    final runningBrokers = hub.portfolios
-        .where((p) => p.isRunningBroker && _matchesPersona(p.familyMemberId))
+    final personaBooks = hub.portfolios
+        .where((p) => _matchesPersona(p.familyMemberId))
         .toList();
-    final demat = personaDemat
+    final runningBrokers =
+        personaBooks.where((p) => p.isRunningBroker).toList();
+    final mfBooks = personaBooks.where((p) => p.isMutualFundBook).toList();
+    final dematBooks = personaBooks.where((p) => p.isDematBook).toList();
+    final directoryDemat = personaDemat
         .where((a) => (a.accountType ?? '').toLowerCase() != 'mf')
         .toList();
-    final mf = personaDemat
+    final directoryMf = personaDemat
         .where((a) => (a.accountType ?? '').toLowerCase() == 'mf')
         .toList();
+    final demat = dematBooks.isEmpty
+        ? directoryDemat
+        : dematBooks.map(_bookAsAccount).toList();
+    final mf = mfBooks.isEmpty
+        ? directoryMf
+        : mfBooks.map(_bookAsAccount).toList();
     NpsMetaRow? personaNps;
     if (_familyMemberId == FavoritePersonaStore.kAll) {
       for (final n in hub.npsAccounts) {
@@ -169,11 +192,8 @@ class _DashboardUsersPageState extends ConsumerState<DashboardUsersPage> {
 
     final scopeTotal = () {
       var sum = 0.0;
-      for (final a in personaDemat) {
-        final v = a.holdingValue;
-        if (v != null && v > 0) sum += v;
-      }
-      for (final p in runningBrokers) {
+      for (final p in personaBooks) {
+        if (p.isNps) continue;
         final v = p.current;
         if (v != null && v > 0) sum += v;
       }
@@ -196,8 +216,7 @@ class _DashboardUsersPageState extends ConsumerState<DashboardUsersPage> {
       hasNps: hasNps,
       nps: personaNps,
       scopeTotalValue: scopeTotal,
-      includeFamilySummaries: _tab == _UsersPageTab.family ||
-          _tab == _UsersPageTab.overview,
+      includeFamilySummaries: _tab == _UsersPageTab.family,
     );
     final tabKey = switch (_tab) {
       _UsersPageTab.overview => 'overview',

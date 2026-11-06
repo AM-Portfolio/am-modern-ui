@@ -521,10 +521,18 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
       showFamilyUi: showFamily,
       hub: hub,
     );
+    final memberName = members
+        .where((m) => m.id == filterKey)
+        .map((m) => m.name)
+        .firstOrNull;
+    final allLabel = allPortfoliosLabel(
+      filterKey: filterKey,
+      memberName: memberName,
+    );
     final portfolios = <PortfolioItem>[
-      const PortfolioItem(
+      PortfolioItem(
         portfolioId: 'all',
-        portfolioName: 'All Portfolios',
+        portfolioName: allLabel,
       ),
       ...filtered,
     ];
@@ -536,7 +544,7 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
       currentId = 'all';
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
-        _onPortfolioChanged('all', 'All Portfolios');
+        _onPortfolioChanged('all', allLabel);
       });
     }
 
@@ -562,8 +570,15 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
         final id = _currentPortfolioId;
         final stillValid =
             id == null || id == 'all' || next.any((p) => p.portfolioId == id);
-        if (!stillValid) {
-          _onPortfolioChanged('all', 'All Portfolios');
+        if (!stillValid || id == null || id == 'all') {
+          final nextName = members
+              .where((m) => m.id == key)
+              .map((m) => m.name)
+              .firstOrNull;
+          _onPortfolioChanged(
+            'all',
+            allPortfoliosLabel(filterKey: key, memberName: nextName),
+          );
         }
       },
       layout: FamilyAwarePortfolioPickerLayout.stack,

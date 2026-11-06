@@ -1,4 +1,4 @@
-import 'dart:ui';
+import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 
 class GlassContainer extends StatelessWidget {
@@ -40,11 +40,10 @@ class GlassContainer extends StatelessWidget {
           ),
         ],
       ),
-      child: ClipRRect(
-        borderRadius: borderRadius ?? BorderRadius.circular(16),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
-          child: Container(
+      child: webGlass(
+        sigma: blur,
+        clip: borderRadius ?? BorderRadius.circular(16),
+        child: Container(
             padding: padding,
             decoration: BoxDecoration(
               color: color.withOpacity(opacity),
@@ -53,7 +52,6 @@ class GlassContainer extends StatelessWidget {
             ),
             child: child,
           ),
-        ),
       ),
     );
   }

@@ -61,13 +61,19 @@ bool _isCdslChoice({
   String? kind,
 }) {
   final broker = (brokerType ?? '').toUpperCase();
+  if (broker == 'CAS_DEMAT') return false;
   if (broker == 'CDSL') return true;
-  final n = name.toLowerCase();
-  if (n.contains('cdsl') || n == 'cas' || n.contains('cas aggregator')) {
+  final n = name.toLowerCase().trim();
+  if (n == 'cdsl'
+      || n == 'cas'
+      || n == 'cdsl cas'
+      || n == 'cas aggregator'
+      || n.contains('cdsl')) {
     return true;
   }
   final k = (kind ?? '').toUpperCase();
-  return k.contains('CAS');
+  // Kind CAS_DEMAT is a named demat book — never soft-hide as aggregator.
+  return k == 'CDSL' || k == 'CAS' || k == 'CAS_AGGREGATOR';
 }
 
 final dashboardPortfolioChoicesProvider =
@@ -89,7 +95,7 @@ List<DashboardPortfolioChoice> parseDashboardPortfolioChoices(dynamic data) {
   } else {
     return const [];
   }
-  final choices = <DashboardPortfolioChoice>[];
+  final pending = <_PendingDashboardChoice>[];
   var hasRealBroker = false;
   for (final raw in items) {
     if (raw is! Map) continue;
@@ -101,9 +107,8 @@ List<DashboardPortfolioChoice> parseDashboardPortfolioChoices(dynamic data) {
     final name = (map['portfolioName'] ?? map['name'])?.toString() ?? id;
     final brokerType =
         (map['brokerType'] ?? map['broker'])?.toString();
-    if (_isCdslChoice(name: name, brokerType: brokerType, kind: kind)) {
-      continue;
-    }
+    final isCdsl =
+        _isCdslChoice(name: name, brokerType: brokerType, kind: kind);
     final isDemo = isDemoPortfolioEntry(
       kind: kind,
       name: name,
@@ -113,7 +118,10 @@ List<DashboardPortfolioChoice> parseDashboardPortfolioChoices(dynamic data) {
         map['dummy'] == true ||
         kind == 'PAPER' ||
         name.toLowerCase() == 'paper';
-    if (!isDemo && !isPaper && (kind == null || kind == 'BROKER' || kind == 'LIVE')) {
+    if (!isCdsl &&
+        !isDemo &&
+        !isPaper &&
+        (kind == null || kind == 'BROKER' || kind == 'LIVE')) {
       hasRealBroker = true;
     }
     final assetCount = (map['assetCount'] as num?)?.toInt();
@@ -139,26 +147,47 @@ List<DashboardPortfolioChoice> parseDashboardPortfolioChoices(dynamic data) {
             brokerType.isNotEmpty
         ? brokerType
         : name;
-    choices.add(
-      DashboardPortfolioChoice(
-        id: id,
-        name: stripPortfolioFamilySuffix(baseName),
-        hasHoldings: isPaper ? true : hasHoldings,
-        assetCount: assetCount,
-        isPaper: isPaper,
-        brokerType: brokerType,
-        externalId: externalId,
-        familyMemberId: familyMemberId?.isEmpty == true ? null : familyMemberId,
-        familyMemberName:
-            familyMemberName?.isEmpty == true ? null : familyMemberName,
+    pending.add(
+      _PendingDashboardChoice(
+        isCdsl: isCdsl,
+        isDemo: isDemo,
+        choice: DashboardPortfolioChoice(
+          id: id,
+          name: stripPortfolioFamilySuffix(baseName),
+          hasHoldings: isPaper ? true : hasHoldings,
+          assetCount: assetCount,
+          isPaper: isPaper,
+          brokerType: brokerType,
+          externalId: externalId,
+          familyMemberId:
+              familyMemberId?.isEmpty == true ? null : familyMemberId,
+          familyMemberName:
+              familyMemberName?.isEmpty == true ? null : familyMemberName,
+        ),
       ),
     );
   }
-  // Once any real broker book is present, Demo must leave the dropdown.
+  final choices = <DashboardPortfolioChoice>[
+    for (final p in pending)
+      if (!hasRealBroker || !p.isCdsl) p.choice,
+  ];
+  // Once any real (non-CDSL) broker book is present, Demo must leave the dropdown.
   if (hasRealBroker) {
     choices.removeWhere((c) => isDemoPortfolioEntry(name: c.name));
   }
   return choices;
+}
+
+class _PendingDashboardChoice {
+  const _PendingDashboardChoice({
+    required this.isCdsl,
+    required this.isDemo,
+    required this.choice,
+  });
+
+  final bool isCdsl;
+  final bool isDemo;
+  final DashboardPortfolioChoice choice;
 }
 
 /// Join list rows with accounts-hub demat / NPS PRAN for selector subtitles,

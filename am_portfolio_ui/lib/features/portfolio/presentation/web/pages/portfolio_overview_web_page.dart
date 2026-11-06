@@ -23,7 +23,7 @@ class PortfolioOverviewWebPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // Read the active portfolio ID dynamically so it rebuilds on dropdown change
-    final activePortfolioId = context.selectedPortfolioId ?? portfolioId;
+    final activePortfolioId = portfolioId ?? context.selectedPortfolioId;
     final activePortfolioName = context.selectedPortfolioName ?? portfolioName;
 
     if (activePortfolioId != null) {

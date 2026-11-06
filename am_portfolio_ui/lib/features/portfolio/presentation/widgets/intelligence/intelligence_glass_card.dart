@@ -389,11 +389,10 @@ void showIntelligenceSheet({
           )
         ]
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-          child: Padding(
+      child: webGlass(
+        sigma: 20,
+        clip: BorderRadius.circular(24),
+        child: Padding(
             padding: const EdgeInsets.fromLTRB(24, 20, 24, 20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -466,7 +465,6 @@ void showIntelligenceSheet({
             ),
           ),
         ),
-      ),
     );
   }
 

@@ -17,7 +17,22 @@ final portfolioIntelligenceProvider = FutureProvider.autoDispose
 
   if (portfolioId.isEmpty) return null;
 
-  // 'all' maps to POST /v1/analytics/portfolio/all/intelligence.
-  final remote = await ref.watch(portfolioRemoteDataSourceProvider.future);
-  return remote.getPortfolioIntelligence(portfolioId);
+  // Health, X-Ray, and Risk share this provider. Keep the in-flight call
+  // alive so a rebuild does not start another intelligence POST.
+  final link = ref.keepAlive();
+  try {
+    // 'all' maps to POST /v1/analytics/portfolio/all/intelligence.
+    final remote = await ref.watch(portfolioRemoteDataSourceProvider.future);
+    final first = await remote.getPortfolioIntelligence(portfolioId);
+    final confidence = first?.confidence ?? 0;
+    if (first != null && confidence < 0.9) {
+      // Beta is still warming on the server. Refresh once so Health is measured.
+      Future<void>.delayed(const Duration(seconds: 3), () {
+        if (ref.mounted) ref.invalidateSelf();
+      });
+    }
+    return first;
+  } finally {
+    Future<void>.delayed(const Duration(seconds: 45), link.close);
+  }
 });

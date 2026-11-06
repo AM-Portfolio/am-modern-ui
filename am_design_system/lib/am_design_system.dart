@@ -21,6 +21,7 @@ export 'core/theme/app_typography.dart';
 export 'core/theme/app_animations.dart';
 export 'core/theme/app_glassmorphism.dart';
 export 'core/theme/app_glassmorphism_v2.dart';
+export 'core/theme/web_glass.dart';
 export 'core/theme/cubit/theme_cubit.dart';
 export 'core/theme/theme_repository.dart';
 export 'core/config/design_system_config.dart';

@@ -30,6 +30,8 @@ class AdvancedHoldingsTemplate extends StatefulWidget {
     this.priceFreshnessLabel,
     this.viewOnly = true,
     this.showCostColumns = true,
+    this.showPnlStatusFilter = true,
+    this.leadingControls,
     this.initialSearchQuery = '',
     this.initialSector,
   });
@@ -50,6 +52,12 @@ class AdvancedHoldingsTemplate extends StatefulWidget {
   /// When false (all-zero-cost mail books), hide Avg / P&L columns and
   /// Profit/Loss status pills.
   final bool showCostColumns;
+
+  /// Trade keeps All|Profit|Loss; Portfolio Holdings sets false.
+  final bool showPnlStatusFilter;
+
+  /// Optional leading control (e.g. All Assets dropdown) in the same header row.
+  final Widget? leadingControls;
 
   /// Seed the symbol/company filter (Global Search `?q=`).
   final String initialSearchQuery;

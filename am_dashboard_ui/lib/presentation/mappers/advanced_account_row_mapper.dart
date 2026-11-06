@@ -122,30 +122,6 @@ List<AdvancedAccountRow> mapAccountsHubToAdvancedRows({
           ].join(' · '),
         ),
       );
-      for (final p in books) {
-        final title = p.displayName?.trim().isNotEmpty == true
-            ? p.displayName!.trim()
-            : (p.brokerType ?? p.portfolioId ?? 'Broker');
-        final broker = p.brokerType?.trim();
-        out.add(
-          AdvancedAccountRow(
-            id: 'family-book-${p.portfolioId ?? title}',
-            type: 'family',
-            title: title,
-            accountId: p.portfolioId,
-            broker: broker,
-            status: 'Active',
-            statusKind: AccountStatusKind.active,
-            value: p.current ?? 0,
-            hasValue: p.current != null,
-            subtitle: [
-              m.name?.trim().isNotEmpty == true ? m.name!.trim() : 'Family',
-              if (broker != null && broker.isNotEmpty) broker,
-              if (p.assetCount != null) '${p.assetCount} assets',
-            ].join(' · '),
-          ),
-        );
-      }
     }
   }
 
@@ -158,8 +134,9 @@ AdvancedAccountRow _dematRow(
   double? scopeTotalValue,
 }) {
   final isMf = type == 'mf';
+  final named = a.dpName?.trim();
   final title = isMf
-      ? 'Folio ${a.folio ?? a.accountNo}'
+      ? (named != null && named.isNotEmpty ? named : 'Mutual Funds')
       : (a.dpName ?? a.boid ?? a.accountNo);
   final accountId = isMf
       ? (a.folio ?? a.accountNo)

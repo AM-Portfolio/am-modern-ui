@@ -148,6 +148,20 @@ class PortfolioRemoteDataSourceImpl implements PortfolioRemoteDataSource {
   String get _tradeBaseUrl => ConfigService.config.api.trade.baseUrl;
 
   /// Helper to safely build URI avoiding double slashes
+  ({String id, String? persona}) _allScope(String portfolioId) {
+    if (portfolioId.startsWith('all|')) {
+      final persona = portfolioId.substring(4).trim();
+      return (id: 'all', persona: persona.isEmpty ? null : persona);
+    }
+    return (id: portfolioId, persona: null);
+  }
+
+  String _withPersona(String uri, String? persona) {
+    if (persona == null || persona.isEmpty) return uri;
+    final sep = uri.contains('?') ? '&' : '?';
+    return '$uri${sep}persona=${Uri.encodeQueryComponent(persona)}';
+  }
+
   String _buildUri(String baseUrl, String resource) {
     // Ensure baseUrl is clean
     final cleanBase = baseUrl.endsWith('/')
@@ -250,9 +264,11 @@ class PortfolioRemoteDataSourceImpl implements PortfolioRemoteDataSource {
 
       // Construct full URI from portfolio config with portfolioId query parameter
       final baseUri = _buildUri(_baseUrl, PortfolioEndpoints.holdings);
-      final fullUri = portfolioId == 'all'
-          ? baseUri
-          : '$baseUri?portfolioId=$portfolioId';
+      final scope = _allScope(portfolioId);
+      final fullUri = _withPersona(
+        scope.id == 'all' ? baseUri : '$baseUri?portfolioId=${scope.id}',
+        scope.persona,
+      );
 
       // Use ApiClient for consistent error handling and logging
       final holdingsResponse = await _apiClient.get<PortfolioHoldingsDto>(
@@ -415,9 +431,11 @@ class PortfolioRemoteDataSourceImpl implements PortfolioRemoteDataSource {
 
       // Construct full URI from portfolio config with portfolioId query parameter
       final baseUri = _buildUri(_baseUrl, PortfolioEndpoints.summary);
-      var fullUri = portfolioId == 'all'
+      final scope = _allScope(portfolioId);
+      var fullUri = scope.id == 'all'
           ? baseUri
-          : '$baseUri?portfolioId=$portfolioId';
+          : '$baseUri?portfolioId=${scope.id}';
+      fullUri = _withPersona(fullUri, scope.persona);
       if (interval != null) {
         fullUri += (fullUri.contains('?') ? '&' : '?') + 'interval=$interval';
       }
@@ -493,9 +511,13 @@ class PortfolioRemoteDataSourceImpl implements PortfolioRemoteDataSource {
       );
 
       // Construct full URI for analytics endpoint
-      final baseUri = _buildUri(
-        _baseUrl,
-        PortfolioEndpoints.advancedAnalytics(portfolioId),
+      final scope = _allScope(portfolioId);
+      final baseUri = _withPersona(
+        _buildUri(
+          _baseUrl,
+          PortfolioEndpoints.advancedAnalytics(scope.id),
+        ),
+        scope.persona,
       );
 
       // Use ApiClient for consistent error handling and logging with POST request

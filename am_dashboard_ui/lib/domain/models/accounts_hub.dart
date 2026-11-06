@@ -183,6 +183,7 @@ class AccountsPortfolioRow {
     this.dummy,
     this.familyMemberId,
     this.familyMemberName,
+    this.dematBoid,
   });
 
   factory AccountsPortfolioRow.fromJson(Map<String, dynamic> json) =>
@@ -199,6 +200,7 @@ class AccountsPortfolioRow {
         dummy: json['dummy'] as bool?,
         familyMemberId: json['familyMemberId'] as String?,
         familyMemberName: json['familyMemberName'] as String?,
+        dematBoid: json['dematBoid'] as String?,
       );
 
   final String? portfolioId;
@@ -213,6 +215,7 @@ class AccountsPortfolioRow {
   final bool? dummy;
   final String? familyMemberId;
   final String? familyMemberName;
+  final String? dematBoid;
 
   bool get hasHoldings {
     if (assetCount != null) return assetCount! > 0;
@@ -241,9 +244,21 @@ class AccountsPortfolioRow {
     return name == 'NPS';
   }
 
-  /// Running broker book for Users Brokers tab (excludes CAS aggregator, NPS, zero).
+  bool get isCasDematBook =>
+      (brokerType ?? '').trim().toUpperCase() == 'CAS_DEMAT';
+
+  bool get isMutualFundBook {
+    if (!isCasDematBook) return false;
+    if ((dematBoid ?? '').trim().toLowerCase() == 'mf:cas') return true;
+    return (displayName ?? '').trim().toLowerCase() == 'mutual funds';
+  }
+
+  bool get isDematBook => isCasDematBook && !isMutualFundBook;
+
+  /// First-class running broker. CAS demat and mutual-fund books are separate tabs.
+  /// A book with holdings stays visible when the stored total is still 0.
   bool get isRunningBroker =>
-      !isCdslAggregator && !isNps && (current ?? 0) > 0;
+      !isCdslAggregator && !isNps && !isCasDematBook && hasHoldings;
 }
 
 class DematAccountRow {

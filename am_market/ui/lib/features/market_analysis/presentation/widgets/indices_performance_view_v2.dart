@@ -300,8 +300,8 @@ class _AutoScrollingTicker extends StatefulWidget {
 
 class _AutoScrollingTickerState extends State<_AutoScrollingTicker> {
   late ScrollController _scrollController;
-  Timer? _timer;
   bool _isScrolling = true;
+  int _scrollGen = 0;
 
   @override
   void initState() {
@@ -312,37 +312,40 @@ class _AutoScrollingTickerState extends State<_AutoScrollingTicker> {
 
   void _startScrolling() {
     if (!_isScrolling || widget.indices.isEmpty) return;
-    
-    // Smooth scrolling
-    // Wait for build
+    final gen = ++_scrollGen;
     Future.delayed(const Duration(milliseconds: 500), () {
-      if (!mounted) return;
-      _timer = Timer.periodic(const Duration(milliseconds: 50), (timer) {
-        if (!mounted || !_isScrolling || !_scrollController.hasClients) {
-           timer.cancel();
-           return;
-        }
-        
-        // Calculate max scroll extent
-        final maxScroll = _scrollController.position.maxScrollExtent;
-        final currentScroll = _scrollController.offset;
-        
-        // Move 1 pixel
-        double nextScroll = currentScroll + 1.0;
-        
-        if (nextScroll >= maxScroll) {
-          // Reset to 0 (or jump if infinite list simulation desired, but jump to 0 is ok for now)
-          _scrollController.jumpTo(0);
-        } else {
-          _scrollController.jumpTo(nextScroll);
-        }
-      });
+      if (!mounted || gen != _scrollGen) return;
+      _step(gen);
     });
+  }
+
+  void _step(int gen) {
+    if (!mounted || !_isScrolling || gen != _scrollGen) return;
+    if (!_scrollController.hasClients) return;
+    final maxScroll = _scrollController.position.maxScrollExtent;
+    if (maxScroll <= 0) return;
+    final next = _scrollController.offset + 48;
+    if (next >= maxScroll) {
+      _scrollController.jumpTo(0);
+      Future.delayed(const Duration(milliseconds: 700), () {
+        if (mounted && gen == _scrollGen) _step(gen);
+      });
+      return;
+    }
+    _scrollController
+        .animateTo(
+          next,
+          duration: const Duration(milliseconds: 900),
+          curve: Curves.linear,
+        )
+        .whenComplete(() {
+          if (mounted && gen == _scrollGen && _isScrolling) _step(gen);
+        });
   }
 
   @override
   void dispose() {
-    _timer?.cancel();
+    _scrollGen++;
     _scrollController.dispose();
     super.dispose();
   }
@@ -360,15 +363,18 @@ class _AutoScrollingTickerState extends State<_AutoScrollingTicker> {
     final displayList = [...widget.indices, ...widget.indices, ...widget.indices];
 
     return GestureDetector(
-      onTapDown: (_) => setState(() => _isScrolling = false),
-      onTapUp: (_) => setState(() {
-         _isScrolling = true;
-         _startScrolling();
-      }),
-      onTapCancel: () => setState(() {
-         _isScrolling = true;
-         _startScrolling();
-      }),
+      onTapDown: (_) {
+        _isScrolling = false;
+        _scrollGen++;
+      },
+      onTapUp: (_) {
+        _isScrolling = true;
+        _startScrolling();
+      },
+      onTapCancel: () {
+        _isScrolling = true;
+        _startScrolling();
+      },
       child: ListView.builder(
         controller: _scrollController,
         scrollDirection: Axis.horizontal,

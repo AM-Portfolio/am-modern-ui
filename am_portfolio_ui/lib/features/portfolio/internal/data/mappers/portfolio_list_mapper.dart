@@ -1,7 +1,6 @@
 import 'package:am_design_system/am_design_system.dart';
 import '../dtos/portfolio_list_dto.dart';
 import '../../domain/entities/portfolio_list.dart';
-import 'package:am_common/am_common.dart';
 
 /// Mapper class for Portfolio List operations
 ///
@@ -15,17 +14,25 @@ class PortfolioListMapper {
     );
 
     try {
-      // Map individual portfolio items
-      final portfolioItems = dto.portfolios
+      // Hide CDSL only when another real (non-demo/paper) broker exists.
+      final active = dto.portfolios
           .where((itemDto) => itemDto.kind?.toUpperCase() != 'DELETED')
-          .where((itemDto) {
-            final broker = (itemDto.brokerType ?? '').toUpperCase();
-            if (broker == 'CDSL') return false;
-            final n = itemDto.portfolioName.toLowerCase();
-            return !(n.contains('cdsl') ||
-                n == 'cas' ||
-                n.contains('cas aggregator'));
-          })
+          .toList();
+      final hasOtherRealBroker = active.any((itemDto) {
+        if (_isCdslDto(itemDto)) return false;
+        final kind = itemDto.kind?.toUpperCase();
+        final name = itemDto.portfolioName.toLowerCase();
+        final isDemo = itemDto.isDummy ||
+            kind == 'DUMMY' ||
+            kind == 'DEMO' ||
+            name.contains('demo');
+        final isPaper = kind == 'PAPER' || name == 'paper';
+        if (isDemo || isPaper || kind == 'BASKET') return false;
+        return true;
+      });
+
+      final portfolioItems = active
+          .where((itemDto) => !hasOtherRealBroker || !_isCdslDto(itemDto))
           .map(
             (itemDto) {
               String name = itemDto.portfolioName;
@@ -109,6 +116,19 @@ class PortfolioListMapper {
       );
       throw Exception('Invalid portfolio list mapping: ${e.toString()}');
     }
+  }
+
+  static bool _isCdslDto(PortfolioItemDto itemDto) {
+    final broker = (itemDto.brokerType ?? '').toUpperCase();
+    // Named CAS demat books (Mirae/Finwizard/Mutual Funds) are not CDSL aggregators.
+    if (broker == 'CAS_DEMAT') return false;
+    if (broker == 'CDSL') return true;
+    final n = itemDto.portfolioName.toLowerCase().trim();
+    return n == 'cdsl'
+        || n == 'cas'
+        || n == 'cdsl cas'
+        || n == 'cas aggregator'
+        || n.contains('cdsl');
   }
 
   /// Convert PortfolioList domain entity to PortfolioListDto

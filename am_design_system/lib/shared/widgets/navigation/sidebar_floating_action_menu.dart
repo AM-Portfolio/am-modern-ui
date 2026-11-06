@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:am_design_system/am_design_system.dart';
 
@@ -356,11 +355,10 @@ class _FloatingMenuPill extends StatelessWidget {
         opacity: animation,
         child: GestureDetector(
           onTap: onTap,
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(14),
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-              child: Container(
+          child: webGlass(
+            sigma: 16,
+            clip: BorderRadius.circular(14),
+            child: Container(
                 padding: const EdgeInsets.all(12),
                 width: 220,
                 decoration: BoxDecoration(
@@ -416,7 +414,6 @@ class _FloatingMenuPill extends StatelessWidget {
             ),
           ),
         ),
-      ),
     );
   }
 }
