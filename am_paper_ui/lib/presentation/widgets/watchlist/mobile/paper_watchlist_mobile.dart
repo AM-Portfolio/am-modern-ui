@@ -137,6 +137,7 @@ class _PaperWatchlistMobileState extends State<PaperWatchlistMobile> {
             onOpenFundamentals: widget.onOpenFundamentals,
             onSelectSymbol: widget.onSelectSymbol,
           ),
+          WatchlistPaginationFooter(controller: controller),
         ],
       ),
     );

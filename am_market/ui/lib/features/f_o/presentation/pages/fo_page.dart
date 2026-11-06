@@ -67,7 +67,7 @@ class FoPageState extends ConsumerState<FoPage>
   /// would otherwise retain the last tab the user visited.
   void resetToOptionChain() {
     if (_tabController.index != 0) {
-      _tabController.animateTo(0);
+      _tabController.index = 0;
     }
     _optionChainKey.currentState?.resetToSpotPosition();
   }
@@ -100,6 +100,7 @@ class FoPageState extends ConsumerState<FoPage>
     ref.read(futuresShowAllUnderlyingsProvider.notifier).state = false;
     ref.read(futuresExpiryFilterProvider.notifier).state = 'All';
     ref.read(foActiveSymbolProvider.notifier).state = symbol;
+    resetToOptionChain();
   }
 
   void _onBackToLanding() {

@@ -186,7 +186,7 @@ class _EquityInsiderShareholdingState
               children: [
                 chart,
                 const SizedBox(width: 10),
-                Expanded(child: _buildLegend(slices)),
+                Expanded(child: Center(child: _buildLegend(slices))),
               ],
             )
           : Column(

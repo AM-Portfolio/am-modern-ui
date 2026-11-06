@@ -168,6 +168,98 @@ class WatchlistPageChips extends StatelessWidget {
   }
 }
 
+class WatchlistPaginationFooter extends StatelessWidget {
+  const WatchlistPaginationFooter({
+    super.key,
+    required this.controller,
+  });
+
+  final WatchlistController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    if (controller.allRows.isEmpty) return const SizedBox.shrink();
+    final colors = context.colors;
+    final totalItems = controller.allRows.length;
+    final totalPages = controller.pageCount;
+    final page = controller.pageIndex;
+    final accent = _watchlistAccent(context);
+    final labelStyle = Theme.of(context).textTheme.labelSmall?.copyWith(
+          color: colors.textSecondary,
+        );
+
+    return Container(
+      decoration: BoxDecoration(
+        color: colors.surface,
+        border: Border(top: BorderSide(color: colors.divider)),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      child: Row(
+        children: [
+          Text(
+            '${page + 1}/$totalPages · $totalItems',
+            style: labelStyle?.copyWith(fontWeight: FontWeight.w600),
+          ),
+          const Spacer(),
+          Text('Rows', style: labelStyle),
+          const SizedBox(width: 4),
+          for (final size in const [15, 25, 50]) ...[
+            InkWell(
+              onTap: () => controller.setPageSize(size),
+              borderRadius: BorderRadius.circular(4),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                margin: const EdgeInsets.symmetric(horizontal: 2),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(4),
+                  color: controller.pageSize == size
+                      ? accent.withValues(alpha: 0.15)
+                      : Colors.transparent,
+                  border: Border.all(
+                    color: controller.pageSize == size
+                        ? accent
+                        : colors.border,
+                  ),
+                ),
+                child: Text(
+                  '$size',
+                  style: TextStyle(
+                    fontSize: 10.5,
+                    fontWeight: controller.pageSize == size
+                        ? FontWeight.w700
+                        : FontWeight.normal,
+                    color: controller.pageSize == size
+                        ? accent
+                        : colors.textSecondary,
+                  ),
+                ),
+              ),
+            ),
+          ],
+          const SizedBox(width: 4),
+          IconButton(
+            iconSize: 18,
+            visualDensity: VisualDensity.compact,
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
+            icon: const Icon(Icons.chevron_left),
+            onPressed: page > 0 ? () => controller.setPage(page - 1) : null,
+          ),
+          IconButton(
+            iconSize: 18,
+            visualDensity: VisualDensity.compact,
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
+            icon: const Icon(Icons.chevron_right),
+            onPressed: page < totalPages - 1 ? () => controller.setPage(page + 1) : null,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+
 class WatchlistRow extends StatelessWidget {
   const WatchlistRow({
     super.key,

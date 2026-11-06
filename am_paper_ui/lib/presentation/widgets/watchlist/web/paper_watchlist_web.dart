@@ -113,6 +113,7 @@ class _PaperWatchlistWebState extends State<PaperWatchlistWeb> {
             onOpenFundamentals: widget.onOpenFundamentals,
             onSelectSymbol: widget.onSelectSymbol,
           ),
+          WatchlistPaginationFooter(controller: controller),
         ],
       ),
     );

@@ -41,14 +41,14 @@ class RankedIndexRow extends StatelessWidget {
     final isNonLiveGlobalQuote =
         data.isGlobal && data.suspended && data.hasValidPrice;
     final accent =
-        positive ? colors.actionPrimaryBg : MarketColors.negative(context);
+        positive ? MarketColors.positive(context) : MarketColors.negative(context);
     final accentBg = positive
-        ? colors.actionPrimaryBg.withValues(alpha: 0.16)
+        ? MarketColors.positiveBg(context)
         : MarketColors.negativeBg(context);
     final fmt = NumberFormat('#,##0.00');
     final sign = positive ? '+' : '';
     final frac = barFraction.clamp(0.0, 1.0);
-    final selectedBorder = colors.actionPrimaryBg;
+    final selectedBorder = ModuleColors.market;
 
     return Material(
       color: Colors.transparent,
@@ -71,14 +71,20 @@ class RankedIndexRow extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    rank.toString().padLeft(2, '0'),
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      color: MarketColors.textMuted(context),
+                  SizedBox(
+                    width: 24,
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 1.0),
+                      child: Text(
+                        rank.toString().padLeft(2, '0'),
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: MarketColors.textMuted(context),
+                        ),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -104,19 +110,19 @@ class RankedIndexRow extends StatelessWidget {
                           ),
                           decoration: BoxDecoration(
                             color:
-                                colors.actionPrimaryBg.withValues(alpha: 0.12),
+                                ModuleColors.market.withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(99),
                             border: Border.all(
                               color:
-                                  colors.actionPrimaryBg.withValues(alpha: 0.4),
+                                  ModuleColors.market.withValues(alpha: 0.4),
                             ),
                           ),
                           child: Text(
                             category,
-                            style: TextStyle(
+                            style: const TextStyle(
                               fontSize: 9,
                               fontWeight: FontWeight.w600,
-                              color: colors.actionPrimaryBg,
+                              color: ModuleColors.market,
                             ),
                           ),
                         ),
@@ -180,8 +186,8 @@ class RankedIndexRow extends StatelessWidget {
                         Positioned.fill(
                           child: DecoratedBox(
                             decoration: BoxDecoration(
-                              color: colors.actionPrimaryBg
-                                  .withValues(alpha: 0.22),
+                              color: ModuleColors.market
+                                  .withValues(alpha: 0.14),
                               borderRadius: BorderRadius.circular(4),
                             ),
                           ),
