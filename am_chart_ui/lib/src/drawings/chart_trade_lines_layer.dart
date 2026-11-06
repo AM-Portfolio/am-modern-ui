@@ -113,14 +113,15 @@ class _ChartTradeLinesLayerState extends State<ChartTradeLinesLayer> {
           final hit = pending ? null : _hitTest(e.localPosition);
           setState(() {
             _pointer = e.localPosition;
-            if (hit != _hoveredId) _hoveredId = hit;
+            // Sticky hover: keep last line when pointer moves onto chip / gaps.
+            if (hit != null && hit != _hoveredId) _hoveredId = hit;
           });
         },
         onExit: (_) {
-          if (_pointer != null || _hoveredId != null) {
+          if (_pointer != null) {
             setState(() {
               _pointer = null;
-              _hoveredId = null;
+              // Keep _hoveredId so cancel chip stays usable.
             });
           }
         },
@@ -176,6 +177,10 @@ class _ChartTradeLinesLayerState extends State<ChartTradeLinesLayer> {
                   widget.onPlaceAtPrice
                       ?.call(widget.pendingSide!, price, norm);
                   return;
+                }
+                // Dismiss sticky hover when tapping empty chart.
+                if (_hitTest(d.localPosition) == null && _hoveredId != null) {
+                  setState(() => _hoveredId = null);
                 }
               },
               onLongPressStart: (d) {

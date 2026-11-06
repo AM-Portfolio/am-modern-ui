@@ -14,6 +14,18 @@
     "placeFromWatchlistBuySell": true,
     "cancelOrderOnLineDelete": true,
     "replaceOnDrag": true,
-    "marketKeepsLine": false
+    "marketKeepsLine": false,
+    "strokeWidth": 2.25,
+    "showVolumeWithTrades": true,
+    "zones": {
+      "minLayers": 2,
+      "maxLayers": 10,
+      "defaultLayerCount": 3,
+      "defaultLayers": [
+        { "sizePct": 25, "orderType": "LIMIT" },
+        { "sizePct": 25, "orderType": "LIMIT" },
+        { "sizePct": 50, "orderType": "SUPER" }
+      ]
+    }
   }
 }
