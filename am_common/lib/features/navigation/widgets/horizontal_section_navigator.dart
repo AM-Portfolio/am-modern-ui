@@ -3,6 +3,33 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:am_design_system/am_design_system.dart';
 
+/// Pure gate for whether a horizontal drag should change section/module.
+///
+/// Exposed for unit tests. Returns `true` for next, `false` for previous,
+/// or `null` when the gesture is too small / ambiguous.
+bool? horizontalSectionNavDecision({
+  required double dragDx,
+  required double velocityDx,
+  required double flingVelocity,
+  required double dragDistance,
+  required double minDragForAnyNav,
+}) {
+  if (dragDx.abs() < minDragForAnyNav) return null;
+
+  final isFling = velocityDx.abs() >= flingVelocity;
+  final isLongDrag = dragDx.abs() >= dragDistance;
+  if (!isFling && !isLongDrag) return null;
+
+  // Prefer fling direction when strong enough; otherwise use drag direction.
+  if (isFling) {
+    if (velocityDx < 0) return true; // left → next
+    if (velocityDx > 0) return false; // right → previous
+  }
+  if (dragDx < 0) return true;
+  if (dragDx > 0) return false;
+  return null;
+}
+
 /// Horizontal edge / fling navigator used for cross-section mobile swipe.
 ///
 /// Automatically disabled on tablet and desktop screens to prevent gesture conflicts
@@ -19,8 +46,9 @@ class HorizontalSectionNavigator extends StatefulWidget {
     this.onNextPage,
     this.onPreviousPage,
     this.enabled = true,
-    this.flingVelocity = 400,
-    this.dragDistance = 72,
+    this.flingVelocity = 900,
+    this.dragDistance = 140,
+    this.minDragForAnyNav = 48,
     super.key,
   });
 
@@ -34,6 +62,9 @@ class HorizontalSectionNavigator extends StatefulWidget {
 
   /// Min horizontal drag distance when velocity is low.
   final double dragDistance;
+
+  /// Absolute minimum drag before any navigation (blocks micro-jitter flings).
+  final double minDragForAnyNav;
 
   @override
   State<HorizontalSectionNavigator> createState() =>
@@ -79,15 +110,15 @@ class _HorizontalSectionNavigatorState extends State<HorizontalSectionNavigator>
   void _onDragEnd(DragEndDetails details) {
     if (!_isSwipeAllowed(context)) return;
 
-    final vx = details.velocity.pixelsPerSecond.dx;
-
-    if (vx.abs() >= widget.flingVelocity || _dragDx.abs() >= widget.dragDistance) {
-      if (vx < 0 || (_dragDx < 0 && vx.abs() < widget.flingVelocity)) {
-        _handleNavigation(isNext: true);
-      } else if (vx > 0 || (_dragDx > 0 && vx.abs() < widget.flingVelocity)) {
-        _handleNavigation(isNext: false);
-      }
-    }
+    final decision = horizontalSectionNavDecision(
+      dragDx: _dragDx,
+      velocityDx: details.velocity.pixelsPerSecond.dx,
+      flingVelocity: widget.flingVelocity,
+      dragDistance: widget.dragDistance,
+      minDragForAnyNav: widget.minDragForAnyNav,
+    );
+    if (decision == null) return;
+    _handleNavigation(isNext: decision);
   }
 
   @override

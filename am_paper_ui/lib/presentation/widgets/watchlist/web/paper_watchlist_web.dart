@@ -13,7 +13,9 @@ class PaperWatchlistWeb extends StatefulWidget {
     required this.onSelectSymbol,
     required this.onBuySell,
     this.onOpenFundamentals,
+    this.onOpenChart,
     this.showSearch = true,
+    this.showBuySell = true,
   });
 
   final WatchlistController controller;
@@ -21,7 +23,9 @@ class PaperWatchlistWeb extends StatefulWidget {
   final ValueChanged<String> onSelectSymbol;
   final WatchlistSideCallback onBuySell;
   final ValueChanged<String>? onOpenFundamentals;
+  final ValueChanged<String>? onOpenChart;
   final bool showSearch;
+  final bool showBuySell;
 
   @override
   State<PaperWatchlistWeb> createState() => _PaperWatchlistWebState();
@@ -32,7 +36,6 @@ class _PaperWatchlistWebState extends State<PaperWatchlistWeb> {
   Widget build(BuildContext context) {
     final colors = context.colors;
     final controller = widget.controller;
-    final pageRows = controller.pageRows;
 
     return Material(
       color: colors.surface,
@@ -41,37 +44,6 @@ class _PaperWatchlistWebState extends State<PaperWatchlistWeb> {
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
-            child: Row(
-              children: [
-                Text(
-                  'Watchlist',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                const Spacer(),
-                if ((controller.refreshing && controller.pageNeedsQuoteSpinner) ||
-                    controller.loadingList)
-                  SizedBox(
-                    width: 14,
-                    height: 14,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: ModuleColors.market,
-                    ),
-                  )
-                else
-                  IconButton(
-                    tooltip: 'Refresh quotes',
-                    iconSize: 18,
-                    visualDensity: VisualDensity.compact,
-                    onPressed:
-                        pageRows.isEmpty ? null : controller.refreshVisibleQuotes,
-                    icon: Icon(Icons.refresh, color: colors.textSecondary),
-                  ),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
             child: WatchlistSourceDropdown(
               selected: controller.selectedSource,
               sources: List.of(controller.sources),
@@ -96,7 +68,7 @@ class _PaperWatchlistWebState extends State<PaperWatchlistWeb> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12),
               child: Text(
-                'Quotes unavailable — tap refresh',
+                'Quotes unavailable',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: colors.textSecondary,
                     ),
@@ -111,7 +83,9 @@ class _PaperWatchlistWebState extends State<PaperWatchlistWeb> {
             compact: false,
             onBuySell: widget.onBuySell,
             onOpenFundamentals: widget.onOpenFundamentals,
+            onOpenChart: widget.onOpenChart,
             onSelectSymbol: widget.onSelectSymbol,
+            showBuySell: widget.showBuySell,
           ),
         ],
       ),

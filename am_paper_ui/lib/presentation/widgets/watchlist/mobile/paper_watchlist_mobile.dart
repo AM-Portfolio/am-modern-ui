@@ -13,7 +13,9 @@ class PaperWatchlistMobile extends StatefulWidget {
     required this.onSelectSymbol,
     required this.onBuySell,
     this.onOpenFundamentals,
+    this.onOpenChart,
     this.showSearch = true,
+    this.showBuySell = true,
     this.onOpenAllIndices,
   });
 
@@ -22,7 +24,9 @@ class PaperWatchlistMobile extends StatefulWidget {
   final ValueChanged<String> onSelectSymbol;
   final WatchlistSideCallback onBuySell;
   final ValueChanged<String>? onOpenFundamentals;
+  final ValueChanged<String>? onOpenChart;
   final bool showSearch;
+  final bool showBuySell;
   final VoidCallback? onOpenAllIndices;
 
   @override
@@ -135,7 +139,9 @@ class _PaperWatchlistMobileState extends State<PaperWatchlistMobile> {
             compact: true,
             onBuySell: widget.onBuySell,
             onOpenFundamentals: widget.onOpenFundamentals,
+            onOpenChart: widget.onOpenChart,
             onSelectSymbol: widget.onSelectSymbol,
+            showBuySell: widget.showBuySell,
           ),
         ],
       ),

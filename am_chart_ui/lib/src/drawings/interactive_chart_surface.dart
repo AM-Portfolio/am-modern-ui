@@ -4,9 +4,12 @@ import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 
 import '../chart_engine/advanced_chart_canvas.dart';
+import '../chart_engine/chart_price_layout.dart';
 import '../chart_types/chart_type_id.dart';
 import '../providers/chart_models.dart';
 import 'chart_draw_models.dart';
+import 'chart_trade_line_models.dart';
+import 'chart_trade_lines_layer.dart';
 
 /// Chart canvas + live annotations. Drawing tools live in a workspace rail.
 class InteractiveChartSurface extends StatefulWidget {
@@ -24,6 +27,17 @@ class InteractiveChartSurface extends StatefulWidget {
     this.zoomEpoch = 0,
     this.zoomDelta = 1.0,
     this.onDrawingsCountChanged,
+    this.tradeLines = const [],
+    this.tradeLinesEnabled = false,
+    this.tradeLinesAllowDrag = true,
+    this.pendingTradeSide,
+    this.pendingTradeHint,
+    this.onTradeLineMoved,
+    this.onTradeLineDragEnd,
+    this.onTradeLineRemoved,
+    this.onEditTradeLine,
+    this.onTradeLinePlaceAtPrice,
+    this.onCancelPendingTrade,
   });
 
   final List<ChartBar> bars;
@@ -45,6 +59,19 @@ class InteractiveChartSurface extends StatefulWidget {
   final int clearDrawingsEpoch;
   final ValueChanged<int>? onDrawingsCountChanged;
 
+  final List<ChartTradeLine> tradeLines;
+  final bool tradeLinesEnabled;
+  final bool tradeLinesAllowDrag;
+  final ChartTradeLineSide? pendingTradeSide;
+  final String? pendingTradeHint;
+  final void Function(String id, double newPrice)? onTradeLineMoved;
+  final void Function(String id)? onTradeLineDragEnd;
+  final void Function(String id)? onTradeLineRemoved;
+  final void Function(String id)? onEditTradeLine;
+  final void Function(ChartTradeLineSide side, double price, double anchorXNorm)?
+      onTradeLinePlaceAtPrice;
+  final VoidCallback? onCancelPendingTrade;
+
   @override
   State<InteractiveChartSurface> createState() =>
       _InteractiveChartSurfaceState();
@@ -54,6 +81,7 @@ class _InteractiveChartSurfaceState extends State<InteractiveChartSurface> {
   final List<ChartDrawing> _drawings = [];
   Offset? _pendingPoint;
   int _idSeq = 0;
+  ChartPriceLayout? _priceLayout;
 
   ChartDrawTool get _tool => widget.drawTool;
 
@@ -89,13 +117,24 @@ class _InteractiveChartSurfaceState extends State<InteractiveChartSurface> {
               bars: widget.bars,
               chartType: widget.chartType,
               isMock: widget.isMock,
-              panZoomEnabled: _tool == ChartDrawTool.none,
+              panZoomEnabled: _tool == ChartDrawTool.none &&
+                  widget.pendingTradeSide == null,
               onNeedOlderHistory: widget.onNeedOlderHistory,
               viewEpoch: widget.viewEpoch,
               zoomEpoch: widget.zoomEpoch,
               zoomDelta: widget.zoomDelta,
               onCrosshair: widget.onCrosshair,
               externalCrosshairTime: widget.externalCrosshairTime,
+              tradeLines:
+                  widget.tradeLinesEnabled ? widget.tradeLines : const [],
+              onPriceLayoutChanged: (layout) {
+                if (_priceLayout?.minPrice == layout.minPrice &&
+                    _priceLayout?.maxPrice == layout.maxPrice &&
+                    _priceLayout?.candlePlot == layout.candlePlot) {
+                  return;
+                }
+                setState(() => _priceLayout = layout);
+              },
             ),
             IgnorePointer(
               child: CustomPaint(
@@ -109,6 +148,21 @@ class _InteractiveChartSurfaceState extends State<InteractiveChartSurface> {
                 ),
               ),
             ),
+            if (widget.tradeLinesEnabled)
+              ChartTradeLinesLayer(
+                lines: widget.tradeLines,
+                layout: _priceLayout,
+                enabled: true,
+                allowDrag: widget.tradeLinesAllowDrag,
+                pendingSide: widget.pendingTradeSide,
+                pendingHint: widget.pendingTradeHint,
+                onMoved: widget.onTradeLineMoved,
+                onDragEnd: widget.onTradeLineDragEnd,
+                onRemoved: widget.onTradeLineRemoved,
+                onEditLine: widget.onEditTradeLine,
+                onPlaceAtPrice: widget.onTradeLinePlaceAtPrice,
+                onCancelPending: widget.onCancelPendingTrade,
+              ),
             if (_tool != ChartDrawTool.none)
               Positioned.fill(
                 child: GestureDetector(

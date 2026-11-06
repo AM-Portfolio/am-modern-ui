@@ -4,10 +4,13 @@ import 'dart:ui' as ui;
 import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
 import '../chart_types/chart_type_id.dart';
+import '../drawings/chart_trade_line_models.dart';
 import '../providers/chart_models.dart';
+import 'chart_price_layout.dart';
 
 class ChartViewport {
   const ChartViewport({
@@ -39,6 +42,8 @@ class AdvancedChartCanvas extends StatefulWidget {
     this.viewEpoch = 0,
     this.zoomEpoch = 0,
     this.zoomDelta = 1.0,
+    this.tradeLines = const [],
+    this.onPriceLayoutChanged,
   });
 
   final List<ChartBar> bars;
@@ -64,6 +69,12 @@ class AdvancedChartCanvas extends StatefulWidget {
   /// Multiplier to apply to zoom on [zoomEpoch] change.
   final double zoomDelta;
 
+  /// OMS-linked buy/sell price lines painted on the candle plot.
+  final List<ChartTradeLine> tradeLines;
+
+  /// Latest price layout for overlays (drag / hit-test).
+  final ValueChanged<ChartPriceLayout>? onPriceLayoutChanged;
+
   @override
   State<AdvancedChartCanvas> createState() => _AdvancedChartCanvasState();
 }
@@ -75,6 +86,9 @@ class _AdvancedChartCanvasState extends State<AdvancedChartCanvas>
 
   double _zoom = 1.0;
   double _pan = 0;
+  /// When set, Y axis uses this price range instead of auto-fitting OHLC.
+  double? _yMinOverride;
+  double? _yMaxOverride;
   int? _localHoverIndex;
   double _scaleStartZoom = 1.0;
   Offset _lastFocalPoint = Offset.zero;
@@ -125,11 +139,58 @@ class _AdvancedChartCanvasState extends State<AdvancedChartCanvas>
     super.didUpdateWidget(oldWidget);
     if (oldWidget.viewEpoch != widget.viewEpoch) {
       _animateZoomTo(1.0);
-      setState(() => _pan = 0);
+      setState(() {
+        _pan = 0;
+        _yMinOverride = null;
+        _yMaxOverride = null;
+      });
     } else if (oldWidget.zoomEpoch != widget.zoomEpoch &&
         widget.zoomEpoch > 0) {
       _animateZoomTo(_zoom * widget.zoomDelta);
     }
+  }
+
+  void _resetYZoom() {
+    if (_yMinOverride == null && _yMaxOverride == null) return;
+    setState(() {
+      _yMinOverride = null;
+      _yMaxOverride = null;
+    });
+  }
+
+  (double, double) _autoPriceRange() {
+    final n = widget.bars.length;
+    if (n == 0) return (0, 1);
+    final visible = _visibleCount(n);
+    final start = _startIndex(n, visible);
+    final end = math.min(n - 1, start + visible - 1);
+    final slice = widget.bars.sublist(start, end + 1);
+    var minP = slice.map((b) => b.low).reduce(math.min);
+    var maxP = slice.map((b) => b.high).reduce(math.max);
+    if (minP == maxP) {
+      minP -= 1;
+      maxP += 1;
+    }
+    final pad = (maxP - minP) * 0.05;
+    return (minP - pad, maxP + pad);
+  }
+
+  void _zoomY(double factor) {
+    final auto = _autoPriceRange();
+    final minP = _yMinOverride ?? auto.$1;
+    final maxP = _yMaxOverride ?? auto.$2;
+    final center = (minP + maxP) / 2;
+    final half = ((maxP - minP) / 2) / factor;
+    final nextHalf = half.clamp(1e-6, 1e12);
+    setState(() {
+      _yMinOverride = center - nextHalf;
+      _yMaxOverride = center + nextHalf;
+    });
+  }
+
+  bool _isOverPriceScale(Offset local, Size size) {
+    const right = 56.0;
+    return local.dx >= size.width - right;
   }
 
   int? _nearestIndexForTime(DateTime time) {
@@ -153,11 +214,17 @@ class _AdvancedChartCanvasState extends State<AdvancedChartCanvas>
     widget.onCrosshair?.call(null);
   }
 
-  void _onScroll(PointerScrollEvent e) {
+  void _onScroll(PointerScrollEvent e, Size size) {
     if (!widget.panZoomEnabled) return;
-    // Mouse wheel or trackpad scroll directly zooms in and out
+    if (e.scrollDelta.dy == 0) return;
     final factor = e.scrollDelta.dy < 0 ? 1.15 : 0.87;
-    _animateZoomTo(_zoom * factor);
+    final yAxis = _isOverPriceScale(e.localPosition, size) ||
+        HardwareKeyboard.instance.isAltPressed;
+    if (yAxis) {
+      _zoomY(factor);
+    } else {
+      _animateZoomTo(_zoom * factor);
+    }
   }
 
   @override
@@ -171,21 +238,40 @@ class _AdvancedChartCanvasState extends State<AdvancedChartCanvas>
 
     return LayoutBuilder(
       builder: (context, constraints) {
+        final size = Size(constraints.maxWidth, constraints.maxHeight);
+        final layout = ChartPriceLayout.fromBars(
+          bars: widget.bars,
+          size: size,
+          zoom: _zoom,
+          pan: _pan,
+          yMinOverride: _yMinOverride,
+          yMaxOverride: _yMaxOverride,
+        );
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          widget.onPriceLayoutChanged?.call(layout);
+        });
         return MouseRegion(
           onExit: (_) => _clearLocalHover(),
           child: Stack(
             children: [
               Listener(
                 onPointerHover: (e) =>
-                    _updateHover(e.localPosition, constraints.biggest),
+                    _updateHover(e.localPosition, size),
                 onPointerSignal: (e) {
-                  if (e is PointerScrollEvent) _onScroll(e);
+                  if (e is PointerScrollEvent) {
+                    _onScroll(e, size);
+                  }
                 },
                 child: GestureDetector(
                   behavior: HitTestBehavior.opaque,
                   onDoubleTapDown: (details) {
                     if (!widget.panZoomEnabled) return;
-                    // Double-tap fingertip transition to zoom in or reset
+                    // Double-tap price scale resets Y; elsewhere toggles X zoom.
+                    if (_isOverPriceScale(details.localPosition, size)) {
+                      _resetYZoom();
+                      return;
+                    }
                     final target = _zoom > 1.4 ? 1.0 : 2.2;
                     _animateZoomTo(target);
                   },
@@ -195,11 +281,11 @@ class _AdvancedChartCanvasState extends State<AdvancedChartCanvas>
                     _scaleStartZoom = _zoom;
                     _lastFocalPoint = details.localFocalPoint;
                     _lastPointerCount = details.pointerCount;
-                    _updateHover(details.localFocalPoint, constraints.biggest);
+                    _updateHover(details.localFocalPoint, size);
                   },
                   onScaleUpdate: (details) {
                     if (!widget.panZoomEnabled) return;
-                    _updateHover(details.localFocalPoint, constraints.biggest);
+                    _updateHover(details.localFocalPoint, size);
 
                     if (details.pointerCount != _lastPointerCount) {
                       _scaleStartZoom = _zoom;
@@ -210,7 +296,7 @@ class _AdvancedChartCanvasState extends State<AdvancedChartCanvas>
 
                     if (details.pointerCount >= 2 ||
                         (details.scale - 1.0).abs() > 0.05) {
-                      // Fingertip pinch zoom in and zoom out
+                      // Fingertip pinch zoom in and zoom out (X)
                       final targetZoom =
                           (_scaleStartZoom * details.scale).clamp(0.2, 10.0);
                       setState(() {
@@ -234,12 +320,15 @@ class _AdvancedChartCanvasState extends State<AdvancedChartCanvas>
                     _lastFocalPoint = details.localFocalPoint;
                   },
                   child: CustomPaint(
-                    size: Size(constraints.maxWidth, constraints.maxHeight),
+                    size: size,
                     painter: _ChartPainter(
                       bars: widget.bars,
                       chartType: widget.chartType,
                       zoom: _zoom,
                       pan: _pan,
+                      yMinOverride: _yMinOverride,
+                      yMaxOverride: _yMaxOverride,
+                      tradeLines: widget.tradeLines,
                       hoverIndex: hover,
                       gridColor: theme.dividerColor.withValues(alpha: 0.25),
                       labelColor: theme.hintColor,
@@ -362,6 +451,9 @@ class _ChartPainter extends CustomPainter {
     required this.chartType,
     required this.zoom,
     required this.pan,
+    required this.yMinOverride,
+    required this.yMaxOverride,
+    required this.tradeLines,
     required this.hoverIndex,
     required this.gridColor,
     required this.labelColor,
@@ -376,6 +468,9 @@ class _ChartPainter extends CustomPainter {
   final ChartTypeId chartType;
   final double zoom;
   final double pan;
+  final double? yMinOverride;
+  final double? yMaxOverride;
+  final List<ChartTradeLine> tradeLines;
   final int? hoverIndex;
   final Color gridColor;
   final Color labelColor;
@@ -387,47 +482,37 @@ class _ChartPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    // Left flush (shared tools rail owns the workspace left); price scale right.
-    const left = 8.0;
-    const right = 56.0;
-    const bottom = 24.0;
-    const top = 8.0;
-    final plot = Rect.fromLTWH(
-      left,
-      top,
-      math.max(0, size.width - left - right),
-      math.max(0, size.height - top - bottom),
+    final layout = ChartPriceLayout.fromBars(
+      bars: bars,
+      size: size,
+      zoom: zoom,
+      pan: pan,
+      yMinOverride: yMinOverride,
+      yMaxOverride: yMaxOverride,
     );
+    final plot = layout.plot;
+    final candlePlot = layout.candlePlot;
+    final volumePlot = layout.volumePlot;
     if (plot.width <= 0 || plot.height <= 0 || bars.isEmpty) return;
 
-    final defaultBase = math.min(bars.length, 36);
-    final visible = math
-        .max(4, (defaultBase / zoom).round())
-        .clamp(4, bars.length);
-    final maxStart = math.max(0, bars.length - visible);
-    final start = (maxStart + (-pan / 8).round()).clamp(0, maxStart);
+    final start = layout.startIndex;
+    final visible = layout.visibleCount;
     final end = math.min(bars.length - 1, start + visible - 1);
     final slice = bars.sublist(start, end + 1);
-
-    var minP = slice.map((b) => b.low).reduce(math.min);
-    var maxP = slice.map((b) => b.high).reduce(math.max);
-    if (minP == maxP) {
-      minP -= 1;
-      maxP += 1;
-    }
-    final pad = (maxP - minP) * 0.05;
-    minP -= pad;
-    maxP += pad;
-
-    double yFor(double p) =>
-        plot.bottom - ((p - minP) / (maxP - minP)) * plot.height;
+    final minP = layout.minPrice;
+    final maxP = layout.maxPrice;
+    double yFor(double p) => layout.yFor(p);
 
     final grid = Paint()
       ..color = gridColor
       ..strokeWidth = 1;
     for (var i = 0; i <= 4; i++) {
-      final y = plot.top + plot.height * i / 4;
-      canvas.drawLine(Offset(plot.left, y), Offset(plot.right, y), grid);
+      final y = candlePlot.top + candlePlot.height * i / 4;
+      canvas.drawLine(
+        Offset(candlePlot.left, y),
+        Offset(candlePlot.right, y),
+        grid,
+      );
       final price = maxP - (maxP - minP) * i / 4;
       final tp = TextPainter(
         text: TextSpan(
@@ -435,9 +520,18 @@ class _ChartPainter extends CustomPainter {
           style: TextStyle(fontSize: 10, color: labelColor),
         ),
         textDirection: ui.TextDirection.ltr,
-      )..layout(maxWidth: right - 4);
-      tp.paint(canvas, Offset(plot.right + 4, y - tp.height / 2));
+      )..layout(maxWidth: ChartPriceLayout.rightInset - 4);
+      tp.paint(canvas, Offset(candlePlot.right + 4, y - tp.height / 2));
     }
+
+    // Separator between candles and volume band.
+    canvas.drawLine(
+      Offset(plot.left, volumePlot.top),
+      Offset(plot.right, volumePlot.top),
+      Paint()
+        ..color = gridColor
+        ..strokeWidth = 1,
+    );
 
     final slot = plot.width / slice.length;
     final last = slice.last.close;
@@ -446,8 +540,8 @@ class _ChartPainter extends CustomPainter {
       ..strokeWidth = 1
       ..style = PaintingStyle.stroke;
     canvas.drawLine(
-      Offset(plot.left, yFor(last)),
-      Offset(plot.right, yFor(last)),
+      Offset(candlePlot.left, yFor(last)),
+      Offset(candlePlot.right, yFor(last)),
       priceLine,
     );
 
@@ -457,7 +551,7 @@ class _ChartPainter extends CustomPainter {
       case ChartTypeId.baseline:
         _paintLine(
           canvas,
-          plot,
+          candlePlot,
           slice,
           slot,
           yFor,
@@ -465,13 +559,13 @@ class _ChartPainter extends CustomPainter {
         );
         break;
       case ChartTypeId.columns:
-        _paintColumns(canvas, plot, slice, slot, yFor);
+        _paintColumns(canvas, candlePlot, slice, slot, yFor);
         break;
       case ChartTypeId.ohlcBar:
-        _paintOhlc(canvas, plot, slice, slot, yFor);
+        _paintOhlc(canvas, candlePlot, slice, slot, yFor);
         break;
       case ChartTypeId.hollowCandle:
-        _paintCandles(canvas, plot, slice, slot, yFor, hollow: true);
+        _paintCandles(canvas, candlePlot, slice, slot, yFor, hollow: true);
         break;
       case ChartTypeId.candlestick:
       case ChartTypeId.heikinAshi:
@@ -486,9 +580,12 @@ class _ChartPainter extends CustomPainter {
       case ChartTypeId.footprint:
       case ChartTypeId.tpo:
       case ChartTypeId.volumeProfile:
-        _paintCandles(canvas, plot, slice, slot, yFor, hollow: false);
+        _paintCandles(canvas, candlePlot, slice, slot, yFor, hollow: false);
         break;
     }
+
+    _paintVolume(canvas, volumePlot, slice, slot);
+    _paintTradeLines(canvas, layout);
 
     final totalSpan = slice.isNotEmpty
         ? slice.last.time.difference(slice.first.time).abs()
@@ -568,6 +665,81 @@ class _ChartPainter extends CustomPainter {
         textDirection: ui.TextDirection.ltr,
       )..layout();
       tp.paint(canvas, Offset(cx - tp.width / 2, plot.bottom + 4));
+    }
+  }
+
+  void _paintTradeLines(Canvas canvas, ChartPriceLayout layout) {
+    if (tradeLines.isEmpty || !layout.isValid) return;
+    final plot = layout.candlePlot;
+    for (final line in tradeLines) {
+      final y = layout.yFor(line.price);
+      if (y < plot.top - 2 || y > plot.bottom + 2) {
+        continue;
+      }
+      // Short segment: click anchor → right rail (not full plot width).
+      final x0 = plot.left + plot.width * line.effectiveAnchorXNorm;
+      final paint = Paint()
+        ..color = line.color.withValues(alpha: 0.9)
+        ..strokeWidth = 1.4
+        ..style = PaintingStyle.stroke;
+      final dash = Path();
+      var x = x0;
+      while (x < plot.right) {
+        final x2 = math.min(x + 6, plot.right);
+        dash.moveTo(x, y);
+        dash.lineTo(x2, y);
+        x += 10;
+      }
+      canvas.drawPath(dash, paint);
+
+      final tp = TextPainter(
+        text: TextSpan(
+          text: line.shortLabel,
+          style: TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.w600,
+            color: line.color,
+          ),
+        ),
+        textDirection: ui.TextDirection.ltr,
+      )..layout(maxWidth: ChartPriceLayout.rightInset - 4);
+      tp.paint(
+        canvas,
+        Offset(plot.right + 4, y - tp.height / 2),
+      );
+    }
+  }
+
+  void _paintVolume(
+    Canvas canvas,
+    Rect volumePlot,
+    List<ChartBar> slice,
+    double slot,
+  ) {
+    if (volumePlot.height <= 0 || slice.isEmpty) return;
+    var maxVol = 0.0;
+    for (final b in slice) {
+      if (b.volume > maxVol) maxVol = b.volume;
+    }
+    if (maxVol <= 0) return;
+
+    final bodyW = (slot * 0.72).clamp(2.0, 48.0);
+    for (var i = 0; i < slice.length; i++) {
+      final b = slice[i];
+      final cx = volumePlot.left + (i + 0.5) * slot;
+      final h = (b.volume / maxVol) * volumePlot.height * 0.92;
+      if (h <= 0) continue;
+      final bull = b.close >= b.open;
+      final color = (bull ? upColor : downColor).withValues(alpha: 0.55);
+      canvas.drawRect(
+        Rect.fromLTWH(
+          cx - bodyW / 2,
+          volumePlot.bottom - h,
+          bodyW,
+          h,
+        ),
+        Paint()..color = color,
+      );
     }
   }
 
@@ -718,5 +890,8 @@ class _ChartPainter extends CustomPainter {
       old.chartType != chartType ||
       old.zoom != zoom ||
       old.pan != pan ||
+      old.yMinOverride != yMinOverride ||
+      old.yMaxOverride != yMaxOverride ||
+      old.tradeLines != tradeLines ||
       old.hoverIndex != hoverIndex;
 }

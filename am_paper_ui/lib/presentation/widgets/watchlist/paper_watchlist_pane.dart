@@ -4,6 +4,7 @@ import 'package:am_market_ui/shared/widgets/market_stream_surface_scope.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../data/paper_market_client.dart';
 import '../chart_sidebar_holdings.dart';
 import 'common/watchlist_list_body.dart';
 import 'mobile/paper_watchlist_mobile.dart';
@@ -20,9 +21,11 @@ class PaperWatchlistPane extends ConsumerStatefulWidget {
     required this.onSelectSymbol,
     required this.onBuySell,
     this.onOpenFundamentals,
+    this.onOpenChart,
     this.compactChrome = false,
     this.showRecentHistory = false,
     this.showSearch = true,
+    this.showBuySell = true,
     this.onOpenAllIndices,
     this.controller,
   });
@@ -30,9 +33,11 @@ class PaperWatchlistPane extends ConsumerStatefulWidget {
   final String selectedSymbol;
   final ValueChanged<String> onSelectSymbol;
   final WatchlistSideCallback onBuySell;
+  final bool showBuySell;
 
   /// Opens Equity Insider / fundamental analysis for the symbol.
   final ValueChanged<String>? onOpenFundamentals;
+  final ValueChanged<String>? onOpenChart;
 
   /// Mobile: hide title/refresh row; discovery via Global Search.
   final bool compactChrome;
@@ -106,7 +111,8 @@ class _PaperWatchlistPaneState extends ConsumerState<PaperWatchlistPane> {
         final visibleInstruments = _controller.pageRows
             .map((row) => MarketStreamInstrument(
                   symbol: row.symbol,
-                  isIndexSymbol: false,
+                  isIndexSymbol:
+                      PaperMarketClient.isIndexSymbol(row.symbol),
                 ))
             .toList(growable: false);
         final streamKey = visibleInstruments.map((i) => i.symbol).join('|');
@@ -118,14 +124,20 @@ class _PaperWatchlistPaneState extends ConsumerState<PaperWatchlistPane> {
             }
           });
         }
-        if (widget.compactChrome) {
+        // Wide / pointer layouts use web list (hover B/S). compactChrome only
+        // strips desk title chrome — not hover behavior.
+        final useCompactList =
+            widget.compactChrome && MediaQuery.sizeOf(context).width < 768;
+        if (useCompactList) {
           final mobile = PaperWatchlistMobile(
             controller: _controller,
             selectedSymbol: widget.selectedSymbol,
             onSelectSymbol: widget.onSelectSymbol,
             onBuySell: widget.onBuySell,
             onOpenFundamentals: widget.onOpenFundamentals,
+            onOpenChart: widget.onOpenChart,
             showSearch: widget.showSearch,
+            showBuySell: widget.showBuySell,
             onOpenAllIndices: widget.onOpenAllIndices,
           );
           if (!widget.showRecentHistory) return mobile;
@@ -146,7 +158,9 @@ class _PaperWatchlistPaneState extends ConsumerState<PaperWatchlistPane> {
           onSelectSymbol: widget.onSelectSymbol,
           onBuySell: widget.onBuySell,
           onOpenFundamentals: widget.onOpenFundamentals,
+          onOpenChart: widget.onOpenChart,
           showSearch: widget.showSearch,
+          showBuySell: widget.showBuySell,
         );
         if (!widget.showRecentHistory) return web;
         return Column(

@@ -44,15 +44,36 @@ class PaperMarketClient {
     _bearer = null;
   }
 
-  static bool _isIndexSymbol(String symbol) {
+  /// True for index underliers (not equity constituents like TRENT).
+  static bool isIndexSymbol(String symbol) {
     final s = _bareSymbol(symbol);
+    if (s.isEmpty) return false;
     return s == 'NIFTY 50' ||
         s == 'NIFTY50' ||
+        s == 'NIFTY' ||
         s.startsWith('NIFTY ') ||
         s == 'BANK NIFTY' ||
         s == 'BANKNIFTY' ||
-        s == 'SENSEX';
+        s == 'FINNIFTY' ||
+        s == 'MIDCPNIFTY' ||
+        s == 'SENSEX' ||
+        s.contains('INDIA VIX') ||
+        s.startsWith('CNX ');
   }
+
+  /// Maps watchlist/index display names to F&O underlier tokens.
+  static String toFoUnderlier(String symbol) {
+    final s = _bareSymbol(symbol);
+    return switch (s) {
+      'NIFTY 50' || 'NIFTY50' => 'NIFTY',
+      'NIFTY BANK' || 'BANK NIFTY' => 'BANKNIFTY',
+      'NIFTY FIN' || 'NIFTY FINANCIAL' || 'NIFTY FIN SERVICE' => 'FINNIFTY',
+      'NIFTY MIDCAP' || 'NIFTY MIDCAP 50' || 'NIFTY MID SELECT' => 'MIDCPNIFTY',
+      _ => s.replaceAll(' ', ''),
+    };
+  }
+
+  static bool _isIndexSymbol(String symbol) => isIndexSymbol(symbol);
 
   static String _normalizeExchange(String? exchange) {
     final ex = (exchange ?? 'NSE').trim().toUpperCase();

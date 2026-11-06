@@ -705,7 +705,8 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
                 title: item.title,
                 icon: item.icon,
                 isSelected: _swipeController.currentIndex == index,
-                onTap: () => _swipeController.navigateTo(index),
+                onTap: () =>
+                    _swipeController.navigateTo(index, animate: false),
               );
             }).toList(),
           ),

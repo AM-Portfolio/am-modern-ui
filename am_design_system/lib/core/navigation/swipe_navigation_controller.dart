@@ -41,6 +41,12 @@ class SwipeNavigationController extends ChangeNotifier {
 
   List<NavigationItem> get items => _items;
 
+  /// Bumped on [updateItems] so PageView can rebuild when titles stay the same
+  /// but page widgets were replaced (e.g. new portfolio id injected).
+  int _itemsRevision = 0;
+
+  int get itemsRevision => _itemsRevision;
+
   /// PageController for the PageView
   final PageController pageController;
 
@@ -58,6 +64,9 @@ class SwipeNavigationController extends ChangeNotifier {
 
   /// Check if can swipe to previous page
   bool get canSwipePrevious => _currentIndex > 0;
+
+  /// True while a programmatic jump/animation owns the PageView.
+  bool get isProgrammaticNavigation => _isProgrammaticNavigation;
 
   SwipeNavigationController({
     required List<NavigationItem> items,
@@ -77,6 +86,7 @@ class SwipeNavigationController extends ChangeNotifier {
     if (newItems.isEmpty) return;
     final oldTitle = _items[_currentIndex].title;
     _items = newItems;
+    _itemsRevision++;
     final byTitle = newItems.indexWhere((e) => e.title == oldTitle);
     final nextIndex = byTitle >= 0
         ? byTitle
@@ -93,10 +103,13 @@ class SwipeNavigationController extends ChangeNotifier {
 
   int? _targetIndex;
   bool _isProgrammaticNavigation = false;
+  int _navGeneration = 0;
 
   /// Called when page changes via swipe or programmatic navigation
   void onPageChanged(int index) {
-    if (_isProgrammaticNavigation && _targetIndex != null && index != _targetIndex) {
+    if (_isProgrammaticNavigation &&
+        _targetIndex != null &&
+        index != _targetIndex) {
       // Ignore intermediate page transition callbacks while navigating programmatically
       return;
     }
@@ -108,31 +121,48 @@ class SwipeNavigationController extends ChangeNotifier {
     }
   }
 
-  /// Navigate to specific index with animation
-  void navigateTo(int index, {bool animate = true}) {
+  bool _pageDesynced(int index) {
+    if (!pageController.hasClients) return false;
+    final page = pageController.page?.round();
+    return page != null && page != index;
+  }
+
+  void _clearProgrammaticFlagsIfCurrent(int gen) {
+    if (gen != _navGeneration) return;
+    _isProgrammaticNavigation = false;
+    _targetIndex = null;
+  }
+
+  /// Navigate to a specific index.
+  ///
+  /// Defaults to [animate] `false` (instant jump) so sidebar / URL-driven
+  /// taps across modules cannot stack overlapping `animateToPage` Futures.
+  /// Pass `animate: true` for adjacent gesture swipes ([next]/[previous]).
+  void navigateTo(int index, {bool animate = false}) {
     if (index < 0 || index >= items.length) return;
     if (!items[index].isEnabled) return;
-    if (index == _currentIndex) return;
 
+    final alreadySelected = index == _currentIndex;
+    if (alreadySelected && !_pageDesynced(index)) return;
+
+    final gen = ++_navGeneration;
     _targetIndex = index;
     _currentIndex = index;
     notifyListeners();
 
     if (!pageController.hasClients) {
-      _targetIndex = null;
+      _clearProgrammaticFlagsIfCurrent(gen);
       return;
     }
 
     final currentPage = pageController.page?.round() ?? _currentIndex;
     final distance = (index - currentPage).abs();
 
-    if (distance > 1 || !animate) {
-      // When jumping across multiple pages (>1 step), jump directly to avoid
-      // scrolling through intermediate pages and triggering unwanted lifecycle/render overhead
+    if (distance > 1 || !animate || alreadySelected) {
+      // Jump for multi-step moves, sidebar taps (animate:false), or desync recovery.
       _isProgrammaticNavigation = true;
       pageController.jumpToPage(index);
-      _isProgrammaticNavigation = false;
-      _targetIndex = null;
+      _clearProgrammaticFlagsIfCurrent(gen);
     } else {
       _isProgrammaticNavigation = true;
       pageController
@@ -142,12 +172,10 @@ class SwipeNavigationController extends ChangeNotifier {
             curve: Curves.easeInOutCubic,
           )
           .then((_) {
-            _isProgrammaticNavigation = false;
-            _targetIndex = null;
+            _clearProgrammaticFlagsIfCurrent(gen);
           })
           .catchError((_) {
-            _isProgrammaticNavigation = false;
-            _targetIndex = null;
+            _clearProgrammaticFlagsIfCurrent(gen);
           });
     }
   }
@@ -155,14 +183,14 @@ class SwipeNavigationController extends ChangeNotifier {
   /// Navigate to next page
   void next() {
     if (canSwipeNext) {
-      navigateTo(_currentIndex + 1);
+      navigateTo(_currentIndex + 1, animate: true);
     }
   }
 
   /// Navigate to previous page
   void previous() {
     if (canSwipePrevious) {
-      navigateTo(_currentIndex - 1);
+      navigateTo(_currentIndex - 1, animate: true);
     }
   }
 

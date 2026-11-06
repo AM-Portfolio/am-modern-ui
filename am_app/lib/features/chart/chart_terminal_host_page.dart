@@ -125,6 +125,9 @@ class _ChartTerminalBodyState extends ConsumerState<_ChartTerminalBody>
   IndicesRegion _region = IndicesRegion.indian;
   String _lastPublishedStreamSymbols = '';
 
+  PaperChartTradeUiConfig _tradeUiConfig = PaperChartTradeUiConfig.defaults();
+  PaperChartTradeLinesController? _tradeLines;
+
   static const _baseTags = <(_ChartBottomSection, String)>[
     (_ChartBottomSection.overview, 'Overview'),
     (_ChartBottomSection.financials, 'Financials'),
@@ -212,6 +215,9 @@ class _ChartTerminalBodyState extends ConsumerState<_ChartTerminalBody>
     _marketProvider.addListener(() {
       if (mounted) setState(() {});
     });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _bootstrapTradeUi();
+    });
 
     _watchlistController = WatchlistController(
       onSelectSymbol: (s) {
@@ -270,6 +276,11 @@ class _ChartTerminalBodyState extends ConsumerState<_ChartTerminalBody>
   @override
   void didUpdateWidget(covariant _ChartTerminalBody oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (!oldWidget.paperEnabled && widget.paperEnabled) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _bootstrapTradeUi();
+      });
+    }
     final nextSym = widget.initialSymbol?.trim();
     final prevSym = oldWidget.initialSymbol?.trim();
     if (nextSym == null || nextSym.isEmpty) return;
@@ -288,10 +299,153 @@ class _ChartTerminalBodyState extends ConsumerState<_ChartTerminalBody>
   @override
   void dispose() {
     ChartSearchBridge.unbind();
+    _tradeLines?.removeListener(_onTradeLinesChanged);
+    _tradeLines?.dispose();
     _marketProvider.dispose();
     _watchlistController.dispose();
     _sidebarTabController.dispose();
     super.dispose();
+  }
+
+  void _onTradeLinesChanged() {
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _bootstrapTradeUi() async {
+    if (!widget.paperEnabled) return;
+    final cfg = await PaperChartTradeUiConfig.loadAsset();
+    if (!mounted) return;
+    PaperOmsCubit? cubit;
+    try {
+      cubit = context.read<PaperOmsCubit>();
+    } catch (_) {
+      return;
+    }
+    final ctrl = PaperChartTradeLinesController(
+      config: cfg,
+      placeOrder: ({
+        required String symbol,
+        required String side,
+        required String orderType,
+        required String quantity,
+        String? limitPrice,
+        String? triggerPrice,
+        String? targetPrice,
+        String? stopLoss,
+        String? trailJump,
+        String? entryType,
+      }) =>
+          cubit!.placeOrder(
+            symbol: symbol,
+            side: side,
+            orderType: orderType,
+            quantity: quantity,
+            limitPrice: limitPrice,
+            triggerPrice: triggerPrice,
+            targetPrice: targetPrice,
+            stopLoss: stopLoss,
+            trailJump: trailJump,
+            entryType: entryType,
+          ),
+      cancelOrder: cubit.cancel,
+    );
+    ctrl.addListener(_onTradeLinesChanged);
+    setState(() {
+      _tradeUiConfig = cfg;
+      _tradeLines = ctrl;
+    });
+  }
+
+  /// TradingView / Kite style: B/S arms a chart price line — no chooser sheet.
+  Future<void> _onWatchlistBuySell(String symbol, String side) async {
+    final sym = symbol.trim().toUpperCase();
+    if (sym.isEmpty) return;
+    final nextSide = side.toUpperCase() == 'SELL' ? 'SELL' : 'BUY';
+    _currentTerminalCtrl?.selectSymbol(sym);
+
+    if (!widget.paperEnabled) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Enable paper trading to place orders')),
+      );
+      return;
+    }
+
+    final tl = _tradeLines;
+    if (tl == null ||
+        !_tradeUiConfig.tradeLinesEnabled ||
+        !_tradeUiConfig.placeFromWatchlistBuySell) {
+      await showPaperOrderTicketSheet(
+        context: context,
+        symbol: sym,
+        side: nextSide,
+        onSymbolChanged: (_) {},
+        onSideChanged: (_) {},
+      );
+      return;
+    }
+
+    // Chart B/S = price line (TradingView). Prefer resting types; MARKET
+    // favorite falls back to config default (LIMIT) so we don't skip the line.
+    final fav =
+        context.read<PaperOmsCubit>().state.orderTypeFavorite.trim().toUpperCase();
+    var orderType = fav;
+    if (orderType.isEmpty ||
+        orderType == 'MARKET' ||
+        !_tradeUiConfig.enabledOrderTypes.contains(orderType)) {
+      orderType = _tradeUiConfig.resolveDefaultOrderType();
+      if (orderType == 'MARKET') orderType = 'LIMIT';
+    }
+
+    tl.armPending(
+      symbol: sym,
+      side: nextSide == 'SELL'
+          ? ChartTradeLineSide.sell
+          : ChartTradeLineSide.buy,
+      orderType: orderType,
+      quantity: _tradeUiConfig.resolveDefaultQuantity(),
+    );
+  }
+
+  Future<void> _onEditTradeLine(String id) async {
+    final tl = _tradeLines;
+    if (tl == null) return;
+    ChartTradeLine? line;
+    for (final l in tl.lines) {
+      if (l.id == id) {
+        line = l;
+        break;
+      }
+    }
+    if (line == null) return;
+    final side = line.side == ChartTradeLineSide.sell ? 'SELL' : 'BUY';
+    final result = await showPaperTradeLineOrderPopover(
+      context: context,
+      config: _tradeUiConfig,
+      symbol: line.symbol,
+      side: side,
+      favoriteOrderType: line.orderType,
+      initialQuantity: line.quantity,
+      title: 'Edit line',
+      confirmLabel: 'Update',
+    );
+    if (result == null || !mounted) return;
+    await tl.updateLineOrder(
+      id,
+      orderType: result.orderType,
+      quantity: result.quantity,
+    );
+  }
+
+  String? _pendingTradeHint() {
+    final tl = _tradeLines;
+    if (tl?.pendingSide == null) return null;
+    final side =
+        tl!.pendingSide == ChartTradeLineSide.sell ? 'SELL' : 'BUY';
+    final type = (tl.pendingOrderType ??
+            _tradeUiConfig.resolveDefaultOrderType())
+        .toUpperCase();
+    final qty = tl.pendingQty ?? _tradeUiConfig.resolveDefaultQuantity();
+    return '$side $type ×$qty · move on chart, click to place';
   }
 
   void _bindChartSearch(
@@ -741,6 +895,17 @@ class _ChartTerminalBodyState extends ConsumerState<_ChartTerminalBody>
     _currentTerminalCtrl = terminalCtrl;
     _bindChartSearch(terminalCtrl, terminalState);
     final activeSymbol = terminalState.symbol;
+    if (widget.paperEnabled) {
+      ref.listen<String>(
+        chartTerminalProvider.select((s) => s.symbol),
+        (prev, next) {
+          try {
+            final orders = context.read<PaperOmsCubit>().state.orders;
+            _tradeLines?.syncFromOrders(orders, next);
+          } catch (_) {}
+        },
+      );
+    }
     final chartInstruments = terminalState.panes
         .map((pane) => pane.symbol.trim().toUpperCase())
         .where((symbol) => symbol.isNotEmpty)
@@ -792,6 +957,16 @@ class _ChartTerminalBodyState extends ConsumerState<_ChartTerminalBody>
       });
     }
 
+    final tl = _tradeLines;
+    final tradeEnabled =
+        widget.paperEnabled && (_tradeUiConfig.tradeLinesEnabled);
+    final symKey = activeSymbol.trim().toUpperCase();
+    final visibleTradeLines = (tl?.lines ?? const [])
+        .where((l) => l.symbol.toUpperCase() == symKey)
+        .toList(growable: false);
+    final pendingForSymbol = (tl?.pendingSymbol ?? '').toUpperCase() == symKey
+        ? tl?.pendingSide
+        : null;
     final chartWorkspace = ChartWorkspacePage(
       initialSymbol: widget.initialSymbol,
       initialTimeframe: widget.initialTimeframe,
@@ -799,6 +974,22 @@ class _ChartTerminalBodyState extends ConsumerState<_ChartTerminalBody>
       bottomPanelHeight: 360,
       showHeaderSearch: true,
       accentColor: ModuleColors.market,
+      tradeLines: visibleTradeLines,
+      tradeLinesEnabled: tradeEnabled,
+      tradeLinesAllowDrag: _tradeUiConfig.replaceOnDrag,
+      pendingTradeSide: pendingForSymbol,
+      pendingTradeHint:
+          pendingForSymbol == null ? null : _pendingTradeHint(),
+      onTradeLineMoved:
+          tl == null ? null : (id, price) => tl.onDragPrice(id, price),
+      onTradeLineDragEnd: tl == null ? null : (id) => tl.commitDrag(id),
+      onTradeLineRemoved: tl == null ? null : (id) => tl.removeLine(id),
+      onEditTradeLine: tl == null ? null : _onEditTradeLine,
+      onTradeLinePlaceAtPrice: tl == null
+          ? null
+          : (side, price, anchorXNorm) =>
+              tl.placeAtPrice(side, price, anchorXNorm: anchorXNorm),
+      onCancelPendingTrade: tl == null ? null : () => tl.clearPending(),
       sidebarBuilder: (context, state, ctrl) {
         _currentTerminalCtrl = ctrl;
         final theme = Theme.of(context);
@@ -867,7 +1058,11 @@ class _ChartTerminalBodyState extends ConsumerState<_ChartTerminalBody>
                         Navigator.of(context).maybePop();
                       }
                     },
-                    onBuySell: (_, __) {},
+                    onBuySell: _onWatchlistBuySell,
+                    showBuySell: _tradeUiConfig.showBuySell(
+                      PaperBuySellSurface.watchlist,
+                      midTab: 'chart',
+                    ),
                     onOpenFundamentals: (s) {
                       ctrl.selectSymbol(s);
                       setState(() => _section = _ChartBottomSection.overview);
@@ -948,7 +1143,29 @@ class _ChartTerminalBodyState extends ConsumerState<_ChartTerminalBody>
       },
     );
 
-    return chartWorkspace;
+    if (!widget.paperEnabled) return chartWorkspace;
+
+    return PaperChartTradeUiScope(
+      config: _tradeUiConfig,
+      child: MultiBlocListener(
+        listeners: [
+          BlocListener<PaperOmsCubit, PaperOmsState>(
+            listenWhen: (p, c) => p.orders != c.orders,
+            listener: (context, state) {
+              _tradeLines?.syncFromOrders(state.orders, activeSymbol);
+            },
+          ),
+          BlocListener<PaperOmsCubit, PaperOmsState>(
+            listenWhen: (p, c) =>
+                p.wallet != c.wallet && c.wallet != null && _tradeLines == null,
+            listener: (context, state) {
+              _bootstrapTradeUi();
+            },
+          ),
+        ],
+        child: chartWorkspace,
+      ),
+    );
   }
 }
 

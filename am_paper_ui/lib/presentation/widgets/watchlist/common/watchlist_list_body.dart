@@ -16,7 +16,9 @@ class WatchlistListBody extends StatelessWidget {
     required this.compact,
     required this.onBuySell,
     this.onOpenFundamentals,
+    this.onOpenChart,
     required this.onSelectSymbol,
+    this.showBuySell = true,
   });
 
   final WatchlistController controller;
@@ -24,7 +26,9 @@ class WatchlistListBody extends StatelessWidget {
   final bool compact;
   final WatchlistSideCallback onBuySell;
   final ValueChanged<String>? onOpenFundamentals;
+  final ValueChanged<String>? onOpenChart;
   final ValueChanged<String> onSelectSymbol;
+  final bool showBuySell;
 
   @override
   Widget build(BuildContext context) {
@@ -111,13 +115,14 @@ class WatchlistListBody extends StatelessWidget {
                           final stock = pageRows[index];
                           final selected = stock.symbol ==
                               selectedSymbol.toUpperCase();
-                          final hovered = !compact &&
+                          final hovered =
                               controller.hoveredSymbol == stock.symbol;
                           final expanded =
                               controller.expandedDepthSymbol == stock.symbol;
-                          final showActions = compact
-                              ? controller.actionSymbol == stock.symbol
-                              : hovered;
+                          // Hover (web) or tap-selected row (compact) shows actions.
+                          final showActions = hovered ||
+                              controller.actionSymbol == stock.symbol ||
+                              selected;
                           return Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
@@ -131,8 +136,9 @@ class WatchlistListBody extends StatelessWidget {
                                 selected: selected ||
                                     controller.actionSymbol == stock.symbol,
                                 showActions: showActions,
+                                showBuySell: showBuySell,
                                 depthExpanded: expanded,
-                                enableHover: !compact,
+                                enableHover: true,
                                 onHover: (h) => controller.setHoveredSymbol(
                                   h ? stock.symbol : null,
                                 ),
@@ -141,10 +147,15 @@ class WatchlistListBody extends StatelessWidget {
                                 },
                                 onBuy: () => onBuySell(stock.symbol, 'BUY'),
                                 onSell: () => onBuySell(stock.symbol, 'SELL'),
-                                onFundamentals: () {
-                                  final cb = onOpenFundamentals;
-                                  if (cb != null) {
-                                    cb(stock.symbol);
+                                onOpenChart: () {
+                                  final chart = onOpenChart;
+                                  if (chart != null) {
+                                    chart(stock.symbol);
+                                    return;
+                                  }
+                                  final fa = onOpenFundamentals;
+                                  if (fa != null) {
+                                    fa(stock.symbol);
                                   } else {
                                     onSelectSymbol(stock.symbol);
                                   }

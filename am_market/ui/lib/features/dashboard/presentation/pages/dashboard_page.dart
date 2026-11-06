@@ -143,6 +143,9 @@ class _MarketContentState extends ConsumerState<MarketContent> {
   final GlobalKey<EquityInsiderPageState> _equityInsiderKey =
       GlobalKey<EquityInsiderPageState>();
   final GlobalKey<FoPageState> _foPageKey = GlobalKey<FoPageState>();
+  Timer? _tabUrlDebounce;
+  String? _pendingTabSlug;
+  String? _lastUrlTabSlug;
 
   void _openEquityInsiderForSymbol(String rawSymbol) {
     final symbol = rawSymbol.trim().toUpperCase();
@@ -233,7 +236,26 @@ class _MarketContentState extends ConsumerState<MarketContent> {
     final items = _swipeController.items;
     if (items.isEmpty) return;
     final title = items[_swipeController.currentIndex].title;
-    widget.onTabChanged?.call(_slugForTitle(title));
+    final slug = _slugForTitle(title);
+    if (slug == _lastUrlTabSlug && _pendingTabSlug == null) return;
+    // Coalesce rapid Market section clicks before context.go.
+    _pendingTabSlug = slug;
+    _tabUrlDebounce?.cancel();
+    _tabUrlDebounce = Timer(const Duration(milliseconds: 120), () {
+      if (!mounted) return;
+      final pending = _pendingTabSlug;
+      _pendingTabSlug = null;
+      if (pending == null) return;
+      _lastUrlTabSlug = pending;
+      widget.onTabChanged?.call(pending);
+    });
+  }
+
+  @override
+  void dispose() {
+    _tabUrlDebounce?.cancel();
+    _swipeController.dispose();
+    super.dispose();
   }
 
   String _streamSurfaceForTitle(String title) {

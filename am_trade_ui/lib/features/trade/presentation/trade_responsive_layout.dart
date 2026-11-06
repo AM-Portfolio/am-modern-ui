@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:am_common/am_common.dart';
@@ -116,6 +118,9 @@ class TradeResponsiveLayoutState extends ConsumerState<TradeResponsiveLayout> {
   /// Raw SwipeNavigationController index from the active screen.
   late int _currentTabIndex;
   final GlobalKey<TradeWebScreenState> _webScreenKey = GlobalKey<TradeWebScreenState>();
+  Timer? _tabUrlDebounce;
+  int? _pendingTabIndex;
+  int? _lastUrlTabIndex;
 
   @override
   void initState() {
@@ -128,6 +133,12 @@ class TradeResponsiveLayoutState extends ConsumerState<TradeResponsiveLayout> {
         openAddTrade();
       }
     });
+  }
+
+  @override
+  void dispose() {
+    _tabUrlDebounce?.cancel();
+    super.dispose();
   }
 
   void _bootstrapTradeData() {
@@ -183,8 +194,19 @@ class TradeResponsiveLayoutState extends ConsumerState<TradeResponsiveLayout> {
   void _onTabChanged(int index) {
     if (_currentTabIndex != index) {
       setState(() => _currentTabIndex = index);
-      widget.onTabChanged?.call(TradeResponsiveLayout.slugFromIndex(index));
     }
+    if (index == _lastUrlTabIndex && _pendingTabIndex == null) return;
+    // Coalesce rapid section clicks to the last slug before context.go.
+    _pendingTabIndex = index;
+    _tabUrlDebounce?.cancel();
+    _tabUrlDebounce = Timer(const Duration(milliseconds: 120), () {
+      if (!mounted) return;
+      final pending = _pendingTabIndex;
+      _pendingTabIndex = null;
+      if (pending == null) return;
+      _lastUrlTabIndex = pending;
+      widget.onTabChanged?.call(TradeResponsiveLayout.slugFromIndex(pending));
+    });
   }
 
   void _onPortfolioChanged(String id, String name) {

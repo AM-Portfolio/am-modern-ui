@@ -132,46 +132,36 @@ class _IndexHeatmapPanelState extends State<IndexHeatmapPanel> {
     final headerPad = widget.embedCompact
         ? const EdgeInsets.fromLTRB(10, 6, 10, 4)
         : const EdgeInsets.fromLTRB(14, 10, 12, 8);
-    final titleStyle = TextStyle(
-      color: MarketColors.textPrimary(context),
-      fontSize: widget.embedCompact ? 13 : 14,
-      fontWeight: FontWeight.bold,
+
+    final stockCountLabel = total > 0
+        ? Text(
+            '$total stocks',
+            style: TextStyle(
+              color: MarketColors.textMuted(context),
+              fontSize: 11,
+            ),
+          )
+        : null;
+
+    final trailingCount = Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (stockCountLabel != null) stockCountLabel,
+        if (_loading) ...[
+          if (stockCountLabel != null) const SizedBox(width: 10),
+          const SizedBox(
+            width: 14,
+            height: 14,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+        ],
+      ],
     );
 
     final body = Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Padding(
-          padding: headerPad,
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  widget.title ?? 'Heatmap: ${widget.indexSymbol}',
-                  style: titleStyle,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              if (total > 0)
-                Text(
-                  '$total stocks',
-                  style: TextStyle(
-                    color: MarketColors.textMuted(context),
-                    fontSize: 11,
-                  ),
-                ),
-              if (_loading) ...[
-                const SizedBox(width: 10),
-                const SizedBox(
-                  width: 14,
-                  height: 14,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
-              ],
-            ],
-          ),
-        ),
         if (widget.showPercentFilters)
           HeatmapFilters(
             percentFilter: _percentFilter,
@@ -182,6 +172,17 @@ class _IndexHeatmapPanelState extends State<IndexHeatmapPanel> {
               });
             },
             title: null,
+            trailing: (stockCountLabel != null || _loading)
+                ? trailingCount
+                : null,
+          )
+        else if (stockCountLabel != null || _loading)
+          Padding(
+            padding: headerPad,
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: trailingCount,
+            ),
           ),
         if (_loading && _entries.isEmpty)
           const SizedBox(

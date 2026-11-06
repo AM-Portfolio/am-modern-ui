@@ -16,6 +16,8 @@ dependencies:
     path: ../am_common
   am_library:
     path: ../am_library
+  am_chart_ui:
+    path: ../am_chart_ui
   am_market_ui:
     path: ../am_market/ui
   am_market_sdk:
@@ -37,3 +39,5 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/config/paper_chart_trade_ui.json

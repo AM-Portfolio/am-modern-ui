@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -75,6 +77,9 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
   bool _isUploadingPortfolio = false;
   /// True only after the user edits/selects something on an in-shell form.
   bool _operationDirty = false;
+  Timer? _tabUrlDebounce;
+  String? _pendingTabSlug;
+  String? _lastUrlTabSlug;
 
   @override
   void initState() {
@@ -86,6 +91,7 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
 
   @override
   void dispose() {
+    _tabUrlDebounce?.cancel();
     GlobalAddActionsBus.instance.removeListener(_onGlobalAddAction);
     super.dispose();
   }
@@ -221,9 +227,19 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
   }
 
   Future<void> _navigateToTabSlug(String slug) async {
-    if (await _promptDiscardChanges()) {
-      widget.onTabChanged?.call(slug);
-    }
+    if (!await _promptDiscardChanges()) return;
+    if (slug == _lastUrlTabSlug && _pendingTabSlug == null) return;
+    // Coalesce rapid section clicks to the last slug before context.go.
+    _pendingTabSlug = slug;
+    _tabUrlDebounce?.cancel();
+    _tabUrlDebounce = Timer(const Duration(milliseconds: 120), () {
+      if (!mounted) return;
+      final pending = _pendingTabSlug;
+      _pendingTabSlug = null;
+      if (pending == null) return;
+      _lastUrlTabSlug = pending;
+      widget.onTabChanged?.call(pending);
+    });
   }
 
   Future<void> _onPortfolioChanged(

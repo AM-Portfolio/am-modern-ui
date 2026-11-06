@@ -126,7 +126,6 @@ class _MarketHeatmapWidgetState extends State<MarketHeatmapWidget> {
         onSelectStock: widget.onSelectStock,
         embedCompact: true,
         showPercentFilters: true,
-        title: 'Market Heatmap · $sym',
       ),
     );
   }

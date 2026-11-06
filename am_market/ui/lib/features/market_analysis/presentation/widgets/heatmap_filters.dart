@@ -7,6 +7,7 @@ class HeatmapFilters extends StatelessWidget {
   final ValueChanged<String?> onPercentFilterChanged;
   final List<String> filters;
   final String? title;
+  final Widget? trailing;
 
   const HeatmapFilters({
     super.key,
@@ -21,6 +22,7 @@ class HeatmapFilters extends StatelessWidget {
       'Below -5%',
     ],
     this.title,
+    this.trailing,
   });
 
   Color _filterColor(BuildContext context, String f) {
@@ -84,26 +86,38 @@ class HeatmapFilters extends StatelessWidget {
     if (isMobile) {
       return SizedBox(
         height: 40,
-        child: ListView(
-          scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        child: Row(
           children: [
-            if (title != null) ...[
-              Center(
-                child: Padding(
-                  padding: const EdgeInsets.only(right: 10),
-                  child: Text(
-                    title!,
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: MarketColors.textPrimary(context),
+            Expanded(
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                children: [
+                  if (title != null) ...[
+                    Center(
+                      child: Padding(
+                        padding: const EdgeInsets.only(right: 10),
+                        child: Text(
+                          title!,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: MarketColors.textPrimary(context),
+                          ),
+                        ),
+                      ),
                     ),
-                  ),
-                ),
+                  ],
+                  ...filters.map((f) => _chip(context, f)),
+                ],
               ),
-            ],
-            ...filters.map((f) => _chip(context, f)),
+            ),
+            if (trailing != null)
+              Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: trailing,
+              ),
           ],
         ),
       );
@@ -119,26 +133,36 @@ class HeatmapFilters extends StatelessWidget {
           bottom: BorderSide(color: MarketColors.borderDefault(context)),
         ),
       ),
-      child: Wrap(
-        spacing: 12,
-        runSpacing: 8,
-        crossAxisAlignment: WrapCrossAlignment.center,
-        alignment: WrapAlignment.spaceBetween,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          if (title != null)
-            Text(
-              title!,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.bold,
-                color: MarketColors.textPrimary(context),
-              ),
+          Expanded(
+            child: Wrap(
+              spacing: 12,
+              runSpacing: 8,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                if (title != null)
+                  Text(
+                    title!,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      color: MarketColors.textPrimary(context),
+                    ),
+                  ),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: filters.map((f) => _chip(context, f)).toList(),
+                ),
+              ],
             ),
-          Wrap(
-            spacing: 6,
-            runSpacing: 6,
-            children: filters.map((f) => _chip(context, f)).toList(),
           ),
+          if (trailing != null) ...[
+            const SizedBox(width: 8),
+            trailing!,
+          ],
         ],
       ),
     );

@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../chart_types/chart_type_id.dart';
 import '../drawings/chart_draw_models.dart';
 import '../drawings/chart_draw_tools_rail.dart';
+import '../drawings/chart_trade_line_models.dart';
 import '../persistence/workspace_store.dart';
 import '../timeframe/chart_timeframe.dart';
 import 'chart_pane_card.dart';
@@ -30,7 +31,20 @@ class ChartWorkspacePage extends ConsumerStatefulWidget {
     this.sidebarWidth = 300,
     this.bottomPanelHeight = 320,
     this.showHeaderSearch = true,
+    this.showSidebar = true,
+    this.initialBottomMinimized = false,
     this.accentColor,
+    this.tradeLines = const [],
+    this.tradeLinesEnabled = false,
+    this.tradeLinesAllowDrag = true,
+    this.pendingTradeSide,
+    this.pendingTradeHint,
+    this.onTradeLineMoved,
+    this.onTradeLineDragEnd,
+    this.onTradeLineRemoved,
+    this.onEditTradeLine,
+    this.onTradeLinePlaceAtPrice,
+    this.onCancelPendingTrade,
   });
 
   final String? initialSymbol;
@@ -45,8 +59,27 @@ class ChartWorkspacePage extends ConsumerStatefulWidget {
   /// When true, shows a search icon that opens Global Omnisearch (no local symbol field).
   final bool showHeaderSearch;
 
+  /// When false, hides the Watchlist & Portfolio sidebar (e.g. paper desk embed).
+  final bool showSidebar;
+
+  /// When true, Overview / F&O starts collapsed (paper desk: chart-only until user opens panel).
+  final bool initialBottomMinimized;
+
   /// Optional module accent color override (defaults to [ModuleColors.market]).
   final Color? accentColor;
+
+  final List<ChartTradeLine> tradeLines;
+  final bool tradeLinesEnabled;
+  final bool tradeLinesAllowDrag;
+  final ChartTradeLineSide? pendingTradeSide;
+  final String? pendingTradeHint;
+  final void Function(String id, double newPrice)? onTradeLineMoved;
+  final void Function(String id)? onTradeLineDragEnd;
+  final void Function(String id)? onTradeLineRemoved;
+  final void Function(String id)? onEditTradeLine;
+  final void Function(ChartTradeLineSide side, double price, double anchorXNorm)?
+      onTradeLinePlaceAtPrice;
+  final VoidCallback? onCancelPendingTrade;
 
   @override
   ConsumerState<ChartWorkspacePage> createState() => _ChartWorkspacePageState();
@@ -76,6 +109,10 @@ class _ChartWorkspacePageState extends ConsumerState<ChartWorkspacePage> {
         if (isMobile) {
           ctrl.setLayout(ChartGridLayout.one);
           ctrl.setBottomMinimized(true);
+        } else if (!widget.showSidebar) {
+          // Paper desk Chart tab: one pane; honor initial minimize (chart-only default).
+          ctrl.setLayout(ChartGridLayout.one);
+          ctrl.setBottomMinimized(widget.initialBottomMinimized);
         }
       }
     });
@@ -192,10 +229,12 @@ class _ChartWorkspacePageState extends ConsumerState<ChartWorkspacePage> {
                   ctrl: ctrl,
                   analysisFocus: _analysisFocus,
                   showHeaderSearch: widget.showHeaderSearch,
+                  showSidebar: widget.showSidebar,
                   onToggleFocus: () =>
                       setState(() => _analysisFocus = !_analysisFocus),
-                  onOpenMobileSidebar: () =>
-                      _openMobileSidebar(sidebar, themedData),
+                  onOpenMobileSidebar: widget.showSidebar
+                      ? () => _openMobileSidebar(sidebar, themedData)
+                      : null,
                   onToggleDrawRail: () => setState(
                     () => _showMobileDrawRail = !_showMobileDrawRail,
                   ),
@@ -299,6 +338,27 @@ class _ChartWorkspacePageState extends ConsumerState<ChartWorkspacePage> {
                                                       );
                                                     }
                                                   },
+                                                  tradeLines: widget.tradeLines,
+                                                  tradeLinesEnabled:
+                                                      widget.tradeLinesEnabled,
+                                                  tradeLinesAllowDrag:
+                                                      widget.tradeLinesAllowDrag,
+                                                  pendingTradeSide:
+                                                      widget.pendingTradeSide,
+                                                  pendingTradeHint:
+                                                      widget.pendingTradeHint,
+                                                  onTradeLineMoved:
+                                                      widget.onTradeLineMoved,
+                                                  onTradeLineDragEnd:
+                                                      widget.onTradeLineDragEnd,
+                                                  onTradeLineRemoved:
+                                                      widget.onTradeLineRemoved,
+                                                  onEditTradeLine:
+                                                      widget.onEditTradeLine,
+                                                  onTradeLinePlaceAtPrice: widget
+                                                      .onTradeLinePlaceAtPrice,
+                                                  onCancelPendingTrade:
+                                                      widget.onCancelPendingTrade,
                                                 ),
                                               ),
                                             ],
@@ -527,7 +587,9 @@ class _ChartWorkspacePageState extends ConsumerState<ChartWorkspacePage> {
                           },
                         ),
                       ),
-                      if (!_analysisFocus && !isMobile) ...[
+                      if (widget.showSidebar &&
+                          !_analysisFocus &&
+                          !isMobile) ...[
                         if (!state.sidebarMinimized) ...[
                           const VerticalDivider(width: 1),
                           SizedBox(
@@ -700,12 +762,35 @@ class _ChartGrid extends StatelessWidget {
     required this.clearDrawingsEpoch,
     this.hasLeftExpandHandle = false,
     this.onDrawingsCountChanged,
+    this.tradeLines = const [],
+    this.tradeLinesEnabled = false,
+    this.tradeLinesAllowDrag = true,
+    this.pendingTradeSide,
+    this.pendingTradeHint,
+    this.onTradeLineMoved,
+    this.onTradeLineDragEnd,
+    this.onTradeLineRemoved,
+    this.onEditTradeLine,
+    this.onTradeLinePlaceAtPrice,
+    this.onCancelPendingTrade,
   });
   final ChartTerminalState state;
   final ChartDrawTool drawTool;
   final int clearDrawingsEpoch;
   final bool hasLeftExpandHandle;
   final ValueChanged<int>? onDrawingsCountChanged;
+  final List<ChartTradeLine> tradeLines;
+  final bool tradeLinesEnabled;
+  final bool tradeLinesAllowDrag;
+  final ChartTradeLineSide? pendingTradeSide;
+  final String? pendingTradeHint;
+  final void Function(String id, double newPrice)? onTradeLineMoved;
+  final void Function(String id)? onTradeLineDragEnd;
+  final void Function(String id)? onTradeLineRemoved;
+  final void Function(String id)? onEditTradeLine;
+  final void Function(ChartTradeLineSide side, double price, double anchorXNorm)?
+      onTradeLinePlaceAtPrice;
+  final VoidCallback? onCancelPendingTrade;
 
   @override
   Widget build(BuildContext context) {
@@ -723,6 +808,18 @@ class _ChartGrid extends StatelessWidget {
           clearDrawingsEpoch: clearDrawingsEpoch,
           hasLeftExpandHandle: hasLeftExpandHandle,
           onDrawingsCountChanged: onDrawingsCountChanged,
+          tradeLines: tradeLines,
+          tradeLinesEnabled: tradeLinesEnabled && i == active,
+          tradeLinesAllowDrag: tradeLinesAllowDrag,
+          pendingTradeSide: i == active ? pendingTradeSide : null,
+          pendingTradeHint: i == active ? pendingTradeHint : null,
+          onTradeLineMoved: onTradeLineMoved,
+          onTradeLineDragEnd: onTradeLineDragEnd,
+          onTradeLineRemoved: onTradeLineRemoved,
+          onEditTradeLine: onEditTradeLine,
+          onTradeLinePlaceAtPrice: onTradeLinePlaceAtPrice,
+          onCancelPendingTrade:
+              i == active ? onCancelPendingTrade : null,
         );
 
     if (isMobile) {
@@ -776,6 +873,7 @@ class _SlimTopBar extends ConsumerStatefulWidget {
     required this.analysisFocus,
     required this.onToggleFocus,
     this.showHeaderSearch = true,
+    this.showSidebar = true,
     this.onOpenMobileSidebar,
     this.onToggleDrawRail,
     this.showDrawRail = false,
@@ -785,6 +883,7 @@ class _SlimTopBar extends ConsumerStatefulWidget {
   final bool analysisFocus;
   final VoidCallback onToggleFocus;
   final bool showHeaderSearch;
+  final bool showSidebar;
   final VoidCallback? onOpenMobileSidebar;
   final VoidCallback? onToggleDrawRail;
   final bool showDrawRail;
@@ -877,15 +976,17 @@ class _SlimTopBarState extends ConsumerState<_SlimTopBar> {
         child: Row(
           children: [
             // Left: nav + layout + symbol + price badge
-            IconButton(
-              tooltip: 'Back',
-              iconSize: 20,
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-              icon: const Icon(Icons.arrow_back),
-              onPressed: () => Navigator.of(context).maybePop(),
-            ),
-            const SizedBox(width: 4),
+            if (widget.showSidebar) ...[
+              IconButton(
+                tooltip: 'Back',
+                iconSize: 20,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                icon: const Icon(Icons.arrow_back),
+                onPressed: () => Navigator.of(context).maybePop(),
+              ),
+              const SizedBox(width: 4),
+            ],
             _LayoutIconToggle(layout: state.layout, onChanged: ctrl.setLayout),
             const SizedBox(width: 8),
             _divider(theme),
@@ -972,24 +1073,26 @@ class _SlimTopBarState extends ConsumerState<_SlimTopBar> {
                     : theme.colorScheme.primary,
               ),
             ),
-            const SizedBox(width: 2),
-            IconButton(
-              tooltip: state.sidebarMinimized
-                  ? 'Restore sidebar'
-                  : 'Minimize sidebar',
-              iconSize: 18,
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-              onPressed: ctrl.toggleSidebarMinimized,
-              icon: Icon(
-                state.sidebarMinimized
-                    ? Icons.view_sidebar_outlined
-                    : Icons.view_sidebar,
-                color: state.sidebarMinimized
-                    ? theme.hintColor
-                    : theme.colorScheme.primary,
+            if (widget.showSidebar) ...[
+              const SizedBox(width: 2),
+              IconButton(
+                tooltip: state.sidebarMinimized
+                    ? 'Restore sidebar'
+                    : 'Minimize sidebar',
+                iconSize: 18,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                onPressed: ctrl.toggleSidebarMinimized,
+                icon: Icon(
+                  state.sidebarMinimized
+                      ? Icons.view_sidebar_outlined
+                      : Icons.view_sidebar,
+                  color: state.sidebarMinimized
+                      ? theme.hintColor
+                      : theme.colorScheme.primary,
+                ),
               ),
-            ),
+            ],
             const SizedBox(width: 2),
             IconButton(
               tooltip: widget.analysisFocus
