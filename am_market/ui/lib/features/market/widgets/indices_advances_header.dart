@@ -15,8 +15,7 @@ class IndicesListFilterToggle extends StatelessWidget {
   final ValueChanged<IndicesListFilter> onChanged;
 
   Color _accent(BuildContext context) {
-    final colors = Theme.of(context).extension<AppColorsTheme>();
-    return colors?.actionPrimaryBg ?? const Color(0xFFC9A84C);
+    return ModuleColors.market;
   }
 
   @override

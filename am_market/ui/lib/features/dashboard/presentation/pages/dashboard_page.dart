@@ -765,6 +765,8 @@ class _MarketContentState extends ConsumerState<MarketContent> {
         onTap: () {
           if (title == 'Equity Insider') {
             _equityInsiderKey.currentState?.resetToLanding();
+          } else if (title == 'Futures & Options' || title == 'F&O') {
+            _foPageKey.currentState?.resetToOptionChain();
           }
           _swipeController.navigateTo(index);
           context.read<MarketProvider>().selectIndex(title);

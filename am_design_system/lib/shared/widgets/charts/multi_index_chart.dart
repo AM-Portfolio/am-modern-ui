@@ -1373,6 +1373,7 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
       final priceStr = price != null ? _formatIndexPrice(price) : '';
 
       return AmClickCapsule(
+        key: ValueKey('capsule_$symbol'),
         triggerOnHover: true,
         popupContent: Row(
           mainAxisSize: MainAxisSize.min,

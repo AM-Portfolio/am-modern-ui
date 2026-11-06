@@ -297,4 +297,62 @@ void main() {
     expect((legend.center.dy - pie.center.dy).abs(), lessThan(40));
     expect(tester.getRect(card).bottom - dii.bottom, lessThan(48));
   });
+
+  testWidgets(
+      'web shareholding dynamically expands vertically to contain all 5 categories without overflow',
+      (tester) async {
+    const fullCategories = [
+      {
+        'period': 'Sep 2025',
+        'promotersPercent': 50.4,
+        'fiiPercent': 16.7,
+        'mutualFundsPercent': 10.3,
+        'diiPercent': 11.4,
+        'retailAndOtherPercent': 11.2,
+      },
+      {
+        'period': 'Jun 2026',
+        'promotersPercent': 50.5,
+        'fiiPercent': 17.2,
+        'mutualFundsPercent': 10.1,
+        'diiPercent': 11.1,
+        'retailAndOtherPercent': 11.1,
+      },
+      {
+        'period': 'Mar 2026',
+        'promotersPercent': 50.0,
+        'fiiPercent': 18.7,
+        'mutualFundsPercent': 9.8,
+        'diiPercent': 10.8,
+        'retailAndOtherPercent': 10.8,
+      },
+      {
+        'period': 'Dec 2025',
+        'promotersPercent': 50.0,
+        'fiiPercent': 19.1,
+        'mutualFundsPercent': 9.5,
+        'diiPercent': 10.7,
+        'retailAndOtherPercent': 10.7,
+      },
+    ];
+
+    await _pumpPage(tester,
+        size: const Size(1280, 1024), shareholding: fullCategories);
+
+    final card = find.byKey(const Key('ei-shareholding-card'));
+    expect(card, findsOneWidget);
+
+    final retail = find.descendant(
+      of: card,
+      matching: find.text('Retail & Public'),
+    );
+    expect(retail, findsOneWidget);
+
+    final cardRect = tester.getRect(card);
+    final retailRect = tester.getRect(retail);
+
+    // Assert that the bottom-most category row is strictly inside the card with padding
+    expect(retailRect.bottom, lessThan(cardRect.bottom));
+    expect(cardRect.bottom - retailRect.bottom, greaterThanOrEqualTo(8.0));
+  });
 }

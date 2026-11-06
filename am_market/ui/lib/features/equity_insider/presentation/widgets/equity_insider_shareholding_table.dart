@@ -59,117 +59,115 @@ class ShareholdingTrendTable extends StatelessWidget {
     }).toList();
     if (visible.isEmpty) return const SizedBox.shrink();
 
-    final catW = dense ? 104.0 : 130.0;
+    final catW = dense ? 112.0 : 136.0;
     final pad = dense ? 8.0 : 12.0;
     final spacing = dense ? 4.0 : 8.0;
     final rowH = dense ? 22.0 : 28.0;
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-
-        Widget tableBody = Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SizedBox(
-              width: catW,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _headerCell(
-                    context,
-                    'Category',
-                    isFirst: true,
-                    height: rowH,
-                  ),
-                  ...visible.map(
-                    (cat) => _catCell(context, cat, height: rowH),
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: LayoutBuilder(
-                builder: (context, colConstraints) {
-                  final n = shareholding.length;
-
-                  Widget col(int colIdx, {double? width}) {
-                    final item = shareholding[colIdx] is Map
-                        ? shareholding[colIdx] as Map
-                        : {};
-                    final highlighted = highlightPeriodIndex == colIdx;
-                    final body = Column(
-                      children: [
-                        _headerCell(
-                          context,
-                          periods[colIdx],
-                          height: rowH,
-                          highlighted: highlighted,
-                        ),
-                        ...visible.map((cat) {
-                          final num? val = item[cat.key] as num?;
-                          return _dataCell(
-                            context,
-                            val != null ? '${val.toStringAsFixed(1)}%' : '—',
-                            height: rowH,
-                            highlighted: highlighted,
-                          );
-                        }),
-                      ],
-                    );
-                    if (width != null) {
-                      return SizedBox(width: width, child: body);
-                    }
-                    return Expanded(child: body);
-                  }
-
-                  return Row(
-                    children: List.generate(n, (i) => col(i)),
-                  );
-                },
-              ),
-            ),
-          ],
-        );
-
-        return Container(
-          width: double.infinity,
-          padding: EdgeInsets.all(pad),
-          decoration: BoxDecoration(
-            color: context.cardColor,
-            border: Border.all(color: context.borderColor),
-            borderRadius: BorderRadius.circular(10),
+    Widget buildQuarterColumn(int colIdx) {
+      final item =
+          shareholding[colIdx] is Map ? shareholding[colIdx] as Map : {};
+      final highlighted = highlightPeriodIndex == colIdx;
+      return Column(
+        children: [
+          _headerCell(
+            context,
+            periods[colIdx],
+            height: rowH,
+            highlighted: highlighted,
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      dense ? 'Holding Trend' : 'Historical Holding Trend',
-                      style: TextStyle(
-                        fontSize: dense ? 11 : 12,
-                        fontWeight: FontWeight.w600,
-                        color: context.textPrimary,
-                      ),
-                    ),
-                  ),
-                  Text(
-                    'QoQ %',
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: context.textTertiary,
-                    ),
-                  ),
-                ],
+          ...visible.map((cat) {
+            final num? val = item[cat.key] as num?;
+            return _dataCell(
+              context,
+              val != null ? '${val.toStringAsFixed(1)}%' : '—',
+              height: rowH,
+              highlighted: highlighted,
+            );
+          }),
+        ],
+      );
+    }
+
+    final n = shareholding.length;
+    final quartersWidget = n > 4
+        ? SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: List.generate(
+                n,
+                (i) => SizedBox(width: 52.0, child: buildQuarterColumn(i)),
               ),
-              SizedBox(height: spacing),
-              tableBody,
+            ),
+          )
+        : Row(
+            children: List.generate(
+              n,
+              (i) => Expanded(child: buildQuarterColumn(i)),
+            ),
+          );
+
+    final tableBody = Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: catW,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _headerCell(
+                context,
+                'Category',
+                isFirst: true,
+                height: rowH,
+              ),
+              ...visible.map(
+                (cat) => _catCell(context, cat, height: rowH),
+              ),
             ],
           ),
-        );
-      },
+        ),
+        Expanded(child: quartersWidget),
+      ],
+    );
+
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(pad),
+      decoration: BoxDecoration(
+        color: context.cardColor,
+        border: Border.all(color: context.borderColor),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  dense ? 'Holding Trend' : 'Historical Holding Trend',
+                  style: TextStyle(
+                    fontSize: dense ? 11 : 12,
+                    fontWeight: FontWeight.w600,
+                    color: context.textPrimary,
+                  ),
+                ),
+              ),
+              Text(
+                'QoQ %',
+                style: TextStyle(
+                  fontSize: 10,
+                  color: context.textTertiary,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: spacing),
+          tableBody,
+        ],
+      ),
     );
   }
 

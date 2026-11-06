@@ -19,12 +19,25 @@ class _MarginCalculatorViewState extends ConsumerState<MarginCalculatorView> {
   static final NumberFormat _webCurrencyFormat =
       NumberFormat('#,##,##0.00', 'en_IN');
 
-  final TextEditingController _quantityController =
-      TextEditingController(text: '50');
-  final TextEditingController _priceController =
-      TextEditingController(text: '2203.50');
+  final TextEditingController _quantityController = TextEditingController();
+  final TextEditingController _priceController = TextEditingController();
   String _selectedType = 'Buy';
   String _selectedProduct = 'NRML';
+  String? _lastBoundSymbol;
+  dynamic _lastBoundContractId;
+
+  int _resolveLotSize({dynamic selectedContract, required String symbol}) {
+    final raw = selectedContract?['lot_size'] ??
+        selectedContract?['lotSize'] ??
+        selectedContract?['minimum_lot_size'];
+    if (raw is num && raw > 0) return raw.toInt();
+    final upper = symbol.toUpperCase().trim();
+    if (upper == 'NIFTY' || upper == 'NIFTY 50') return 50;
+    if (upper == 'BANKNIFTY' || upper == 'NIFTY BANK') return 15;
+    if (upper == 'FINNIFTY' || upper == 'NIFTY FIN SERVICE') return 25;
+    if (upper == 'MIDCPNIFTY' || upper == 'NIFTY MID SELECT') return 50;
+    return 1;
+  }
 
   @override
   void initState() {
@@ -54,6 +67,27 @@ class _MarginCalculatorViewState extends ConsumerState<MarginCalculatorView> {
     final marketTheme = context.marketTheme;
     final activeSymbol = ref.watch(foActiveSymbolProvider) ?? 'NIFTY';
     final selectedContract = ref.watch(selectedFutureContractProvider);
+    final lotSize = _resolveLotSize(
+      selectedContract: selectedContract,
+      symbol: activeSymbol,
+    );
+    final rawLtp = selectedContract?['ltp'] ?? selectedContract?['last_price'];
+    final ltp = rawLtp is num
+        ? rawLtp.toDouble()
+        : double.tryParse('$rawLtp');
+
+    final contractId = selectedContract?['trading_symbol'] ??
+        selectedContract?['tradingSymbol'] ??
+        activeSymbol;
+    if (_lastBoundSymbol != activeSymbol || _lastBoundContractId != contractId) {
+      _lastBoundSymbol = activeSymbol;
+      _lastBoundContractId = contractId;
+      _quantityController.text = '$lotSize';
+      if (ltp != null && ltp > 0) {
+        _priceController.text = ltp.toStringAsFixed(2);
+      }
+    }
+
     final contracts = ref.watch(futuresContractsProvider).maybeWhen(
           data: (d) => d,
           orElse: () => <dynamic>[],
@@ -66,8 +100,8 @@ class _MarginCalculatorViewState extends ConsumerState<MarginCalculatorView> {
             .toString()
         : '$activeSymbol FUT';
 
-    final qty = int.tryParse(_quantityController.text) ?? 50;
-    final price = double.tryParse(_priceController.text) ?? 2203.50;
+    final qty = int.tryParse(_quantityController.text) ?? lotSize;
+    final price = double.tryParse(_priceController.text) ?? (ltp ?? 0.0);
     final notionalValue = qty * price;
 
     final spanMargin = notionalValue * 0.15;
@@ -425,6 +459,10 @@ class _MarginCalculatorViewState extends ConsumerState<MarginCalculatorView> {
     final rawLtp = selectedContract?['ltp'];
     final ltp = rawLtp is num ? rawLtp.toDouble() : double.tryParse('$rawLtp');
     final hasLtp = ltp != null && ltp > 0;
+    final lotSize = _resolveLotSize(
+      selectedContract: selectedContract,
+      symbol: activeSymbol,
+    );
 
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
@@ -477,7 +515,7 @@ class _MarginCalculatorViewState extends ConsumerState<MarginCalculatorView> {
           const SizedBox(height: AppSpacing.sm),
           _buildWebLabeledRow(
             'Quantity',
-            _buildWebQuantityField(colors),
+            _buildWebQuantityField(colors, lotSize),
             colors: colors,
             labelWidth: labelWidth,
           ),
@@ -592,7 +630,7 @@ class _MarginCalculatorViewState extends ConsumerState<MarginCalculatorView> {
     );
   }
 
-  Widget _buildWebQuantityField(AppColorsTheme colors) {
+  Widget _buildWebQuantityField(AppColorsTheme colors, int lotSize) {
     return Container(
       constraints: const BoxConstraints(minHeight: 54),
       decoration: BoxDecoration(
@@ -604,7 +642,7 @@ class _MarginCalculatorViewState extends ConsumerState<MarginCalculatorView> {
         children: [
           IconButton(
             tooltip: 'Decrease quantity',
-            onPressed: () => _adjustQuantity(-1),
+            onPressed: () => _adjustQuantity(-1, lotSize),
             color: colors.textSecondary,
             icon: const Icon(Icons.remove),
           ),
@@ -628,7 +666,7 @@ class _MarginCalculatorViewState extends ConsumerState<MarginCalculatorView> {
           Container(width: 1, height: 30, color: colors.divider),
           IconButton(
             tooltip: 'Increase quantity',
-            onPressed: () => _adjustQuantity(1),
+            onPressed: () => _adjustQuantity(1, lotSize),
             color: colors.textSecondary,
             icon: const Icon(Icons.add),
           ),
@@ -637,9 +675,10 @@ class _MarginCalculatorViewState extends ConsumerState<MarginCalculatorView> {
     );
   }
 
-  void _adjustQuantity(int delta) {
-    final current = int.tryParse(_quantityController.text) ?? 0;
-    final next = (current + delta).clamp(0, 1 << 31).toInt();
+  void _adjustQuantity(int step, int lotSize) {
+    final current = int.tryParse(_quantityController.text) ?? lotSize;
+    final delta = step * lotSize;
+    final next = (current + delta).clamp(lotSize, 1 << 31).toInt();
     _quantityController.text = '$next';
   }
 
