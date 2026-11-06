@@ -1,0 +1,20 @@
+{
+  "strategyId": "ZONE_SCALE",
+  "version": 1,
+  "label": "N-layer zone scale-in / scale-out",
+  "persona": "all",
+  "supported": true,
+  "minLayers": 2,
+  "maxLayers": 10,
+  "side": "BUY",
+  "totalQty": 100,
+  "zone": {
+    "high": 2520.0,
+    "low": 2480.0
+  },
+  "layers": [
+    { "sizePct": 25, "orderType": "LIMIT" },
+    { "sizePct": 25, "orderType": "LIMIT" },
+    { "sizePct": 50, "orderType": "SUPER", "targetOffsetPct": 1.5, "stopOffsetPct": 0.8 }
+  ]
+}

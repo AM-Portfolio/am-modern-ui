@@ -1,0 +1,12 @@
+{
+  "strategyId": "MOMENTUM_GAP",
+  "version": 1,
+  "label": "Momentum / Gap-and-Go",
+  "persona": "day",
+  "supported": false,
+  "params": {
+    "minGapPct": 2.0,
+    "minRelVolume": 2.0,
+    "requireAboveVwap": true
+  }
+}

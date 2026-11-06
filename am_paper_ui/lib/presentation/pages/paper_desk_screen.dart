@@ -15,10 +15,11 @@ import '../widgets/paper_order_ticket.dart';
 import '../widgets/paper_order_ticket_sheet.dart';
 import '../widgets/paper_orders_pane.dart';
 import '../widgets/paper_positions_pnl_pane.dart';
+import '../widgets/paper_strategy_lab_pane.dart';
 import '../widgets/paper_wallet_pane.dart';
 import '../widgets/paper_watchlist_pane.dart';
 
-enum _MidTab { wallet, orders, chart, positions }
+enum _MidTab { wallet, orders, chart, positions, lab }
 
 class PaperDeskScreen extends StatefulWidget {
   const PaperDeskScreen({super.key});
@@ -58,6 +59,7 @@ class _PaperDeskScreenState extends State<PaperDeskScreen> {
         _MidTab.orders => 'orders',
         _MidTab.chart => 'chart',
         _MidTab.positions => 'positions',
+        _MidTab.lab => 'lab',
       };
 
   bool get _showWatchlistBuySell => _tradeUiConfig.showBuySell(
@@ -337,6 +339,7 @@ class _PaperDeskScreenState extends State<PaperDeskScreen> {
                             (_MidTab.orders, 'Orders'),
                             (_MidTab.chart, 'Chart'),
                             (_MidTab.positions, 'Positions'),
+                            (_MidTab.lab, 'Lab'),
                           ])
                             _MidTabChip(
                               label: t.$2,
@@ -365,6 +368,7 @@ class _PaperDeskScreenState extends State<PaperDeskScreen> {
       _MidTab.orders => 1,
       _MidTab.chart => 2,
       _MidTab.positions => 3,
+      _MidTab.lab => 4,
     };
     return IndexedStack(
       index: index,
@@ -392,6 +396,9 @@ class _PaperDeskScreenState extends State<PaperDeskScreen> {
           ),
         PaperPositionsPnlPane(
           onBuySell: _showPositionsBuySell ? _buySell : null,
+        ),
+        PaperStrategyLabPane(
+          initialSymbol: _hasSymbol ? _symbol : null,
         ),
       ],
     );

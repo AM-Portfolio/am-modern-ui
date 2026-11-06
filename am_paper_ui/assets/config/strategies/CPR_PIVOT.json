@@ -1,0 +1,12 @@
+{
+  "strategyId": "CPR_PIVOT",
+  "version": 1,
+  "label": "CPR / floor pivots",
+  "persona": "day",
+  "supported": false,
+  "params": {
+    "entryTf": "5m",
+    "narrowBreakout": true,
+    "wideFade": true
+  }
+}

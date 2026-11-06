@@ -1,0 +1,13 @@
+{
+  "strategyId": "EMA_PULLBACK",
+  "version": 1,
+  "label": "9/20 EMA pullback",
+  "persona": "day",
+  "supported": false,
+  "params": {
+    "fastEma": 9,
+    "slowEma": 20,
+    "targetR": 2,
+    "requireVolumePickup": true
+  }
+}

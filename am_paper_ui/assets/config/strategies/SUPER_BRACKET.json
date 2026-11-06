@@ -1,0 +1,14 @@
+{
+  "strategyId": "SUPER_BRACKET",
+  "version": 1,
+  "label": "Bracket entry + target + SL",
+  "persona": "day_swing",
+  "supported": true,
+  "orderRule": {
+    "orderType": "SUPER",
+    "side": "BUY",
+    "qty": 1,
+    "targetOffsetPct": 1.5,
+    "stopOffsetPct": 0.8
+  }
+}
