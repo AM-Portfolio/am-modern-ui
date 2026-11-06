@@ -1,0 +1,15 @@
+{
+  "strategyId": "ORB",
+  "version": 1,
+  "label": "Opening Range Breakout",
+  "persona": "day",
+  "supported": false,
+  "params": {
+    "rangeMinutes": 15,
+    "entryTf": "5m",
+    "entryCutoff": "11:00",
+    "targetR": 2,
+    "stopMode": "opposite",
+    "maxRangeAtrMult": 0.6
+  }
+}

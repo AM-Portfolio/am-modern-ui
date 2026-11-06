@@ -1,0 +1,12 @@
+{
+  "strategyId": "VWAP_BOUNCE",
+  "version": 1,
+  "label": "VWAP bounce / reclaim / fade",
+  "persona": "day",
+  "supported": false,
+  "params": {
+    "variant": "bounce",
+    "minBarsOneSide": 10,
+    "targetR": 2
+  }
+}

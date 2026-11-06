@@ -1,0 +1,15 @@
+{
+  "strategyId": "LINE_LEVEL",
+  "version": 1,
+  "label": "Single LIMIT / STOP / SUPER line",
+  "persona": "all",
+  "supported": true,
+  "orderRule": {
+    "orderType": "LIMIT",
+    "side": "BUY",
+    "qty": 1
+  },
+  "defaults": {
+    "orderTypesEnabled": ["MARKET", "LIMIT", "STOP", "SUPER", "TRAIL"]
+  }
+}
