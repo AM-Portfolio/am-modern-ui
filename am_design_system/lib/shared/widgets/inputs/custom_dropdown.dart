@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
 import 'dropdown_styles.dart';
@@ -183,11 +184,14 @@ class _CustomDropdownState<T> extends State<CustomDropdown<T>> {
       builder: (context) => Stack(
         children: [
           Positioned.fill(
-            // pointerDown — onTap can lose the arena while the overlay still
-            // blocks the whole app (Flutter web).
             child: Listener(
-              behavior: HitTestBehavior.opaque,
+              behavior: HitTestBehavior.translucent,
               onPointerDown: (_) => _closeDropdown(),
+              onPointerSignal: (event) {
+                if (event is PointerScrollEvent) {
+                  _closeDropdown();
+                }
+              },
             ),
           ),
           CompositedTransformFollower(
