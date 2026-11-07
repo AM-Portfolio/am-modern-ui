@@ -139,6 +139,7 @@ class _MarketContentState extends ConsumerState<MarketContent> {
   late SwipeNavigationController _swipeController;
   late final Widget _dashboardPage = UserDashboardPage(
     onTopMoverSelected: _openEquityInsiderForSymbol,
+    onStockSelected: _openEquityInsiderForSymbol,
   );
   final GlobalKey<EquityInsiderPageState> _equityInsiderKey =
       GlobalKey<EquityInsiderPageState>();
@@ -841,7 +842,9 @@ class _MarketContentState extends ConsumerState<MarketContent> {
         title: 'Heatmap',
         subtitle: 'Detailed charts',
         icon: Icons.analytics_rounded,
-        page: wrap(const HeatmapExplorerView()),
+        page: wrap(HeatmapExplorerView(
+          onStockSelected: _openEquityInsiderForSymbol,
+        )),
         accentColor: accentColor,
       ),
       if (widget.chartDesk != null)
@@ -912,6 +915,7 @@ class _MarketContentState extends ConsumerState<MarketContent> {
             page: wrap(MarketIndexDetailView(
               provider: provider,
               indexSymbol: indexName,
+              onStockSelected: _openEquityInsiderForSymbol,
             )),
             accentColor: accentColor,
           ),
@@ -986,7 +990,9 @@ class _MarketContentState extends ConsumerState<MarketContent> {
         title: 'Heatmap',
         subtitle: 'Heatmap & Details',
         icon: Icons.analytics_rounded,
-        page: wrap(const HeatmapExplorerView()),
+        page: wrap(HeatmapExplorerView(
+          onStockSelected: _openEquityInsiderForSymbol,
+        )),
         accentColor: accentColor,
       ),
       if (chartDesk != null)

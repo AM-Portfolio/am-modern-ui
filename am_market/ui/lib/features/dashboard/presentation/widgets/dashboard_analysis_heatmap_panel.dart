@@ -8,11 +8,13 @@ class DashboardAnalysisHeatmapPanel extends StatelessWidget {
     required this.indexSymbol,
     required this.timeframe,
     this.pageSize = 40,
+    this.onSelectStock,
   });
 
   final String indexSymbol;
   final String timeframe;
   final int pageSize;
+  final ValueChanged<String>? onSelectStock;
 
   @override
   Widget build(BuildContext context) {
@@ -20,6 +22,7 @@ class DashboardAnalysisHeatmapPanel extends StatelessWidget {
       indexSymbol: indexSymbol,
       timeframe: timeframe,
       pageSize: pageSize,
+      onSelectStock: onSelectStock,
     );
   }
 }
