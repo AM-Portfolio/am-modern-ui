@@ -1,7 +1,9 @@
 import 'package:am_design_system/am_design_system.dart';
 import 'package:am_market_ui/core/styles/market_theme_extension.dart';
+import 'package:am_market_ui/features/f_o/fo_lot_size_config.dart';
 import 'package:am_market_ui/features/f_o/providers/fo_provider.dart';
 import 'package:am_market_ui/features/f_o/providers/futures_provider.dart';
+import 'package:am_market_ui/features/f_o/providers/option_chain_provider.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -25,18 +27,20 @@ class _MarginCalculatorViewState extends ConsumerState<MarginCalculatorView> {
   String _selectedProduct = 'NRML';
   String? _lastBoundSymbol;
   dynamic _lastBoundContractId;
+  int? _lastResolvedLotSize;
+  double? _lastResolvedLtp;
+  bool _userEditedQuantity = false;
+  bool _userEditedPrice = false;
+  bool _isSynchronizingControllers = false;
 
-  int _resolveLotSize({dynamic selectedContract, required String symbol}) {
-    final raw = selectedContract?['lot_size'] ??
-        selectedContract?['lotSize'] ??
-        selectedContract?['minimum_lot_size'];
-    if (raw is num && raw > 0) return raw.toInt();
-    final upper = symbol.toUpperCase().trim();
-    if (upper == 'NIFTY' || upper == 'NIFTY 50') return 50;
-    if (upper == 'BANKNIFTY' || upper == 'NIFTY BANK') return 15;
-    if (upper == 'FINNIFTY' || upper == 'NIFTY FIN SERVICE') return 25;
-    if (upper == 'MIDCPNIFTY' || upper == 'NIFTY MID SELECT') return 50;
-    return 1;
+  void _updateControllerSilently(TextEditingController controller, String text) {
+    if (controller.text == text) return;
+    _isSynchronizingControllers = true;
+    try {
+      controller.text = text;
+    } finally {
+      _isSynchronizingControllers = false;
+    }
   }
 
   @override
@@ -47,7 +51,9 @@ class _MarginCalculatorViewState extends ConsumerState<MarginCalculatorView> {
   }
 
   void _onInputChanged() {
-    if (mounted) setState(() {});
+    if (mounted && !_isSynchronizingControllers) {
+      setState(() {});
+    }
   }
 
   @override
@@ -66,36 +72,74 @@ class _MarginCalculatorViewState extends ConsumerState<MarginCalculatorView> {
     final colors = context.colors;
     final marketTheme = context.marketTheme;
     final activeSymbol = ref.watch(foActiveSymbolProvider) ?? 'NIFTY';
+    final chainAsync = ref.watch(optionChainProvider);
+    final chainData = chainAsync.maybeWhen(data: (d) => d, orElse: () => null);
+
     final selectedContract = ref.watch(selectedFutureContractProvider);
-    final lotSize = _resolveLotSize(
-      selectedContract: selectedContract,
-      symbol: activeSymbol,
-    );
-    final rawLtp = selectedContract?['ltp'] ?? selectedContract?['last_price'];
-    final ltp = rawLtp is num
-        ? rawLtp.toDouble()
-        : double.tryParse('$rawLtp');
-
-    final contractId = selectedContract?['trading_symbol'] ??
-        selectedContract?['tradingSymbol'] ??
-        activeSymbol;
-    if (_lastBoundSymbol != activeSymbol || _lastBoundContractId != contractId) {
-      _lastBoundSymbol = activeSymbol;
-      _lastBoundContractId = contractId;
-      _quantityController.text = '$lotSize';
-      if (ltp != null && ltp > 0) {
-        _priceController.text = ltp.toStringAsFixed(2);
-      }
-    }
-
     final contracts = ref.watch(futuresContractsProvider).maybeWhen(
           data: (d) => d,
           orElse: () => <dynamic>[],
         );
+    final firstContract = contracts.isNotEmpty && contracts.first is Map
+        ? Map<String, dynamic>.from(contracts.first as Map)
+        : null;
+    final activeContract = selectedContract ?? firstContract;
 
-    final contractTitle = selectedContract != null
-        ? (selectedContract['trading_symbol'] ??
-                selectedContract['tradingSymbol'] ??
+    final lotSize = FoLotSizeConfig.resolveLotSize(
+      symbol: activeSymbol,
+      contract: activeContract,
+      chainData: chainData,
+    );
+    final rawLtp = activeContract?['ltp'] ??
+        activeContract?['last_price'] ??
+        chainData?['underlyingLtp'];
+    final ltp = rawLtp is num
+        ? rawLtp.toDouble()
+        : double.tryParse('$rawLtp');
+
+    final contractId = activeContract?['trading_symbol'] ??
+        activeContract?['tradingSymbol'] ??
+        activeSymbol;
+
+    if (_lastBoundSymbol != activeSymbol) {
+      _lastBoundSymbol = activeSymbol;
+      _lastBoundContractId = contractId;
+      _userEditedQuantity = false;
+      _userEditedPrice = false;
+      _lastResolvedLotSize = lotSize;
+      _updateControllerSilently(_quantityController, '$lotSize');
+      if (ltp != null && ltp > 0) {
+        _lastResolvedLtp = ltp;
+        _updateControllerSilently(_priceController, ltp.toStringAsFixed(2));
+      }
+    } else if (_lastBoundContractId != contractId) {
+      _lastBoundContractId = contractId;
+      if (!_userEditedQuantity) {
+        _lastResolvedLotSize = lotSize;
+        _updateControllerSilently(_quantityController, '$lotSize');
+      }
+      if (!_userEditedPrice && ltp != null && ltp > 0) {
+        _lastResolvedLtp = ltp;
+        _updateControllerSilently(_priceController, ltp.toStringAsFixed(2));
+      }
+    } else {
+      // Actively listen to asynchronous data response updates for the same symbol
+      if (!_userEditedQuantity && lotSize > 0 && lotSize != _lastResolvedLotSize) {
+        _lastResolvedLotSize = lotSize;
+        _updateControllerSilently(_quantityController, '$lotSize');
+      }
+      if (!_userEditedPrice &&
+          ltp != null &&
+          ltp > 0 &&
+          (_lastResolvedLtp == null || _priceController.text.isEmpty)) {
+        _lastResolvedLtp = ltp;
+        _updateControllerSilently(_priceController, ltp.toStringAsFixed(2));
+      }
+    }
+
+    final contractTitle = activeContract != null
+        ? (activeContract['trading_symbol'] ??
+                activeContract['tradingSymbol'] ??
                 '$activeSymbol FUT')
             .toString()
         : '$activeSymbol FUT';
@@ -117,7 +161,7 @@ class _MarginCalculatorViewState extends ConsumerState<MarginCalculatorView> {
     if (kIsWeb && !isMobile) {
       return _buildWebDashboard(
         contractTitle: contractTitle,
-        selectedContract: selectedContract,
+        selectedContract: activeContract,
         contracts: contracts,
         activeSymbol: activeSymbol,
         colors: colors,
@@ -214,6 +258,7 @@ class _MarginCalculatorViewState extends ConsumerState<MarginCalculatorView> {
                               fontSize: 13,
                             ),
                             keyboardType: TextInputType.number,
+                            onChanged: (_) => _userEditedQuantity = true,
                             decoration: _fieldDecoration(colors, compact: true),
                           ),
                           colors,
@@ -233,6 +278,7 @@ class _MarginCalculatorViewState extends ConsumerState<MarginCalculatorView> {
                             keyboardType: const TextInputType.numberWithOptions(
                               decimal: true,
                             ),
+                            onChanged: (_) => _userEditedPrice = true,
                             decoration: _fieldDecoration(colors, compact: true),
                           ),
                           colors,
@@ -248,6 +294,7 @@ class _MarginCalculatorViewState extends ConsumerState<MarginCalculatorView> {
                       controller: _quantityController,
                       style: TextStyle(color: colors.textPrimary),
                       keyboardType: TextInputType.number,
+                      onChanged: (_) => _userEditedQuantity = true,
                       decoration: _fieldDecoration(colors, compact: isMobile),
                     ),
                     colors,
@@ -321,6 +368,7 @@ class _MarginCalculatorViewState extends ConsumerState<MarginCalculatorView> {
                       keyboardType: const TextInputType.numberWithOptions(
                         decimal: true,
                       ),
+                      onChanged: (_) => _userEditedPrice = true,
                       decoration: _fieldDecoration(colors, compact: isMobile),
                     ),
                     colors,
@@ -456,12 +504,12 @@ class _MarginCalculatorViewState extends ConsumerState<MarginCalculatorView> {
     required MarketThemeExtension marketTheme,
     required double labelWidth,
   }) {
-    final rawLtp = selectedContract?['ltp'];
+    final rawLtp = selectedContract?['ltp'] ?? selectedContract?['last_price'];
     final ltp = rawLtp is num ? rawLtp.toDouble() : double.tryParse('$rawLtp');
     final hasLtp = ltp != null && ltp > 0;
-    final lotSize = _resolveLotSize(
-      selectedContract: selectedContract,
+    final lotSize = FoLotSizeConfig.resolveLotSize(
       symbol: activeSymbol,
+      contract: selectedContract,
     );
 
     return Container(
@@ -588,13 +636,19 @@ class _MarginCalculatorViewState extends ConsumerState<MarginCalculatorView> {
                     keyboardType: const TextInputType.numberWithOptions(
                       decimal: true,
                     ),
+                    onChanged: (_) => _userEditedPrice = true,
                     decoration: _fieldDecoration(colors),
                   ),
                 ),
                 const SizedBox(width: AppSpacing.sm),
                 TextButton(
                   onPressed: hasLtp
-                      ? () => _priceController.text = ltp.toStringAsFixed(2)
+                      ? () {
+                          _userEditedPrice = false;
+                          _lastResolvedLtp = ltp;
+                          _updateControllerSilently(
+                              _priceController, ltp.toStringAsFixed(2));
+                        }
                       : null,
                   child: const Text('Use LTP'),
                 ),
@@ -653,6 +707,7 @@ class _MarginCalculatorViewState extends ConsumerState<MarginCalculatorView> {
               textAlign: TextAlign.center,
               style: TextStyle(color: colors.textPrimary, fontSize: 15),
               keyboardType: TextInputType.number,
+              onChanged: (_) => _userEditedQuantity = true,
               decoration: const InputDecoration(
                 isDense: true,
                 border: InputBorder.none,
@@ -676,10 +731,12 @@ class _MarginCalculatorViewState extends ConsumerState<MarginCalculatorView> {
   }
 
   void _adjustQuantity(int step, int lotSize) {
+    _userEditedQuantity = true;
     final current = int.tryParse(_quantityController.text) ?? lotSize;
     final delta = step * lotSize;
     final next = (current + delta).clamp(lotSize, 1 << 31).toInt();
-    _quantityController.text = '$next';
+    _lastResolvedLotSize = next;
+    _updateControllerSilently(_quantityController, '$next');
   }
 
   Widget _buildWebMarginPanel({
@@ -1033,13 +1090,26 @@ class _MarginCalculatorViewState extends ConsumerState<MarginCalculatorView> {
                   ),
                 ),
                 onTap: () {
-                  ref.read(selectedFutureContractProvider.notifier).state = {
+                  final contractMap = {
                     ...map,
                     'trading_symbol': title,
                   };
+                  ref.read(selectedFutureContractProvider.notifier).state =
+                      contractMap;
+                  _lastBoundContractId = title;
+                  _userEditedQuantity = false;
+                  _userEditedPrice = false;
+                  final newLot = FoLotSizeConfig.resolveLotSize(
+                    symbol: activeSymbol,
+                    contract: contractMap,
+                  );
+                  _lastResolvedLotSize = newLot;
+                  _updateControllerSilently(_quantityController, '$newLot');
                   final ltp = (map['ltp'] as num?)?.toDouble();
                   if (ltp != null && ltp > 0) {
-                    _priceController.text = ltp.toStringAsFixed(2);
+                    _lastResolvedLtp = ltp;
+                    _updateControllerSilently(
+                        _priceController, ltp.toStringAsFixed(2));
                   }
                   Navigator.of(ctx).pop();
                 },

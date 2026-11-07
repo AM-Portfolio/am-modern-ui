@@ -3,6 +3,7 @@ import 'package:am_design_system/am_design_system.dart';
 import 'package:am_market_common/providers/market_provider.dart';
 import 'package:am_market_ui/features/f_o/providers/futures_provider.dart';
 import 'package:am_market_ui/features/f_o/providers/option_chain_provider.dart';
+import 'package:am_market_ui/features/f_o/fo_lot_size_config.dart';
 import 'package:am_market_ui/features/market/widgets/market_colors.dart';
 import 'package:am_market_ui/features/watchlists/presentation/widgets/market_watchlist_star.dart';
 import 'package:flutter/material.dart';
@@ -137,11 +138,16 @@ class _FoHeaderCardState extends ConsumerState<FoHeaderCard> {
       firstStrikeLot = (call?['lotSize'] as num?)?.toInt() ??
           (put?['lotSize'] as num?)?.toInt();
     }
-    final lotSizeStr = (apiLotSize != null && apiLotSize > 0)
-        ? '$apiLotSize'
-        : ((firstStrikeLot != null && firstStrikeLot > 0)
-            ? '$firstStrikeLot'
-            : _missing);
+    final resolvedLot = FoLotSizeConfig.resolveLotSize(
+      symbol: widget.symbol,
+      contract: activeContract,
+      chainData: chainData,
+    );
+    final hasExplicitApiLot = (apiLotSize != null && apiLotSize > 0) ||
+        (firstStrikeLot != null && firstStrikeLot > 0);
+    final lotSizeStr = (resolvedLot > 1 || hasExplicitApiLot)
+        ? '$resolvedLot'
+        : _missing;
 
     final sparkKey = _sparklineIndexKey(widget.symbol);
     MarketProvider? market;

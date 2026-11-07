@@ -1,4 +1,5 @@
 import 'package:am_design_system/am_design_system.dart';
+import 'package:am_market_ui/features/f_o/fo_lot_size_config.dart';
 import 'package:am_market_ui/features/f_o/providers/fo_provider.dart';
 import 'package:am_market_ui/features/f_o/providers/futures_provider.dart';
 import 'package:flutter/material.dart';
@@ -28,7 +29,10 @@ class FuturesContractDetailsCard extends ConsumerWidget {
         : '$activeSymbol FUT';
 
     final expiryStr = _formatExpiry(selectedContract);
-    final lotSize = (selectedContract?['lot_size'] as num?)?.toInt() ?? 65;
+    final lotSize = FoLotSizeConfig.resolveLotSize(
+      symbol: activeSymbol,
+      contract: selectedContract,
+    );
     final exchange = (selectedContract?['exchange'] ?? 'NSE_FO').toString();
     final tickSize = (selectedContract?['tick_size'] as num?)?.toDouble() ??
         (selectedContract?['tickSize'] as num?)?.toDouble() ??
