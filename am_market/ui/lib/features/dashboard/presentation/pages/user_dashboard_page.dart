@@ -21,14 +21,20 @@ import '../widgets/top_movers_widget_v2.dart';
 import '../widgets/dashboard_analysis_heatmap_panel.dart';
 import 'package:am_market_common/services/api_service.dart';
 import 'package:am_market_ui/features/dashboard/presentation/widgets/selected_index_performance_matrix.dart';
+import 'package:am_market_ui/features/equity_insider/providers/equity_insider_provider.dart';
 
 /// User Dashboard page with API-driven features
 class UserDashboardPage extends ConsumerStatefulWidget {
-  const UserDashboardPage({super.key, this.onTopMoverSelected});
+  const UserDashboardPage({
+    super.key,
+    this.onTopMoverSelected,
+    this.onStockSelected,
+  });
 
   /// Host-owned navigation callback. The dashboard only emits the selected
   /// symbol; MarketContent owns surface selection and Equity Insider routing.
   final ValueChanged<String>? onTopMoverSelected;
+  final ValueChanged<String>? onStockSelected;
 
   @override
   UserDashboardPageState createState() => UserDashboardPageState();
@@ -39,6 +45,25 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
   @override
   bool get wantKeepAlive => true;
   late final ApiService _apiService;
+
+  void _onStockTap(String rawSymbol) {
+    final symbol = rawSymbol.trim().toUpperCase();
+    if (symbol.isEmpty) return;
+
+    if (widget.onStockSelected != null) {
+      widget.onStockSelected!(symbol);
+      return;
+    }
+    if (widget.onTopMoverSelected != null) {
+      widget.onTopMoverSelected!(symbol);
+      return;
+    }
+
+    ref.read(equityInsiderActiveSymbolProvider.notifier).state = symbol;
+    try {
+      context.read<MarketProvider>().selectIndex('Equity Insider');
+    } catch (_) {}
+  }
 
   // Selected index for top movers (default: NIFTY 50)
   String selectedIndexForMovers = 'NIFTY 50';
@@ -1113,7 +1138,7 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
                         losers: topLosers,
                         isLoading: isLoadingMovers,
                         error: moversError,
-                        onSymbolTap: widget.onTopMoverSelected,
+                        onSymbolTap: _onStockTap,
                         headerTrailing: GestureDetector(
                           onTap: () {
                             if (MediaQuery.sizeOf(context).width < 768) {
@@ -1178,6 +1203,7 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
                     child: DashboardAnalysisHeatmapPanel(
                       indexSymbol: selectedIndexForMovers,
                       timeframe: selectedTimeframe,
+                      onSelectStock: _onStockTap,
                     ),
                   ),
                   // Shown on all widths — section has its own mobile drum-roll layout.
