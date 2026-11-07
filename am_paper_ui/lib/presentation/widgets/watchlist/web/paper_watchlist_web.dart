@@ -1,4 +1,5 @@
 import 'package:am_design_system/am_design_system.dart';
+import 'package:am_market_ui/am_market_ui.dart';
 import 'package:flutter/material.dart';
 
 import '../common/watchlist_atoms.dart';
@@ -48,6 +49,22 @@ class _PaperWatchlistWebState extends State<PaperWatchlistWeb> {
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
                 const Spacer(),
+                IconButton(
+                  tooltip: 'Add stock/index to watchlist',
+                  iconSize: 18,
+                  visualDensity: VisualDensity.compact,
+                  icon: Icon(Icons.bookmark_add_outlined, color: colors.textSecondary),
+                  onPressed: () async {
+                    final sym = widget.selectedSymbol.isNotEmpty
+                        ? widget.selectedSymbol
+                        : (pageRows.isNotEmpty ? pageRows.first.symbol : 'NIFTY 50');
+                    final saved = await AddToWatchlistPopup.show(context, sym);
+                    if (saved == true) {
+                      await controller.loadSources();
+                      await controller.refreshVisibleQuotes();
+                    }
+                  },
+                ),
                 if ((controller.refreshing && controller.pageNeedsQuoteSpinner) ||
                     controller.loadingList)
                   SizedBox(
@@ -76,6 +93,16 @@ class _PaperWatchlistWebState extends State<PaperWatchlistWeb> {
               selected: controller.selectedSource,
               sources: List.of(controller.sources),
               onSelected: (id) => controller.selectSource(id),
+              onCreateWatchlist: () async {
+                final sym = widget.selectedSymbol.isNotEmpty
+                    ? widget.selectedSymbol
+                    : (pageRows.isNotEmpty ? pageRows.first.symbol : 'NIFTY 50');
+                final saved = await AddToWatchlistPopup.show(context, sym);
+                if (saved == true) {
+                  await controller.loadSources();
+                  await controller.refreshVisibleQuotes();
+                }
+              },
             ),
           ),
           if (controller.pageCount > 1) ...[

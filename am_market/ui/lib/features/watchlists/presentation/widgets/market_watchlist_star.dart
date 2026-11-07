@@ -18,29 +18,9 @@ class MarketWatchlistStar extends ConsumerWidget {
       data: (statuses) {
         final isAdded = statuses.any((s) => s.containsSymbol);
         return IconButton(
-          tooltip: isAdded ? 'Remove from watchlist' : 'Add to watchlist',
-          onPressed: () async {
-            if (isAdded) {
-              final name = statuses.firstWhere((s) => s.containsSymbol).name;
-              final confirm = await ConfirmationDialog.show(
-                context: context,
-                title: 'Remove Stock',
-                subtitle: 'Watchlist Management',
-                message:
-                    'Are you sure you want to remove $symbol from $name?',
-                icon: Icons.star_rounded,
-                confirmText: 'Remove',
-                isDestructive: true,
-              );
-              if (confirm) {
-                final wid =
-                    statuses.firstWhere((s) => s.containsSymbol).watchlistId;
-                ref.read(watchlistsProvider.notifier).removeStock(wid, symbol);
-                ref.invalidate(watchlistCheckStatusProvider(symbol));
-              }
-            } else {
-              AddToWatchlistPopup.show(context, symbol);
-            }
+          tooltip: isAdded ? 'Watchlists ($symbol added)' : 'Add to watchlist',
+          onPressed: () {
+            AddToWatchlistPopup.show(context, symbol);
           },
           icon: Icon(
             isAdded ? Icons.star_rounded : Icons.star_border_rounded,

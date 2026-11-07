@@ -12,6 +12,8 @@ export 'features/equity_insider/presentation/widgets/equity_insider_chart.dart';
 export 'features/equity_insider/presentation/widgets/equity_insider_financials.dart';
 export 'features/equity_insider/presentation/widgets/equity_insider_shareholding.dart';
 export 'features/watchlists/presentation/pages/watchlists_page.dart';
+export 'features/watchlists/presentation/widgets/add_to_watchlist_popup.dart';
+export 'features/watchlists/presentation/widgets/market_watchlist_star.dart';
 export 'features/f_o/presentation/pages/fo_page.dart';
 export 'features/f_o/providers/fo_provider.dart'
     show foActiveSymbolProvider, FoActiveSymbolNotifier;

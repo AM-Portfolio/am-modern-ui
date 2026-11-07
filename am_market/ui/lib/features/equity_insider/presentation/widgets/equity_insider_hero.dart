@@ -325,28 +325,9 @@ class EquityInsiderHeroBar extends ConsumerWidget {
       data: (statuses) {
         final isAdded = statuses.any((s) => s.containsSymbol);
         return IconButton(
-          tooltip: isAdded ? 'Remove from watchlist' : 'Add to watchlist',
-          onPressed: () async {
-            if (isAdded) {
-              final name = statuses.firstWhere((s) => s.containsSymbol).name;
-              final confirm = await ConfirmationDialog.show(
-                context: context,
-                title: 'Remove Stock',
-                subtitle: 'Watchlist Management',
-                message: 'Are you sure you want to remove $symbol from $name?',
-                icon: Icons.star_rounded,
-                confirmText: 'Remove',
-                isDestructive: true,
-              );
-              if (confirm) {
-                final wid =
-                    statuses.firstWhere((s) => s.containsSymbol).watchlistId;
-                ref.read(watchlistsProvider.notifier).removeStock(wid, symbol);
-                ref.invalidate(watchlistCheckStatusProvider(symbol));
-              }
-            } else {
-              AddToWatchlistPopup.show(context, symbol);
-            }
+          tooltip: isAdded ? 'Watchlists ($symbol added)' : 'Add to watchlist',
+          onPressed: () {
+            AddToWatchlistPopup.show(context, symbol);
           },
           icon: Icon(
             isAdded ? Icons.star_rounded : Icons.star_border_rounded,
@@ -465,23 +446,8 @@ Widget _buildWatchlistButton(
         return SizedBox(
           height: 28,
           child: FilledButton.icon(
-            onPressed: () async {
-              final confirm = await ConfirmationDialog.show(
-                context: context,
-                title: 'Remove Stock',
-                subtitle: 'Watchlist Management',
-                message:
-                    'Are you sure you want to remove $symbol from $addedToWatchlistName?',
-                icon: Icons.bookmark_remove_rounded,
-                confirmText: 'Remove',
-                isDestructive: true,
-              );
-              if (confirm) {
-                final wid =
-                    statuses.firstWhere((s) => s.containsSymbol).watchlistId;
-                ref.read(watchlistsProvider.notifier).removeStock(wid, symbol);
-                ref.invalidate(watchlistCheckStatusProvider(symbol));
-              }
+            onPressed: () {
+              AddToWatchlistPopup.show(context, symbol);
             },
             icon: Icon(
               Icons.bookmark_added_rounded,
@@ -489,7 +455,7 @@ Widget _buildWatchlistButton(
               color: onPrimary,
             ),
             label: Text(
-              compact ? 'Added' : 'Already Added',
+              compact ? 'Added' : 'In $addedToWatchlistName',
               style: TextStyle(
                 fontSize: AppTypeScale.xs,
                 fontWeight: FontWeight.w600,

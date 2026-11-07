@@ -16,12 +16,14 @@ class WatchlistSourceDropdown extends StatelessWidget {
     required this.sources,
     required this.onSelected,
     this.onBrowseAllIndices,
+    this.onCreateWatchlist,
   });
 
   final WatchlistSource selected;
   final List<WatchlistSource> sources;
   final ValueChanged<String> onSelected;
   final VoidCallback? onBrowseAllIndices;
+  final VoidCallback? onCreateWatchlist;
 
   @override
   Widget build(BuildContext context) {
@@ -33,6 +35,8 @@ class WatchlistSourceDropdown extends StatelessWidget {
       onSelected: (val) {
         if (val == '__all_indices__') {
           onBrowseAllIndices?.call();
+        } else if (val == '__create_watchlist__') {
+          onCreateWatchlist?.call();
         } else {
           onSelected(val);
         }
@@ -73,11 +77,34 @@ class WatchlistSourceDropdown extends StatelessWidget {
               children: [
                 Icon(Icons.dashboard_customize_outlined, size: 16, color: accent),
                 const SizedBox(width: 8),
-                Text(
-                  'Browse All Indices…',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w700,
-                    color: accent,
+                Expanded(
+                  child: Text(
+                    'Browse All Indices…',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      color: accent,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+        if (onCreateWatchlist != null) ...[
+          const PopupMenuDivider(),
+          PopupMenuItem(
+            value: '__create_watchlist__',
+            child: Row(
+              children: [
+                Icon(Icons.add_circle_outline, size: 16, color: accent),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Create New Watchlist…',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      color: accent,
+                    ),
                   ),
                 ),
               ],
@@ -273,6 +300,7 @@ class WatchlistRow extends StatelessWidget {
     required this.onBuy,
     required this.onSell,
     required this.onFundamentals,
+    this.onAddToWatchlist,
     required this.onRemove,
   });
 
@@ -286,6 +314,7 @@ class WatchlistRow extends StatelessWidget {
   final VoidCallback onBuy;
   final VoidCallback onSell;
   final VoidCallback onFundamentals;
+  final VoidCallback? onAddToWatchlist;
   final VoidCallback onRemove;
 
   @override
@@ -335,6 +364,7 @@ class WatchlistRow extends StatelessWidget {
                   onBuy: onBuy,
                   onSell: onSell,
                   onFundamentals: onFundamentals,
+                  onAddToWatchlist: onAddToWatchlist,
                 ),
                 const SizedBox(width: 8),
               ],
@@ -404,11 +434,13 @@ class WatchlistActionToolbar extends StatelessWidget {
     required this.onBuy,
     required this.onSell,
     required this.onFundamentals,
+    this.onAddToWatchlist,
   });
 
   final VoidCallback onBuy;
   final VoidCallback onSell;
   final VoidCallback onFundamentals;
+  final VoidCallback? onAddToWatchlist;
 
   @override
   Widget build(BuildContext context) {
@@ -438,6 +470,19 @@ class WatchlistActionToolbar extends StatelessWidget {
             color: _watchlistAccent(context),
           ),
         ),
+        if (onAddToWatchlist != null) ...[
+          const SizedBox(width: 2),
+          IconButton(
+            tooltip: 'Add to Watchlist',
+            iconSize: 18,
+            visualDensity: VisualDensity.compact,
+            onPressed: onAddToWatchlist,
+            icon: Icon(
+              Icons.bookmark_add_outlined,
+              color: _watchlistAccent(context),
+            ),
+          ),
+        ],
       ],
     );
   }
