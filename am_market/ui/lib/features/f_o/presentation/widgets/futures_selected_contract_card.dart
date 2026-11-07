@@ -1,5 +1,6 @@
 import 'package:am_design_system/am_design_system.dart';
 import 'package:am_market_ui/core/styles/market_theme_extension.dart';
+import 'package:am_market_ui/features/f_o/fo_lot_size_config.dart';
 import 'package:am_market_ui/features/f_o/providers/fo_provider.dart';
 import 'package:am_market_ui/features/f_o/providers/futures_provider.dart';
 import 'package:flutter/material.dart';
@@ -25,7 +26,10 @@ class FuturesSelectedContractCard extends ConsumerWidget {
     final pChange = (selectedContract?['pChange'] as num?)?.toDouble() ?? -0.10;
     final isPositive = change >= 0;
     final deltaColor = isPositive ? marketTheme.positive : marketTheme.negative;
-    final lotSize = (selectedContract?['lot_size'] as num?)?.toInt() ?? 65;
+    final lotSize = FoLotSizeConfig.resolveLotSize(
+      symbol: activeSymbol,
+      contract: selectedContract,
+    );
 
     final isIndex = tradingSymbol.contains('FUTIDX') ||
         tradingSymbol.startsWith('NIFTY') ||
