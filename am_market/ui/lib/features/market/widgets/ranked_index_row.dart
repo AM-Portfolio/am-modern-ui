@@ -31,10 +31,6 @@ class RankedIndexRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).extension<AppColorsTheme>() ??
-        (Theme.of(context).brightness == Brightness.dark
-            ? AppColorsTheme.dark
-            : AppColorsTheme.light);
     // Gains follow theme accent (Imperial Gold); only losses use red.
     final positive = pChange >= 0;
     final isGlobalWithoutPrice = data.isGlobal && !data.hasValidPrice;
@@ -119,7 +115,7 @@ class RankedIndexRow extends StatelessWidget {
                           ),
                           child: Text(
                             category,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 9,
                               fontWeight: FontWeight.w600,
                               color: ModuleColors.market,
