@@ -28,12 +28,16 @@ List<AdvancedAccountRow> mapAccountsHubToAdvancedRows({
   final out = <AdvancedAccountRow>[];
   final npsMeta = nps ?? hub.nps;
 
+  final identityEmail = hub.identity?.email?.trim();
+  final identityMobile = hub.identity?.mobile?.trim();
+
   for (final p in brokers) {
     final title = p.displayName?.trim().isNotEmpty == true
         ? p.displayName!.trim()
         : (p.brokerType ?? p.portfolioId ?? 'Broker');
     final broker = p.brokerType?.trim();
     final assets = p.assetCount;
+    final primaryBroker = _isPrimaryPortfolio(p);
     out.add(
       AdvancedAccountRow(
         id: p.portfolioId ?? 'broker-$title',
@@ -41,6 +45,8 @@ List<AdvancedAccountRow> mapAccountsHubToAdvancedRows({
         title: title,
         accountId: p.portfolioId,
         broker: broker,
+        email: primaryBroker ? identityEmail : null,
+        mobile: primaryBroker ? identityMobile : null,
         status: 'Active',
         statusKind: AccountStatusKind.active,
         value: p.current ?? 0,
@@ -216,6 +222,13 @@ List<AdvancedAccountRow> filterAdvancedAccountRowsByBroker({
   required String brokerFilter,
 }) {
   if (brokerFilter == 'all' || brokerFilter.isEmpty) return rows;
+  if (brokerFilter.toLowerCase() == 'other') {
+    return rows.where((r) {
+      if (r.type == 'family' || r.type == 'nps') return true;
+      final key = _rowBrokerKey(r);
+      return key.isEmpty || key == '—';
+    }).toList();
+  }
   final key = brokerFilter.toUpperCase();
   return rows.where((r) {
     if (r.type == 'broker') {
@@ -226,12 +239,23 @@ List<AdvancedAccountRow> filterAdvancedAccountRowsByBroker({
   }).toList();
 }
 
-/// Broker swatch options with tab-aware counts (includes zeros for known books).
+String _rowBrokerKey(AdvancedAccountRow r) {
+  final b = (r.broker ?? '').trim();
+  if (b.isNotEmpty) return b.toUpperCase();
+  final t = AdvancedAccountRow.firstWordOfTitle(r.title);
+  return (t ?? '').trim().toUpperCase();
+}
+
+/// Broker swatch options counted from the current tab's rows (before broker filter).
+///
+/// [All] always equals [scopeRows].length so it matches what the table shows.
+/// Known running brokers with zero rows stay visible (count 0) for Demat/Broker tabs.
 List<({String key, String label, int count})> buildBrokerSwatchOptions({
   required List<AccountsPortfolioRow> runningBrokers,
   required List<DematAccountRow> demat,
   required List<DematAccountRow> mf,
   required String tab,
+  List<AdvancedAccountRow>? scopeRows,
 }) {
   final keys = <String>[];
   final labels = <String, String>{};
@@ -243,6 +267,48 @@ List<({String key, String label, int count})> buildBrokerSwatchOptions({
     labels.putIfAbsent(key, () => label);
   }
 
+  final rows = scopeRows;
+  if (rows != null) {
+    for (final r in rows) {
+      if (r.type == 'family' || r.type == 'nps') continue;
+      final key = _rowBrokerKey(r);
+      if (key.isEmpty || key == '—') continue;
+      ensure(key, r.displayBroker == '—' ? key : r.displayBroker);
+    }
+    for (final p in runningBrokers) {
+      final broker = (p.brokerType ?? p.displayName ?? '').trim();
+      if (broker.isEmpty) continue;
+      ensure(
+        broker,
+        p.displayName?.trim().isNotEmpty == true
+            ? p.displayName!.trim()
+            : broker,
+      );
+    }
+
+    int countFor(String key) => rows.where((r) {
+          if (r.type == 'family' || r.type == 'nps') return false;
+          return _rowBrokerKey(r) == key;
+        }).length;
+
+    final countable = rows
+        .where((r) => r.type != 'family')
+        .toList(growable: false);
+    final out = <({String key, String label, int count})>[
+      (key: 'all', label: 'All', count: countable.length),
+    ];
+    for (final key in keys) {
+      out.add((key: key, label: labels[key] ?? key, count: countFor(key)));
+    }
+    final mapped = keys.fold<int>(0, (s, k) => s + countFor(k));
+    final other = countable.length - mapped;
+    if (other > 0) {
+      out.add((key: 'other', label: 'Other', count: other));
+    }
+    return out;
+  }
+
+  // Legacy path (tests / callers without scopeRows).
   for (final p in runningBrokers) {
     final broker = (p.brokerType ?? p.displayName ?? '').trim();
     if (broker.isEmpty) continue;
@@ -259,7 +325,7 @@ List<({String key, String label, int count})> buildBrokerSwatchOptions({
     ensure(mapped, mapped);
   }
 
-  int countFor(String key) {
+  int countForLegacy(String key) {
     switch (tab) {
       case 'brokers':
         return runningBrokers.where((p) {
@@ -290,7 +356,7 @@ List<({String key, String label, int count})> buildBrokerSwatchOptions({
     }
   }
 
-  int allTotal() {
+  int allTotalLegacy() {
     switch (tab) {
       case 'brokers':
         return runningBrokers.length;
@@ -300,17 +366,95 @@ List<({String key, String label, int count})> buildBrokerSwatchOptions({
         return demat.length;
       case 'overview':
       default:
-        return demat.length + mf.length + runningBrokers.length;
+        // Prefer directory rows; do not also add running books (avoids All=8 chips=3).
+        final dir = demat.length + mf.length;
+        return dir > 0 ? dir : runningBrokers.length;
     }
   }
 
   final out = <({String key, String label, int count})>[
-    (key: 'all', label: 'All', count: allTotal()),
+    (key: 'all', label: 'All', count: allTotalLegacy()),
   ];
   for (final key in keys) {
-    out.add((key: key, label: labels[key] ?? key, count: countFor(key)));
+    out.add((key: key, label: labels[key] ?? key, count: countForLegacy(key)));
   }
   return out;
+}
+
+/// Counts broker/demat/mf/nps rows with strictly positive value.
+/// Excludes family summary rows and zero-holding placeholders.
+int countValuedAccounts(Iterable<AdvancedAccountRow> rows) {
+  var n = 0;
+  for (final r in rows) {
+    final t = r.type.toLowerCase();
+    if (t == 'family') continue;
+    if (t != 'broker' && t != 'demat' && t != 'mf' && t != 'nps') continue;
+    if (!r.hasValue || r.value <= 0) continue;
+    n++;
+  }
+  return n;
+}
+
+String formatAccountCountLabel(int count) {
+  if (count <= 0) return '0 accounts';
+  if (count == 1) return '1 account';
+  return '$count accounts';
+}
+
+bool matchesSoftPersona(String? rowFamilyId, String? selection) {
+  // selection null = You; '__all__' = household; else member id.
+  if (selection == '__all__') return true;
+  final primary = rowFamilyId == null || rowFamilyId.trim().isEmpty;
+  if (selection == null) return primary;
+  return rowFamilyId == selection;
+}
+
+/// Valued account count for a soft-family persona selection.
+int valuedAccountCountForPersona({
+  required AccountsHub hub,
+  required String? familyMemberId,
+}) {
+  final books = hub.portfolios
+      .where((p) => matchesSoftPersona(p.familyMemberId, familyMemberId))
+      .toList();
+  final running = books.where((p) => p.isRunningBroker).toList();
+  final dematAll = hub.dematAccounts
+      .where((a) => matchesSoftPersona(a.familyMemberId, familyMemberId))
+      .toList();
+  final demat = dematAll
+      .where((a) => (a.accountType ?? '').toLowerCase() != 'mf')
+      .toList();
+  final mf = dematAll
+      .where((a) => (a.accountType ?? '').toLowerCase() == 'mf')
+      .toList();
+  NpsMetaRow? nps;
+  if (familyMemberId == '__all__' || familyMemberId == null) {
+    for (final n in hub.npsAccounts) {
+      if (n.familyMemberId == null || n.familyMemberId!.trim().isEmpty) {
+        nps = n;
+        break;
+      }
+    }
+    nps ??= hub.nps;
+  } else {
+    for (final n in hub.npsAccounts) {
+      if (n.familyMemberId == familyMemberId) {
+        nps = n;
+        break;
+      }
+    }
+  }
+  final hasNps = nps?.pran != null && nps!.pran!.isNotEmpty;
+  final rows = mapAccountsHubToAdvancedRows(
+    brokers: running,
+    mf: mf,
+    demat: demat,
+    hub: hub,
+    hasNps: hasNps,
+    nps: nps,
+    includeFamilySummaries: false,
+  );
+  return countValuedAccounts(rows);
 }
 
 ({double totalValue, int linkedCount, int brokersActive, int nomineeOk, int nomineeMissing})

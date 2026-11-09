@@ -18,8 +18,11 @@ class PersonaCardStrip extends StatelessWidget {
     this.compact = false,
     this.householdTotalValue,
     this.householdXirrPct,
+    this.householdAccountCount = 0,
     this.primaryTotalValue,
     this.primaryXirrPct,
+    this.primaryAccountCount = 0,
+    this.memberAccountCounts = const {},
   });
 
   final List<FamilyMemberRow> members;
@@ -38,10 +41,15 @@ class PersonaCardStrip extends StatelessWidget {
   /// Metrics for the All / Household card (from hub stats).
   final double? householdTotalValue;
   final double? householdXirrPct;
+  final int householdAccountCount;
 
   /// Metrics for the You card (from hub stats).
   final double? primaryTotalValue;
   final double? primaryXirrPct;
+  final int primaryAccountCount;
+
+  /// Valued account counts keyed by family member id.
+  final Map<String, int> memberAccountCounts;
 
   static final _currency = NumberFormat.currency(symbol: '₹', decimalDigits: 0);
 
@@ -50,7 +58,7 @@ class PersonaCardStrip extends StatelessWidget {
     final cards = <Widget>[
       _PersonaCard(
         label: 'All',
-        subtitle: 'Household',
+        accountCountLabel: _countLabel(householdAccountCount),
         initials: '∀',
         balance: householdTotalValue,
         xirrPct: householdXirrPct,
@@ -62,7 +70,7 @@ class PersonaCardStrip extends StatelessWidget {
       ),
       _PersonaCard(
         label: primaryLabel,
-        subtitle: 'You',
+        accountCountLabel: _countLabel(primaryAccountCount),
         initials: _initials(primaryLabel),
         balance: primaryTotalValue,
         xirrPct: primaryXirrPct,
@@ -78,9 +86,7 @@ class PersonaCardStrip extends StatelessWidget {
             label: m.name?.trim().isNotEmpty == true
                 ? m.name!.trim()
                 : 'Family member',
-            subtitle: m.portfolioCount != null
-                ? '${m.portfolioCount} demat'
-                : 'Family',
+            accountCountLabel: _countLabel(memberAccountCounts[m.id!] ?? 0),
             initials: _initials(
               m.name?.trim().isNotEmpty == true
                   ? m.name!.trim()
@@ -98,7 +104,7 @@ class PersonaCardStrip extends StatelessWidget {
     ];
 
     return SizedBox(
-      height: compact ? 108 : 124,
+      height: compact ? 72 : 78,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         itemCount: cards.length,
@@ -106,6 +112,12 @@ class PersonaCardStrip extends StatelessWidget {
         itemBuilder: (_, i) => cards[i],
       ),
     );
+  }
+
+  static String _countLabel(int count) {
+    if (count <= 0) return '0 accounts';
+    if (count == 1) return '1 account';
+    return '$count accounts';
   }
 
   static String _initials(String name) {
@@ -136,7 +148,7 @@ class PersonaCardStrip extends StatelessWidget {
 class _PersonaCard extends StatelessWidget {
   const _PersonaCard({
     required this.label,
-    required this.subtitle,
+    required this.accountCountLabel,
     required this.initials,
     required this.selected,
     required this.favorited,
@@ -149,7 +161,7 @@ class _PersonaCard extends StatelessWidget {
   });
 
   final String label;
-  final String subtitle;
+  final String accountCountLabel;
   final String initials;
   final double? balance;
   final double? xirrPct;
@@ -166,13 +178,11 @@ class _PersonaCard extends StatelessWidget {
     final border = selected
         ? accent
         : context.colors.border.withValues(alpha: 0.45);
-    final width = compact ? 132.0 : 148.0;
+    final width = compact ? 260.0 : 292.0;
     final avatar = compact ? 26.0 : 30.0;
-    final xirrColor = xirrPct == null
-        ? context.colors.textSecondary
-        : (xirrPct! >= 0
-            ? context.colors.statusSuccess
-            : context.colors.statusError);
+    final starColor = favorited
+        ? context.colors.statusWarning
+        : context.colors.textSecondary;
 
     return Material(
       color: selected
@@ -187,122 +197,178 @@ class _PersonaCard extends StatelessWidget {
           padding: EdgeInsets.fromLTRB(
             compact ? 8 : 10,
             compact ? 6 : 8,
-            4,
+            compact ? 6 : 8,
             compact ? 6 : 8,
           ),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(AppRadii.sm),
             border: Border.all(color: border, width: selected ? 1.5 : 1),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    width: avatar,
-                    height: avatar,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: accent.withValues(alpha: 0.16),
-                    ),
-                    child: Text(
-                      initials,
-                      style: TextStyle(
+              Container(
+                width: avatar,
+                height: avatar,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(8),
+                  color: accent.withValues(alpha: 0.16),
+                ),
+                child: Text(
+                  initials,
+                  style: context.text.caption().copyWith(
                         fontSize: compact ? 9 : 10,
                         fontWeight: FontWeight.w700,
                         color: accent,
                       ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Tooltip(
+                      message: label,
+                      child: Text(
+                        label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: context.text.label().copyWith(
+                              fontWeight: FontWeight.w700,
+                              fontSize: compact ? 11 : 12,
+                              height: 1.1,
+                            ),
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          label,
+                    Text(
+                      accountCountLabel,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: context.text.caption().copyWith(
+                            color: context.colors.textSecondary,
+                            fontSize: compact ? 9 : 10,
+                            height: 1.1,
+                          ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(top: 2),
+                        child: Text(
+                          PersonaCardStrip.formatBalance(balance),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: context.text.label().copyWith(
-                                fontWeight: FontWeight.w700,
-                                fontSize: compact ? 11 : 12,
+                                fontWeight: FontWeight.w800,
+                                fontSize: compact ? 12 : 13,
+                                height: 1.1,
                               ),
-                        ),
-                        Text(
-                          subtitle,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: context.text.caption().copyWith(
-                                color: context.colors.textSecondary,
-                                fontSize: compact ? 9 : 10,
-                              ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      InkWell(
-                        onTap: onFavorite,
-                        customBorder: const CircleBorder(),
-                        child: Padding(
-                          padding: const EdgeInsets.all(2),
-                          child: Icon(
-                            favorited
-                                ? Icons.star_rounded
-                                : Icons.star_outline_rounded,
-                            size: compact ? 15 : 16,
-                            color: favorited
-                                ? const Color(0xFFEAB308)
-                                : context.colors.textSecondary,
-                          ),
                         ),
                       ),
-                      if (onDelete != null)
-                        InkWell(
-                          onTap: onDelete,
-                          customBorder: const CircleBorder(),
-                          child: Padding(
-                            padding: const EdgeInsets.all(2),
+                      const SizedBox(width: 2),
+                      Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          InkWell(
+                            onTap: onFavorite,
+                            customBorder: const CircleBorder(),
                             child: Icon(
-                              Icons.delete_outline_rounded,
-                              size: compact ? 14 : 15,
-                              color: context.colors.textSecondary,
+                              favorited
+                                  ? Icons.star_rounded
+                                  : Icons.star_outline_rounded,
+                              size: compact ? 15 : 16,
+                              color: starColor,
                             ),
                           ),
-                        ),
+                          if (onDelete != null)
+                            InkWell(
+                              onTap: onDelete,
+                              customBorder: const CircleBorder(),
+                              child: Icon(
+                                Icons.delete_outline_rounded,
+                                size: compact ? 14 : 15,
+                                color: context.colors.textSecondary,
+                              ),
+                            ),
+                        ],
+                      ),
                     ],
                   ),
+                  const SizedBox(height: 2),
+                  _XirrTrendPill(xirrPct: xirrPct, compact: compact),
                 ],
-              ),
-              const Spacer(),
-              Text(
-                PersonaCardStrip.formatBalance(balance),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: context.text.label().copyWith(
-                      fontWeight: FontWeight.w800,
-                      fontSize: compact ? 12 : 13,
-                    ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                'XIRR ${PersonaCardStrip.formatXirr(xirrPct)}',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: context.text.caption().copyWith(
-                      fontWeight: FontWeight.w700,
-                      fontSize: compact ? 10 : 11,
-                      color: xirrColor,
-                    ),
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _XirrTrendPill extends StatelessWidget {
+  const _XirrTrendPill({
+    required this.xirrPct,
+    this.compact = false,
+  });
+
+  final double? xirrPct;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    final muted = context.colors.textSecondary;
+    final positive = xirrPct != null && xirrPct! > 0;
+    final Color color;
+    final IconData icon;
+    if (xirrPct == null) {
+      color = muted;
+      icon = Icons.remove_rounded;
+    } else if (positive) {
+      color = context.colors.statusSuccess;
+      icon = Icons.north_east_rounded;
+    } else {
+      color = context.colors.statusError;
+      icon = Icons.south_east_rounded;
+    }
+
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: compact ? 6 : 8,
+        vertical: compact ? 2 : 3,
+      ),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: compact ? 10 : 11, color: color),
+          const SizedBox(width: 3),
+          Text(
+            'XIRR ${PersonaCardStrip.formatXirr(xirrPct)}',
+            style: context.text.caption().copyWith(
+                  fontWeight: FontWeight.w700,
+                  fontSize: compact ? 9 : 10,
+                  color: color,
+                ),
+          ),
+        ],
       ),
     );
   }

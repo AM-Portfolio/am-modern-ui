@@ -1,3 +1,4 @@
+import 'package:am_common/am_common.dart';
 import 'package:am_dashboard_ui/domain/models/accounts_hub.dart';
 import 'package:am_dashboard_ui/presentation/mappers/advanced_account_row_mapper.dart';
 import 'package:am_design_system/am_design_system.dart';
@@ -104,7 +105,8 @@ void main() {
     expect(rows.any((r) => r.title == 'CDSL'), isFalse);
 
     final folio = rows.firstWhere((r) => r.type == 'mf');
-    expect(folio.title, contains('910162484964/0'));
+    expect(folio.accountId, '910162484964/0');
+    expect(folio.title, 'Mutual Funds');
     expect(folio.displayNominee, 'No nominee');
     expect(folio.nomineeMissing, isTrue);
     expect(folio.hasValue, isTrue);
@@ -221,6 +223,39 @@ void main() {
     expect(byKey['DHAN'], 0);
   });
 
+  test('overview All equals tab rows, not demat+broker double count', () {
+    final brokers = _hub.portfolios.where((p) => p.isRunningBroker).toList();
+    final mf = _hub.dematAccounts
+        .where((a) => (a.accountType ?? '').toLowerCase() == 'mf')
+        .toList();
+    final demat = _hub.dematAccounts
+        .where((a) => (a.accountType ?? '').toLowerCase() != 'mf')
+        .toList();
+    final allRows = mapAccountsHubToAdvancedRows(
+      brokers: brokers,
+      mf: mf,
+      demat: demat,
+      hub: _hub,
+      hasNps: true,
+    );
+    final tabRows =
+        filterAdvancedAccountRowsByTab(rows: allRows, tab: 'overview');
+    final options = buildBrokerSwatchOptions(
+      runningBrokers: brokers,
+      demat: demat,
+      mf: mf,
+      tab: 'overview',
+      scopeRows: tabRows,
+    );
+
+    expect(options.first.key, 'all');
+    expect(options.first.count, tabRows.length);
+    final chipSum = options
+        .where((o) => o.key != 'all')
+        .fold<int>(0, (s, o) => s + o.count);
+    expect(chipSum, options.first.count);
+  });
+
   test('nominee audit stats for demat rows', () {
     final demat = _hub.dematAccounts
         .where((a) => (a.accountType ?? '').toLowerCase() != 'mf')
@@ -231,6 +266,97 @@ void main() {
     expect(stats.nomineeMissing, 1);
     expect(stats.brokersActive, 2);
     expect(stats.totalValue, 613);
+  });
+
+  test('countValuedAccounts excludes zero-value and family rows', () {
+    final rows = [
+      const AdvancedAccountRow(
+        id: 'b1',
+        type: 'broker',
+        title: 'Groww',
+        value: 100,
+        hasValue: true,
+      ),
+      const AdvancedAccountRow(
+        id: 'b0',
+        type: 'broker',
+        title: 'Empty',
+        value: 0,
+        hasValue: true,
+      ),
+      const AdvancedAccountRow(
+        id: 'd0',
+        type: 'demat',
+        title: 'Zero demat',
+        value: 0,
+        hasValue: false,
+      ),
+      const AdvancedAccountRow(
+        id: 'f1',
+        type: 'family',
+        title: 'Priyanshu',
+        value: 999,
+        hasValue: true,
+      ),
+      const AdvancedAccountRow(
+        id: 'n1',
+        type: 'nps',
+        title: 'NPS',
+        value: 50,
+        hasValue: true,
+      ),
+    ];
+    expect(countValuedAccounts(rows), 2);
+    expect(formatAccountCountLabel(2), '2 accounts');
+    expect(formatAccountCountLabel(1), '1 account');
+    expect(formatAccountCountLabel(0), '0 accounts');
+  });
+
+  test('valuedAccountCountForPersona skips zero holdings', () {
+    const hub = AccountsHub(
+      identity: AccountsIdentity(name: 'You'),
+      portfolios: [
+        AccountsPortfolioRow(
+          portfolioId: 'live',
+          displayName: 'Groww',
+          brokerType: 'GROWW',
+          current: 1000,
+          assetCount: 2,
+        ),
+        AccountsPortfolioRow(
+          portfolioId: 'empty',
+          displayName: 'Fyers',
+          brokerType: 'FYERS',
+          current: 0,
+          assetCount: 0,
+        ),
+      ],
+      dematAccounts: [
+        DematAccountRow(
+          accountNo: 'd1',
+          accountType: 'demat',
+          holdingValue: 0,
+          mappedBroker: 'FYERS',
+        ),
+        DematAccountRow(
+          accountNo: 'd2',
+          accountType: 'demat',
+          holdingValue: 250,
+          mappedBroker: 'GROWW',
+        ),
+      ],
+    );
+    expect(
+      valuedAccountCountForPersona(hub: hub, familyMemberId: null),
+      2,
+    );
+    expect(
+      valuedAccountCountForPersona(
+        hub: hub,
+        familyMemberId: FavoritePersonaStore.kAll,
+      ),
+      2,
+    );
   });
 
   testWidgets('AdvancedAccountsTemplate renders empty and table states',

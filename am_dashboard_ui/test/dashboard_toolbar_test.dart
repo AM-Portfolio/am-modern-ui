@@ -30,6 +30,7 @@ Future<void> _pumpToolbar(
   required Size size,
   VoidCallback? onSearch,
   VoidCallback? onPaper,
+  VoidCallback? onProfile,
   ValueChanged<GlobalAddActionKind>? onQuickAdd,
 }) async {
   tester.view.physicalSize = size;
@@ -50,6 +51,8 @@ Future<void> _pumpToolbar(
               userId: 'test-user',
               onSearch: onSearch ?? () {},
               onOpenPaper: onPaper ?? () => paperTaps++,
+              onOpenUsers: () {},
+              onProfileTap: onProfile,
               onQuickAdd: onQuickAdd ?? (_) {},
             ),
           ),
@@ -61,35 +64,40 @@ Future<void> _pumpToolbar(
 }
 
 void main() {
-  testWidgets('390 toolbar order is search, paper, timeframe, overflow',
-      (tester) async {
+  testWidgets('390 mobile chrome is two-row brand + filters', (tester) async {
     var paperTaps = 0;
     var searchTaps = 0;
+    var profileTaps = 0;
     await _pumpToolbar(
       tester,
       size: const Size(390, 844),
       onSearch: () => searchTaps++,
       onPaper: () => paperTaps++,
+      onProfile: () => profileTaps++,
     );
+
+    expect(find.text('AM Investment'), findsOneWidget);
+    expect(find.byKey(const Key('dashboard-toolbar-profile')), findsOneWidget);
+    expect(find.text('Advanced'), findsOneWidget);
 
     final search = tester.getRect(find.byIcon(Icons.search_rounded));
     final paper = tester.getRect(find.byKey(const Key('dashboard-paper-chip')));
+    final brand = tester.getRect(find.text('AM Investment'));
     final tf = tester.getRect(find.byType(GlobalTimeFrameBar));
     final overflow = tester.getRect(find.byIcon(Icons.add_rounded));
 
+    expect(brand.left, lessThan(search.left));
     expect(search.left, lessThan(paper.left));
-    expect(paper.left, lessThan(tf.left));
+    expect(tf.top, greaterThan(paper.bottom - 1));
     expect(tf.left, lessThan(overflow.left));
-    // Narrow widths keep the short Paper label; wide uses "Paper Trading".
-    expect(
-      find.text('Paper').evaluate().isNotEmpty ||
-          find.text('Paper Trading').evaluate().isNotEmpty,
-      isTrue,
-    );
+    expect(find.text('Paper'), findsOneWidget);
     expect(find.byIcon(Icons.add_rounded), findsWidgets);
+    expect(tester.takeException(), isNull);
 
+    await tester.tap(find.byKey(const Key('dashboard-toolbar-profile')));
     await tester.tap(find.byIcon(Icons.search_rounded));
     await tester.tap(find.byKey(const Key('dashboard-paper-chip')));
+    expect(profileTaps, 1);
     expect(searchTaps, 1);
     expect(paperTaps, 1);
 

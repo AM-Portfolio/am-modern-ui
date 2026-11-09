@@ -484,24 +484,27 @@ Stream<PerformanceResponse> historyStream(Ref ref, String userId, {String timeFr
 /// Accounts hub (identity / demat / NPS / per-broker amounts).
 final accountsHubProvider =
     FutureProvider.autoDispose.family<AccountsHub, String>((ref, userId) async {
+  final link = ref.keepAlive();
+  Timer? disposeTimer;
+  ref.onCancel(() {
+    disposeTimer?.cancel();
+    disposeTimer = Timer(const Duration(minutes: 2), link.close);
+  });
+  ref.onResume(() => disposeTimer?.cancel());
+  ref.onDispose(() => disposeTimer?.cancel());
+
   await _requireDashboardUserId(ref, userId);
   final client = await ref.watch(portfolioApiClientProvider.future);
-  try {
-    final raw = await client
-        .get(
-          '/v1/portfolios/accounts-hub',
-          parser: (data) {
-            if (data is Map) return Map<String, dynamic>.from(data);
-            throw const FormatException('Accounts hub was not an object');
-          },
-        )
-        .timeout(const Duration(seconds: 12));
-    return AccountsHub.fromJson(raw);
-  } catch (e, st) {
-    AppLogger.warning('Accounts hub fetch failed', error: e, stackTrace: st);
-    // Soft-fail so chart-row panels render empty / retry instead of spinning forever.
-    return const AccountsHub();
-  }
+  final raw = await client
+      .get(
+        '/v1/portfolios/accounts-hub',
+        parser: (data) {
+          if (data is Map) return Map<String, dynamic>.from(data);
+          throw const FormatException('Accounts hub was not an object');
+        },
+      )
+      .timeout(const Duration(seconds: 20));
+  return AccountsHub.fromJson(raw);
 });
 
 /// NPS scheme lines for a portfolio (Users NPS tab).

@@ -9,6 +9,7 @@ export 'data/repositories/dashboard_repository.dart';
 
 // Providers
 export 'presentation/providers/dashboard_provider.dart';
+export 'presentation/providers/dashboard_portfolio_refresh_binder.dart';
 export 'presentation/providers/dashboard_timeframe_provider.dart';
 export 'presentation/layout/dashboard_layout_provider.dart';
 

@@ -30,7 +30,6 @@ enum _UsersPageTab { overview, brokers, mf, demat, nps, family }
 
 class _DashboardUsersPageState extends ConsumerState<DashboardUsersPage> {
   _UsersPageTab _tab = _UsersPageTab.overview;
-  String _brokerFilter = 'all';
   /// null = You; [FavoritePersonaStore.kAll] = household; otherwise soft family member id.
   String? _familyMemberId;
   String? _favoriteKey;
@@ -50,8 +49,21 @@ class _DashboardUsersPageState extends ConsumerState<DashboardUsersPage> {
       if (!_favoriteApplied && key != null) {
         _familyMemberId = FavoritePersonaStore.selectionFromKey(key);
         _favoriteApplied = true;
+        ref.read(familyPortfolioFilterProvider.notifier).state =
+            FavoritePersonaStore.keyFromSelection(_familyMemberId);
       }
     });
+  }
+
+  double? _selectedXirrPct(AccountsHub hub) {
+    if (_familyMemberId == FavoritePersonaStore.kAll) {
+      return hub.stats?.householdXirrPct;
+    }
+    if (_familyMemberId == null) return hub.stats?.overallXirrPct;
+    for (final m in hub.familyMembers) {
+      if (m.id == _familyMemberId) return m.xirrPct;
+    }
+    return null;
   }
 
   Future<void> _setFavorite(String personaKey) async {
@@ -61,10 +73,9 @@ class _DashboardUsersPageState extends ConsumerState<DashboardUsersPage> {
   }
 
   Future<void> _selectPersona(String? id) async {
-    setState(() {
-      _familyMemberId = id;
-      _brokerFilter = 'all';
-    });
+    setState(() => _familyMemberId = id);
+    ref.read(familyPortfolioFilterProvider.notifier).state =
+        FavoritePersonaStore.keyFromSelection(id);
   }
 
   DematAccountRow _bookAsAccount(AccountsPortfolioRow p) {
@@ -132,9 +143,6 @@ class _DashboardUsersPageState extends ConsumerState<DashboardUsersPage> {
     return rowFamilyId == _familyMemberId;
   }
 
-  bool get _isFamilyPersonaSelected =>
-      _familyMemberId != null && _familyMemberId != FavoritePersonaStore.kAll;
-
   static final NumberFormat _inr = NumberFormat.currency(
     locale: 'en_IN',
     symbol: '₹',
@@ -149,6 +157,8 @@ class _DashboardUsersPageState extends ConsumerState<DashboardUsersPage> {
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: async.when(
+          skipLoadingOnReload: true,
+          skipLoadingOnRefresh: true,
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (_, __) => Center(
             child: Column(
@@ -276,25 +286,28 @@ class _DashboardUsersPageState extends ConsumerState<DashboardUsersPage> {
       _UsersPageTab.nps => 'nps',
       _UsersPageTab.family => 'family',
     };
-    var rows = filterAdvancedAccountRowsByTab(rows: allRows, tab: tabKey);
-    final showBrokerSwitcher = (_tab == _UsersPageTab.brokers ||
-            _tab == _UsersPageTab.mf ||
-            _tab == _UsersPageTab.demat ||
-            _tab == _UsersPageTab.overview) &&
-        (runningBrokers.isNotEmpty || demat.isNotEmpty || mf.isNotEmpty);
-    if (showBrokerSwitcher) {
-      rows = filterAdvancedAccountRowsByBroker(
-        rows: rows,
-        brokerFilter: _brokerFilter,
-      );
-    }
-
-    final swatchOptions = buildBrokerSwatchOptions(
-      runningBrokers: runningBrokers,
-      demat: demat,
-      mf: mf,
-      tab: tabKey,
+    final rows = filterAdvancedAccountRowsByTab(rows: allRows, tab: tabKey);
+    final selectedXirr = _selectedXirrPct(hub);
+    final activeAccountCount = valuedAccountCountForPersona(
+      hub: hub,
+      familyMemberId: _familyMemberId,
     );
+    final householdAccountCount = valuedAccountCountForPersona(
+      hub: hub,
+      familyMemberId: FavoritePersonaStore.kAll,
+    );
+    final primaryAccountCount = valuedAccountCountForPersona(
+      hub: hub,
+      familyMemberId: null,
+    );
+    final memberAccountCounts = <String, int>{
+      for (final m in hub.familyMembers)
+        if (m.id != null && m.id!.trim().isNotEmpty)
+          m.id!: valuedAccountCountForPersona(
+            hub: hub,
+            familyMemberId: m.id,
+          ),
+    };
 
     final schemesAsync = (_tab == _UsersPageTab.nps &&
             npsPortfolioId != null &&
@@ -347,11 +360,6 @@ class _DashboardUsersPageState extends ConsumerState<DashboardUsersPage> {
                   }
                   return name;
                 }(),
-                profileKind: _familyMemberId == FavoritePersonaStore.kAll
-                    ? _ProfileKind.household
-                    : _isFamilyPersonaSelected
-                        ? _ProfileKind.family
-                        : _ProfileKind.primary,
                 pran: _familyMemberId == null ||
                         _familyMemberId == FavoritePersonaStore.kAll
                     ? pran
@@ -359,36 +367,72 @@ class _DashboardUsersPageState extends ConsumerState<DashboardUsersPage> {
                 registrationDate: personaNps?.registrationDate,
                 nomineeDetails: personaNps?.nomineeDetails,
                 hasLinked: hasLinked,
-                hasCas: hasCasDirectory,
                 familySharePct: null,
                 showKpis: false,
                 kpis: const [],
-                brokerSwatches: showBrokerSwitcher
-                    ? _BrokerSwatches(
-                        options: swatchOptions,
-                        selected: _brokerFilter,
-                        displayingCount: rows.length,
-                        onSelected: (key) =>
-                            setState(() => _brokerFilter = key),
-                      )
-                    : null,
+                totalValue: scopeTotal,
+                xirrPct: selectedXirr,
+                activeAccountCount: activeAccountCount,
               ),
               if (hub.familyMembers.isNotEmpty) ...[
                 const SizedBox(height: 10),
-                PersonaCardStrip(
-                  members: hub.familyMembers,
-                  selectedId: _familyMemberId,
-                  primaryLabel: hub.identity?.name?.trim().isNotEmpty == true
-                      ? hub.identity!.name!.trim()
-                      : 'You',
-                  favoriteKey: _favoriteKey,
-                  householdTotalValue: hub.stats?.householdTotalValue,
-                  householdXirrPct: hub.stats?.householdXirrPct,
-                  primaryTotalValue: hub.stats?.primaryTotalValue,
-                  primaryXirrPct: hub.stats?.overallXirrPct,
-                  onSelected: _selectPersona,
-                  onFavorite: _setFavorite,
-                  onDelete: (m) => _deleteFamilyFromCard(context, m),
+                Builder(
+                  builder: (context) {
+                    final compact = MediaQuery.sizeOf(context).width < 720;
+                    final primaryLabel =
+                        hub.identity?.name?.trim().isNotEmpty == true
+                            ? hub.identity!.name!.trim()
+                            : 'You';
+                    final selectedKey =
+                        FavoritePersonaStore.keyFromSelection(_familyMemberId);
+                    if (compact) {
+                      return _MobilePersonaBar(
+                        selectedKey: selectedKey,
+                        primaryLabel: primaryLabel,
+                        members: [
+                          for (final m in hub.familyMembers)
+                            if (m.id != null && m.id!.trim().isNotEmpty)
+                              (
+                                id: m.id!,
+                                name: m.name?.trim().isNotEmpty == true
+                                    ? m.name!.trim()
+                                    : 'Family member',
+                              ),
+                        ],
+                        favoriteKey: _favoriteKey,
+                        onSelected: (key) => _selectPersona(
+                          FavoritePersonaStore.selectionFromKey(key),
+                        ),
+                        onFavorite: () => _setFavorite(selectedKey),
+                        selectedTab: _tab,
+                        tabLabelFor: (t) => _tabLabel(
+                          t,
+                          runningBrokers,
+                          mf,
+                          demat,
+                          hasNps,
+                          hub.familyMembers.length,
+                        ),
+                        onTabSelected: (t) => setState(() => _tab = t),
+                      );
+                    }
+                    return PersonaCardStrip(
+                      members: hub.familyMembers,
+                      selectedId: _familyMemberId,
+                      primaryLabel: primaryLabel,
+                      favoriteKey: _favoriteKey,
+                      householdTotalValue: hub.stats?.householdTotalValue,
+                      householdXirrPct: hub.stats?.householdXirrPct,
+                      householdAccountCount: householdAccountCount,
+                      primaryTotalValue: hub.stats?.primaryTotalValue,
+                      primaryXirrPct: hub.stats?.overallXirrPct,
+                      primaryAccountCount: primaryAccountCount,
+                      memberAccountCounts: memberAccountCounts,
+                      onSelected: _selectPersona,
+                      onFavorite: _setFavorite,
+                      onDelete: (m) => _deleteFamilyFromCard(context, m),
+                    );
+                  },
                 ),
               ],
               if ((_tab == _UsersPageTab.demat || _tab == _UsersPageTab.mf) &&
@@ -428,24 +472,22 @@ class _DashboardUsersPageState extends ConsumerState<DashboardUsersPage> {
                     ? Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          Padding(
-                            padding: const EdgeInsets.fromLTRB(12, 10, 12, 0),
-                            child: _CategoryTabs(
-                              selected: _tab,
-                              labelFor: (t) => _tabLabel(
-                                t,
-                                runningBrokers,
-                                mf,
-                                demat,
-                                hasNps,
-                                hub.familyMembers.length,
+                          if (MediaQuery.sizeOf(context).width >= 720)
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(12, 10, 12, 0),
+                              child: _CategoryTabs(
+                                selected: _tab,
+                                labelFor: (t) => _tabLabel(
+                                  t,
+                                  runningBrokers,
+                                  mf,
+                                  demat,
+                                  hasNps,
+                                  hub.familyMembers.length,
+                                ),
+                                onSelected: (t) => setState(() => _tab = t),
                               ),
-                              onSelected: (t) => setState(() {
-                                _tab = t;
-                                _brokerFilter = 'all';
-                              }),
                             ),
-                          ),
                           Expanded(
                             child: _UsersFamilyPanel(
                               userId: widget.userId,
@@ -455,36 +497,45 @@ class _DashboardUsersPageState extends ConsumerState<DashboardUsersPage> {
                           ),
                         ],
                       )
-                    : AdvancedAccountsTemplate(
-                        accounts: rows,
-                        isLoading: false,
-                        accentColor: ModuleColors.dashboard,
-                        toolbarLeading: _CategoryTabs(
-                          selected: _tab,
-                          labelFor: (t) => _tabLabel(
-                            t,
-                            runningBrokers,
-                            mf,
-                            demat,
-                            hasNps,
-                            hub.familyMembers.length,
-                          ),
-                          onSelected: (t) => setState(() {
-                            _tab = t;
-                            _brokerFilter = 'all';
-                          }),
-                        ),
-                        footerNoun: _footerNoun(_tab),
-                        footerCenterNote:
-                            (_tab == _UsersPageTab.demat ||
-                                        _tab == _UsersPageTab.mf) &&
-                                    hasCasDirectory
-                                ? 'All CDSL accounts verified via OTP'
-                                : null,
-                        onRefresh: () =>
-                            ref.invalidate(accountsHubProvider(widget.userId)),
-                        emptyTitle: 'No rows for this view',
-                        emptySubtitle: 'Switch filters or import CDSL CAS',
+                    : Builder(
+                        builder: (context) {
+                          final compact =
+                              MediaQuery.sizeOf(context).width < 720;
+                          return AdvancedAccountsTemplate(
+                            accounts: rows,
+                            isLoading: false,
+                            accentColor: ModuleColors.dashboard,
+                            initialViewMode: compact ? 'card' : 'table',
+                            allowViewModeToggle: !compact,
+                            toolbarLeading: compact
+                                ? null
+                                : _CategoryTabs(
+                                    selected: _tab,
+                                    labelFor: (t) => _tabLabel(
+                                      t,
+                                      runningBrokers,
+                                      mf,
+                                      demat,
+                                      hasNps,
+                                      hub.familyMembers.length,
+                                    ),
+                                    onSelected: (t) => setState(() => _tab = t),
+                                  ),
+                            footerNoun: _footerNoun(_tab),
+                            footerCenterNote:
+                                (_tab == _UsersPageTab.demat ||
+                                            _tab == _UsersPageTab.mf) &&
+                                        hasCasDirectory
+                                    ? 'All CDSL accounts verified via OTP'
+                                    : null,
+                            onRefresh: () => ref.invalidate(
+                              accountsHubProvider(widget.userId),
+                            ),
+                            emptyTitle: 'No rows for this view',
+                            emptySubtitle:
+                                'Switch filters or import CDSL CAS',
+                          );
+                        },
                       ),
               ),
             ),
@@ -660,8 +711,6 @@ class _DashboardUsersPageState extends ConsumerState<DashboardUsersPage> {
     }
   }
 }
-
-enum _ProfileKind { primary, family, household }
 
 class _UsersFamilyPanel extends ConsumerWidget {
   const _UsersFamilyPanel({
@@ -963,28 +1012,28 @@ class _ProfileHeader extends StatelessWidget {
   const _ProfileHeader({
     required this.name,
     required this.hasLinked,
-    required this.hasCas,
     required this.showKpis,
     required this.kpis,
-    this.profileKind = _ProfileKind.primary,
     this.pran,
     this.registrationDate,
     this.nomineeDetails,
     this.familySharePct,
-    this.brokerSwatches,
+    this.totalValue,
+    this.xirrPct,
+    this.activeAccountCount = 0,
   });
 
   final String? name;
-  final _ProfileKind profileKind;
   final String? pran;
   final String? registrationDate;
   final String? nomineeDetails;
   final double? familySharePct;
   final bool hasLinked;
-  final bool hasCas;
   final bool showKpis;
   final List<_KpiSpec> kpis;
-  final Widget? brokerSwatches;
+  final double? totalValue;
+  final double? xirrPct;
+  final int activeAccountCount;
 
   String get _displayName {
     final n = name?.trim() ?? '';
@@ -1011,45 +1060,80 @@ class _ProfileHeader extends StatelessWidget {
     final accent = ModuleColors.dashboard;
     final muted = context.colors.textSecondary;
     final success = context.statusSuccess;
+    final compact = MediaQuery.sizeOf(context).width < 720;
+
+    final xirrPanel = _XirrPanel(
+      totalValue: totalValue,
+      xirrPct: xirrPct,
+      compact: compact,
+    );
 
     return AmGlassCard(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(compact ? 12 : 16),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final wide = constraints.maxWidth >= 900;
-          final left = _leftStack(context, accent, muted, success);
+          // Mobile cards are often <360 after page+card padding; keep
+          // name and XIRR on one row whenever compact or width allows.
+          final sideBySide = compact || constraints.maxWidth >= 320;
+          final left = _leftStack(
+            context,
+            accent,
+            muted,
+            success,
+            compact: compact,
+            trailing: compact && !(showKpis && kpis.isNotEmpty)
+                ? xirrPanel
+                : null,
+          );
           final right = showKpis && kpis.isNotEmpty
               ? _kpiRow(context, accent)
-              : const SizedBox.shrink();
-          final top = wide
-              ? Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(flex: 5, child: left),
-                    const SizedBox(width: 20),
-                    Expanded(flex: 4, child: right),
-                  ],
-                )
-              : Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    left,
-                    if (showKpis && kpis.isNotEmpty) ...[
-                      const SizedBox(height: 14),
-                      right,
-                    ],
-                  ],
-                );
-          if (brokerSwatches == null) return top;
+              : xirrPanel;
+          if (compact && !(showKpis && kpis.isNotEmpty)) {
+            // Name + XIRR already share a row inside _leftStack.
+            return left;
+          }
+          if (sideBySide) {
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(child: left),
+                SizedBox(width: compact ? 8 : 12),
+                right,
+              ],
+            );
+          }
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              top,
-              const SizedBox(height: 12),
-              brokerSwatches!,
+              left,
+              const SizedBox(height: 8),
+              Align(alignment: Alignment.centerRight, child: right),
+              if (showKpis && kpis.isNotEmpty) ...[
+                const SizedBox(height: 14),
+                _kpiRow(context, accent),
+              ],
             ],
           );
         },
+      ),
+    );
+  }
+
+  Widget _activeBadge(Color success) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: success.withValues(alpha: 0.14),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: success.withValues(alpha: 0.55)),
+      ),
+      child: Text(
+        'Active',
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w800,
+          color: success,
+        ),
       ),
     );
   }
@@ -1058,28 +1142,120 @@ class _ProfileHeader extends StatelessWidget {
     BuildContext context,
     Color accent,
     Color muted,
-    Color success,
-  ) {
-    final subtitle = switch (profileKind) {
-      _ProfileKind.family => 'Family member',
-      _ProfileKind.household => hasCas
-          ? 'Household • CDSL & NSDL Registered'
-          : 'Household',
-      _ProfileKind.primary => hasCas
-          ? 'Primary Investor Profile • CDSL & NSDL Registered'
-          : 'Primary Investor Profile',
-    };
+    Color success, {
+    required bool compact,
+    Widget? trailing,
+  }) {
     final nominee = nomineeDetails?.trim();
+    final hasMeta = (pran != null && pran!.isNotEmpty) ||
+        (registrationDate != null && registrationDate!.trim().isNotEmpty) ||
+        (nominee != null && nominee.isNotEmpty) ||
+        familySharePct != null;
+    final avatarSize = compact ? 36.0 : 48.0;
+    final nameStyle = context.text.sectionTitle().copyWith(
+          fontWeight: FontWeight.w800,
+          fontSize: compact ? 13 : 20,
+          height: 1.15,
+        );
+
+    if (compact) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Container(
+                width: avatarSize,
+                height: avatarSize,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: accent.withValues(alpha: 0.18),
+                  border: Border.all(color: accent.withValues(alpha: 0.45)),
+                ),
+                child: Text(
+                  _initials,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 12,
+                    color: accent,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  _displayName,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: nameStyle,
+                ),
+              ),
+              if (trailing != null) ...[
+                const SizedBox(width: 8),
+                trailing,
+              ],
+            ],
+          ),
+          if (hasMeta) ...[
+            const SizedBox(height: 6),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                if (pran != null && pran!.isNotEmpty)
+                  _MetaPill(icon: Icons.badge_outlined, text: 'PRAN $pran'),
+                if (registrationDate != null &&
+                    registrationDate!.trim().isNotEmpty)
+                  _MetaPill(
+                    icon: Icons.event_outlined,
+                    text: 'Reg $registrationDate',
+                  ),
+                if (nominee != null && nominee.isNotEmpty)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(20),
+                      border:
+                          Border.all(color: accent.withValues(alpha: 0.65)),
+                      color: accent.withValues(alpha: 0.06),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.person_outline, size: 14, color: accent),
+                        const SizedBox(width: 6),
+                        Text(
+                          nominee,
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: accent,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+          ],
+        ],
+      );
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Container(
-              width: 52,
-              height: 52,
+              width: avatarSize,
+              height: avatarSize,
               alignment: Alignment.center,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
@@ -1090,102 +1266,74 @@ class _ProfileHeader extends StatelessWidget {
                 _initials,
                 style: TextStyle(
                   fontWeight: FontWeight.w800,
-                  fontSize: 16,
+                  fontSize: 15,
                   color: accent,
                 ),
               ),
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 6,
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 6,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    children: [
-                      Text(
-                        _displayName,
-                        style: context.text.sectionTitle().copyWith(
-                              fontWeight: FontWeight.w800,
-                              fontSize: 20,
-                            ),
-                      ),
-                      if (hasLinked)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 3,
-                          ),
-                          decoration: BoxDecoration(
-                            color: success.withValues(alpha: 0.14),
-                            borderRadius: BorderRadius.circular(6),
-                            border: Border.all(
-                              color: success.withValues(alpha: 0.55),
-                            ),
-                          ),
-                          child: Text(
-                            'Active',
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w800,
-                              color: success,
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
+                  Text(_displayName, style: nameStyle),
+                  if (hasLinked) _activeBadge(success),
                   Text(
-                    subtitle,
-                    style: TextStyle(fontSize: 12, color: muted),
+                    formatAccountCountLabel(activeAccountCount),
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: muted,
+                    ),
                   ),
                 ],
               ),
             ),
           ],
         ),
-        const SizedBox(height: 12),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            if (pran != null && pran!.isNotEmpty)
-              _MetaPill(icon: Icons.badge_outlined, text: 'PRAN $pran'),
-            if (registrationDate != null &&
-                registrationDate!.trim().isNotEmpty)
-              _MetaPill(
-                icon: Icons.event_outlined,
-                text: 'Reg $registrationDate',
-              ),
-            if (nominee != null && nominee.isNotEmpty)
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: accent.withValues(alpha: 0.65)),
-                  color: accent.withValues(alpha: 0.06),
+        if (hasMeta) const SizedBox(height: 8),
+        if (hasMeta)
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              if (pran != null && pran!.isNotEmpty)
+                _MetaPill(icon: Icons.badge_outlined, text: 'PRAN $pran'),
+              if (registrationDate != null &&
+                  registrationDate!.trim().isNotEmpty)
+                _MetaPill(
+                  icon: Icons.event_outlined,
+                  text: 'Reg $registrationDate',
                 ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.person_outline, size: 14, color: accent),
-                    const SizedBox(width: 6),
-                    Text(
-                      nominee,
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: accent,
+              if (nominee != null && nominee.isNotEmpty)
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: accent.withValues(alpha: 0.65)),
+                    color: accent.withValues(alpha: 0.06),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.person_outline, size: 14, color: accent),
+                      const SizedBox(width: 6),
+                      Text(
+                        nominee,
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: accent,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-          ],
-        ),
+            ],
+          ),
       ],
     );
   }
@@ -1291,6 +1439,71 @@ class _MetaPill extends StatelessWidget {
   }
 }
 
+class _XirrPanel extends StatelessWidget {
+  const _XirrPanel({
+    required this.totalValue,
+    required this.xirrPct,
+    this.compact = false,
+  });
+
+  final double? totalValue;
+  final double? xirrPct;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    final muted = context.colors.textSecondary;
+    final xirrColor = xirrPct == null
+        ? muted
+        : (xirrPct! >= 0
+            ? context.colors.statusSuccess
+            : context.colors.statusError);
+    final xirrText = PersonaCardStrip.formatXirr(xirrPct);
+    final valueText = PersonaCardStrip.formatBalance(
+      totalValue != null && totalValue! > 0 ? totalValue : null,
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          'XIRR',
+          style: TextStyle(
+            fontSize: compact ? 9 : 10,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.8,
+            height: 1.1,
+            color: muted,
+          ),
+        ),
+        const SizedBox(height: 1),
+        Text(
+          xirrText,
+          style: TextStyle(
+            fontSize: compact ? 18 : 22,
+            fontWeight: FontWeight.w800,
+            height: 1.1,
+            color: xirrColor,
+          ),
+        ),
+        if (valueText != '—') ...[
+          const SizedBox(height: 1),
+          Text(
+            valueText,
+            style: TextStyle(
+              fontSize: compact ? 12 : 13,
+              fontWeight: FontWeight.w600,
+              height: 1.1,
+              color: context.colors.textPrimary,
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
 class _CategoryTabs extends StatelessWidget {
   const _CategoryTabs({
     required this.selected,
@@ -1305,22 +1518,25 @@ class _CategoryTabs extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final accent = ModuleColors.dashboard;
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: [
-        for (final t in _UsersPageTab.values)
-          InkWell(
+    return SizedBox(
+      height: 36,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: _UsersPageTab.values.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        itemBuilder: (_, i) {
+          final t = _UsersPageTab.values[i];
+          final isSelected = selected == t;
+          return InkWell(
             onTap: () => onSelected(t),
             borderRadius: BorderRadius.circular(20),
             child: Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               decoration: BoxDecoration(
-                color: selected == t ? accent : Colors.transparent,
+                color: isSelected ? accent : Colors.transparent,
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
-                  color: selected == t
+                  color: isSelected
                       ? accent
                       : context.colors.border.withValues(alpha: 0.7),
                 ),
@@ -1330,101 +1546,170 @@ class _CategoryTabs extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
-                  color: selected == t
+                  color: isSelected
                       ? const Color(0xFF1A1208)
                       : context.colors.textSecondary,
                 ),
               ),
             ),
-          ),
-      ],
+          );
+        },
+      ),
     );
   }
 }
 
-class _BrokerSwatches extends StatelessWidget {
-  const _BrokerSwatches({
-    required this.options,
+class _AccountTypeDropdown extends StatelessWidget {
+  const _AccountTypeDropdown({
     required this.selected,
-    required this.displayingCount,
+    required this.labelFor,
     required this.onSelected,
   });
 
-  final List<({String key, String label, int count})> options;
-  final String selected;
-  final int displayingCount;
-  final ValueChanged<String> onSelected;
+  final _UsersPageTab selected;
+  final String Function(_UsersPageTab) labelFor;
+  final ValueChanged<_UsersPageTab> onSelected;
 
   @override
   Widget build(BuildContext context) {
     final accent = ModuleColors.dashboard;
-    final muted = context.colors.textSecondary;
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Expanded(
-          child: Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              for (final o in options)
-                InkWell(
-                  onTap: () => onSelected(o.key),
-                  borderRadius: BorderRadius.circular(20),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 7,
-                    ),
-                    decoration: BoxDecoration(
-                      color: selected == o.key
-                          ? accent
-                          : Colors.transparent,
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: selected == o.key
-                            ? accent
-                            : context.colors.border.withValues(alpha: 0.65),
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (o.key != 'all') ...[
-                          Container(
-                            width: 8,
-                            height: 8,
-                            decoration: BoxDecoration(
-                              color: AdvancedAccountRow.brokerTint(
-                                o.label,
-                                accent,
-                              ),
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                        ],
-                        Text(
-                          '${o.label} (${o.count})',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            color: selected == o.key
-                                ? const Color(0xFF1A1208)
-                                : muted,
-                          ),
-                        ),
-                      ],
+    final colors = context.colors;
+    return PopupMenuButton<_UsersPageTab>(
+      tooltip: 'Account type',
+      offset: const Offset(0, 40),
+      onSelected: onSelected,
+      color: colors.cardSurface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: accent.withValues(alpha: 0.35)),
+      ),
+      itemBuilder: (ctx) => [
+        for (final t in _UsersPageTab.values)
+          PopupMenuItem<_UsersPageTab>(
+            value: t,
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    labelFor(t),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontWeight:
+                          t == selected ? FontWeight.w700 : FontWeight.w500,
+                      color: t == selected ? accent : colors.textPrimary,
+                      fontSize: 12,
                     ),
                   ),
                 ),
-            ],
+                if (t == selected)
+                  Icon(Icons.check_rounded, size: 16, color: accent),
+              ],
+            ),
+          ),
+      ],
+      child: Container(
+        height: 36,
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 10),
+        decoration: BoxDecoration(
+          color: colors.cardSurface,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: accent.withValues(alpha: 0.35)),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.category_outlined, size: 14, color: accent),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(
+                labelFor(selected),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 12,
+                  color: colors.textPrimary,
+                ),
+              ),
+            ),
+            Icon(
+              Icons.keyboard_arrow_down_rounded,
+              size: 16,
+              color: colors.textSecondary,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _MobilePersonaBar extends StatelessWidget {
+  const _MobilePersonaBar({
+    required this.selectedKey,
+    required this.primaryLabel,
+    required this.members,
+    required this.favoriteKey,
+    required this.onSelected,
+    required this.onFavorite,
+    required this.selectedTab,
+    required this.tabLabelFor,
+    required this.onTabSelected,
+  });
+
+  final String selectedKey;
+  final String primaryLabel;
+  final List<({String id, String name})> members;
+  final String? favoriteKey;
+  final ValueChanged<String> onSelected;
+  final VoidCallback onFavorite;
+  final _UsersPageTab selectedTab;
+  final String Function(_UsersPageTab) tabLabelFor;
+  final ValueChanged<_UsersPageTab> onTabSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = ModuleColors.dashboard;
+    final favorited = favoriteKey == selectedKey;
+    return Row(
+      children: [
+        Expanded(
+          flex: 5,
+          child: SharedFamilyFilterDropdown(
+            compact: true,
+            fillWidth: true,
+            selectedKey: selectedKey,
+            primaryLabel: primaryLabel,
+            members: members,
+            accentColor: accent,
+            allLabel: 'All',
+            onSelected: onSelected,
           ),
         ),
-        const SizedBox(width: 12),
-        Text(
-          'Displaying $displayingCount active accounts mapped',
-          style: TextStyle(fontSize: 11, color: muted),
+        const SizedBox(width: 6),
+        Expanded(
+          flex: 4,
+          child: _AccountTypeDropdown(
+            selected: selectedTab,
+            labelFor: tabLabelFor,
+            onSelected: onTabSelected,
+          ),
+        ),
+        const SizedBox(width: 2),
+        IconButton(
+          onPressed: onFavorite,
+          tooltip: 'Favorite',
+          visualDensity: VisualDensity.compact,
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+          icon: Icon(
+            favorited ? Icons.star_rounded : Icons.star_outline_rounded,
+            size: 22,
+            color: favorited
+                ? context.colors.statusWarning
+                : context.colors.textSecondary,
+          ),
         ),
       ],
     );

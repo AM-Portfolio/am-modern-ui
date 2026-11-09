@@ -19,6 +19,9 @@ class DashboardMobileScreen extends ConsumerStatefulWidget {
   final VoidCallback? onOpenPaper;
   final VoidCallback? onOpenUsers;
   final ValueChanged<GlobalAddActionKind>? onQuickAdd;
+  final VoidCallback? onProfileTap;
+  final Widget? profileLeading;
+  final String brandLabel;
 
   const DashboardMobileScreen({
     super.key,
@@ -27,6 +30,9 @@ class DashboardMobileScreen extends ConsumerStatefulWidget {
     this.onOpenPaper,
     this.onOpenUsers,
     this.onQuickAdd,
+    this.onProfileTap,
+    this.profileLeading,
+    this.brandLabel = 'AM Investment',
   });
 
   @override
@@ -103,6 +109,9 @@ class _DashboardMobileScreenState
       userId: widget.userId,
       onSurface: onSurface,
       showDemoBadge: showDemoBadge,
+      brandLabel: widget.brandLabel,
+      profileLeading: widget.profileLeading,
+      onProfileTap: widget.onProfileTap,
       onOpenPaper: widget.onOpenPaper,
       onOpenUsers: widget.onOpenUsers,
       onQuickAdd: widget.onQuickAdd,
