@@ -8,6 +8,7 @@ import '../../data/paper_market_client.dart';
 import '../../data/watchlist_models.dart';
 import '../paper_oms_cubit.dart';
 import '../paper_oms_state.dart';
+import 'order_ticket/paper_order_ticket_sheet.dart';
 import 'paper_position_mobile_card.dart';
 
 class _PosRow {
@@ -175,8 +176,38 @@ class _PaperPositionsPnlPaneState extends State<PaperPositionsPnlPane> {
     return colors.textPrimary;
   }
 
+  void _handleTradeAction(BuildContext context, _PosRow p, String side) {
+    showPaperOrderTicketSheet(
+      context: context,
+      symbol: p.symbol,
+      side: side,
+      onSymbolChanged: (_) {},
+      onSideChanged: (_) {},
+      onOrderPlaced: () {
+        context.read<PaperOmsCubit>().refreshBooks();
+      },
+    );
+  }
+
+  void _handleExit(BuildContext context, _PosRow p) {
+    final exitSide = p.qty > 0 ? 'SELL' : 'BUY';
+    final exitQty = p.qty.abs().toStringAsFixed(0);
+    showPaperOrderTicketSheet(
+      context: context,
+      symbol: p.symbol,
+      side: exitSide,
+      initialQuantity: exitQty,
+      onSymbolChanged: (_) {},
+      onSideChanged: (_) {},
+      onOrderPlaced: () {
+        context.read<PaperOmsCubit>().refreshBooks();
+      },
+    );
+  }
+
   Widget _buildTable(BuildContext context, List<_PosRow> items) {
     final fmt = NumberFormat('#,##0.00');
+    final colors = context.colors;
     return SortableTable<_PosRow>(
       items: items,
       initialSortColumnIndex: 0,
@@ -246,6 +277,46 @@ class _PaperPositionsPnlPaneState extends State<PaperPositionsPnlPane> {
                 ),
           ),
         ),
+        SortableColumn(
+          title: 'Actions',
+          textAlign: TextAlign.end,
+          builder: (p) => Row(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              TextButton(
+                style: TextButton.styleFrom(
+                  visualDensity: VisualDensity.compact,
+                  foregroundColor: ModuleColors.market,
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                ),
+                onPressed: () => _handleTradeAction(context, p, 'BUY'),
+                child: const Text('Buy'),
+              ),
+              const SizedBox(width: 4),
+              TextButton(
+                style: TextButton.styleFrom(
+                  visualDensity: VisualDensity.compact,
+                  foregroundColor: colors.marketNegativeIndicator,
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                ),
+                onPressed: () => _handleTradeAction(context, p, 'SELL'),
+                child: const Text('Sell'),
+              ),
+              const SizedBox(width: 4),
+              OutlinedButton(
+                style: OutlinedButton.styleFrom(
+                  visualDensity: VisualDensity.compact,
+                  side: BorderSide(color: colors.divider),
+                  foregroundColor: colors.textPrimary,
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                ),
+                onPressed: () => _handleExit(context, p),
+                child: const Text('Exit'),
+              ),
+            ],
+          ),
+        ),
       ],
     );
   }
@@ -258,6 +329,9 @@ class _PaperPositionsPnlPaneState extends State<PaperPositionsPnlPane> {
       ltp: p.ltp,
       unrealized: p.unrealized,
       unrealizedPct: p.unrealizedPct,
+      onBuy: () => _handleTradeAction(context, p, 'BUY'),
+      onSell: () => _handleTradeAction(context, p, 'SELL'),
+      onExit: () => _handleExit(context, p),
     );
   }
 
@@ -355,7 +429,18 @@ class _PaperPositionsPnlPaneState extends State<PaperPositionsPnlPane> {
                       ),
                     ),
                   ),
-                if (rows.isEmpty)
+                if (state.loadingPositions)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 24),
+                    child: Center(
+                      child: SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    ),
+                  )
+                else if (rows.isEmpty)
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 24),
                     child: Center(
@@ -421,12 +506,18 @@ class _PaperPositionsPnlPaneState extends State<PaperPositionsPnlPane> {
                   breakpoint: 720,
                   spacing: 10,
                   emptyWidget: Center(
-                    child: Text(
-                      'No open positions.',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: colors.textSecondary,
+                    child: state.loadingPositions
+                        ? const SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : Text(
+                            'No open positions.',
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                  color: colors.textSecondary,
+                                ),
                           ),
-                    ),
                   ),
                   tableBuilder: _buildTable,
                   cardBuilder: _buildCard,

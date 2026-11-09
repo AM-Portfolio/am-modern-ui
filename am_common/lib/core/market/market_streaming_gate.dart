@@ -148,7 +148,10 @@ class MarketStreamingGate {
         ? const Duration(hours: 24)
         : delay;
     _sessionTimer = Timer(capped, () {
-      unawaited(refresh());
+      // A session boundary must bypass the normal one-hour cache. Otherwise a
+      // status fetched shortly before open/close can leave streaming in the
+      // previous state for the rest of the session.
+      unawaited(refresh(force: true));
     });
   }
 

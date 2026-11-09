@@ -708,14 +708,20 @@ class _PaperOrdersPaneState extends State<PaperOrdersPane> {
         );
 
         final empty = Center(
-          child: Text(
-            filtered.isEmpty && all.isNotEmpty
-                ? 'No orders match filters.'
-                : 'No orders today.',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: colors.textSecondary,
+          child: state.loadingOrders
+              ? const SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : Text(
+                  filtered.isEmpty && all.isNotEmpty
+                      ? 'No orders match filters.'
+                      : 'No orders today.',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: colors.textSecondary,
+                      ),
                 ),
-          ),
         );
 
         if (isMobile) {

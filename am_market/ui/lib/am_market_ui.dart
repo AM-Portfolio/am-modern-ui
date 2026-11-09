@@ -14,6 +14,8 @@ export 'features/equity_insider/presentation/widgets/equity_insider_shareholding
 export 'features/watchlists/presentation/pages/watchlists_page.dart';
 export 'features/watchlists/presentation/widgets/add_to_watchlist_popup.dart';
 export 'features/watchlists/presentation/widgets/market_watchlist_star.dart';
+export 'features/watchlists/providers/watchlist_provider.dart'
+    show watchlistCheckStatusProvider, WatchlistCheckStatus;
 export 'features/f_o/presentation/pages/fo_page.dart';
 export 'features/f_o/providers/fo_provider.dart'
     show foActiveSymbolProvider, FoActiveSymbolNotifier;

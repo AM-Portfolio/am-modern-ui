@@ -1,8 +1,10 @@
 import 'package:am_design_system/am_design_system.dart';
+import 'package:am_market_ui/am_market_ui.dart';
 import 'package:am_paper_ui/data/watchlist_models.dart';
 import 'package:am_paper_ui/presentation/widgets/watchlist/common/watchlist_atoms.dart';
 import 'package:am_paper_ui/presentation/widgets/watchlist/watchlist_controller.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -15,28 +17,35 @@ void main() {
   }
 
   group('Paper Trading Watchlist Actions', () {
-    testWidgets('WatchlistActionToolbar triggers onAddToWatchlist when bookmark icon is tapped', (tester) async {
+    testWidgets('WatchlistActionToolbar triggers onAddToWatchlist when star is tapped', (tester) async {
       bool added = false;
       await tester.pumpWidget(
-        MaterialApp(
-          theme: testTheme(),
-          home: Scaffold(
-            body: WatchlistActionToolbar(
-              onBuy: () {},
-              onSell: () {},
-              onFundamentals: () {},
-              onAddToWatchlist: () {
-                added = true;
-              },
+        ProviderScope(
+          overrides: [
+            watchlistCheckStatusProvider.overrideWith((ref, symbol) async => const []),
+          ],
+          child: MaterialApp(
+            theme: testTheme(),
+            home: Scaffold(
+              body: WatchlistActionToolbar(
+                symbol: 'TRENT',
+                onBuy: () {},
+                onSell: () {},
+                onFundamentals: () {},
+                onAddToWatchlist: () {
+                  added = true;
+                },
+              ),
             ),
           ),
         ),
       );
+      await tester.pumpAndSettle();
 
-      final bookmarkFinder = find.byIcon(Icons.bookmark_add_outlined);
-      expect(bookmarkFinder, findsOneWidget);
+      final starFinder = find.byType(MarketWatchlistStar);
+      expect(starFinder, findsOneWidget);
 
-      await tester.tap(bookmarkFinder);
+      await tester.tap(starFinder);
       await tester.pump();
 
       expect(added, isTrue);
@@ -54,33 +63,39 @@ void main() {
       );
 
       await tester.pumpWidget(
-        MaterialApp(
-          theme: testTheme(),
-          home: Scaffold(
-            body: WatchlistRow(
-              stock: stock,
-              selected: false,
-              showActions: true,
-              depthExpanded: false,
-              enableHover: false,
-              onHover: (_) {},
-              onTap: () {},
-              onBuy: () {},
-              onSell: () {},
-              onFundamentals: () {},
-              onAddToWatchlist: () {
-                added = true;
-              },
-              onRemove: () {},
+        ProviderScope(
+          overrides: [
+            watchlistCheckStatusProvider.overrideWith((ref, symbol) async => const []),
+          ],
+          child: MaterialApp(
+            theme: testTheme(),
+            home: Scaffold(
+              body: WatchlistRow(
+                stock: stock,
+                selected: false,
+                showActions: true,
+                depthExpanded: false,
+                enableHover: false,
+                onHover: (_) {},
+                onTap: () {},
+                onBuy: () {},
+                onSell: () {},
+                onFundamentals: () {},
+                onAddToWatchlist: () {
+                  added = true;
+                },
+                onRemove: () {},
+              ),
             ),
           ),
         ),
       );
+      await tester.pumpAndSettle();
 
-      final bookmarkFinder = find.byIcon(Icons.bookmark_add_outlined);
-      expect(bookmarkFinder, findsOneWidget);
+      final starFinder = find.byType(MarketWatchlistStar);
+      expect(starFinder, findsOneWidget);
 
-      await tester.tap(bookmarkFinder);
+      await tester.tap(starFinder);
       await tester.pump();
 
       expect(added, isTrue);

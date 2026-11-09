@@ -1,4 +1,5 @@
 import 'package:am_design_system/am_design_system.dart';
+import 'package:am_market_ui/features/watchlists/presentation/widgets/market_watchlist_star.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -361,6 +362,7 @@ class WatchlistRow extends StatelessWidget {
               ),
               if (showActions) ...[
                 WatchlistActionToolbar(
+                  symbol: stock.symbol,
                   onBuy: onBuy,
                   onSell: onSell,
                   onFundamentals: onFundamentals,
@@ -431,12 +433,14 @@ class WatchlistRow extends StatelessWidget {
 class WatchlistActionToolbar extends StatelessWidget {
   const WatchlistActionToolbar({
     super.key,
+    required this.symbol,
     required this.onBuy,
     required this.onSell,
     required this.onFundamentals,
     this.onAddToWatchlist,
   });
 
+  final String symbol;
   final VoidCallback onBuy;
   final VoidCallback onSell;
   final VoidCallback onFundamentals;
@@ -470,19 +474,11 @@ class WatchlistActionToolbar extends StatelessWidget {
             color: _watchlistAccent(context),
           ),
         ),
-        if (onAddToWatchlist != null) ...[
-          const SizedBox(width: 2),
-          IconButton(
-            tooltip: 'Add to Watchlist',
-            iconSize: 18,
-            visualDensity: VisualDensity.compact,
-            onPressed: onAddToWatchlist,
-            icon: Icon(
-              Icons.bookmark_add_outlined,
-              color: _watchlistAccent(context),
-            ),
-          ),
-        ],
+        const SizedBox(width: 2),
+        MarketWatchlistStar(
+          symbol: symbol,
+          onTap: onAddToWatchlist,
+        ),
       ],
     );
   }

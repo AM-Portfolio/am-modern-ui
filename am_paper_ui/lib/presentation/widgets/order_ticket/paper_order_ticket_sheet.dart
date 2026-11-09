@@ -12,6 +12,7 @@ Future<void> showPaperOrderTicketSheet({
   required String side,
   required ValueChanged<String> onSymbolChanged,
   required ValueChanged<String> onSideChanged,
+  String? initialQuantity,
   VoidCallback? onOrderPlaced,
 }) {
   final colors = context.colors;
@@ -52,6 +53,7 @@ Future<void> showPaperOrderTicketSheet({
                   child: PaperOrderTicket(
                     symbol: symbol,
                     side: side,
+                    initialQuantity: initialQuantity,
                     compact: true,
                     floating: false,
                     onSymbolChanged: onSymbolChanged,

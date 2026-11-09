@@ -7,9 +7,10 @@ import 'add_to_watchlist_popup.dart';
 
 /// Compact star used by Equity Insider and F&O header cards.
 class MarketWatchlistStar extends ConsumerWidget {
-  const MarketWatchlistStar({required this.symbol, super.key});
+  const MarketWatchlistStar({required this.symbol, this.onTap, super.key});
 
   final String symbol;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -20,7 +21,11 @@ class MarketWatchlistStar extends ConsumerWidget {
         return IconButton(
           tooltip: isAdded ? 'Watchlists ($symbol added)' : 'Add to watchlist',
           onPressed: () {
-            AddToWatchlistPopup.show(context, symbol);
+            if (onTap != null) {
+              onTap!();
+            } else {
+              AddToWatchlistPopup.show(context, symbol);
+            }
           },
           icon: Icon(
             isAdded ? Icons.star_rounded : Icons.star_border_rounded,

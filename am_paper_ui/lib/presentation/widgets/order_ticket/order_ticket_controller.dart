@@ -55,7 +55,12 @@ class OrderTicketController extends ChangeNotifier {
     super.dispose();
   }
 
-  void init({required bool compact, required String side, required String symbol}) {
+  void init({
+    required bool compact,
+    required String side,
+    required String symbol,
+    String? initialQuantity,
+  }) {
     _lastSyncedSymbol = symbol.trim().toUpperCase();
     this.side = side.toUpperCase() == 'SELL' ? 'SELL' : 'BUY';
     displayName = symbol;
@@ -64,6 +69,9 @@ class OrderTicketController extends ChangeNotifier {
     if (compact) {
       useLimit = false;
       entryType = 'MARKET';
+    }
+    if (initialQuantity != null && initialQuantity.trim().isNotEmpty) {
+      qty.text = initialQuantity.trim();
     }
     if (symbol.trim().isNotEmpty) {
       loadQuote(symbol);

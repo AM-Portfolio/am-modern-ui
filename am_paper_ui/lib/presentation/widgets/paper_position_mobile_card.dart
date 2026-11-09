@@ -12,6 +12,9 @@ class PaperPositionMobileCard extends StatelessWidget {
     required this.ltp,
     required this.unrealized,
     required this.unrealizedPct,
+    this.onBuy,
+    this.onSell,
+    this.onExit,
   });
 
   final String symbol;
@@ -20,6 +23,9 @@ class PaperPositionMobileCard extends StatelessWidget {
   final double ltp;
   final double unrealized;
   final double unrealizedPct;
+  final VoidCallback? onBuy;
+  final VoidCallback? onSell;
+  final VoidCallback? onExit;
 
   Color _pnlColor(BuildContext context, double v) {
     final colors = context.colors;
@@ -42,54 +48,103 @@ class PaperPositionMobileCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: colors.divider),
       ),
-      child: Row(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  symbol,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  'Qty ${qty.toStringAsFixed(0)} · Avg ${avg > 0 ? fmt.format(avg) : '—'}',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: textTheme.bodySmall?.copyWith(
-                    color: colors.textSecondary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            mainAxisSize: MainAxisSize.min,
+          Row(
             children: [
-              Text(
-                '₹${fmt.format(unrealized)}',
-                style: textTheme.titleSmall?.copyWith(
-                  color: pnlColor,
-                  fontWeight: FontWeight.w700,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      symbol,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Qty ${qty.toStringAsFixed(0)} · Avg ${avg > 0 ? fmt.format(avg) : '—'}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: textTheme.bodySmall?.copyWith(
+                        color: colors.textSecondary,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 2),
-              Text(
-                'LTP ${ltp > 0 ? fmt.format(ltp) : '—'}',
-                style: textTheme.bodySmall?.copyWith(
-                  color: colors.textSecondary,
-                ),
+              const SizedBox(width: 8),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    '₹${fmt.format(unrealized)}',
+                    style: textTheme.titleSmall?.copyWith(
+                      color: pnlColor,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'LTP ${ltp > 0 ? fmt.format(ltp) : '—'}',
+                    style: textTheme.bodySmall?.copyWith(
+                      color: colors.textSecondary,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
+          if (onBuy != null || onSell != null || onExit != null) ...[
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                if (onBuy != null)
+                  TextButton(
+                    style: TextButton.styleFrom(
+                      visualDensity: VisualDensity.compact,
+                      foregroundColor: ModuleColors.market,
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                    ),
+                    onPressed: onBuy,
+                    child: const Text('Buy'),
+                  ),
+                if (onSell != null) ...[
+                  const SizedBox(width: 4),
+                  TextButton(
+                    style: TextButton.styleFrom(
+                      visualDensity: VisualDensity.compact,
+                      foregroundColor: colors.marketNegativeIndicator,
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                    ),
+                    onPressed: onSell,
+                    child: const Text('Sell'),
+                  ),
+                ],
+                if (onExit != null) ...[
+                  const SizedBox(width: 4),
+                  OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      visualDensity: VisualDensity.compact,
+                      side: BorderSide(color: colors.divider),
+                      foregroundColor: colors.textPrimary,
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                    ),
+                    onPressed: onExit,
+                    child: const Text('Exit'),
+                  ),
+                ],
+              ],
+            ),
+          ],
         ],
       ),
     );
