@@ -4,10 +4,12 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   group('orderedImportSources', () {
     test('brokers then cdsl then nps', () {
-      expect(
-        orderedImportSources({'nps', 'groww', 'cdsl', 'zerodha'}),
-        ['groww', 'zerodha', 'cdsl', 'nps'],
-      );
+      expect(orderedImportSources({'nps', 'groww', 'cdsl', 'zerodha'}), [
+        'groww',
+        'zerodha',
+        'cdsl',
+        'nps',
+      ]);
     });
 
     test('empty stays empty', () {
@@ -29,5 +31,14 @@ void main() {
   test('NPS_STATEMENT is supported for upload', () {
     expect(kSupportedImportDocTypes.contains('NPS_STATEMENT'), isTrue);
     expect(kUnsupportedImportDocTypes.contains('NPS_STATEMENT'), isFalse);
+  });
+
+  test('default import source is CDSL', () {
+    expect(kDefaultImportSourceKeys, equals({'cdsl'}));
+    expect(
+      defaultDocTypeForSourceKeys(kDefaultImportSourceKeys),
+      'MUTUAL_FUND',
+    );
+    expect(brokerKeyDisplayName('cdsl'), 'CAS (equity + MF)');
   });
 }

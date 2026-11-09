@@ -17,7 +17,8 @@ class ImportHoldingsInfoRail extends StatelessWidget {
   final bool isCompact;
   final bool showPrivacy;
   final Future<void> Function(RecentImportEntry entry)? onDeleteRecent;
-  final void Function(String portfolioId, String portfolioName)? onOpenPortfolio;
+  final void Function(String portfolioId, String portfolioName)?
+      onOpenPortfolio;
 
   @override
   Widget build(BuildContext context) {
@@ -204,7 +205,8 @@ class ImportRecentCard extends StatefulWidget {
   final List<RecentImportEntry> entries;
   final bool isCompact;
   final Future<void> Function(RecentImportEntry entry)? onDelete;
-  final void Function(String portfolioId, String portfolioName)? onOpenPortfolio;
+  final void Function(String portfolioId, String portfolioName)?
+      onOpenPortfolio;
 
   @override
   State<ImportRecentCard> createState() => _ImportRecentCardState();
@@ -263,12 +265,15 @@ class _ImportRecentCardState extends State<ImportRecentCard> {
   void _showView(RecentImportEntry entry) {
     final accent = Theme.of(context).colorScheme.primary;
     final muted = Theme.of(context).colorScheme.onSurfaceVariant;
+    final dialogW = MediaQuery.sizeOf(context).width < 480
+        ? MediaQuery.sizeOf(context).width - 48
+        : 420.0;
     showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text(entry.title),
         content: SizedBox(
-          width: 420,
+          width: dialogW,
           child: SingleChildScrollView(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -288,7 +293,8 @@ class _ImportRecentCardState extends State<ImportRecentCard> {
                     )),
                 if ((entry.detail ?? '').isNotEmpty) ...[
                   const SizedBox(height: 10),
-                  Text(entry.detail!, style: TextStyle(color: muted, fontSize: 13)),
+                  Text(entry.detail!,
+                      style: TextStyle(color: muted, fontSize: 13)),
                 ],
                 const SizedBox(height: 12),
                 Text('Files',
@@ -305,7 +311,8 @@ class _ImportRecentCardState extends State<ImportRecentCard> {
                   for (final f in entry.files)
                     Padding(
                       padding: const EdgeInsets.only(bottom: 4),
-                      child: Text(f, style: TextStyle(color: muted, fontSize: 13)),
+                      child:
+                          Text(f, style: TextStyle(color: muted, fontSize: 13)),
                     ),
               ],
             ),
@@ -339,6 +346,125 @@ class _ImportRecentCardState extends State<ImportRecentCard> {
       onSelected: (_) => setState(() => _filter = value),
       selectedColor: accent.withValues(alpha: 0.18),
       checkmarkColor: accent,
+    );
+  }
+
+  /// Phone-friendly rows — avoid wide PaginatedSortableTable overflow.
+  Widget _buildCompactRecentList(
+    List<RecentImportEntry> rows, {
+    required Color accent,
+    required Color muted,
+  }) {
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxHeight: 420),
+      child: ListView.separated(
+        shrinkWrap: true,
+        physics: const ClampingScrollPhysics(),
+        itemCount: rows.length,
+        separatorBuilder: (_, __) => const Divider(height: 1),
+        itemBuilder: (context, i) =>
+            _compactRecentTile(rows[i], accent: accent, muted: muted),
+      ),
+    );
+  }
+
+  Widget _compactRecentTile(
+    RecentImportEntry e, {
+    required Color accent,
+    required Color muted,
+  }) {
+    final statusColor = _statusColor(context, e.status);
+    return InkWell(
+      onTap: () => _showView(e),
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    e.title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${e.whenLabel} · ${e.processByLabel}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: 11.5, color: muted),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    e.filesSummary,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: 11, color: muted),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  e.status,
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w700,
+                    color: statusColor,
+                  ),
+                ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      tooltip: 'View',
+                      visualDensity: VisualDensity.compact,
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(
+                        minWidth: 36,
+                        minHeight: 36,
+                      ),
+                      icon: Icon(
+                        Icons.visibility_outlined,
+                        size: 18,
+                        color: accent,
+                      ),
+                      onPressed: () => _showView(e),
+                    ),
+                    if (widget.onDelete != null)
+                      IconButton(
+                        tooltip: 'Delete',
+                        visualDensity: VisualDensity.compact,
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(
+                          minWidth: 36,
+                          minHeight: 36,
+                        ),
+                        icon: Icon(
+                          Icons.delete_outline,
+                          size: 18,
+                          color: Theme.of(context).colorScheme.error,
+                        ),
+                        onPressed: () => _confirmDelete(e),
+                      ),
+                  ],
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -399,9 +525,11 @@ class _ImportRecentCardState extends State<ImportRecentCard> {
                       height: 1.35,
                     ),
               )
+            else if (widget.isCompact)
+              _buildCompactRecentList(rows, accent: accent, muted: muted)
             else
               SizedBox(
-                height: widget.isCompact ? 320 : 380,
+                height: 380,
                 child: PaginatedSortableTable<RecentImportEntry>(
                   items: rows,
                   pageSize: 5,

@@ -69,9 +69,7 @@ class SharedFamilyFilterDropdown extends StatelessWidget {
                       fontWeight: o.key == selectedKey
                           ? FontWeight.w700
                           : FontWeight.w500,
-                      color: o.key == selectedKey
-                          ? accent
-                          : colors.textPrimary,
+                      color: o.key == selectedKey ? accent : colors.textPrimary,
                       fontSize: fontSize,
                     ),
                   ),
@@ -84,29 +82,32 @@ class SharedFamilyFilterDropdown extends StatelessWidget {
       ],
       child: Container(
         height: height,
-        constraints: BoxConstraints(minWidth: compact ? 118 : 132),
-        padding: EdgeInsets.symmetric(horizontal: compact ? 10 : 12),
+        constraints: BoxConstraints(
+          minWidth: compact ? 96 : 132,
+          maxWidth: compact ? 140 : 220,
+        ),
+        padding: EdgeInsets.symmetric(horizontal: compact ? 8 : 12),
         decoration: BoxDecoration(
           color: colors.cardSurface,
           borderRadius: BorderRadius.circular(999),
           border: Border.all(color: accent.withValues(alpha: 0.35)),
         ),
         child: Row(
-          mainAxisSize: MainAxisSize.min,
           children: [
             Icon(Icons.groups_outlined, size: iconSize, color: accent),
-            SizedBox(width: compact ? 6 : 8),
-            Text(
-              current.label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontWeight: FontWeight.w600,
-                fontSize: fontSize,
-                color: colors.textPrimary,
+            SizedBox(width: compact ? 4 : 8),
+            Expanded(
+              child: Text(
+                current.label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: fontSize,
+                  color: colors.textPrimary,
+                ),
               ),
             ),
-            const SizedBox(width: 4),
             Icon(
               Icons.keyboard_arrow_down_rounded,
               size: compact ? 16 : 18,

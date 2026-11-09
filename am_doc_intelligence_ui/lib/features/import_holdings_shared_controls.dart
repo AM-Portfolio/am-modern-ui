@@ -18,6 +18,9 @@ const List<ImportBrokerOption> kImportBrokerOptions = [
   ImportBrokerOption(key: 'nps', label: 'NPS'),
 ];
 
+/// Default source on Import holdings load (highlighted + portfolio name seed).
+const Set<String> kDefaultImportSourceKeys = {'cdsl'};
+
 /// Stable extract order: brokers first, then CDSL, then NPS.
 List<String> orderedImportSources(Iterable<String> keys) {
   const tail = ['cdsl', 'nps'];
@@ -223,6 +226,7 @@ class ImportHoldingsSharedControls extends StatefulWidget {
   final ValueChanged<Set<String>> onSourcesChanged;
   final TextEditingController portfolioNameController;
   final TextEditingController passwordController;
+
   /// Shown when NPS is among selected sources (DOB / statement password).
   final TextEditingController? npsPasswordController;
   final String? documentType;
@@ -233,6 +237,7 @@ class ImportHoldingsSharedControls extends StatefulWidget {
   final bool showPassword;
   final bool showDocumentType;
   final bool useSimpleDocTypePicker;
+
   /// When non-null, overrides `selectedSourceKeys.contains('nps')` for NPS field.
   final bool? showNpsPassword;
 
@@ -314,9 +319,11 @@ class _ImportHoldingsSharedControlsState
   }
 
   List<String> _supportedOnly(Iterable<String> types) => types
-      .where((t) =>
-          kSupportedImportDocTypes.contains(t) &&
-          !kUnsupportedImportDocTypes.contains(t))
+      .where(
+        (t) =>
+            kSupportedImportDocTypes.contains(t) &&
+            !kUnsupportedImportDocTypes.contains(t),
+      )
       .toList();
 
   List<String> _filteredDocTypes() {
@@ -328,16 +335,22 @@ class _ImportHoldingsSharedControlsState
       switch (broker) {
         case 'ZERODHA':
           raw = _docTypes
-              .where((t) =>
-                  t == 'STOCK_PORTFOLIO' || t == 'TRADE_EQ' || t == 'TRADE_FNO')
+              .where(
+                (t) =>
+                    t == 'STOCK_PORTFOLIO' ||
+                    t == 'TRADE_EQ' ||
+                    t == 'TRADE_FNO',
+              )
               .toList();
           break;
         case 'GROWW':
           raw = _docTypes
-              .where((t) =>
-                  t == 'STOCK_PORTFOLIO' ||
-                  t == 'MUTUAL_FUND' ||
-                  t == 'TRADE_EQ')
+              .where(
+                (t) =>
+                    t == 'STOCK_PORTFOLIO' ||
+                    t == 'MUTUAL_FUND' ||
+                    t == 'TRADE_EQ',
+              )
               .toList();
           break;
         case 'DHAN':
@@ -412,13 +425,13 @@ class _ImportHoldingsSharedControlsState
     final accent = Theme.of(context).colorScheme.primary;
     final muted = Theme.of(context).colorScheme.onSurfaceVariant;
     final filtered = _filteredDocTypes();
-    final currentDoc = widget.documentType != null &&
-            filtered.contains(widget.documentType)
-        ? widget.documentType
-        : null;
-    final selectedLabels = orderedImportSources(widget.selectedSourceKeys)
-        .map(brokerKeyDisplayName)
-        .join(', ');
+    final currentDoc =
+        widget.documentType != null && filtered.contains(widget.documentType)
+            ? widget.documentType
+            : null;
+    final selectedLabels = orderedImportSources(
+      widget.selectedSourceKeys,
+    ).map(brokerKeyDisplayName).join(', ');
 
     return GlassCard(
       padding: EdgeInsets.zero,
@@ -439,8 +452,17 @@ class _ImportHoldingsSharedControlsState
             LayoutBuilder(
               builder: (context, constraints) {
                 final brokerCount = kImportBrokerOptions.length;
-                final cols = constraints.maxWidth < 360 ? 3 : 4;
-                final aspect = constraints.maxWidth < 360 ? 1.3 : 1.45;
+                final w = constraints.maxWidth;
+                final cols = w < 340
+                    ? 2
+                    : w < 480
+                        ? 3
+                        : 4;
+                final aspect = w < 340
+                    ? 1.15
+                    : w < 480
+                        ? 1.25
+                        : 1.45;
                 return GridView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
@@ -453,8 +475,9 @@ class _ImportHoldingsSharedControlsState
                   ),
                   itemBuilder: (context, i) {
                     final opt = kImportBrokerOptions[i];
-                    final selected =
-                        widget.selectedSourceKeys.contains(opt.key);
+                    final selected = widget.selectedSourceKeys.contains(
+                      opt.key,
+                    );
                     final logoPath = brokerLogoAsset(opt.key);
                     return Tooltip(
                       message: opt.label,
@@ -471,9 +494,8 @@ class _ImportHoldingsSharedControlsState
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(10),
                               border: Border.all(
-                                color: selected
-                                    ? accent
-                                    : const Color(0xFFE4E7EC),
+                                color:
+                                    selected ? accent : const Color(0xFFE4E7EC),
                                 width: selected ? 3 : 1,
                               ),
                             ),
@@ -537,9 +559,8 @@ class _ImportHoldingsSharedControlsState
                         : Icons.visibility_outlined,
                     size: 18,
                   ),
-                  onPressed: () => setState(
-                    () => _passwordVisible = !_passwordVisible,
-                  ),
+                  onPressed: () =>
+                      setState(() => _passwordVisible = !_passwordVisible),
                 ),
               ),
               if (_npsSelected && widget.npsPasswordController != null) ...[
@@ -550,32 +571,51 @@ class _ImportHoldingsSharedControlsState
                   style: TextStyle(fontSize: 11, color: muted, height: 1.35),
                 ),
                 const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Expanded(
-                      child: AppTextField(
-                        controller: _npsFirstNameController,
-                        labelText: 'First name',
-                        hintText: 'As on CRA',
-                        focusedBorderColor: accent,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: AppTextField(
-                        controller: _npsDobController,
-                        labelText: 'DOB',
-                        hintText: 'DD/MM/YYYY',
-                        focusedBorderColor: accent,
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    IconButton(
+                LayoutBuilder(
+                  builder: (context, c) {
+                    final stack = c.maxWidth < 420;
+                    final nameField = AppTextField(
+                      controller: _npsFirstNameController,
+                      labelText: 'First name',
+                      hintText: 'As on CRA',
+                      focusedBorderColor: accent,
+                    );
+                    final dobField = AppTextField(
+                      controller: _npsDobController,
+                      labelText: 'DOB',
+                      hintText: 'DD/MM/YYYY',
+                      focusedBorderColor: accent,
+                    );
+                    final suggest = IconButton(
                       tooltip: 'Suggest NPS password',
                       onPressed: _applyNpsSuggest,
                       icon: Icon(Icons.auto_awesome, color: accent),
-                    ),
-                  ],
+                    );
+                    if (stack) {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          nameField,
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Expanded(child: dobField),
+                              suggest,
+                            ],
+                          ),
+                        ],
+                      );
+                    }
+                    return Row(
+                      children: [
+                        Expanded(child: nameField),
+                        const SizedBox(width: 8),
+                        Expanded(child: dobField),
+                        const SizedBox(width: 6),
+                        suggest,
+                      ],
+                    );
+                  },
                 ),
                 const SizedBox(height: 8),
                 AppTextField(
