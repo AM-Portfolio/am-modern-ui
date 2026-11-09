@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:am_design_system/am_design_system.dart';
+import 'package:am_doc_intelligence_ui/features/email_discover_models.dart';
 import 'package:am_doc_intelligence_ui/features/recent_imports_store.dart';
 
 /// Native builds: Gmail OAuth is web-only — point users to Upload or desktop web.
@@ -11,10 +12,13 @@ class EmailExtractorView extends StatelessWidget {
     this.onImportCompleted,
     this.useSharedImportControls = false,
     this.sharedBrokerEmailId,
+    this.sharedSourceEmailIds,
     this.passwordController,
+    this.npsPasswordController,
     this.portfolioNameController,
     this.onOpenPortfolio,
     this.onOpenTrade,
+    this.onDiscoverChanged,
   });
 
   /// When embedded under Import holdings.
@@ -25,10 +29,13 @@ class EmailExtractorView extends StatelessWidget {
   final ValueChanged<RecentImportEntry>? onImportCompleted;
   final bool useSharedImportControls;
   final String? sharedBrokerEmailId;
+  final List<String>? sharedSourceEmailIds;
   final TextEditingController? passwordController;
+  final TextEditingController? npsPasswordController;
   final TextEditingController? portfolioNameController;
   final void Function(String portfolioId, String portfolioName)? onOpenPortfolio;
   final void Function(String portfolioId, String portfolioName)? onOpenTrade;
+  final ValueChanged<EmailDiscoverSnapshot>? onDiscoverChanged;
 
   @override
   Widget build(BuildContext context) {

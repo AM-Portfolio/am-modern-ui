@@ -23,8 +23,8 @@ class PortfolioHeatmapWebPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final activePortfolioId = context.selectedPortfolioId ?? portfolioId;
-    final activePortfolioName = context.selectedPortfolioName ?? portfolioName;
+    final activePortfolioId = portfolioId ?? context.selectedPortfolioId;
+    final activePortfolioName = portfolioName ?? context.selectedPortfolioName;
 
     if (activePortfolioId == null) {
       return const Center(child: Text('Please select a portfolio'));

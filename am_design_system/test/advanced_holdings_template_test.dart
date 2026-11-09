@@ -98,10 +98,10 @@ void main() {
     expect(find.text('Loss'), findsOneWidget);
   });
 
-  testWidgets('T02 renders Table and Card view mode buttons', (tester) async {
+  testWidgets('T02 renders Cards and Table view mode segment', (tester) async {
     await _pump(tester, _testHoldings);
     expect(find.text('Table'), findsOneWidget);
-    expect(find.text('Card'), findsOneWidget);
+    expect(find.text('Cards'), findsOneWidget);
   });
 
   testWidgets('T03 renders Sector and Industry dropdowns', (tester) async {

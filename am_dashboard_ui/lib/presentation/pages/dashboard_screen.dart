@@ -11,6 +11,7 @@ class DashboardScreen extends ConsumerWidget {
   final String userId;
   final VoidCallback? onOpenDocIntel;
   final VoidCallback? onOpenPaper;
+  final VoidCallback? onOpenUsers;
   final ValueChanged<GlobalAddActionKind>? onQuickAdd;
 
   const DashboardScreen({
@@ -18,6 +19,7 @@ class DashboardScreen extends ConsumerWidget {
     required this.userId,
     this.onOpenDocIntel,
     this.onOpenPaper,
+    this.onOpenUsers,
     this.onQuickAdd,
   });
 
@@ -32,12 +34,14 @@ class DashboardScreen extends ConsumerWidget {
                 userId: resolvedUserId,
                 onOpenDocIntel: onOpenDocIntel,
                 onOpenPaper: onOpenPaper,
+                onOpenUsers: onOpenUsers,
                 onQuickAdd: onQuickAdd,
               )
             : DashboardWebScreen(
                 userId: resolvedUserId,
                 onOpenDocIntel: onOpenDocIntel,
                 onOpenPaper: onOpenPaper,
+                onOpenUsers: onOpenUsers,
                 onQuickAdd: onQuickAdd,
               ),
       ),

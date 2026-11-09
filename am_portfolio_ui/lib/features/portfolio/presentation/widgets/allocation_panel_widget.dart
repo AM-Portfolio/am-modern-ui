@@ -1,5 +1,5 @@
-import 'dart:ui';
 import 'dart:math' as math;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:am_design_system/am_design_system.dart';
 import '../../internal/domain/entities/portfolio_analytics.dart';
@@ -55,7 +55,8 @@ class _AllocationPanelWidgetState extends State<AllocationPanelWidget>
     _pulseController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 2500),
-    )..repeat(reverse: true);
+    );
+    if (!kIsWeb) _pulseController.repeat(reverse: true);
     _pulseAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
@@ -148,11 +149,10 @@ class _AllocationPanelWidgetState extends State<AllocationPanelWidget>
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(18),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-        child: Container(
+    return webGlass(
+      sigma: 16,
+      clip: BorderRadius.circular(18),
+      child: Container(
           height: double.infinity,
           decoration: BoxDecoration(
             gradient: LinearGradient(
@@ -217,7 +217,6 @@ class _AllocationPanelWidgetState extends State<AllocationPanelWidget>
             Expanded(child: _buildContent()),
           ],
         ),
-      ),
       ),
     );
   }

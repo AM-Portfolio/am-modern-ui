@@ -40,4 +40,27 @@ class PortfolioEndpoints {
 
   /// Get user portfolio summary
   static String userSummary() => summary;
+
+  /// Accounts hub (identity + demat/MF + NPS + per-broker amounts)
+  static const String accountsHub = '/v1/portfolios/accounts-hub';
+
+  /// CDSL CAS account directory
+  static const String casAccounts = '/v1/portfolios/accounts';
+
+  /// Latest CAS import meta (cover / validation / as-of)
+  static const String casLatest = '/v1/portfolios/cas/latest';
+
+  /// Latest NPS import meta (PRAN / tiers / validation)
+  static const String npsLatest = '/v1/portfolios/nps/latest';
+
+  /// MF folio groups for a CDSL CAS portfolio
+  static String casFolios(String portfolioId) =>
+      '/v1/portfolios/$portfolioId/folios';
+
+  static String casFolio(String portfolioId, String folio) =>
+      '/v1/portfolios/$portfolioId/folios/${Uri.encodeComponent(folio)}';
+
+  /// NPS scheme lines (statement + live NAV)
+  static String npsSchemes(String portfolioId) =>
+      '/v1/portfolios/$portfolioId/nps/schemes';
 }

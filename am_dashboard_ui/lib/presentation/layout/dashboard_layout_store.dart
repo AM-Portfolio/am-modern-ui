@@ -9,7 +9,8 @@ abstract class DashboardLayoutRepository {
 }
 
 class LocalDashboardLayoutRepository implements DashboardLayoutRepository {
-  static String _key(String userId) => 'dashboard_layout_v3_$userId';
+  /// Bump when default slot set changes so stale prefs cannot hide new widgets.
+  static String _key(String userId) => 'dashboard_layout_v6_$userId';
 
   @override
   Future<DashboardLayoutModel?> load(String userId) async {

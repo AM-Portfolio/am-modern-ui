@@ -44,8 +44,11 @@ class PortfolioCubit extends Cubit<PortfolioState> {
 
   String? _loadingPortfolioId;
   String? _loadedPortfolioId;
+  int _requestGen = 0;
+  final Map<String, PortfolioLoaded> _scopeSnapshots = {};
 
   String _currentTimeFrame = 'all';
+  String _allPersona = 'household';
 
   void setTimeFrame(String timeFrame) {
     if (_currentTimeFrame == timeFrame) return;
@@ -396,31 +399,64 @@ class PortfolioCubit extends Cubit<PortfolioState> {
     }
   }
 
-  /// Load merged data for all portfolios
-  Future<void> loadAllPortfolios() async {
+  /// Load merged data for all portfolios.
+  /// [persona] is `you`, `household`, or a family member id.
+  Future<void> loadAllPortfolios({String? persona}) async {
+    final scope = persona ?? _allPersona;
+    _allPersona = scope;
+    final scopeId = 'all|$scope';
+    if (_loadedPortfolioId == scopeId &&
+        state is PortfolioLoaded &&
+        (state as PortfolioLoaded).portfolioId == 'all' &&
+        !(state as PortfolioLoaded).isStale &&
+        !(state as PortfolioLoaded).isRefreshing) {
+      return;
+    }
+    final gen = ++_requestGen;
+    bool current() => gen == _requestGen && !isClosed;
     CommonLogger.methodEntry('loadAllPortfolios', tag: 'PortfolioCubit');
-    if (!isClosed) {
+    final cached = _scopeSnapshots[scopeId];
+    if (cached != null) {
+      emit(cached.copyWith(isStale: true, isRefreshing: true));
+    } else {
       emit(PortfolioLoading(portfolioList: state.portfolioList));
     }
 
     try {
-      final summary = await _portfolioService.getPortfolioSummary(_currentTimeFrame);
-      final holdings = await _portfolioService.getPortfolioHoldings();
-      
-      if (!isClosed) {
-        emit(
-          PortfolioLoaded(
-            portfolioId: 'all',
-            summary: summary,
-            holdings: holdings.holdings,
-            portfolioList: state.portfolioList,
-          ),
-        );
-      }
+      final summary = await _portfolioService.getPortfolioSummaryById(
+        scopeId,
+        _currentTimeFrame,
+      );
+      if (!current()) return;
+      emit(
+        PortfolioLoaded(
+          portfolioId: 'all',
+          summary: summary,
+          holdings: cached?.holdings ?? const [],
+          portfolioList: state.portfolioList,
+          isHoldingsLoading: true,
+          isRefreshing: true,
+        ),
+      );
+      final holdings = await _portfolioService.getPortfolioHoldingsById(scopeId);
+      if (!current()) return;
+      final loaded = PortfolioLoaded(
+        portfolioId: 'all',
+        summary: summary,
+        holdings: holdings.holdings,
+        portfolioList: state.portfolioList,
+      );
+      _scopeSnapshots[scopeId] = loaded;
+      _loadedPortfolioId = scopeId;
+      emit(loaded);
     } catch (e) {
       CommonLogger.error('loadAllPortfolios Error', error: e, tag: 'PortfolioCubit');
-      if (!isClosed) {
-        emit(PortfolioError(e.toString(), portfolioList: state.portfolioList));
+      if (current()) {
+        if (cached != null) {
+          emit(cached.copyWith(isStale: false, isRefreshing: false));
+        } else {
+          emit(PortfolioError(e.toString(), portfolioList: state.portfolioList));
+        }
       }
     }
   }
@@ -437,6 +473,8 @@ class PortfolioCubit extends Cubit<PortfolioState> {
       return;
     }
 
+    final gen = ++_requestGen;
+    bool current() => gen == _requestGen && !isClosed;
     _loadingPortfolioId = portfolioId;
 
     CommonLogger.methodEntry(
@@ -450,12 +488,17 @@ class PortfolioCubit extends Cubit<PortfolioState> {
       tag: 'PortfolioCubit',
     );
 
+    final remembered = _scopeSnapshots[portfolioId];
+    if (remembered != null && current()) {
+      emit(remembered.copyWith(isStale: true, isRefreshing: true));
+    }
+
     try {
       final cachedHoldings = await _portfolioService.getCachedPortfolioHoldingsById(portfolioId);
       final cachedSummary = await _portfolioService.getCachedPortfolioSummaryById(portfolioId);
 
       if (cachedHoldings != null && cachedSummary != null) {
-        if (!isClosed) {
+        if (current()) {
           emit(
             PortfolioLoaded(
               portfolioId: portfolioId,
@@ -498,7 +541,7 @@ class PortfolioCubit extends Cubit<PortfolioState> {
         _currentTimeFrame,
       );
 
-      if (!isClosed) {
+      if (current()) {
         emit(
           PortfolioLoaded(
             portfolioId: portfolioId,
@@ -533,17 +576,17 @@ class PortfolioCubit extends Cubit<PortfolioState> {
         tag: 'PortfolioCubit',
       );
 
-      if (!isClosed) {
+      if (current()) {
         _loadedPortfolioId = portfolioId;
-        emit(
-          PortfolioLoaded(
-            portfolioId: portfolioId,
-            summary: summary,
-            holdings: holdings.holdings,
-            portfolioList: state.portfolioList,
-            isHoldingsLoading: false,
-          ),
+        final loaded = PortfolioLoaded(
+          portfolioId: portfolioId,
+          summary: summary,
+          holdings: holdings.holdings,
+          portfolioList: state.portfolioList,
+          isHoldingsLoading: false,
         );
+        _scopeSnapshots[portfolioId] = loaded;
+        emit(loaded);
       }
 
       CommonLogger.methodExit(
@@ -573,7 +616,7 @@ class PortfolioCubit extends Cubit<PortfolioState> {
         stackTrace: StackTrace.current,
       );
 
-      if (!isClosed) {
+      if (current()) {
         emit(
           PortfolioError(error.toString(), portfolioList: state.portfolioList),
         );

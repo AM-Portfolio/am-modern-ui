@@ -180,7 +180,10 @@ class _PortfolioHeatmapWidgetState
     if (!mounted) return;
     final full = _lookupFullSectorTile(tile);
     final hasChildren = full.children != null && full.children!.isNotEmpty;
-    if (!hasChildren) return;
+    if (!hasChildren) {
+      _inspectedTile.value = full;
+      return;
+    }
     CommonLogger.userAction(
       'Heatmap sector drill: ${full.name}',
       tag: '${widget.config.logTag}.Action',
@@ -232,8 +235,15 @@ class _PortfolioHeatmapWidgetState
     final portfolioHeatmapCubit = context.read<PortfolioHeatmapCubit>();
 
     // Load analytics data first
+    final filterKey = ref.read(familyPortfolioFilterProvider);
     portfolioAnalyticsCubit
-        .loadAnalytics(widget.portfolioId, timeFrame: selectedTimeframe)
+        .loadAnalytics(
+          widget.portfolioId,
+          timeFrame: selectedTimeframe,
+          persona: widget.portfolioId == 'all'
+              ? holdingsPersonaParam(filterKey)
+              : null,
+        )
         .then((_) {
           if (!mounted || loadGen != _heatmapLoadGeneration) return;
           final analyticsState = portfolioAnalyticsCubit.state;
@@ -290,6 +300,9 @@ class _PortfolioHeatmapWidgetState
   Widget build(BuildContext context) {
     ref.listen(appTimeFrameProvider, (previous, next) {
       if (previous != next) _loadHeatmapData();
+    });
+    ref.listen<String>(familyPortfolioFilterProvider, (previous, next) {
+      if (previous != next && widget.portfolioId == 'all') _loadHeatmapData();
     });
     ref.watch(appTimeFrameProvider);
 

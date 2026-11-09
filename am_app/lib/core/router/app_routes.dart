@@ -9,6 +9,7 @@ class AppRoutes {
   static const verifyEmail = '/verify-email';
 
   static const dashboard = '/app/dashboard';
+  static const users = '/app/users';
   static const portfolio = '/app/portfolio';
   static const trade = '/app/trade';
   static const tradeDiscovery = '/app/trade/portfolios';

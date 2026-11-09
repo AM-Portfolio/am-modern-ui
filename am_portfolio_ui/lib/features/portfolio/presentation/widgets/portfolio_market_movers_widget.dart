@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:am_design_system/am_design_system.dart' as ds;
@@ -114,8 +113,9 @@ class _PortfolioMarketMoversWidgetState extends State<PortfolioMarketMoversWidge
           ),
         ],
       ),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+      child: ds.webGlass(
+        sigma: 12,
+        clip: BorderRadius.circular(16),
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(

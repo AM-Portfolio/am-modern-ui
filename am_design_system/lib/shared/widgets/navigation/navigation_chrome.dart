@@ -1,8 +1,7 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:am_design_system/core/theme/app_colors.dart';
 import 'package:am_design_system/core/theme/app_colors_theme.dart';
+import 'package:am_design_system/core/theme/web_glass.dart';
 
 /// Shared floating navigation chrome (top pill track + bottom bar).
 ///
@@ -53,18 +52,16 @@ class NavigationChrome {
     required Widget child,
     double borderRadius = 28,
   }) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(borderRadius),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: blurSigma, sigmaY: blurSigma),
-        child: DecoratedBox(
-          decoration: decoration(
-            context,
-            isDark: isDark,
-            borderRadius: borderRadius,
-          ),
-          child: child,
+    return webGlass(
+      sigma: blurSigma,
+      clip: BorderRadius.circular(borderRadius),
+      child: DecoratedBox(
+        decoration: decoration(
+          context,
+          isDark: isDark,
+          borderRadius: borderRadius,
         ),
+        child: child,
       ),
     );
   }

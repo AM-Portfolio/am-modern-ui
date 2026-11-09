@@ -23,6 +23,10 @@ String? _logoKey(String? raw) {
       return 'upstox';
     case 'kotak':
       return 'kotak';
+    case 'cdsl':
+      return 'cdsl';
+    case 'nps':
+      return 'nps';
     default:
       return null;
   }
@@ -45,6 +49,10 @@ String? brokerLogoAsset(String? brokerId) {
       return 'assets/images/brokers/upstox.png';
     case 'kotak':
       return 'assets/images/brokers/kotak.png';
+    case 'cdsl':
+      return 'assets/images/brokers/cdsl.png';
+    case 'nps':
+      return 'assets/images/brokers/nps.png';
     default:
       return null;
   }
@@ -69,6 +77,10 @@ String brokerDisplayName(String code) {
       return 'Upstox';
     case 'kotak':
       return 'Kotak';
+    case 'cdsl':
+      return 'CDSL CAS';
+    case 'nps':
+      return 'NPS';
     case '__auto__':
       return 'Auto-detect';
     default:
@@ -88,6 +100,10 @@ String brokerDisplayName(String code) {
           return 'Upstox';
         case 'KOTAK':
           return 'Kotak';
+        case 'CDSL':
+          return 'CDSL CAS';
+        case 'NPS':
+          return 'NPS';
         case '__AUTO__':
           return 'Auto-detect';
         default:

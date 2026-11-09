@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:am_doc_intelligence_ui/features/document_processor/document_processor_view.dart';
+import 'package:am_doc_intelligence_ui/features/email_discover_models.dart';
 import 'package:am_doc_intelligence_ui/features/email_extractor/email_extractor_view.dart';
 import 'package:am_doc_intelligence_ui/features/import_holdings_info_rail.dart';
 import 'package:am_doc_intelligence_ui/features/import_holdings_shared_controls.dart';
@@ -34,15 +35,19 @@ class DocIntelligenceScreen extends StatefulWidget {
 
 class _DocIntelligenceScreenState extends State<DocIntelligenceScreen> {
   List<RecentImportEntry> _recentEntries = const [];
+  /// Local-only hides until next full page reload (no server delete API).
+  final Set<String> _hiddenRecentIds = {};
   /// Bumped on refresh / userId change so a stale [_loadRecent] cannot clobber.
   int _recentLoadGen = 0;
-  String? _selectedBrokerKey;
+  Set<String> _selectedSourceKeys = {};
   String? _documentType;
   late _ImportSource _source;
   final TextEditingController _portfolioNameController =
       TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _npsPasswordController = TextEditingController();
   String? _autoPortfolioName;
+  EmailDiscoverSnapshot _emailDiscover = const EmailDiscoverSnapshot();
 
   static const double _mobileShellMax = 1100;
   static const int _recentCap = 25;
@@ -74,6 +79,7 @@ class _DocIntelligenceScreenState extends State<DocIntelligenceScreen> {
   void dispose() {
     _portfolioNameController.dispose();
     _passwordController.dispose();
+    _npsPasswordController.dispose();
     super.dispose();
   }
 
@@ -101,7 +107,10 @@ class _DocIntelligenceScreenState extends State<DocIntelligenceScreen> {
 
     final merged = <RecentImportEntry>[...uploadRows, ...mailboxRows]
       ..sort((a, b) => b.at.compareTo(a.at));
-    final capped = merged.take(_recentCap).toList();
+    final capped = merged
+        .where((e) => !_hiddenRecentIds.contains(e.id))
+        .take(_recentCap)
+        .toList();
 
     // Best-effort local cache for offline display; server is SoT.
     try {
@@ -222,25 +231,46 @@ class _DocIntelligenceScreenState extends State<DocIntelligenceScreen> {
     await _loadRecent();
   }
 
+  Future<void> _onDeleteRecent(RecentImportEntry entry) async {
+    _hiddenRecentIds.add(entry.id);
+    try {
+      await RecentImportsStore.instance.remove(widget.userId, entry.id);
+    } catch (_) {}
+    if (!mounted) return;
+    setState(() {
+      _recentEntries =
+          _recentEntries.where((e) => e.id != entry.id).toList();
+    });
+  }
+
   void _setSource(_ImportSource source) {
     if (_source == source) return;
     setState(() => _source = source);
     widget.onTabChanged?.call(_slugForSource(source));
   }
 
-  void _onBrokerSelected(String key) {
-    final brokerDefault = brokerKeyDisplayName(key);
+  void _onSourcesChanged(Set<String> keys) {
+    final ordered = orderedImportSources(keys);
+    final label = ordered.isEmpty
+        ? ''
+        : ordered.length == 1
+            ? brokerKeyDisplayName(ordered.first)
+            : '${ordered.length} sources';
     final current = _portfolioNameController.text.trim();
     final shouldReplaceName = current.isEmpty ||
         current == (_autoPortfolioName ?? '') ||
-        (_selectedBrokerKey != null &&
-            current == brokerKeyDisplayName(_selectedBrokerKey));
+        (_autoPortfolioName != null && current == _autoPortfolioName);
     setState(() {
-      _selectedBrokerKey = key;
-      _documentType = null;
-      if (shouldReplaceName) {
-        _portfolioNameController.text = brokerDefault;
-        _autoPortfolioName = brokerDefault;
+      _selectedSourceKeys = keys;
+      // CDSL/NPS auto-pick the matching doc type; other brokers clear for chips.
+      _documentType = defaultDocTypeForSourceKeys(keys);
+      // Hide passwords until Email view finishes discover for the new set.
+      if (_source == _ImportSource.email) {
+        _emailDiscover = const EmailDiscoverSnapshot(discovering: true);
+      }
+      if (shouldReplaceName && label.isNotEmpty) {
+        _portfolioNameController.text = label;
+        _autoPortfolioName = label;
       }
     });
   }
@@ -325,28 +355,47 @@ class _DocIntelligenceScreenState extends State<DocIntelligenceScreen> {
   }
 
   Widget _sharedControls() {
-    final brokerHint = _selectedBrokerKey != null
-        ? brokerKeyDisplayName(_selectedBrokerKey)
-        : null;
+    final ordered = orderedImportSources(_selectedSourceKeys);
+    final brokerHint = ordered.isEmpty
+        ? null
+        : ordered.length == 1
+            ? brokerKeyDisplayName(ordered.first)
+            : '${ordered.length} sources';
     final isEmail = _source == _ImportSource.email;
+    // Email: passwords only after Gmail discover finds a statement.
+    final showEmailPassword =
+        isEmail && _emailDiscover.showPasswordFields;
     return ImportHoldingsSharedControls(
-      selectedBrokerKey: _selectedBrokerKey,
-      onBrokerSelected: _onBrokerSelected,
+      selectedSourceKeys: _selectedSourceKeys,
+      onSourcesChanged: _onSourcesChanged,
       portfolioNameController: _portfolioNameController,
       passwordController: _passwordController,
+      npsPasswordController: _npsPasswordController,
       documentType: _documentType,
       onDocumentTypeChanged: (v) => setState(() {
         _documentType =
             (v == null || v.isEmpty || v == kImportDocTypeAuto) ? null : v;
+        // Doc-type chips can seed the matching source when none selected yet.
+        if (_selectedSourceKeys.isEmpty) {
+          if (_documentType == 'MUTUAL_FUND') {
+            _selectedSourceKeys = {'cdsl'};
+          } else if (_documentType == 'NPS_STATEMENT') {
+            _selectedSourceKeys = {'nps'};
+          }
+        }
       }),
       portfolioNameHint: brokerHint != null
           ? 'Optional — defaults to $brokerHint'
           : 'Optional — defaults to broker name',
-      showPassword: true,
-      passwordRequiredHint: isEmail,
+      showPassword: isEmail ? showEmailPassword : true,
+      passwordRequiredHint: isEmail || showEmailPassword,
       showDocumentType: !isEmail,
       documentTypeOptional: false,
       useSimpleDocTypePicker: true,
+      // NPS field only when NPS was found (not merely selected).
+      showNpsPassword: !isEmail
+          ? null
+          : _emailDiscover.found.any((h) => h.brokerId == 'nps'),
     );
   }
 
@@ -367,12 +416,20 @@ class _DocIntelligenceScreenState extends State<DocIntelligenceScreen> {
           child: EmailExtractorView(
             compactImportMode: true,
             useSharedImportControls: true,
-            sharedBrokerEmailId: brokerKeyToEmailId(_selectedBrokerKey),
+            sharedSourceEmailIds: orderedImportSources(_selectedSourceKeys)
+                .map(brokerKeyToEmailId)
+                .whereType<String>()
+                .toList(),
             passwordController: _passwordController,
+            npsPasswordController: _npsPasswordController,
             portfolioNameController: _portfolioNameController,
             onImportCompleted: _onImportCompleted,
             onOpenPortfolio: widget.onOpenPortfolio,
             onOpenTrade: widget.onOpenTrade,
+            onDiscoverChanged: (snap) {
+              if (!mounted) return;
+              setState(() => _emailDiscover = snap);
+            },
           ),
         ),
         Visibility(
@@ -383,10 +440,14 @@ class _DocIntelligenceScreenState extends State<DocIntelligenceScreen> {
           child: DocumentProcessorView(
             embeddedInImportShell: true,
             useSharedImportControls: true,
-            sharedBrokerDocCode: brokerKeyToDocCode(_selectedBrokerKey),
+            sharedSourceDocCodes: orderedImportSources(_selectedSourceKeys)
+                .map(brokerKeyToDocCode)
+                .whereType<String>()
+                .toList(),
             sharedDocumentType: _documentType,
             portfolioNameController: _portfolioNameController,
             passwordController: _passwordController,
+            npsPasswordController: _npsPasswordController,
             onImportCompleted: _onImportCompleted,
             onOpenPortfolio: widget.onOpenPortfolio,
             onOpenTrade: widget.onOpenTrade,
@@ -439,6 +500,8 @@ class _DocIntelligenceScreenState extends State<DocIntelligenceScreen> {
         ImportRecentCard(
           isCompact: true,
           entries: _recentEntries,
+          onDelete: _onDeleteRecent,
+          onOpenPortfolio: widget.onOpenPortfolio,
         ),
         const SizedBox(height: gap),
         const ImportCapabilitiesCard(isCompact: true),
@@ -547,6 +610,8 @@ class _DocIntelligenceScreenState extends State<DocIntelligenceScreen> {
                       isCompact: false,
                       showPrivacy: false,
                       recentEntries: _recentEntries,
+                      onDeleteRecent: _onDeleteRecent,
+                      onOpenPortfolio: widget.onOpenPortfolio,
                     ),
                   ),
                 ),

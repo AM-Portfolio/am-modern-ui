@@ -1,5 +1,3 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:am_design_system/am_design_system.dart';
 
@@ -33,11 +31,10 @@ class BasketGlassDialog extends StatelessWidget {
       ),
       child: ConstrainedBox(
         constraints: BoxConstraints(maxWidth: maxDialogWidth),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(_radius),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-            child: Container(
+        child: webGlass(
+          sigma: 20,
+          clip: BorderRadius.circular(_radius),
+          child: Container(
               padding: const EdgeInsets.all(AppSpacing.lg),
               decoration: BoxDecoration(
                 color: fill,
@@ -53,7 +50,6 @@ class BasketGlassDialog extends StatelessWidget {
               ),
               child: child,
             ),
-          ),
         ),
       ),
     );

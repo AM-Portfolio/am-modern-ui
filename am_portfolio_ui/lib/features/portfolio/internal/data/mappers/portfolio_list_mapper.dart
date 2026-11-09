@@ -1,7 +1,6 @@
 import 'package:am_design_system/am_design_system.dart';
 import '../dtos/portfolio_list_dto.dart';
 import '../../domain/entities/portfolio_list.dart';
-import 'package:am_common/am_common.dart';
 
 /// Mapper class for Portfolio List operations
 ///
@@ -15,9 +14,25 @@ class PortfolioListMapper {
     );
 
     try {
-      // Map individual portfolio items
-      final portfolioItems = dto.portfolios
+      // Hide CDSL only when another real (non-demo/paper) broker exists.
+      final active = dto.portfolios
           .where((itemDto) => itemDto.kind?.toUpperCase() != 'DELETED')
+          .toList();
+      final hasOtherRealBroker = active.any((itemDto) {
+        if (_isCdslDto(itemDto)) return false;
+        final kind = itemDto.kind?.toUpperCase();
+        final name = itemDto.portfolioName.toLowerCase();
+        final isDemo = itemDto.isDummy ||
+            kind == 'DUMMY' ||
+            kind == 'DEMO' ||
+            name.contains('demo');
+        final isPaper = kind == 'PAPER' || name == 'paper';
+        if (isDemo || isPaper || kind == 'BASKET') return false;
+        return true;
+      });
+
+      final portfolioItems = active
+          .where((itemDto) => !hasOtherRealBroker || !_isCdslDto(itemDto))
           .map(
             (itemDto) {
               String name = itemDto.portfolioName;
@@ -56,11 +71,29 @@ class PortfolioListMapper {
                   kind == 'DUMMY' ||
                   kind == 'DEMO' ||
                   name.toLowerCase().contains('demo');
+              final isPaper =
+                  kind == 'PAPER' || name.toLowerCase() == 'paper';
+              final hasHoldings = isPaper ||
+                  isDummy ||
+                  (itemDto.hasHoldings ??
+                      ((itemDto.assetCount != null &&
+                              itemDto.assetCount! > 0) ||
+                          (itemDto.totalValue != null &&
+                              itemDto.totalValue! > 0) ||
+                          itemDto.assetCount == null));
+              final famId = itemDto.familyMemberId?.trim();
+              final famName = itemDto.familyMemberName?.trim();
               return PortfolioItem(
                 portfolioId: itemDto.portfolioId,
                 portfolioName: name,
                 isBasket: kind == 'BASKET',
                 isDummy: isDummy,
+                hasHoldings: hasHoldings,
+                brokerType: itemDto.brokerType,
+                familyMemberId:
+                    (famId == null || famId.isEmpty) ? null : famId,
+                familyMemberName:
+                    (famName == null || famName.isEmpty) ? null : famName,
               );
             },
           )
@@ -88,6 +121,19 @@ class PortfolioListMapper {
     }
   }
 
+  static bool _isCdslDto(PortfolioItemDto itemDto) {
+    final broker = (itemDto.brokerType ?? '').toUpperCase();
+    // Named CAS demat books (Mirae/Finwizard/Mutual Funds) are not CDSL aggregators.
+    if (broker == 'CAS_DEMAT') return false;
+    if (broker == 'CDSL') return true;
+    final n = itemDto.portfolioName.toLowerCase().trim();
+    return n == 'cdsl'
+        || n == 'cas'
+        || n == 'cdsl cas'
+        || n == 'cas aggregator'
+        || n.contains('cdsl');
+  }
+
   /// Convert PortfolioList domain entity to PortfolioListDto
   static PortfolioListDto toApiModel(PortfolioList entity) {
     CommonLogger.debug(
@@ -102,6 +148,9 @@ class PortfolioListMapper {
             (item) => PortfolioItemDto(
               portfolioId: item.portfolioId,
               portfolioName: item.portfolioName,
+              brokerType: item.brokerType,
+              familyMemberId: item.familyMemberId,
+              familyMemberName: item.familyMemberName,
             ),
           )
           .toList();

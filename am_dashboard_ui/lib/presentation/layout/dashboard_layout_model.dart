@@ -97,7 +97,8 @@ class DashboardLayoutModel extends Equatable {
   List<Object?> get props => [slots];
 }
 
-/// Default layout: overlay comparison chart + movers (same chart as Portfolio overview).
+/// Default: Chart|Health, X-Ray|Users, then news/activity/movers.
+/// Risk Radar is off by default (customize only).
 DashboardLayoutModel defaultDashboardLayout() {
   return const DashboardLayoutModel(
     slots: [
@@ -114,33 +115,57 @@ DashboardLayoutModel defaultDashboardLayout() {
         size: DashboardWidgetSize.twoThirds,
       ),
       DashboardWidgetSlot(
-        id: DashboardWidgetId.movers,
+        id: DashboardWidgetId.portfolioHealth,
         visible: true,
         order: 2,
         size: DashboardWidgetSize.oneThird,
       ),
       DashboardWidgetSlot(
-        id: DashboardWidgetId.news,
+        id: DashboardWidgetId.portfolioXray,
         visible: true,
         order: 3,
         size: DashboardWidgetSize.twoThirds,
       ),
       DashboardWidgetSlot(
-        id: DashboardWidgetId.recentActivity,
+        id: DashboardWidgetId.accountsHub,
         visible: true,
         order: 4,
         size: DashboardWidgetSize.oneThird,
       ),
       DashboardWidgetSlot(
-        id: DashboardWidgetId.portfolioList,
+        id: DashboardWidgetId.news,
         visible: true,
         order: 5,
+        size: DashboardWidgetSize.twoThirds,
+      ),
+      DashboardWidgetSlot(
+        id: DashboardWidgetId.recentActivity,
+        visible: true,
+        order: 6,
+        size: DashboardWidgetSize.oneThird,
+      ),
+      DashboardWidgetSlot(
+        id: DashboardWidgetId.movers,
+        visible: true,
+        order: 7,
+        size: DashboardWidgetSize.oneThird,
+      ),
+      DashboardWidgetSlot(
+        id: DashboardWidgetId.portfolioList,
+        visible: false,
+        order: 8,
         size: DashboardWidgetSize.oneThird,
       ),
       DashboardWidgetSlot(
         id: DashboardWidgetId.allocation,
         visible: false,
-        order: 6,
+        order: 9,
+        size: DashboardWidgetSize.oneThird,
+      ),
+      DashboardWidgetSlot(
+        id: DashboardWidgetId.portfolioRisk,
+        visible: false,
+        order: 10,
         size: DashboardWidgetSize.oneThird,
       ),
     ],
@@ -170,13 +195,23 @@ DashboardLayoutModel normalizeDashboardLayout(DashboardLayoutModel layout) {
 const _newsRowSlotIds = {
   DashboardWidgetId.news,
   DashboardWidgetId.recentActivity,
-  DashboardWidgetId.portfolioList,
+  DashboardWidgetId.movers,
   DashboardWidgetId.allocation,
 };
 
+/// Chart | Health peer row — always visible at default order/size.
+const _chartPeerSlotIds = {
+  DashboardWidgetId.benchmarkComparison,
+  DashboardWidgetId.portfolioHealth,
+};
+
+/// X-Ray | Users peer row — always visible at default order/size.
+const _xrayPeerSlotIds = {
+  DashboardWidgetId.portfolioXray,
+  DashboardWidgetId.accountsHub,
+};
+
 /// Ensures every default widget slot exists (saved layouts may omit newer slots).
-/// News row order and size always follow the current defaults so saved layouts
-/// pick up the news + stacked activity/portfolios grid.
 DashboardLayoutModel mergeWithDefaultLayout(DashboardLayoutModel layout) {
   final defaults = defaultDashboardLayout();
   final savedById = {for (final s in layout.slots) s.id: s};
@@ -197,14 +232,29 @@ DashboardWidgetSlot _mergeDefaultSlot(
   DashboardWidgetSlot? saved,
 ) {
   if (saved == null) return fallback;
+  if (_chartPeerSlotIds.contains(fallback.id) ||
+      _xrayPeerSlotIds.contains(fallback.id)) {
+    return saved.copyWith(
+      order: fallback.order,
+      size: fallback.size,
+      visible: true,
+    );
+  }
+  // Risk is off by default — keep saved visibility, adopt default order/size.
+  if (fallback.id == DashboardWidgetId.portfolioRisk) {
+    return saved.copyWith(order: fallback.order, size: fallback.size);
+  }
   if (_newsRowSlotIds.contains(fallback.id)) {
+    return saved.copyWith(order: fallback.order, size: fallback.size);
+  }
+  // Demoted portfolioList: keep saved visibility but adopt default order/size.
+  if (fallback.id == DashboardWidgetId.portfolioList) {
     return saved.copyWith(order: fallback.order, size: fallback.size);
   }
   return saved;
 }
 
-/// Narrow dashboards keep Your Portfolios above Recent Activity and put News last.
-/// Saved desktop order is unchanged.
+/// Narrow dashboards keep intelligence then activity before news.
 List<DashboardWidgetSlot> compactDashboardSlots(
   List<DashboardWidgetSlot> slots, {
   required bool newsEnabled,
@@ -215,22 +265,35 @@ List<DashboardWidgetSlot> compactDashboardSlots(
   ];
   DashboardWidgetSlot? news;
   DashboardWidgetSlot? activity;
-  DashboardWidgetSlot? portfolios;
+  DashboardWidgetSlot? movers;
   final out = <DashboardWidgetSlot>[];
   for (final slot in filtered) {
     switch (slot.id) {
       case DashboardWidgetId.news:
         news = slot;
+        break;
       case DashboardWidgetId.recentActivity:
         activity = slot;
+        break;
+      case DashboardWidgetId.movers:
+        movers = slot;
+        break;
+      case DashboardWidgetId.summary:
+      case DashboardWidgetId.portfolioWealthChart:
       case DashboardWidgetId.portfolioList:
-        portfolios = slot;
-      default:
+      case DashboardWidgetId.accountsHub:
+      case DashboardWidgetId.allocation:
+      case DashboardWidgetId.benchmarkComparison:
+      case DashboardWidgetId.paperTrading:
+      case DashboardWidgetId.portfolioHealth:
+      case DashboardWidgetId.portfolioXray:
+      case DashboardWidgetId.portfolioRisk:
         out.add(slot);
+        break;
     }
   }
-  if (portfolios != null) out.add(portfolios);
   if (activity != null) out.add(activity);
+  if (movers != null) out.add(movers);
   if (news != null) out.add(news);
   return out;
 }

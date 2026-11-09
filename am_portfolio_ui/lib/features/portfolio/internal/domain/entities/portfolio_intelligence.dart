@@ -175,6 +175,7 @@ class PortfolioXray {
     this.industryWeights = const [],
     this.marketCapWeights = const [],
     this.assetClassWeights = const [],
+    this.portfolioWeights = const [],
     this.totalValueInr,
   });
 
@@ -182,6 +183,8 @@ class PortfolioXray {
   final List<XrayWeight> industryWeights;
   final List<XrayWeight> marketCapWeights;
   final List<XrayWeight> assetClassWeights;
+  /// Per-broker/book contribution (By Portfolio tab).
+  final List<XrayWeight> portfolioWeights;
   /// Book NAV denominator from intelligence API (`xray.totalValue`).
   final double? totalValueInr;
 
@@ -193,7 +196,19 @@ class PortfolioXray {
       assetClassWeights: _parseWeights(
         json['assetClassWeights'] ?? json['byAssetClass'],
       ),
+      portfolioWeights: _parseWeights(json['portfolioWeights']),
       totalValueInr: _asDouble(json['totalValue']),
+    );
+  }
+
+  PortfolioXray copyWith({List<XrayWeight>? portfolioWeights}) {
+    return PortfolioXray(
+      sectorWeights: sectorWeights,
+      industryWeights: industryWeights,
+      marketCapWeights: marketCapWeights,
+      assetClassWeights: assetClassWeights,
+      portfolioWeights: portfolioWeights ?? this.portfolioWeights,
+      totalValueInr: totalValueInr,
     );
   }
 

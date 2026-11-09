@@ -71,6 +71,8 @@ class ApiService {
     'MSTOCK',
     'ANGEL_ONE',
     'KOTAK',
+    'CDSL',
+    'NPS',
   ];
 
   // --- Document Processor endpoints ---
@@ -453,13 +455,129 @@ class ApiService {
     }
   }
 
+  /// Find latest Gmail statement for [broker] without unlock/extract.
+  Future<Map<String, dynamic>> discoverFromGmail(
+    String broker, {
+    String? mailbox,
+  }) async {
+    final params = <String, String>{};
+    final m = (mailbox ?? '').trim();
+    if (m.isNotEmpty) params['mailbox'] = m;
+    final qs = params.entries
+        .map((e) =>
+            '${Uri.encodeQueryComponent(e.key)}=${Uri.encodeQueryComponent(e.value)}')
+        .join('&');
+    final url = qs.isEmpty
+        ? '$_emailBase/discover/gmail/$broker'
+        : '$_emailBase/discover/gmail/$broker?$qs';
+    debugPrint('[ApiService] GET $url');
+    final apiClient = GetIt.I.isRegistered<ApiClient>()
+        ? GetIt.I<ApiClient>()
+        : ApiClient();
+
+    final headers = await _getHeaders();
+    return apiClient.get<Map<String, dynamic>>(
+      url,
+      headers: headers,
+      parser: (data) => Map<String, dynamic>.from(data),
+    );
+  }
+
+  /// Probe whether a CDSL/NPS PDF is encrypted (no full parse).
+  Future<bool> probePdfEncrypted({
+    required String broker,
+    required Uint8List fileBytes,
+    required String filename,
+  }) async {
+    final url = '$_emailBase/extract/probe/$broker';
+    debugPrint('[ApiService] POST $url (probe)');
+    final request = http.MultipartRequest('POST', Uri.parse(url));
+    final headers = await _getHeaders();
+    request.headers.addAll(headers);
+    request.files.add(http.MultipartFile.fromBytes(
+      'file',
+      fileBytes,
+      filename: filename,
+    ));
+    final client = _makeClient();
+    try {
+      final streamed = await client.send(request).timeout(const Duration(seconds: 30));
+      final response = await http.Response.fromStream(streamed)
+          .timeout(const Duration(seconds: 30));
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        final body = jsonDecode(response.body);
+        if (body is Map && body['encrypted'] == true) return true;
+        return false;
+      }
+      debugPrint('[ApiService] probe failed: ${response.statusCode}');
+      return false;
+    } finally {
+      client.close();
+    }
+  }
+
+  /// Manual upload parse via email-extractor (CDSL/NPS).
+  Future<Map<String, dynamic>> extractFromUpload({
+    required String broker,
+    required Uint8List fileBytes,
+    required String filename,
+    String? password,
+  }) async {
+    final url = '$_emailBase/extract/upload/$broker';
+    debugPrint('[ApiService] POST $url (upload)');
+    final request = http.MultipartRequest('POST', Uri.parse(url));
+    final headers = await _getHeaders();
+    request.headers.addAll(headers);
+    final pwd = (password ?? '').trim();
+    if (pwd.isNotEmpty) {
+      request.fields['password'] = broker.toLowerCase() == 'nps' ? pwd : pwd.toUpperCase();
+    }
+    request.files.add(http.MultipartFile.fromBytes(
+      'file',
+      fileBytes,
+      filename: filename,
+    ));
+    final client = _makeClient();
+    try {
+      final streamed = await client.send(request).timeout(const Duration(seconds: 120));
+      final response = await http.Response.fromStream(streamed)
+          .timeout(const Duration(seconds: 120));
+      debugPrint('[ApiService] extract/upload: ${response.statusCode}');
+      Map<String, dynamic> body = {};
+      try {
+        final decoded = jsonDecode(response.body);
+        if (decoded is Map) {
+          body = Map<String, dynamic>.from(decoded);
+        }
+      } catch (_) {
+        body = {'error': response.body};
+      }
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return body;
+      }
+      final code = body['code']?.toString();
+      final err = body['error']?.toString() ?? 'Upload extract failed';
+      throw ExtractUploadException(
+        message: err,
+        code: code,
+        statusCode: response.statusCode,
+      );
+    } finally {
+      client.close();
+    }
+  }
+
   Future<Map<String, dynamic>> extractFromGmail(
     String broker, {
     String? pan,
     String? mailbox,
   }) async {
+    final raw = (pan ?? '').trim();
+    // NPS statement passwords are case-sensitive (e.g. 99om0111); PAN is uppercased.
+    final unlock =
+        broker.toLowerCase() == 'nps' ? raw : raw.toUpperCase();
     final params = <String, String>{
-      'pan': (pan ?? '').trim().toUpperCase(),
+      'pan': unlock,
     };
     final m = (mailbox ?? '').trim();
     if (m.isNotEmpty) params['mailbox'] = m;
@@ -552,3 +670,21 @@ class ApiService {
 }
 
 final apiProvider = ApiService();
+
+class ExtractUploadException implements Exception {
+  ExtractUploadException({
+    required this.message,
+    this.code,
+    this.statusCode,
+  });
+
+  final String message;
+  final String? code;
+  final int? statusCode;
+
+  bool get isPasswordRequired => code == 'PASSWORD_REQUIRED';
+  bool get isPasswordInvalid => code == 'PASSWORD_INVALID';
+
+  @override
+  String toString() => message;
+}

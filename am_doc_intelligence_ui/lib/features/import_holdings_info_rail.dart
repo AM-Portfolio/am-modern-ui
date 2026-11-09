@@ -9,11 +9,15 @@ class ImportHoldingsInfoRail extends StatelessWidget {
     this.recentEntries = const [],
     this.isCompact = false,
     this.showPrivacy = false,
+    this.onDeleteRecent,
+    this.onOpenPortfolio,
   });
 
   final List<RecentImportEntry> recentEntries;
   final bool isCompact;
   final bool showPrivacy;
+  final Future<void> Function(RecentImportEntry entry)? onDeleteRecent;
+  final void Function(String portfolioId, String portfolioName)? onOpenPortfolio;
 
   @override
   Widget build(BuildContext context) {
@@ -25,7 +29,12 @@ class ImportHoldingsInfoRail extends StatelessWidget {
           ImportPrivacyCard(isCompact: isCompact),
           SizedBox(height: gap),
         ],
-        ImportRecentCard(isCompact: isCompact, entries: recentEntries),
+        ImportRecentCard(
+          isCompact: isCompact,
+          entries: recentEntries,
+          onDelete: onDeleteRecent,
+          onOpenPortfolio: onOpenPortfolio,
+        ),
         SizedBox(height: gap),
         ImportCapabilitiesCard(isCompact: isCompact),
       ],
@@ -181,15 +190,28 @@ class ImportCapabilitiesCard extends StatelessWidget {
   }
 }
 
-class ImportRecentCard extends StatelessWidget {
+enum _RecentSourceFilter { all, email, upload }
+
+class ImportRecentCard extends StatefulWidget {
   const ImportRecentCard({
     super.key,
     this.entries = const [],
     this.isCompact = false,
+    this.onDelete,
+    this.onOpenPortfolio,
   });
 
   final List<RecentImportEntry> entries;
   final bool isCompact;
+  final Future<void> Function(RecentImportEntry entry)? onDelete;
+  final void Function(String portfolioId, String portfolioName)? onOpenPortfolio;
+
+  @override
+  State<ImportRecentCard> createState() => _ImportRecentCardState();
+}
+
+class _ImportRecentCardState extends State<ImportRecentCard> {
+  _RecentSourceFilter _filter = _RecentSourceFilter.all;
 
   Color _statusColor(BuildContext context, String status) {
     switch (status.toLowerCase()) {
@@ -202,11 +224,131 @@ class ImportRecentCard extends StatelessWidget {
     }
   }
 
+  List<RecentImportEntry> get _filtered {
+    switch (_filter) {
+      case _RecentSourceFilter.email:
+        return widget.entries.where((e) => e.source == 'mailbox').toList();
+      case _RecentSourceFilter.upload:
+        return widget.entries.where((e) => e.source != 'mailbox').toList();
+      case _RecentSourceFilter.all:
+        return widget.entries;
+    }
+  }
+
+  Future<void> _confirmDelete(RecentImportEntry entry) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Remove from history?'),
+        content: Text(
+          'Remove “${entry.title}” from Recent imports on this device.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (ok == true && widget.onDelete != null) {
+      await widget.onDelete!(entry);
+    }
+  }
+
+  void _showView(RecentImportEntry entry) {
+    final accent = Theme.of(context).colorScheme.primary;
+    final muted = Theme.of(context).colorScheme.onSurfaceVariant;
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(entry.title),
+        content: SizedBox(
+          width: 420,
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('When: ${entry.whenLabel}',
+                    style: TextStyle(color: muted, fontSize: 13)),
+                const SizedBox(height: 6),
+                Text('Process by: ${entry.processByLabel}',
+                    style: TextStyle(color: muted, fontSize: 13)),
+                const SizedBox(height: 6),
+                Text('Status: ${entry.status}',
+                    style: TextStyle(
+                      color: _statusColor(context, entry.status),
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13,
+                    )),
+                if ((entry.detail ?? '').isNotEmpty) ...[
+                  const SizedBox(height: 10),
+                  Text(entry.detail!, style: TextStyle(color: muted, fontSize: 13)),
+                ],
+                const SizedBox(height: 12),
+                Text('Files',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      color: accent,
+                      fontSize: 12,
+                    )),
+                const SizedBox(height: 4),
+                if (entry.files.isEmpty)
+                  Text(entry.filesSummary,
+                      style: TextStyle(color: muted, fontSize: 13))
+                else
+                  for (final f in entry.files)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 4),
+                      child: Text(f, style: TextStyle(color: muted, fontSize: 13)),
+                    ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          if ((entry.portfolioId ?? '').isNotEmpty &&
+              widget.onOpenPortfolio != null)
+            TextButton(
+              onPressed: () {
+                Navigator.of(ctx).pop();
+                widget.onOpenPortfolio!(entry.portfolioId!, entry.title);
+              },
+              child: const Text('Open portfolio'),
+            ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _chip(String label, _RecentSourceFilter value, Color accent) {
+    final selected = _filter == value;
+    return FilterChip(
+      label: Text(label, style: const TextStyle(fontSize: 11)),
+      selected: selected,
+      visualDensity: VisualDensity.compact,
+      onSelected: (_) => setState(() => _filter = value),
+      selectedColor: accent.withValues(alpha: 0.18),
+      checkmarkColor: accent,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final accent = Theme.of(context).colorScheme.primary;
     final muted = Theme.of(context).colorScheme.onSurfaceVariant;
-    final pad = isCompact ? 14.0 : 18.0;
+    final pad = widget.isCompact ? 14.0 : 18.0;
+    final rows = _filtered;
+
     return GlassCard(
       padding: EdgeInsets.zero,
       child: Padding(
@@ -223,171 +365,155 @@ class ImportRecentCard extends StatelessWidget {
                     'Recent imports',
                     style: TextStyle(
                       fontWeight: FontWeight.w700,
-                      fontSize: isCompact ? 13 : 14,
+                      fontSize: widget.isCompact ? 13 : 14,
                       color: accent,
                     ),
                   ),
                 ),
               ],
             ),
-            SizedBox(height: isCompact ? 10 : 12),
-            if (entries.isEmpty)
-              Container(
-                width: double.infinity,
-                padding: EdgeInsets.symmetric(
-                  horizontal: isCompact ? 12 : 14,
-                  vertical: isCompact ? 16 : 20,
-                ),
-                decoration: BoxDecoration(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .surfaceContainerHighest
-                      .withValues(alpha: 0.35),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                    color: Theme.of(context)
-                        .colorScheme
-                        .outlineVariant
-                        .withValues(alpha: 0.5),
-                  ),
-                ),
-                child: Text(
-                  'No imports yet — mailbox or upload will show here.',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: muted,
-                        height: 1.35,
-                      ),
-                ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: [
+                _chip('All', _RecentSourceFilter.all, accent),
+                _chip('Email', _RecentSourceFilter.email, accent),
+                _chip('Document upload', _RecentSourceFilter.upload, accent),
+              ],
+            ),
+            SizedBox(height: widget.isCompact ? 10 : 12),
+            if (widget.entries.isEmpty)
+              Text(
+                'No imports yet — mailbox or upload will show here.',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: muted,
+                      height: 1.35,
+                    ),
+              )
+            else if (rows.isEmpty)
+              Text(
+                'No rows for this filter.',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: muted,
+                      height: 1.35,
+                    ),
               )
             else
-              for (var i = 0; i < entries.length; i++) ...[
-                if (i > 0)
-                  Divider(height: 16, color: muted.withValues(alpha: 0.2)),
-                _RecentImportTile(
-                  entry: entries[i],
-                  accent: accent,
-                  statusColor: _statusColor(context, entries[i].status),
-                ),
-              ],
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _RecentImportTile extends StatelessWidget {
-  const _RecentImportTile({
-    required this.entry,
-    required this.accent,
-    required this.statusColor,
-  });
-
-  final RecentImportEntry entry;
-  final Color accent;
-  final Color statusColor;
-
-  @override
-  Widget build(BuildContext context) {
-    final muted = Theme.of(context).colorScheme.onSurfaceVariant;
-    final statusLabel = entry.status.toLowerCase();
-
-    return Theme(
-      data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-      child: ExpansionTile(
-        tilePadding: EdgeInsets.zero,
-        childrenPadding: const EdgeInsets.only(left: 4, right: 4, bottom: 8),
-        leading: Icon(
-          entry.source == 'mailbox'
-              ? Icons.mail_outline
-              : Icons.insert_drive_file_outlined,
-          size: 18,
-          color: accent,
-        ),
-        title: Text(
-          entry.title,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
-        ),
-        subtitle: Padding(
-          padding: const EdgeInsets.only(top: 2),
-          child: Text(
-            '${entry.whenLabel} · ${entry.filesSummary}',
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(fontSize: 11.5, color: muted),
-          ),
-        ),
-        trailing: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-          decoration: BoxDecoration(
-            color: statusColor.withValues(alpha: 0.14),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Text(
-            statusLabel,
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              color: statusColor,
-            ),
-          ),
-        ),
-        children: [
-          Align(
-            alignment: Alignment.centerLeft,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if ((entry.detail ?? '').isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 6),
-                    child: Text(
-                      entry.detail!,
-                      style: TextStyle(fontSize: 12, color: muted),
+              SizedBox(
+                height: widget.isCompact ? 320 : 380,
+                child: PaginatedSortableTable<RecentImportEntry>(
+                  items: rows,
+                  pageSize: 5,
+                  pageSizeOptions: const [5, 10, 25],
+                  initialSortColumnIndex: 0,
+                  initialSortDirection: SortDirection.descending,
+                  emptyMessage: 'No rows for this filter.',
+                  rowHeight: 44,
+                  columns: [
+                    SortableColumn<RecentImportEntry>(
+                      title: 'When',
+                      flex: 2,
+                      sortBy: (e) => e.at.millisecondsSinceEpoch,
+                      builder: (e) => Text(
+                        e.whenLabel,
+                        style: const TextStyle(fontSize: 11.5),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
-                  ),
-                Text(
-                  'Files',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: accent,
-                    letterSpacing: 0.3,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                if (entry.files.isEmpty)
-                  Text(
-                    entry.source == 'mailbox'
-                        ? 'Gmail · ${entry.title} statement'
-                        : '—',
-                    style: TextStyle(fontSize: 12, color: muted),
-                  )
-                else
-                  for (final f in entry.files)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 3),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Icon(Icons.description_outlined,
-                              size: 14, color: muted),
-                          const SizedBox(width: 6),
-                          Expanded(
-                            child: Text(
-                              f,
-                              style: TextStyle(fontSize: 12, color: muted),
-                            ),
+                    SortableColumn<RecentImportEntry>(
+                      title: 'Title',
+                      flex: 3,
+                      sortBy: (e) => e.title.toLowerCase(),
+                      builder: (e) => Text(
+                        e.title,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    SortableColumn<RecentImportEntry>(
+                      title: 'Process by',
+                      flex: 2,
+                      sortBy: (e) => e.processByLabel,
+                      builder: (e) => Text(
+                        e.processByLabel,
+                        style: TextStyle(fontSize: 11.5, color: muted),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    SortableColumn<RecentImportEntry>(
+                      title: 'Files',
+                      flex: 2,
+                      sortBy: (e) => e.filesSummary.toLowerCase(),
+                      builder: (e) => Text(
+                        e.filesSummary,
+                        style: TextStyle(fontSize: 11.5, color: muted),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    SortableColumn<RecentImportEntry>(
+                      title: 'Status',
+                      flex: 2,
+                      sortBy: (e) => e.status.toLowerCase(),
+                      builder: (e) {
+                        final c = _statusColor(context, e.status);
+                        return Text(
+                          e.status,
+                          style: TextStyle(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w700,
+                            color: c,
                           ),
+                        );
+                      },
+                    ),
+                    SortableColumn<RecentImportEntry>(
+                      title: '',
+                      flex: 2,
+                      builder: (e) => Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            tooltip: 'View',
+                            visualDensity: VisualDensity.compact,
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(
+                              minWidth: 28,
+                              minHeight: 28,
+                            ),
+                            icon: Icon(Icons.visibility_outlined,
+                                size: 16, color: accent),
+                            onPressed: () => _showView(e),
+                          ),
+                          if (widget.onDelete != null)
+                            IconButton(
+                              tooltip: 'Delete',
+                              visualDensity: VisualDensity.compact,
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(
+                                minWidth: 28,
+                                minHeight: 28,
+                              ),
+                              icon: Icon(Icons.delete_outline,
+                                  size: 16,
+                                  color: Theme.of(context).colorScheme.error),
+                              onPressed: () => _confirmDelete(e),
+                            ),
                         ],
                       ),
                     ),
-              ],
-            ),
-          ),
-        ],
+                  ],
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }

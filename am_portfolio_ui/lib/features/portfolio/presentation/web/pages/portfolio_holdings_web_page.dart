@@ -8,11 +8,14 @@ import 'package:go_router/go_router.dart';
 import '../../../internal/domain/entities/portfolio_holding.dart';
 import '../../../providers/portfolio_providers.dart';
 import '../mappers/advanced_holding_row_mapper.dart';
+import '../widgets/cas_asset_class_filter.dart';
+import '../widgets/cas_folio_panel.dart';
+import '../widgets/nps_status_banner.dart';
 
 /// Portfolio Holdings tab — advanced DS template + portfolio holdings API.
 ///
 /// News scrolls after the holdings list (aligned with main's news surface).
-class PortfolioHoldingsWebPage extends ConsumerWidget {
+class PortfolioHoldingsWebPage extends ConsumerStatefulWidget {
   const PortfolioHoldingsWebPage({
     required this.portfolioId,
     super.key,
@@ -23,31 +26,96 @@ class PortfolioHoldingsWebPage extends ConsumerWidget {
   final String? portfolioName;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final activePortfolioId = context.selectedPortfolioId ?? portfolioId;
-    final holdingsAsync = ref.watch(portfolioHoldingsProvider(activePortfolioId));
+  ConsumerState<PortfolioHoldingsWebPage> createState() =>
+      _PortfolioHoldingsWebPageState();
+}
+
+class _PortfolioHoldingsWebPageState
+    extends ConsumerState<PortfolioHoldingsWebPage> {
+  String? _assetClassFilter;
+  bool _npsDefaultApplied = false;
+
+  static bool _looksLikeNpsPortfolio(String? name, String? id) {
+    final n = (name ?? '').toLowerCase();
+    if (n.contains('nps')) return true;
+    final i = (id ?? '').toLowerCase();
+    return i.contains('nps');
+  }
+
+  static bool _isNpsHolding(PortfolioHolding h) {
+    return h.assetClass.toLowerCase() == 'nps';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final shellId = context.selectedPortfolioId;
+    final activePortfolioId = widget.portfolioId.isNotEmpty
+        ? widget.portfolioId
+        : (shellId != null && shellId.isNotEmpty ? shellId : widget.portfolioId);
+    final filterKey = ref.watch(familyPortfolioFilterProvider);
+    final requestPortfolioId = activePortfolioId == 'all'
+        ? scopedAllPortfolioId(activePortfolioId, filterKey)
+        : activePortfolioId;
+    final holdingsAsync =
+        ref.watch(portfolioHoldingsProvider(requestPortfolioId));
     String symbolQuery = '';
     try {
       symbolQuery =
           GoRouterState.of(context).uri.queryParameters['q']?.trim() ?? '';
     } catch (_) {}
 
+    final selectedName =
+        context.selectedPortfolioName ?? widget.portfolioName;
+    if (!_npsDefaultApplied &&
+        _looksLikeNpsPortfolio(selectedName, activePortfolioId)) {
+      _npsDefaultApplied = true;
+      _assetClassFilter = 'nps';
+    }
+
+    final assetFilter = CasAssetClassFilter(
+      value: _assetClassFilter,
+      compact: true,
+      onChanged: (v) => setState(() => _assetClassFilter = v),
+    );
+
     return holdingsAsync.when(
       loading: () => AdvancedHoldingsTemplate(
         holdings: const [],
         isLoading: true,
         accentColor: ModuleColors.portfolio,
+        showPnlStatusFilter: false,
+        leadingControls: assetFilter,
       ),
       error: (err, _) => AdvancedHoldingsTemplate(
         holdings: const [],
         isLoading: false,
         errorMessage: err.toString(),
         accentColor: ModuleColors.portfolio,
+        showPnlStatusFilter: false,
+        leadingControls: assetFilter,
         onRefresh: () =>
-            ref.invalidate(portfolioHoldingsProvider(activePortfolioId)),
+            ref.invalidate(portfolioHoldingsProvider(requestPortfolioId)),
       ),
       data: (portfolioHoldings) {
-        final visible = visibleHoldingsForCostPolicy(portfolioHoldings.holdings);
+        var visible = visibleHoldingsForCostPolicy(portfolioHoldings.holdings);
+        if (_assetClassFilter == 'nps') {
+          visible = visible.where(_isNpsHolding).toList();
+        } else if (_assetClassFilter != null) {
+          final want = _assetClassFilter!.toLowerCase();
+          visible = visible
+              .where(
+                (h) =>
+                    !_isNpsHolding(h) &&
+                    (h.assetClass.toLowerCase() == want ||
+                        (want == 'equity' &&
+                            (h.assetClass.isEmpty ||
+                                h.assetClass.toUpperCase() == 'EQUITY'))),
+              )
+              .toList();
+        } else {
+          // All / default: exclude NPS rows (NPS chip owns that view).
+          visible = visible.where((h) => !_isNpsHolding(h)).toList();
+        }
         final rows = mapPortfolioHoldingsToAdvancedRows(visible);
         final symbols = [
           for (final h in visible) h.symbol,
@@ -55,6 +123,8 @@ class PortfolioHoldingsWebPage extends ConsumerWidget {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            const NpsStatusBanner(),
+            CasFolioPanel(portfolioId: activePortfolioId),
             Expanded(
               child: AdvancedHoldingsTemplate(
                 holdings: rows,
@@ -62,11 +132,13 @@ class PortfolioHoldingsWebPage extends ConsumerWidget {
                 accentColor: ModuleColors.portfolio,
                 priceFreshnessLabel: portfolioHoldings.priceLabel,
                 viewOnly: true,
+                showPnlStatusFilter: false,
+                leadingControls: assetFilter,
                 showCostColumns:
                     showHoldingsCostColumns(portfolioHoldings.holdings),
                 initialSearchQuery: symbolQuery,
                 onRefresh: () => ref
-                    .invalidate(portfolioHoldingsProvider(activePortfolioId)),
+                    .invalidate(portfolioHoldingsProvider(requestPortfolioId)),
               ),
             ),
             HoldingsNewsSection(

@@ -122,40 +122,15 @@ class PortfolioHealthCard extends ConsumerStatefulWidget {
 }
 
 class _PortfolioHealthCardState extends ConsumerState<PortfolioHealthCard> {
-  /// One invalidate after cold intel so Volatility upgrades without F5.
-  bool _refetchScheduledAfterCold = false;
-
-  @override
-  void didUpdateWidget(covariant PortfolioHealthCard oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.portfolioId != widget.portfolioId) {
-      _refetchScheduledAfterCold = false;
-    }
-  }
-
-  void _maybeRefetchAfterHistWarm(PortfolioIntelligence? intel) {
-    if (_refetchScheduledAfterCold) return;
-    if (intel == null) return;
-    final cold = (intel.confidence ?? 1) < 0.9;
-    final factors = selectOverviewHealthFactors(intel.health?.components ?? const []);
-    final hasVol = factors.any((c) => c.id.toLowerCase() == 'volatility');
-    final volInsufficient = factors.any((c) =>
-        c.id.toLowerCase() == 'volatility' &&
-        (c.reason ?? '').toLowerCase().contains('insufficient'));
-    // Refetch only when still cold / placeholder vol — hist may be warm now.
-    if (!cold && hasVol && !volInsufficient) return;
-    _refetchScheduledAfterCold = true;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      ref.invalidate(portfolioIntelligenceProvider(widget.portfolioId));
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     final async = ref.watch(portfolioIntelligenceProvider(widget.portfolioId));
 
+    // skipLoadingOn*: keep last frame during refresh so portfolio switch + cold
+    // invalidate do not tear down the subscription mid-build (red error).
     return async.when(
+      skipLoadingOnReload: true,
+      skipLoadingOnRefresh: true,
       loading: () => IntelligenceCardSkeleton(
         height: widget.minHeight ?? (widget.fillHeight ? 420 : 280),
       ),
@@ -172,9 +147,6 @@ class _PortfolioHealthCardState extends ConsumerState<PortfolioHealthCard> {
         ),
       ),
       data: (intel) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) _maybeRefetchAfterHistWarm(intel);
-        });
         final health = intel?.health;
         if (health == null) {
           return IntelligenceGlassCard(

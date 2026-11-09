@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'dart:math' as math;
@@ -270,13 +269,10 @@ class PortfolioMetricCard extends StatelessWidget {
     );
   }
 
-  /// Skip expensive blur on compact (mobile) cards.
+  /// Skip expensive blur on compact cards and on web.
   Widget _maybeBlur({required bool enabled, required Widget child}) {
     if (!enabled) return child;
-    return BackdropFilter(
-      filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-      child: child,
-    );
+    return webGlass(sigma: 16, child: child);
   }
 }
 

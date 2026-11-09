@@ -38,6 +38,7 @@ class _DashboardPortfolioRefreshBinderState
     if (!mounted) return;
     final id = widget.userId;
     if (id.isEmpty) return;
+    ref.invalidate(accountsHubProvider(id));
     ref.invalidate(portfolioOverviewsProvider(id));
     ref.invalidate(hasDemoPortfolioProvider);
     ref.invalidate(dashboardStreamProvider(id));

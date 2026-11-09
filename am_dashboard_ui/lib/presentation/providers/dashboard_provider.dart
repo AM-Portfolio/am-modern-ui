@@ -5,6 +5,7 @@ import 'package:am_dashboard_ui/domain/models/activity_item.dart';
 import 'package:am_dashboard_ui/domain/models/allocation_response.dart';
 import 'package:am_dashboard_ui/domain/models/dashboard_summary.dart';
 import 'package:am_dashboard_ui/domain/models/performance_response.dart';
+import 'package:am_dashboard_ui/domain/models/accounts_hub.dart';
 import 'package:am_dashboard_ui/domain/models/portfolio_overview.dart';
 import 'package:am_dashboard_ui/domain/models/recent_activity_response.dart';
 import 'package:am_dashboard_ui/presentation/layout/dashboard_layout_provider.dart';
@@ -64,8 +65,11 @@ Future<ApiClient> portfolioApiClient(Ref ref) async {
 Future<Map<String, dynamic>> portfolioSummaryFallback(Ref ref) async {
   final config = await ref.watch(appConfigProvider.future);
   final client = await ref.watch(portfolioApiClientProvider.future);
+  final filterKey = ref.watch(familyPortfolioFilterProvider);
+  final persona = holdingsPersonaParam(filterKey);
   return client.get(
     config.api.portfolio.summaryResource,
+    queryParams: {'persona': persona},
     parser: (data) {
       if (data is Map) return Map<String, dynamic>.from(data);
       throw const FormatException('Portfolio summary was not an object');
@@ -99,6 +103,10 @@ void dashboardParallelKickoff(
   }
   if (visible.contains(DashboardWidgetId.movers)) {
     ref.watch(moversStreamProvider(userId, timeFrame: timeFrame));
+  }
+  if (visible.contains(DashboardWidgetId.portfolioList) ||
+      visible.contains(DashboardWidgetId.accountsHub)) {
+    ref.watch(accountsHubProvider(userId));
   }
   if (visible.contains(DashboardWidgetId.portfolioList)) {
     ref.watch(portfolioOverviewsProvider(userId));
@@ -158,15 +166,13 @@ void retryDashboardSummary(WidgetRef ref, String userId) {
 }
 
 Future<Map<String, dynamic>> _loadPortfolioSummaryFallback(Ref ref) async {
-  // Prefer cached success. Only invalidate+retry when the keepAlive is in error
-  // — always calling refresh() races when summary/overviews/history fall back
-  // together and intermittently fails the header.
-  final cached = ref.read(portfolioSummaryFallbackProvider);
-  if (cached.hasValue) return cached.requireValue;
+  // Await the persona-watched provider — do not return a prior scope's hasValue
+  // while Family filter is switching (that mixed You ₹ with household day%).
+  final cached = ref.watch(portfolioSummaryFallbackProvider);
   if (cached.hasError) {
     ref.invalidate(portfolioSummaryFallbackProvider);
   }
-  return ref.read(portfolioSummaryFallbackProvider.future);
+  return ref.watch(portfolioSummaryFallbackProvider.future);
 }
 
 Future<DashboardSummary> _resolveDashboardSummary(
@@ -192,30 +198,31 @@ Future<DashboardSummary> _resolveDashboardSummary(
     return _dashboardSummaryFromPortfolioRaw(raw);
   }
 
-  final portfolioFallback = _loadPortfolioSummaryFallback(ref)
-      .then(_dashboardSummaryFromPortfolioRaw);
-
+  // Canonical headline wealth: portfolio summary with persona (hub residual).
+  // Do not prefer unscoped analysis dashboard/summary for totals.
   try {
-    return await repository
-        .getSummary(userId)
+    final raw = await _loadPortfolioSummaryFallback(ref)
         .timeout(const Duration(seconds: 20));
+    return _dashboardSummaryFromPortfolioRaw(raw);
   } catch (e) {
     AppLogger.warning(
-      'Failed to get summary from analysis service. Trying fallback to portfolio service...',
+      'Portfolio summary failed; trying analysis dashboard summary...',
       error: e,
     );
     try {
-      return await portfolioFallback.timeout(const Duration(seconds: 20));
-    } catch (fallbackError) {
-      // Last chance: fresh portfolio fetch (clears a poisoned keepAlive).
+      return await repository
+          .getSummary(userId)
+          .timeout(const Duration(seconds: 20));
+    } catch (finalError) {
       ref.invalidate(portfolioSummaryFallbackProvider);
       try {
-        final raw = await ref.read(portfolioSummaryFallbackProvider.future)
+        final raw = await ref
+            .read(portfolioSummaryFallbackProvider.future)
             .timeout(const Duration(seconds: 25));
         return _dashboardSummaryFromPortfolioRaw(raw);
-      } catch (finalError) {
+      } catch (_) {
         AppLogger.error(
-          'Dashboard summary fallback also failed',
+          'Dashboard summary failed on portfolio and analysis paths',
           error: finalError,
         );
         rethrow;
@@ -325,6 +332,8 @@ PerformanceResponse _generatePerformanceFromSummary(double totalValue, double to
 
 @riverpod
 Future<DashboardSummary> dashboardSummary(Ref ref, String userId) async {
+  // Rebuild when Family persona changes so headline matches All yours / household.
+  ref.watch(familyPortfolioFilterProvider);
   final repository = await ref.watch(dashboardRepositoryProvider.future);
   return _resolveDashboardSummary(ref, repository, userId);
 }
@@ -332,6 +341,8 @@ Future<DashboardSummary> dashboardSummary(Ref ref, String userId) async {
 @Riverpod(keepAlive: true)
 Stream<DashboardSummary> dashboardStream(Ref ref, String userId) async* {
   final resolvedUserId = await _requireDashboardUserId(ref, userId);
+  // Same persona dependency as dashboardSummary — avoid stale day% from prior scope.
+  ref.watch(familyPortfolioFilterProvider);
 
   final repository = await ref.watch(dashboardRepositoryProvider.future);
 
@@ -470,8 +481,161 @@ Stream<PerformanceResponse> historyStream(Ref ref, String userId, {String timeFr
   }
 }
 
+/// Accounts hub (identity / demat / NPS / per-broker amounts).
+final accountsHubProvider =
+    FutureProvider.autoDispose.family<AccountsHub, String>((ref, userId) async {
+  await _requireDashboardUserId(ref, userId);
+  final client = await ref.watch(portfolioApiClientProvider.future);
+  try {
+    final raw = await client
+        .get(
+          '/v1/portfolios/accounts-hub',
+          parser: (data) {
+            if (data is Map) return Map<String, dynamic>.from(data);
+            throw const FormatException('Accounts hub was not an object');
+          },
+        )
+        .timeout(const Duration(seconds: 12));
+    return AccountsHub.fromJson(raw);
+  } catch (e, st) {
+    AppLogger.warning('Accounts hub fetch failed', error: e, stackTrace: st);
+    // Soft-fail so chart-row panels render empty / retry instead of spinning forever.
+    return const AccountsHub();
+  }
+});
+
+/// NPS scheme lines for a portfolio (Users NPS tab).
+final npsSchemesProvider =
+    FutureProvider.autoDispose.family<List<NpsSchemeLine>, String>(
+        (ref, portfolioId) async {
+  if (portfolioId.isEmpty) return const [];
+  final client = await ref.watch(portfolioApiClientProvider.future);
+  try {
+    return await client
+        .get(
+          '/v1/portfolios/$portfolioId/nps/schemes',
+          parser: (data) => (data as List)
+              .whereType<Map>()
+              .map((e) => NpsSchemeLine.fromJson(Map<String, dynamic>.from(e)))
+              .toList(),
+        )
+        .timeout(const Duration(seconds: 12));
+  } catch (e, st) {
+    AppLogger.warning('NPS schemes fetch failed', error: e, stackTrace: st);
+    return const [];
+  }
+});
+
+/// Soft family persona CRUD against portfolio-service.
+Future<FamilyMemberRow> createFamilyMember({
+  required ApiClient client,
+  required String displayName,
+  String? email,
+}) async {
+  final raw = await client.post(
+    '/v1/portfolios/family-members',
+    body: {
+      'displayName': displayName,
+      if (email != null && email.trim().isNotEmpty) 'email': email.trim(),
+    },
+    parser: (data) {
+      if (data is Map) return Map<String, dynamic>.from(data);
+      throw const FormatException('Family member create was not an object');
+    },
+  );
+  return FamilyMemberRow.fromJson(raw);
+}
+
+Future<FamilyMemberRow> updateFamilyMember({
+  required ApiClient client,
+  required String familyMemberId,
+  String? displayName,
+  String? email,
+}) async {
+  final body = <String, dynamic>{};
+  if (displayName != null) body['displayName'] = displayName;
+  if (email != null) body['email'] = email;
+  final raw = await client.put(
+    '/v1/portfolios/family-members/$familyMemberId',
+    body: body,
+    parser: (data) {
+      if (data is Map) return Map<String, dynamic>.from(data);
+      throw const FormatException('Family member update was not an object');
+    },
+  );
+  return FamilyMemberRow.fromJson(raw);
+}
+
+Future<void> deleteFamilyMember({
+  required ApiClient client,
+  required String familyMemberId,
+}) async {
+  await client.delete(
+    '/v1/portfolios/family-members/$familyMemberId',
+    parser: (_) => null,
+  );
+}
+
+List<PortfolioOverview> _portfolioOverviewsFromAccountsHub(AccountsHub hub) {
+  final rows = hub.portfolios;
+  if (rows.isEmpty) {
+    return const [];
+  }
+  final cards = <PortfolioOverview>[];
+  double investedSum = 0;
+  double currentSum = 0;
+  for (final row in rows) {
+    final current = row.current ?? 0;
+    final invested = row.invested ?? (current - (row.returnAbs ?? 0));
+    final ret = row.returnAbs ?? (current - invested);
+    final pct = row.returnPct ??
+        (invested > 0 ? (ret / invested) * 100.0 : 0.0);
+    investedSum += invested;
+    currentSum += current;
+    cards.add(
+      PortfolioOverview(
+        type: (row.displayName != null && row.displayName!.trim().isNotEmpty)
+            ? row.displayName!.trim()
+            : (row.brokerType ?? 'Portfolio'),
+        totalValue: current,
+        totalReturn: ret,
+        returnPercentage: pct,
+        dayChange: 0,
+        dayChangePercentage: 0,
+        portfolioCount: 1,
+      ),
+    );
+  }
+  final consRet = currentSum - investedSum;
+  final consPct = investedSum > 0 ? (consRet / investedSum) * 100.0 : 0.0;
+  cards.add(
+    PortfolioOverview(
+      type: 'CONSOLIDATED',
+      totalValue: currentSum,
+      totalReturn: consRet,
+      returnPercentage: consPct,
+      dayChange: 0,
+      dayChangePercentage: 0,
+      portfolioCount: rows.length,
+    ),
+  );
+  return cards;
+}
+
 @riverpod
 Future<List<PortfolioOverview>> portfolioOverviews(Ref ref, String userId) async {
+  try {
+    final hub = await ref.watch(accountsHubProvider(userId).future);
+    final fromHub = _portfolioOverviewsFromAccountsHub(hub);
+    if (fromHub.isNotEmpty) {
+      return fromHub;
+    }
+  } catch (e) {
+    AppLogger.warning(
+      'Accounts hub unavailable for portfolio list; falling back',
+      error: e,
+    );
+  }
   final repository = await ref.watch(dashboardRepositoryProvider.future);
   try {
     return await repository.getPortfolioOverviews(userId);

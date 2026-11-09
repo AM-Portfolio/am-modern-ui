@@ -36,7 +36,7 @@ class FeatureFlagService {
     if (config != null) _config = config;
     _attributes = Map<String, dynamic>.from(attributes);
 
-    if (!_config.enabled) {
+    if (!_config.enabled || _config.clientKey.trim().isEmpty) {
       _ready = true;
       _bump();
       return;
@@ -50,7 +50,9 @@ class FeatureFlagService {
       hostURL: host,
       attributes: _attributes,
       growthBookTrackingCallBack: (_) {},
-      backgroundSync: true,
+      // Contabo GB currently returns 400 Invalid API Key for stored dig keys;
+      // avoid background sync hammering a dead connection.
+      backgroundSync: false,
     ).initialize();
 
     try {

@@ -98,7 +98,11 @@ class _PortfolioOverviewWidgetState
           }
 
           if (widget.portfolioId == 'all') {
-            cubit.loadAllPortfolios();
+            cubit.loadAllPortfolios(
+              persona: holdingsPersonaParam(
+                ref.read(familyPortfolioFilterProvider),
+              ),
+            );
           } else {
             cubit.loadPortfolioById(widget.portfolioId!);
           }
@@ -120,11 +124,21 @@ class _PortfolioOverviewWidgetState
   @override
   Widget build(BuildContext context) {
     final portfolioId = widget.portfolioId;
+    final filterKey = ref.watch(familyPortfolioFilterProvider);
+    final intelPortfolioId = portfolioId == null
+        ? null
+        : scopedAllPortfolioId(portfolioId, filterKey);
     ref.listen(appTimeFrameProvider, (previous, next) {
       if (previous != next) {
         context.read<PortfolioCubit>().setTimeFrame(next.code);
         _reloadAnalytics(next);
       }
+    });
+    ref.listen<String>(familyPortfolioFilterProvider, (previous, next) {
+      if (previous == next || portfolioId != 'all') return;
+      context.read<PortfolioCubit>().loadAllPortfolios(
+        persona: holdingsPersonaParam(next),
+      );
     });
     final selectedTimeFrame = ref.watch(appTimeFrameProvider);
 
@@ -154,7 +168,11 @@ class _PortfolioOverviewWidgetState
           return;
         }
         if (portfolioId == 'all') {
-          cubit.loadAllPortfolios();
+          cubit.loadAllPortfolios(
+            persona: holdingsPersonaParam(
+              ref.read(familyPortfolioFilterProvider),
+            ),
+          );
         } else {
           cubit.loadPortfolioById(portfolioId);
         }
@@ -229,7 +247,11 @@ class _PortfolioOverviewWidgetState
                     onPressed: () {
                       final cubit = context.read<PortfolioCubit>();
                       if (portfolioId == 'all') {
-                        cubit.loadAllPortfolios();
+                        cubit.loadAllPortfolios(
+                          persona: holdingsPersonaParam(
+                            ref.read(familyPortfolioFilterProvider),
+                          ),
+                        );
                       } else {
                         cubit.loadPortfolioById(portfolioId);
                       }
@@ -266,7 +288,9 @@ class _PortfolioOverviewWidgetState
                 final isTablet = width >= 600 && width < 1100;
                 final isWeb = width >= 1100;
 
-                final isAggregate = portfolioId == 'all';
+                final isAggregate =
+                    portfolioId == 'all' ||
+                    (portfolioId?.startsWith('all|') ?? false);
                 final masterOn = ref.watch(
                   portfolioIntelligenceOverviewEnabledProvider,
                 );
@@ -282,6 +306,7 @@ class _PortfolioOverviewWidgetState
                   portfolioIntelWhatIfEnabledProvider,
                 );
                 final showAllocation = isAggregate || (!masterOn || !showXray);
+                final scopedIntelId = intelPortfolioId ?? portfolioId!;
 
                 return Stack(
                   children: [
@@ -394,6 +419,7 @@ class _PortfolioOverviewWidgetState
                             if (masterOn)
                               ..._buildIntelBody(
                                 portfolioId: portfolioId,
+                                intelPortfolioId: scopedIntelId,
                                 selectedTimeFrame: selectedTimeFrame,
                                 width: width,
                                 isPhone: isPhone,
@@ -477,6 +503,7 @@ class _PortfolioOverviewWidgetState
   /// Flag-gated intelligence layout — X-Ray primary mid-row; compact Movers bottom.
   List<Widget> _buildIntelBody({
     required String portfolioId,
+    required String intelPortfolioId,
     required ds.TimeFrame selectedTimeFrame,
     required double width,
     required bool isPhone,
@@ -516,8 +543,8 @@ class _PortfolioOverviewWidgetState
     );
     final health = showHealth
         ? PortfolioHealthCard(
-            key: ValueKey('health_$portfolioId'),
-            portfolioId: portfolioId,
+            key: ValueKey('health_$intelPortfolioId'),
+            portfolioId: intelPortfolioId,
             compact: isPhone,
             fillHeight: fillPeers,
             padding: peerPadding,
@@ -525,16 +552,16 @@ class _PortfolioOverviewWidgetState
         : null;
     final risk = showRisk
         ? PortfolioRiskRadarCard(
-            key: ValueKey('risk_$portfolioId'),
-            portfolioId: portfolioId,
+            key: ValueKey('risk_$intelPortfolioId'),
+            portfolioId: intelPortfolioId,
             fillHeight: fillPeers,
             padding: peerPadding,
           )
         : null;
     final xray = showXray
         ? PortfolioXrayPanel(
-            key: ValueKey('xray_$portfolioId'),
-            portfolioId: portfolioId,
+            key: ValueKey('xray_$intelPortfolioId'),
+            portfolioId: intelPortfolioId,
             fillHeight: fillPeers,
             padding: peerPadding,
             readOnly: isAggregate,
@@ -542,8 +569,8 @@ class _PortfolioOverviewWidgetState
         : null;
     final stress = showStress
         ? PortfolioStressCard(
-            key: ValueKey('stress_$portfolioId'),
-            portfolioId: portfolioId,
+            key: ValueKey('stress_$intelPortfolioId'),
+            portfolioId: intelPortfolioId,
             // Always open so mobile users see scenarios without an extra tap.
             initiallyExpanded: true,
             fillHeight: fillBottom,
@@ -551,8 +578,8 @@ class _PortfolioOverviewWidgetState
         : null;
     final whatIf = showWhatIf
         ? PortfolioWhatIfCard(
-            key: ValueKey('whatif_$portfolioId'),
-            portfolioId: portfolioId,
+            key: ValueKey('whatif_$intelPortfolioId'),
+            portfolioId: intelPortfolioId,
             // Always open so mobile users see the simulator without an extra tap.
             initiallyExpanded: true,
             fillHeight: fillBottom,
