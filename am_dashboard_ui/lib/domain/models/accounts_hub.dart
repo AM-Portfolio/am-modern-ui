@@ -261,6 +261,111 @@ class AccountsPortfolioRow {
       !isCdslAggregator && !isNps && !isCasDematBook && hasHoldings;
 }
 
+/// First-class Kafka / UI broker codes (Groww, Angel One, Zerodha, …).
+const Set<String> kFirstClassBrokerCodes = {
+  'DHAN',
+  'GROWW',
+  'ANGEL_ONE',
+  'ZERODHA',
+  'UPSTOX',
+  'FYERS',
+  'KOTAK',
+  'HDFC',
+  'MSTOCK',
+};
+
+/// Normalize CAS `mappedBroker` / brokerType to a first-class code, or null.
+String? normalizeFirstClassBrokerCode(String? raw) {
+  final m = (raw ?? '').trim().toLowerCase().replaceAll('-', '_');
+  if (m.isEmpty) return null;
+  switch (m) {
+    case 'groww':
+    case 'grow':
+      return 'GROWW';
+    case 'angleone':
+    case 'angelone':
+    case 'angel_one':
+      return 'ANGEL_ONE';
+    case 'zerodha':
+      return 'ZERODHA';
+    case 'kotak':
+      return 'KOTAK';
+    case 'dhan':
+      return 'DHAN';
+    case 'upstox':
+      return 'UPSTOX';
+    case 'fyers':
+      return 'FYERS';
+    case 'hdfc':
+    case 'hdfc_bank':
+      return 'HDFC';
+    case 'mstock':
+      return 'MSTOCK';
+    default:
+      final upper = m.toUpperCase();
+      return kFirstClassBrokerCodes.contains(upper) ? upper : null;
+  }
+}
+
+String firstClassBrokerDisplayName(String code) {
+  switch (code.toUpperCase()) {
+    case 'GROWW':
+      return 'Groww';
+    case 'ANGEL_ONE':
+      return 'Angel One';
+    case 'ZERODHA':
+      return 'Zerodha';
+    case 'KOTAK':
+      return 'Kotak';
+    case 'DHAN':
+      return 'Dhan';
+    case 'UPSTOX':
+      return 'Upstox';
+    case 'FYERS':
+      return 'Fyers';
+    case 'HDFC':
+      return 'HDFC';
+    case 'MSTOCK':
+      return 'mStock';
+    default:
+      return code.replaceAll('_', ' ');
+  }
+}
+
+/// Running broker books plus synthetic rows for valued first-class CAS directory
+/// demats that do not yet have a running book (so Broker tab matches the statement).
+List<AccountsPortfolioRow> runningBrokersUnionDirectory({
+  required List<AccountsPortfolioRow> runningBrokers,
+  required List<DematAccountRow> directoryDemat,
+}) {
+  final out = List<AccountsPortfolioRow>.from(runningBrokers);
+  final covered = <String>{};
+  for (final p in runningBrokers) {
+    final code = normalizeFirstClassBrokerCode(p.brokerType) ??
+        normalizeFirstClassBrokerCode(p.displayName);
+    if (code != null) covered.add(code);
+  }
+  for (final a in directoryDemat) {
+    if ((a.accountType ?? '').toLowerCase() == 'mf') continue;
+    final value = a.holdingValue ?? 0;
+    if (value <= 0) continue;
+    final code = normalizeFirstClassBrokerCode(a.mappedBroker);
+    if (code == null || covered.contains(code)) continue;
+    covered.add(code);
+    out.add(
+      AccountsPortfolioRow(
+        portfolioId: 'cas-dir-$code-${a.accountNo}',
+        displayName: firstClassBrokerDisplayName(code),
+        brokerType: code,
+        current: value,
+        assetCount: 0,
+        familyMemberId: a.familyMemberId,
+      ),
+    );
+  }
+  return out;
+}
+
 class DematAccountRow {
   const DematAccountRow({
     required this.accountNo,

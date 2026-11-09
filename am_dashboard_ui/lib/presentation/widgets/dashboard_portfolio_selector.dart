@@ -127,9 +127,15 @@ List<DashboardPortfolioChoice> parseDashboardPortfolioChoices(dynamic data) {
     final assetCount = (map['assetCount'] as num?)?.toInt();
     final invested = (map['invested'] as num?)?.toDouble();
     final current = (map['current'] as num?)?.toDouble();
+    final totalValue = (map['totalValue'] as num?)?.toDouble() ?? current;
+    final serverHasHoldings = map['hasHoldings'] as bool?;
     final bool hasHoldings;
-    if (assetCount != null) {
-      hasHoldings = assetCount > 0;
+    if (serverHasHoldings != null) {
+      hasHoldings = serverHasHoldings;
+    } else if (assetCount != null || totalValue != null) {
+      hasHoldings = (assetCount != null && assetCount > 0) ||
+          (totalValue != null && totalValue > 0) ||
+          (invested != null && invested > 0);
     } else if (invested != null || current != null) {
       hasHoldings = (invested ?? 0) > 0 || (current ?? 0) > 0;
     } else {

@@ -65,8 +65,11 @@ Future<ApiClient> portfolioApiClient(Ref ref) async {
 Future<Map<String, dynamic>> portfolioSummaryFallback(Ref ref) async {
   final config = await ref.watch(appConfigProvider.future);
   final client = await ref.watch(portfolioApiClientProvider.future);
+  final filterKey = ref.watch(familyPortfolioFilterProvider);
+  final persona = holdingsPersonaParam(filterKey);
   return client.get(
     config.api.portfolio.summaryResource,
+    queryParams: {'persona': persona},
     parser: (data) {
       if (data is Map) return Map<String, dynamic>.from(data);
       throw const FormatException('Portfolio summary was not an object');
@@ -163,15 +166,13 @@ void retryDashboardSummary(WidgetRef ref, String userId) {
 }
 
 Future<Map<String, dynamic>> _loadPortfolioSummaryFallback(Ref ref) async {
-  // Prefer cached success. Only invalidate+retry when the keepAlive is in error
-  // — always calling refresh() races when summary/overviews/history fall back
-  // together and intermittently fails the header.
-  final cached = ref.read(portfolioSummaryFallbackProvider);
-  if (cached.hasValue) return cached.requireValue;
+  // Await the persona-watched provider — do not return a prior scope's hasValue
+  // while Family filter is switching (that mixed You ₹ with household day%).
+  final cached = ref.watch(portfolioSummaryFallbackProvider);
   if (cached.hasError) {
     ref.invalidate(portfolioSummaryFallbackProvider);
   }
-  return ref.read(portfolioSummaryFallbackProvider.future);
+  return ref.watch(portfolioSummaryFallbackProvider.future);
 }
 
 Future<DashboardSummary> _resolveDashboardSummary(
@@ -197,30 +198,31 @@ Future<DashboardSummary> _resolveDashboardSummary(
     return _dashboardSummaryFromPortfolioRaw(raw);
   }
 
-  final portfolioFallback = _loadPortfolioSummaryFallback(ref)
-      .then(_dashboardSummaryFromPortfolioRaw);
-
+  // Canonical headline wealth: portfolio summary with persona (hub residual).
+  // Do not prefer unscoped analysis dashboard/summary for totals.
   try {
-    return await repository
-        .getSummary(userId)
+    final raw = await _loadPortfolioSummaryFallback(ref)
         .timeout(const Duration(seconds: 20));
+    return _dashboardSummaryFromPortfolioRaw(raw);
   } catch (e) {
     AppLogger.warning(
-      'Failed to get summary from analysis service. Trying fallback to portfolio service...',
+      'Portfolio summary failed; trying analysis dashboard summary...',
       error: e,
     );
     try {
-      return await portfolioFallback.timeout(const Duration(seconds: 20));
-    } catch (fallbackError) {
-      // Last chance: fresh portfolio fetch (clears a poisoned keepAlive).
+      return await repository
+          .getSummary(userId)
+          .timeout(const Duration(seconds: 20));
+    } catch (finalError) {
       ref.invalidate(portfolioSummaryFallbackProvider);
       try {
-        final raw = await ref.read(portfolioSummaryFallbackProvider.future)
+        final raw = await ref
+            .read(portfolioSummaryFallbackProvider.future)
             .timeout(const Duration(seconds: 25));
         return _dashboardSummaryFromPortfolioRaw(raw);
-      } catch (finalError) {
+      } catch (_) {
         AppLogger.error(
-          'Dashboard summary fallback also failed',
+          'Dashboard summary failed on portfolio and analysis paths',
           error: finalError,
         );
         rethrow;
@@ -330,6 +332,8 @@ PerformanceResponse _generatePerformanceFromSummary(double totalValue, double to
 
 @riverpod
 Future<DashboardSummary> dashboardSummary(Ref ref, String userId) async {
+  // Rebuild when Family persona changes so headline matches All yours / household.
+  ref.watch(familyPortfolioFilterProvider);
   final repository = await ref.watch(dashboardRepositoryProvider.future);
   return _resolveDashboardSummary(ref, repository, userId);
 }
@@ -337,6 +341,8 @@ Future<DashboardSummary> dashboardSummary(Ref ref, String userId) async {
 @Riverpod(keepAlive: true)
 Stream<DashboardSummary> dashboardStream(Ref ref, String userId) async* {
   final resolvedUserId = await _requireDashboardUserId(ref, userId);
+  // Same persona dependency as dashboardSummary — avoid stale day% from prior scope.
+  ref.watch(familyPortfolioFilterProvider);
 
   final repository = await ref.watch(dashboardRepositoryProvider.future);
 

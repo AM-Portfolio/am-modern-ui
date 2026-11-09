@@ -122,8 +122,10 @@ class _DashboardUsersHubWidgetState
           final directoryDemat = demat
               .where((a) => (a.accountType ?? '').toLowerCase() != 'mf')
               .toList();
-          final mfRows = casMf.isNotEmpty ? casMf : directoryMf;
-          final dematOnly = casDemat.isNotEmpty ? casDemat : directoryDemat;
+          // Prefer CAS directory for Demat/MF lists (full account rows).
+          final mfRows = directoryMf.isNotEmpty ? directoryMf : casMf;
+          final dematOnly =
+              directoryDemat.isNotEmpty ? directoryDemat : casDemat;
           final portfolios = _filteredPortfolios(hub, familyMemberId);
           final valueBooks =
               personaBooks.where((p) => !p.isNps).toList();

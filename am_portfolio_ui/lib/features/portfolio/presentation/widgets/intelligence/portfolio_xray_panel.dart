@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math' as math;
 
+import 'package:am_common/am_common.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -534,7 +535,14 @@ class _PortfolioXrayPanelState extends ConsumerState<PortfolioXrayPanel>
 
   @override
   Widget build(BuildContext context) {
-    final async = ref.watch(portfolioIntelligenceProvider(widget.portfolioId));
+    // Parents pass scoped `all|persona` for aggregate; keep a fallback for bare `all`.
+    final requestPortfolioId = widget.portfolioId == 'all'
+        ? scopedAllPortfolioId(
+            widget.portfolioId,
+            ref.read(familyPortfolioFilterProvider),
+          )
+        : widget.portfolioId;
+    final async = ref.watch(portfolioIntelligenceProvider(requestPortfolioId));
     final wide = MediaQuery.sizeOf(context).width >= 600;
     final donutCap =
         widget.fillHeight ? _donutSizeFill : _donutSizePhone;
@@ -570,6 +578,8 @@ class _PortfolioXrayPanelState extends ConsumerState<PortfolioXrayPanel>
     }
 
     return async.when(
+      skipLoadingOnReload: true,
+      skipLoadingOnRefresh: true,
       loading: () => IntelligenceCardSkeleton(
         height: widget.minHeight ??
             widget.height ??
@@ -584,7 +594,7 @@ class _PortfolioXrayPanelState extends ConsumerState<PortfolioXrayPanel>
         child: IntelligenceRetryRow(
           message: 'Could not load X-Ray',
           onRetry: () => ref
-              .invalidate(portfolioIntelligenceProvider(widget.portfolioId)),
+              .invalidate(portfolioIntelligenceProvider(requestPortfolioId)),
         ),
       ),
       data: (intel) {

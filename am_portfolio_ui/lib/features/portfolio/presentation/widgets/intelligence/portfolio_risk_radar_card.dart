@@ -29,6 +29,8 @@ class PortfolioRiskRadarCard extends ConsumerWidget {
     final async = ref.watch(portfolioIntelligenceProvider(portfolioId));
 
     return async.when(
+      skipLoadingOnReload: true,
+      skipLoadingOnRefresh: true,
       loading: () =>
           IntelligenceCardSkeleton(height: minHeight ?? (fillHeight ? 320 : 220)),
       error: (e, _) => IntelligenceGlassCard(

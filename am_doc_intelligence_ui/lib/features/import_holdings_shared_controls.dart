@@ -14,7 +14,7 @@ const List<ImportBrokerOption> kImportBrokerOptions = [
   ImportBrokerOption(key: 'mstock', label: 'mStock'),
   ImportBrokerOption(key: 'upstox', label: 'Upstox'),
   ImportBrokerOption(key: 'kotak', label: 'Kotak'),
-  ImportBrokerOption(key: 'cdsl', label: 'CDSL CAS'),
+  ImportBrokerOption(key: 'cdsl', label: 'CAS (equity + MF)'),
   ImportBrokerOption(key: 'nps', label: 'NPS'),
 ];
 
@@ -386,7 +386,7 @@ class _ImportHoldingsSharedControlsState
       case 'COMBINE_PORTFOLIO':
         return 'Combined Portfolio';
       case 'MUTUAL_FUND':
-        return 'Mutual Funds / CAS';
+        return 'CAS (equity + MF)';
       case 'NPS_STATEMENT':
         return 'NPS statement';
       case 'STOCK_PORTFOLIO':

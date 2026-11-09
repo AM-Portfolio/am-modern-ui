@@ -638,12 +638,14 @@ class PortfolioRemoteDataSourceImpl implements PortfolioRemoteDataSource {
     );
 
     try {
+      final scope = _allScope(portfolioId);
       final baseUri = _buildUri(
         _baseUrl,
-        PortfolioEndpoints.intelligence(portfolioId),
+        PortfolioEndpoints.intelligence(scope.id),
       );
+      final fullUri = _withPersona(baseUri, scope.persona);
       final result = await _apiClient.post<PortfolioIntelligence>(
-        baseUri,
+        fullUri,
         body: <String, dynamic>{},
         parser: (data) => PortfolioIntelligence.fromJson(
           Map<String, dynamic>.from(data! as Map),

@@ -23,7 +23,8 @@ void registerDashboardIntelWidgets() {
 
   DashboardWidgetCatalog.portfolioXrayBuilder = (context, ref, ctx) {
     final portfolioId = _resolvePortfolioId(context, ref);
-    final aggregate = portfolioId == 'all';
+    final aggregate =
+        portfolioId == 'all' || portfolioId.startsWith('all|');
     return PortfolioXrayPanel(
       key: ValueKey('dash_xray_$portfolioId'),
       portfolioId: portfolioId,
@@ -53,5 +54,6 @@ String _resolvePortfolioId(BuildContext context, WidgetRef ref) {
   if (inherited != null && inherited.isNotEmpty && inherited != 'all') {
     return inherited;
   }
-  return 'all';
+  final filterKey = ref.watch(familyPortfolioFilterProvider);
+  return scopedAllPortfolioId('all', filterKey);
 }

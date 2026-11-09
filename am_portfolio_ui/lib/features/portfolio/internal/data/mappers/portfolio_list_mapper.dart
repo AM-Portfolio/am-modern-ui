@@ -75,9 +75,12 @@ class PortfolioListMapper {
                   kind == 'PAPER' || name.toLowerCase() == 'paper';
               final hasHoldings = isPaper ||
                   isDummy ||
-                  (itemDto.assetCount == null
-                      ? true
-                      : itemDto.assetCount! > 0);
+                  (itemDto.hasHoldings ??
+                      ((itemDto.assetCount != null &&
+                              itemDto.assetCount! > 0) ||
+                          (itemDto.totalValue != null &&
+                              itemDto.totalValue! > 0) ||
+                          itemDto.assetCount == null));
               final famId = itemDto.familyMemberId?.trim();
               final famName = itemDto.familyMemberName?.trim();
               return PortfolioItem(

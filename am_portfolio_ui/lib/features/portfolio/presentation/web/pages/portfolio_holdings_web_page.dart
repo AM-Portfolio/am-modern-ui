@@ -52,8 +52,12 @@ class _PortfolioHoldingsWebPageState
     final activePortfolioId = widget.portfolioId.isNotEmpty
         ? widget.portfolioId
         : (shellId != null && shellId.isNotEmpty ? shellId : widget.portfolioId);
+    final filterKey = ref.watch(familyPortfolioFilterProvider);
+    final requestPortfolioId = activePortfolioId == 'all'
+        ? scopedAllPortfolioId(activePortfolioId, filterKey)
+        : activePortfolioId;
     final holdingsAsync =
-        ref.watch(portfolioHoldingsProvider(activePortfolioId));
+        ref.watch(portfolioHoldingsProvider(requestPortfolioId));
     String symbolQuery = '';
     try {
       symbolQuery =
@@ -90,7 +94,7 @@ class _PortfolioHoldingsWebPageState
         showPnlStatusFilter: false,
         leadingControls: assetFilter,
         onRefresh: () =>
-            ref.invalidate(portfolioHoldingsProvider(activePortfolioId)),
+            ref.invalidate(portfolioHoldingsProvider(requestPortfolioId)),
       ),
       data: (portfolioHoldings) {
         var visible = visibleHoldingsForCostPolicy(portfolioHoldings.holdings);
@@ -134,7 +138,7 @@ class _PortfolioHoldingsWebPageState
                     showHoldingsCostColumns(portfolioHoldings.holdings),
                 initialSearchQuery: symbolQuery,
                 onRefresh: () => ref
-                    .invalidate(portfolioHoldingsProvider(activePortfolioId)),
+                    .invalidate(portfolioHoldingsProvider(requestPortfolioId)),
               ),
             ),
             HoldingsNewsSection(

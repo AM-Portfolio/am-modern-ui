@@ -815,10 +815,13 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
         file.passwordError = e.isPasswordRequired || e.isPasswordInvalid
             ? e.message
             : null;
-        lastError = e.message;
+        lastError = shortImportError(e);
         if (!mounted) return;
         setState(() {});
         if (e.isPasswordRequired || e.isPasswordInvalid) {
+          throw e;
+        }
+        if (okCount == 0) {
           throw e;
         }
       }

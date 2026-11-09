@@ -10,6 +10,8 @@ class PortfolioItemDto {
     this.brokerType,
     this.isDummy = false,
     this.assetCount,
+    this.totalValue,
+    this.hasHoldings,
     this.familyMemberId,
     this.familyMemberName,
   });
@@ -27,6 +29,9 @@ class PortfolioItemDto {
             (json['broker'] as String?),
         isDummy: json['isDummy'] == true || json['dummy'] == true,
         assetCount: (json['assetCount'] as num?)?.toInt(),
+        totalValue: (json['totalValue'] as num?)?.toDouble() ??
+            (json['currentValue'] as num?)?.toDouble(),
+        hasHoldings: json['hasHoldings'] as bool?,
         familyMemberId: (json['familyMemberId'] as String?)?.trim(),
         familyMemberName: (json['familyMemberName'] as String?)?.trim(),
       );
@@ -36,6 +41,8 @@ class PortfolioItemDto {
   final String? brokerType;
   final bool isDummy;
   final int? assetCount;
+  final double? totalValue;
+  final bool? hasHoldings;
   final String? familyMemberId;
   final String? familyMemberName;
 
@@ -47,6 +54,8 @@ class PortfolioItemDto {
     if (brokerType != null) 'brokerType': brokerType,
     'isDummy': isDummy,
     if (assetCount != null) 'assetCount': assetCount,
+    if (totalValue != null) 'totalValue': totalValue,
+    if (hasHoldings != null) 'hasHoldings': hasHoldings,
     if (familyMemberId != null) 'familyMemberId': familyMemberId,
     if (familyMemberName != null) 'familyMemberName': familyMemberName,
   };

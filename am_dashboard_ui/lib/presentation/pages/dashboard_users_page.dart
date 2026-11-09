@@ -80,6 +80,51 @@ class _DashboardUsersPageState extends ConsumerState<DashboardUsersPage> {
     );
   }
 
+  List<DematAccountRow> _liftDirectoryValues(
+    List<DematAccountRow> directory,
+    List<AccountsPortfolioRow> books,
+  ) {
+    return directory.map((a) {
+      final dirVal = a.holdingValue ?? 0.0;
+      double bookVal = 0.0;
+      final boid = (a.boid ?? a.accountNo ?? '').trim();
+      final name = (a.dpName ?? '').trim().toLowerCase();
+      for (final b in books) {
+        final bb = (b.dematBoid ?? '').trim();
+        final bn = (b.displayName ?? '').trim().toLowerCase();
+        final matchBoid = boid.isNotEmpty && bb.isNotEmpty && boid == bb;
+        final matchName = name.isNotEmpty && bn.isNotEmpty && name == bn;
+        if (!matchBoid && !matchName) continue;
+        final cur = b.current ?? 0.0;
+        if (cur > bookVal) bookVal = cur;
+      }
+      final lifted = dirVal > bookVal ? dirVal : bookVal;
+      if (lifted == dirVal) return a;
+      return DematAccountRow(
+        accountNo: a.accountNo,
+        accountType: a.accountType,
+        status: a.status,
+        email: a.email,
+        mobile: a.mobile,
+        holderName: a.holderName,
+        dpId: a.dpId,
+        clientId: a.clientId,
+        boid: a.boid,
+        dpName: a.dpName,
+        nominee: a.nominee,
+        nomineeRegistered: a.nomineeRegistered,
+        frozenStatus: a.frozenStatus,
+        holdingValue: lifted,
+        mappedBroker: a.mappedBroker,
+        amcName: a.amcName,
+        folio: a.folio,
+        active: a.active,
+        portfolioId: a.portfolioId,
+        familyMemberId: a.familyMemberId,
+      );
+    }).toList();
+  }
+
   bool _matchesPersona(String? rowFamilyId) {
     if (_familyMemberId == FavoritePersonaStore.kAll) return true;
     final primary = rowFamilyId == null || rowFamilyId.trim().isEmpty;
@@ -137,7 +182,7 @@ class _DashboardUsersPageState extends ConsumerState<DashboardUsersPage> {
     final personaBooks = hub.portfolios
         .where((p) => _matchesPersona(p.familyMemberId))
         .toList();
-    final runningBrokers =
+    final runningBrokersOnly =
         personaBooks.where((p) => p.isRunningBroker).toList();
     final mfBooks = personaBooks.where((p) => p.isMutualFundBook).toList();
     final dematBooks = personaBooks.where((p) => p.isDematBook).toList();
@@ -147,12 +192,20 @@ class _DashboardUsersPageState extends ConsumerState<DashboardUsersPage> {
     final directoryMf = personaDemat
         .where((a) => (a.accountType ?? '').toLowerCase() == 'mf')
         .toList();
-    final demat = dematBooks.isEmpty
-        ? directoryDemat
+    // Demat/MF tabs must stay on the CAS directory (full account list).
+    // CAS_DEMAT books only fill in when the directory is empty for that persona.
+    // Row value = max(directory, matched book) so empty books do not understate.
+    final demat = directoryDemat.isNotEmpty
+        ? _liftDirectoryValues(directoryDemat, dematBooks)
         : dematBooks.map(_bookAsAccount).toList();
-    final mf = mfBooks.isEmpty
-        ? directoryMf
+    final mf = directoryMf.isNotEmpty
+        ? _liftDirectoryValues(directoryMf, mfBooks)
         : mfBooks.map(_bookAsAccount).toList();
+    // Broker tab: live books union valued first-class CAS directory rows.
+    final runningBrokers = runningBrokersUnionDirectory(
+      runningBrokers: runningBrokersOnly,
+      directoryDemat: directoryDemat,
+    );
     NpsMetaRow? personaNps;
     if (_familyMemberId == FavoritePersonaStore.kAll) {
       for (final n in hub.npsAccounts) {
@@ -190,22 +243,19 @@ class _DashboardUsersPageState extends ConsumerState<DashboardUsersPage> {
       break;
     }
 
+    // Prefer server persona total (books + directory residual) for weights.
     final scopeTotal = () {
-      var sum = 0.0;
-      for (final p in personaBooks) {
-        if (p.isNps) continue;
-        final v = p.current;
-        if (v != null && v > 0) sum += v;
-      }
       if (_familyMemberId == FavoritePersonaStore.kAll) {
-        for (final n in hub.npsAccounts) {
-          final v = n.totalValue;
-          if (v != null && v > 0) sum += v;
-        }
-      } else if (personaNps?.totalValue != null && personaNps!.totalValue! > 0) {
-        sum += personaNps.totalValue!;
+        return hub.stats?.householdTotalValue ?? 0.0;
       }
-      return sum;
+      if (_familyMemberId != null) {
+        for (final m in hub.familyMembers) {
+          if (m.id == _familyMemberId && m.totalValue != null) {
+            return m.totalValue!;
+          }
+        }
+      }
+      return hub.stats?.primaryTotalValue ?? 0.0;
     }();
 
     final allRows = mapAccountsHubToAdvancedRows(
