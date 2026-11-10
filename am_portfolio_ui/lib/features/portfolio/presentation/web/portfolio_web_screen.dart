@@ -420,57 +420,14 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
               : Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                      child: Row(
-                        children: [
-                          if (widget.portfolios != null &&
-                              widget.portfolios!.any((p) => p.isDummy))
-                            Expanded(
-                              child: DemoAccountInlineBanner(
-                                onUploadPortfolio: widget.onOpenDocIntel,
-                              ),
-                            )
-                          else
-                            const Spacer(),
-                          if (currentIndex == 0) ...[
-                            const SizedBox(width: 12),
-                            Consumer(
-                              builder: (context, ref, _) {
-                                final selected = ref.watch(appTimeFrameProvider);
-                                final screenWidth =
-                                    MediaQuery.of(context).size.width;
-
-                                return ConstrainedBox(
-                                  constraints: BoxConstraints(
-                                    maxWidth: screenWidth > 800
-                                        ? 400
-                                        : screenWidth * 0.45,
-                                  ),
-                                  child: TimeFrameSelector(
-                                    compact: true,
-                                    primaryColor: ModuleColors.portfolio,
-                                    selectedTimeFrame: selected,
-                                    onTimeFrameChanged: (tf) => ref
-                                        .read(appTimeFrameProvider.notifier)
-                                        .setTimeFrame(tf),
-                                    availableTimeFrames: const [
-                                      TimeFrame.oneDay,
-                                      TimeFrame.oneWeek,
-                                      TimeFrame.oneMonth,
-                                      TimeFrame.threeMonths,
-                                      TimeFrame.sixMonths,
-                                      TimeFrame.oneYear,
-                                      TimeFrame.fiveYears,
-                                    ],
-                                  ),
-                                );
-                              },
-                            ),
-                          ],
-                        ],
+                    if (widget.portfolios != null &&
+                        widget.portfolios!.any((p) => p.isDummy))
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                        child: DemoAccountInlineBanner(
+                          onUploadPortfolio: widget.onOpenDocIntel,
+                        ),
                       ),
-                    ),
                     Expanded(child: activePage),
                   ],
                 ),
