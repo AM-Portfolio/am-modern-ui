@@ -1,4 +1,6 @@
+import 'package:am_auth_ui/am_auth_ui.dart';
 import 'package:am_common/am_common.dart';
+import 'package:am_dashboard_ui/presentation/providers/dashboard_provider.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:am_portfolio_ui/features/basket/presentation/basket_navigation.dart';
@@ -13,6 +15,7 @@ import '../../providers/portfolio_providers.dart';
 import '../../internal/domain/entities/portfolio_list.dart';
 import '../../internal/data/dtos/portfolio_create_request_dto.dart';
 import '../../internal/data/dtos/portfolio_update_request_dto.dart';
+import '../widgets/family_filtered_portfolio_items.dart';
 import 'widgets/portfolio_tab_content_widget.dart';
 import 'widgets/portfolio_form_modal.dart';
 import 'package:am_portfolio_ui/features/portfolio/presentation/widgets/intelligence/xray_class_add_sheet.dart';
@@ -707,24 +710,18 @@ class _PortfolioMobileViewState extends ConsumerState<PortfolioMobileView>
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // Paper switcher + compact As of under it.
-            Flexible(
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 148),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      _buildPortfolioSwitcher(context, currentName),
-                      if (hasSelectedPortfolio) _buildStickyAsOfLabel(context),
-                    ],
-                  ),
-                ),
+            // Household (left) + portfolio — mobile-optimized pair.
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _buildFamilyAwareMobilePicker(context, currentName),
+                  if (hasSelectedPortfolio) _buildStickyAsOfLabel(context),
+                ],
               ),
             ),
-            const Spacer(),
+            const SizedBox(width: 8),
             Listener(
               behavior: HitTestBehavior.opaque,
               onPointerDown: (_) {
@@ -753,6 +750,102 @@ class _PortfolioMobileViewState extends ConsumerState<PortfolioMobileView>
           ],
         ),
       ),
+    );
+  }
+
+  /// Family filter left of portfolio dropdown (matches desktop sidebar order).
+  Widget _buildFamilyAwareMobilePicker(
+    BuildContext context,
+    String currentName,
+  ) {
+    final auth = context.read<AuthCubit>().state;
+    final userId = auth is Authenticated ? auth.user.id : '';
+    final hub = userId.isEmpty
+        ? null
+        : ref.watch(accountsHubProvider(userId)).asData?.value;
+    final members = familyMembersForFilter(hub);
+    final showFamily = showFamilyPortfolioFilter(
+      members.map((m) => (id: m.id, name: m.name)),
+    );
+    final filterKey = ref.watch(familyPortfolioFilterProvider);
+    final source = widget.portfolios ?? const <PortfolioItem>[];
+    final filtered = familyFilteredPortfolioItems(
+      portfolios: source,
+      filterKey: filterKey,
+      showFamilyUi: showFamily,
+      hub: hub,
+    );
+    final memberName = members
+        .where((m) => m.id == filterKey)
+        .map((m) => m.name)
+        .firstOrNull;
+    final allLabel = allPortfoliosLabel(
+      filterKey: filterKey,
+      memberName: memberName,
+    );
+    final portfolios = <PortfolioItem>[
+      PortfolioItem(portfolioId: 'all', portfolioName: allLabel),
+      ...filtered,
+    ];
+
+    var currentId = _currentPortfolioId;
+    if (currentId != null &&
+        currentId != 'all' &&
+        !portfolios.any((p) => p.portfolioId == currentId)) {
+      currentId = 'all';
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _onPortfolioChanged('all', allLabel);
+      });
+    }
+
+    final resolvedName =
+        portfolios
+            .where((p) => p.portfolioId == (currentId ?? 'all'))
+            .map((p) => p.portfolioName)
+            .firstOrNull ??
+        currentName;
+
+    return FamilyAwarePortfolioPicker<PortfolioItem>(
+      showFamilyFilter: showFamily,
+      familyFilterKey: filterKey,
+      primaryLabel: primaryFamilyLabel(hub),
+      members: members,
+      onFamilySelected: (key) {
+        ref.read(familyPortfolioFilterProvider.notifier).select(key);
+        final next = familyFilteredPortfolioItems(
+          portfolios: source,
+          filterKey: key,
+          showFamilyUi: showFamily,
+          hub: hub,
+        );
+        final id = _currentPortfolioId;
+        final stillValid =
+            id == null || id == 'all' || next.any((p) => p.portfolioId == id);
+        if (!stillValid || id == null || id == 'all') {
+          final nextName = members
+              .where((m) => m.id == key)
+              .map((m) => m.name)
+              .firstOrNull;
+          _onPortfolioChanged(
+            'all',
+            allPortfoliosLabel(filterKey: key, memberName: nextName),
+          );
+        }
+      },
+      layout: FamilyAwarePortfolioPickerLayout.row,
+      compact: true,
+      currentPortfolioId: currentId,
+      currentPortfolioName: resolvedName,
+      portfolios: portfolios,
+      onPortfolioSelected: _onPortfolioChanged,
+      idExtractor: (p) => p.portfolioId,
+      nameExtractor: (p) => p.portfolioName,
+      accentColor: ModuleColors.portfolio,
+      isSelectableExtractor: (p) =>
+          p.portfolioId == 'all' || p.isDummy || p.hasHoldings,
+      showNoHoldingsBadgeExtractor: (p) =>
+          p.portfolioId != 'all' && !p.isDummy && !p.hasHoldings,
     );
   }
 
@@ -826,54 +919,6 @@ class _PortfolioMobileViewState extends ConsumerState<PortfolioMobileView>
             ),
           ),
         );
-      },
-    );
-  }
-
-  Widget _buildPortfolioSwitcher(BuildContext context, String currentName) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final portfolios = widget.portfolios ?? const [];
-    final selectedId = _currentPortfolioId ?? 'all';
-
-    final items = <DropdownMenuItem<String>>[
-      'all'.toSimpleDropdownItem(text: 'All Portfolios', fontSize: 12),
-      ...portfolios.map(
-        (p) => p.portfolioId.toSimpleDropdownItem(
-          text: p.portfolioName,
-          fontSize: 12,
-        ),
-      ),
-    ];
-
-    final hasSelection = items.any((item) => item.value == selectedId);
-
-    return CustomDropdown<String>(
-      value: hasSelection ? selectedId : 'all',
-      height: 36,
-      isExpanded: true,
-      fontSize: 12,
-      iconSize: 16,
-      borderRadius: 10,
-      menuMaxHeight: 148,
-      primaryColor: ModuleColors.portfolio,
-      backgroundColor: isDark ? context.glassOverlay(0.06) : null,
-      borderColor: isDark ? context.glassOverlay(0.1) : null,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 8),
-      items: items,
-      onChanged: (id) {
-        if (id == null) return;
-        var name = currentName;
-        if (id == 'all') {
-          name = 'All Portfolios';
-        } else {
-          for (final p in portfolios) {
-            if (p.portfolioId == id) {
-              name = p.portfolioName;
-              break;
-            }
-          }
-        }
-        _onPortfolioChanged(id, name);
       },
     );
   }

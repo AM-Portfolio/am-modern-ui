@@ -504,16 +504,22 @@ final accountsHubProvider =
 
   await _requireDashboardUserId(ref, userId);
   final client = await ref.watch(portfolioApiClientProvider.future);
-  final raw = await client
-      .get(
-        '/v1/portfolios/accounts-hub',
-        parser: (data) {
-          if (data is Map) return Map<String, dynamic>.from(data);
-          throw const FormatException('Accounts hub was not an object');
-        },
-      )
-      .timeout(const Duration(seconds: 20));
-  return AccountsHub.fromJson(raw);
+  try {
+    final raw = await client
+        .get(
+          '/v1/portfolios/accounts-hub',
+          parser: (data) {
+            if (data is Map) return Map<String, dynamic>.from(data);
+            throw const FormatException('Accounts hub was not an object');
+          },
+        )
+        .timeout(const Duration(seconds: 20));
+    return AccountsHub.fromJson(raw);
+  } catch (e, st) {
+    AppLogger.warning('Accounts hub fetch failed', error: e, stackTrace: st);
+    // Soft-fail so chart-row panels render empty / retry instead of spinning forever.
+    return const AccountsHub();
+  }
 });
 
 /// NPS scheme lines for a portfolio (Users NPS tab).

@@ -32,8 +32,6 @@ class AdvancedAccountsTemplate extends StatefulWidget {
     this.footerNoun = 'accounts',
     this.footerCenterNote,
     this.searchHint = 'Search accounts, broker, DP ID…',
-    this.initialViewMode = 'table',
-    this.allowViewModeToggle = true,
   });
 
   final List<AdvancedAccountRow> accounts;
@@ -55,12 +53,6 @@ class AdvancedAccountsTemplate extends StatefulWidget {
   final String? footerCenterNote;
   final String searchHint;
 
-  /// `table` or `card`. Defaults to table for web callers.
-  final String initialViewMode;
-
-  /// When false, hides the Table/Card toggle (mobile card-only).
-  final bool allowViewModeToggle;
-
   @override
   State<AdvancedAccountsTemplate> createState() =>
       _AdvancedAccountsTemplateState();
@@ -73,7 +65,7 @@ class _AdvancedAccountsTemplateState extends State<AdvancedAccountsTemplate>
   bool _sortAscending = true;
   List<AdvancedAccountRow> _sortedAccounts = [];
   late AnimationController _refreshController;
-  late String _viewMode;
+  String _viewMode = 'table';
   late final TextEditingController _searchController;
   String _searchQuery = '';
 
@@ -81,16 +73,9 @@ class _AdvancedAccountsTemplateState extends State<AdvancedAccountsTemplate>
 
   static const double _controlHeight = 36;
 
-  bool get _showContactColumns => widget.accounts.any((a) {
-        final e = a.email?.trim() ?? '';
-        final m = a.mobile?.trim() ?? '';
-        return e.isNotEmpty || m.isNotEmpty;
-      });
-
   @override
   void initState() {
     super.initState();
-    _viewMode = widget.initialViewMode == 'card' ? 'card' : 'table';
     _sortedAccounts = List.from(widget.accounts);
     _searchQuery = widget.initialSearchQuery;
     _searchController = TextEditingController(text: _searchQuery);
@@ -123,9 +108,6 @@ class _AdvancedAccountsTemplateState extends State<AdvancedAccountsTemplate>
         _searchController.text = _searchQuery;
       }
       _currentPage = 0;
-    }
-    if (!widget.allowViewModeToggle && _viewMode != 'card') {
-      _viewMode = 'card';
     }
   }
 
@@ -265,7 +247,6 @@ class _AdvancedAccountsTemplateState extends State<AdvancedAccountsTemplate>
                   accent: _accent,
                   onSort: _sort,
                   onRowTap: widget.onRowTap,
-                  showContactColumns: _showContactColumns,
                 )
               : AdvancedAccountsCards(
                   accounts: _paginatedAccounts,
@@ -341,22 +322,18 @@ class _AdvancedAccountsTemplateState extends State<AdvancedAccountsTemplate>
   Widget _buildDesktopFilterRow() => Padding(
         padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.md,
-          vertical: AppSpacing.sm,
+          vertical: AppSpacing.sm + 4,
         ),
-        child: SizedBox(
-          height: _controlHeight,
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Expanded(child: _buildToolbarLeading()),
-              const SizedBox(width: AppSpacing.sm),
-              _buildViewModeToggle(),
-              const SizedBox(width: AppSpacing.sm),
-              SizedBox(width: 240, child: _buildSearchField()),
-              const SizedBox(width: AppSpacing.sm),
-              _buildRefreshButton(),
-            ],
-          ),
+        child: Row(
+          children: [
+            Expanded(child: _buildToolbarLeading()),
+            const SizedBox(width: AppSpacing.sm),
+            _buildViewModeToggle(),
+            const SizedBox(width: AppSpacing.sm),
+            SizedBox(width: 240, child: _buildSearchField()),
+            const SizedBox(width: AppSpacing.sm),
+            _buildRefreshButton(),
+          ],
         ),
       );
 
@@ -368,31 +345,25 @@ class _AdvancedAccountsTemplateState extends State<AdvancedAccountsTemplate>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            if (widget.toolbarLeading != null) ...[
-              _buildToolbarLeading(),
-              const SizedBox(height: AppSpacing.sm),
-            ],
+            _buildToolbarLeading(),
+            const SizedBox(height: AppSpacing.sm),
             SizedBox(
               height: _controlHeight,
               child: Row(
                 children: [
-                  if (widget.allowViewModeToggle) ...[
-                    _buildViewModeToggle(),
-                    const SizedBox(width: AppSpacing.sm),
-                  ],
-                  Expanded(child: _buildSearchField()),
+                  _buildViewModeToggle(),
+                  const Spacer(),
                   _buildRefreshButton(),
                 ],
               ),
             ),
+            const SizedBox(height: AppSpacing.sm),
+            _buildSearchField(),
           ],
         ),
       );
 
   Widget _buildViewModeToggle() {
-    if (!widget.allowViewModeToggle) {
-      return const SizedBox.shrink();
-    }
     Widget pill(String mode, IconData icon, String label) {
       final selected = _viewMode == mode;
       return InkWell(
@@ -532,40 +503,6 @@ class _AdvancedAccountsTemplateState extends State<AdvancedAccountsTemplate>
         (_currentPage * widget.itemsPerPage + _paginatedAccounts.length)
             .clamp(0, total);
     final note = widget.footerCenterNote;
-    final summary =
-        'Showing $from to $to of $total mapped ${widget.footerNoun}';
-    final pager = Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        TextButton(
-          onPressed:
-              _currentPage > 0 ? () => _goToPage(_currentPage - 1) : null,
-          child: const Text('Previous'),
-        ),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          decoration: BoxDecoration(
-            color: _accent.withValues(alpha: 0.14),
-            borderRadius: BorderRadius.circular(6),
-            border: Border.all(color: _accent.withValues(alpha: 0.4)),
-          ),
-          child: Text(
-            '${_currentPage + 1}',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              color: _accent,
-            ),
-          ),
-        ),
-        TextButton(
-          onPressed: _currentPage < _totalPages - 1
-              ? () => _goToPage(_currentPage + 1)
-              : null,
-          child: const Text('Next'),
-        ),
-      ],
-    );
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -573,54 +510,60 @@ class _AdvancedAccountsTemplateState extends State<AdvancedAccountsTemplate>
         color: Theme.of(context).colorScheme.surface,
         border: Border(top: BorderSide(color: context.borderColor)),
       ),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final narrow = constraints.maxWidth < 560;
-          if (narrow) {
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  summary,
-                  style: TextStyle(fontSize: 12, color: context.textSecondary),
-                ),
-                if (note != null && note.isNotEmpty) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    note,
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: context.textTertiary,
-                    ),
-                  ),
-                ],
-                Align(alignment: Alignment.centerRight, child: pager),
-              ],
-            );
-          }
-          return Row(
-            children: [
-              Expanded(
-                child: Text(
-                  summary,
-                  style: TextStyle(fontSize: 12, color: context.textSecondary),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              'Showing $from to $to of $total mapped ${widget.footerNoun}',
+              style: TextStyle(fontSize: 12, color: context.textSecondary),
+            ),
+          ),
+          if (note != null && note.isNotEmpty)
+            Expanded(
+              child: Text(
+                note,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 11,
+                  color: context.textTertiary,
                 ),
               ),
-              if (note != null && note.isNotEmpty)
-                Expanded(
-                  child: Text(
-                    note,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: context.textTertiary,
-                    ),
+            ),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextButton(
+                onPressed: _currentPage > 0
+                    ? () => _goToPage(_currentPage - 1)
+                    : null,
+                child: const Text('Previous'),
+              ),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: _accent.withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: _accent.withValues(alpha: 0.4)),
+                ),
+                child: Text(
+                  '${_currentPage + 1}',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: _accent,
                   ),
                 ),
-              pager,
+              ),
+              TextButton(
+                onPressed: _currentPage < _totalPages - 1
+                    ? () => _goToPage(_currentPage + 1)
+                    : null,
+                child: const Text('Next'),
+              ),
             ],
-          );
-        },
+          ),
+        ],
       ),
     );
   }

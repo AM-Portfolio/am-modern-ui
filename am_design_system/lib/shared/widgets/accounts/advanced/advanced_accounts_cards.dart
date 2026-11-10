@@ -1,19 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 
 import '../../../../core/theme/app_radii.dart';
+import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/color_extensions.dart';
 import 'advanced_account_row.dart';
 
-String advancedAccountTileLetter(AdvancedAccountRow account) {
-  if (account.displayBroker != '—') {
-    return account.displayBroker[0].toUpperCase();
-  }
-  final title = account.displayTitle.trim();
-  if (title.isNotEmpty) return title[0].toUpperCase();
-  return '?';
-}
-
-/// Card grid layout for [AdvancedAccountsTemplate] — horizontal density.
+/// Card grid layout for [AdvancedAccountsTemplate] — mock density.
 class AdvancedAccountsCards extends StatelessWidget {
   const AdvancedAccountsCards({
     required this.accounts,
@@ -32,61 +25,55 @@ class AdvancedAccountsCards extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        const spacing = 12.0;
+        const spacing = 16.0;
         const maxCardWidth = 360.0;
         final usable = constraints.maxWidth - 24;
         var crossAxisCount = (usable / (maxCardWidth + spacing)).floor();
         if (crossAxisCount < 1) crossAxisCount = 1;
-
-        if (crossAxisCount == 1) {
-          return ListView.separated(
-            padding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
-            itemCount: accounts.length,
-            separatorBuilder: (_, __) => const SizedBox(height: spacing),
-            itemBuilder: (context, i) => _Card(
-              account: accounts[i],
-              isDarkChrome: isDarkChrome,
-              accent: accent,
-              onRowTap: onRowTap,
-            ),
-          );
-        }
-
         final cardWidth =
             (usable - spacing * (crossAxisCount - 1)) / crossAxisCount;
-        return GridView.builder(
+
+        return SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(12, 12, 12, 16),
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: crossAxisCount,
-            crossAxisSpacing: spacing,
-            mainAxisSpacing: spacing,
-            mainAxisExtent: 100,
-          ),
-          itemCount: accounts.length,
-          itemBuilder: (context, i) => SizedBox(
-            width: cardWidth,
-            child: _Card(
-              account: accounts[i],
-              isDarkChrome: isDarkChrome,
-              accent: accent,
-              onRowTap: onRowTap,
+          child: SizedBox(
+            width: constraints.maxWidth,
+            child: Wrap(
+              alignment: WrapAlignment.start,
+              crossAxisAlignment: WrapCrossAlignment.start,
+              spacing: spacing,
+              runSpacing: spacing,
+              children: [
+                for (var i = 0; i < accounts.length; i++)
+                  SizedBox(
+                    width: cardWidth,
+                    child: _Card(
+                      account: accounts[i],
+                      index: i,
+                      isDarkChrome: isDarkChrome,
+                      accent: accent,
+                      onRowTap: onRowTap,
+                    ),
+                  ),
+              ],
             ),
           ),
         );
       },
-    );
+    ).animate().fadeIn(duration: 300.ms);
   }
 }
 
 class _Card extends StatelessWidget {
   const _Card({
     required this.account,
+    required this.index,
     required this.isDarkChrome,
     required this.accent,
     this.onRowTap,
   });
 
   final AdvancedAccountRow account;
+  final int index;
   final bool isDarkChrome;
   final Color accent;
   final ValueChanged<AdvancedAccountRow>? onRowTap;
@@ -95,7 +82,10 @@ class _Card extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = context.colors;
     final muted = context.textSecondary;
-    final onSurface = Theme.of(context).colorScheme.onSurface;
+    final missing =
+        account.nomineeMissing || account.displayNominee == 'No nominee';
+    final nomineeColor =
+        missing ? context.statusError : context.statusSuccess;
     final statusDot = switch (account.statusKind) {
       AccountStatusKind.active => context.statusSuccess,
       AccountStatusKind.inactive => context.textTertiary,
@@ -104,9 +94,6 @@ class _Card extends StatelessWidget {
     };
     final brokerTint =
         AdvancedAccountRow.brokerTint(account.broker, accent);
-    final mutedValue = account.isInactive || !account.hasValue;
-    final glowAlpha = mutedValue ? 0.06 : 0.14;
-    final showStatus = account.statusKind != AccountStatusKind.unknown;
 
     return Material(
       color: Colors.transparent,
@@ -118,14 +105,6 @@ class _Card extends StatelessWidget {
             color: theme.cardSurface,
             borderRadius: AppRadii.card,
             border: Border.all(color: theme.border),
-            gradient: LinearGradient(
-              begin: Alignment.bottomRight,
-              end: Alignment.centerLeft,
-              colors: [
-                brokerTint.withValues(alpha: glowAlpha),
-                theme.cardSurface.withValues(alpha: 0),
-              ],
-            ),
             boxShadow: [
               BoxShadow(
                 color: context.shadow(isDarkChrome ? 0.35 : 0.08),
@@ -134,148 +113,161 @@ class _Card extends StatelessWidget {
               ),
             ],
           ),
-          padding: const EdgeInsets.all(12),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          padding: const EdgeInsets.all(AppSpacing.md),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Column(
-                mainAxisSize: MainAxisSize.min,
+              Row(
                 children: [
                   Container(
-                    width: 40,
-                    height: 40,
-                    alignment: Alignment.center,
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
-                      color: brokerTint.withValues(alpha: 0.22),
-                      borderRadius: BorderRadius.circular(10),
+                      color: accent.withValues(alpha: 0.14),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(color: accent.withValues(alpha: 0.35)),
                     ),
                     child: Text(
-                      advancedAccountTileLetter(account),
+                      account.displayType,
                       style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w800,
-                        color: brokerTint,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: accent,
                       ),
                     ),
                   ),
-                  if (showStatus) ...[
-                    const SizedBox(height: 4),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: theme.cardSurface.withValues(alpha: 0.92),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: theme.border.withValues(alpha: 0.55),
+                  const Spacer(),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        account.displayValue,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: account.isInactive
+                              ? muted
+                              : Theme.of(context).colorScheme.onSurface,
                         ),
                       ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Container(
-                            width: 6,
-                            height: 6,
-                            decoration: BoxDecoration(
-                              color: statusDot,
-                              shape: BoxShape.circle,
-                            ),
+                      if (account.displayWeightPct.isNotEmpty)
+                        Text(
+                          account.displayWeightPct,
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: muted,
                           ),
-                          const SizedBox(width: 4),
-                          Text(
-                            account.displayStatus,
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w600,
-                              color: onSurface,
-                            ),
-                          ),
-                        ],
+                        ),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              Text(
+                account.displayTitle,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: accent.withValues(alpha: 0.95),
+                ),
+              ),
+              if (account.displaySubtitle.isNotEmpty) ...[
+                const SizedBox(height: 2),
+                Text(
+                  account.displaySubtitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(fontSize: 11, color: muted),
+                ),
+              ],
+              const SizedBox(height: 6),
+              Row(
+                children: [
+                  if (account.displayBroker != '—') ...[
+                    Container(
+                      width: 14,
+                      height: 14,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: brokerTint.withValues(alpha: 0.2),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Text(
+                        account.displayBroker[0].toUpperCase(),
+                        style: TextStyle(
+                          fontSize: 8,
+                          fontWeight: FontWeight.w800,
+                          color: brokerTint,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Flexible(
+                      child: Text(
+                        account.displayBroker,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                   ],
                 ],
               ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
+              const SizedBox(height: AppSpacing.sm),
+              Wrap(
+                spacing: 8,
+                runSpacing: 6,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  if (account.showNomineeBadge ||
+                      account.displayNominee != '—')
                     Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 2,
+                        horizontal: 8,
+                        vertical: 3,
                       ),
                       decoration: BoxDecoration(
-                        color: accent.withValues(alpha: 0.14),
                         borderRadius: BorderRadius.circular(6),
                         border: Border.all(
-                          color: accent.withValues(alpha: 0.35),
+                          color: nomineeColor.withValues(alpha: 0.7),
                         ),
+                        color: nomineeColor.withValues(alpha: 0.08),
                       ),
                       child: Text(
-                        account.displayType,
+                        account.displayNominee,
                         style: TextStyle(
-                          fontSize: 10,
+                          fontSize: 11,
                           fontWeight: FontWeight.w700,
-                          color: accent,
+                          color: nomineeColor,
                         ),
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      account.displayTitle,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        height: 1.15,
-                        color: onSurface,
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 7,
+                        height: 7,
+                        decoration: BoxDecoration(
+                          color: statusDot,
+                          shape: BoxShape.circle,
+                        ),
                       ),
-                    ),
-                    if (account.displaySubtitle.isNotEmpty) ...[
-                      const SizedBox(height: 2),
+                      const SizedBox(width: 5),
                       Text(
-                        account.displaySubtitle,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(fontSize: 11, color: muted),
+                        account.displayStatus,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ],
-                  ],
-                ),
-              ),
-              Container(
-                width: 1,
-                height: 48,
-                margin: const EdgeInsets.symmetric(horizontal: 10),
-                color: theme.border.withValues(alpha: 0.7),
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    account.displayValue,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: mutedValue ? muted : onSurface,
-                    ),
                   ),
-                  if (account.displayWeightPct.isNotEmpty)
-                    Text(
-                      account.displayWeightPct,
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: muted,
-                      ),
-                    ),
                 ],
               ),
             ],

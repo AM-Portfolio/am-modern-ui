@@ -13,7 +13,6 @@ class SharedFamilyFilterDropdown extends StatelessWidget {
     required this.onSelected,
     this.accentColor,
     this.compact = false,
-    this.fillWidth = false,
     this.allLabel = 'All Users',
   });
 
@@ -24,9 +23,6 @@ class SharedFamilyFilterDropdown extends StatelessWidget {
   final ValueChanged<String> onSelected;
   final Color? accentColor;
   final bool compact;
-
-  /// Stretch to parent width (use inside [Expanded] on narrow layouts).
-  final bool fillWidth;
 
   /// Display label for the household / All option.
   final String allLabel;
@@ -73,9 +69,7 @@ class SharedFamilyFilterDropdown extends StatelessWidget {
                       fontWeight: o.key == selectedKey
                           ? FontWeight.w700
                           : FontWeight.w500,
-                      color: o.key == selectedKey
-                          ? accent
-                          : colors.textPrimary,
+                      color: o.key == selectedKey ? accent : colors.textPrimary,
                       fontSize: fontSize,
                     ),
                   ),
@@ -88,49 +82,32 @@ class SharedFamilyFilterDropdown extends StatelessWidget {
       ],
       child: Container(
         height: height,
-        width: fillWidth ? double.infinity : null,
-        constraints: fillWidth
-            ? const BoxConstraints()
-            : BoxConstraints(minWidth: compact ? 118 : 132),
-        padding: EdgeInsets.symmetric(horizontal: compact ? 10 : 12),
+        constraints: BoxConstraints(
+          minWidth: compact ? 96 : 132,
+          maxWidth: compact ? 140 : 220,
+        ),
+        padding: EdgeInsets.symmetric(horizontal: compact ? 8 : 12),
         decoration: BoxDecoration(
           color: colors.cardSurface,
           borderRadius: BorderRadius.circular(999),
           border: Border.all(color: accent.withValues(alpha: 0.35)),
         ),
         child: Row(
-          mainAxisSize: fillWidth ? MainAxisSize.max : MainAxisSize.min,
           children: [
             Icon(Icons.groups_outlined, size: iconSize, color: accent),
-            SizedBox(width: compact ? 6 : 8),
-            if (fillWidth)
-              Expanded(
-                child: Text(
-                  current.label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: fontSize,
-                    color: colors.textPrimary,
-                  ),
-                ),
-              )
-            else
-              ConstrainedBox(
-                constraints: BoxConstraints(maxWidth: compact ? 110 : 140),
-                child: Text(
-                  current.label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: fontSize,
-                    color: colors.textPrimary,
-                  ),
+            SizedBox(width: compact ? 4 : 8),
+            Expanded(
+              child: Text(
+                current.label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: fontSize,
+                  color: colors.textPrimary,
                 ),
               ),
-            const SizedBox(width: 2),
+            ),
             Icon(
               Icons.keyboard_arrow_down_rounded,
               size: compact ? 16 : 18,

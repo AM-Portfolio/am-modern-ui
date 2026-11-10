@@ -14,7 +14,6 @@ class AdvancedAccountsTable extends StatelessWidget {
     this.sortColumnIndex,
     this.sortAscending = true,
     this.onRowTap,
-    this.showContactColumns = true,
   });
 
   final List<AdvancedAccountRow> accounts;
@@ -23,9 +22,6 @@ class AdvancedAccountsTable extends StatelessWidget {
   final Color accent;
   final void Function(int columnIndex, bool ascending) onSort;
   final ValueChanged<AdvancedAccountRow>? onRowTap;
-
-  /// Hide email/mobile when every row is empty.
-  final bool showContactColumns;
 
   @override
   Widget build(BuildContext context) {
@@ -54,10 +50,8 @@ class AdvancedAccountsTable extends StatelessWidget {
             _headerCell(context, 'ACCOUNT LEGAL NAME', 2, 2),
             _headerCell(context, 'DP / ACCOUNT ID', 2, 3),
             _headerCell(context, 'NOMINEE STATUS', 2, 4),
-            if (showContactColumns) ...[
-              _headerCell(context, 'LINKED EMAIL', 2, 5),
-              _headerCell(context, 'MOBILE', 1, 6),
-            ],
+            _headerCell(context, 'LINKED EMAIL', 2, 5),
+            _headerCell(context, 'MOBILE', 1, 6),
             _headerCell(context, 'STATUS', 1, 7),
             _headerCell(context, 'VALUE', 1, 8, isNumeric: true),
           ],
@@ -139,17 +133,13 @@ class AdvancedAccountsTable extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Tooltip(
-                    message: account.displayTitle,
-                    child: Text(
-                      account.displayTitle,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color: accent.withValues(alpha: 0.95),
-                      ),
+                  Text(
+                    account.displayTitle,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: accent.withValues(alpha: 0.95),
                     ),
                   ),
                   if (account.displaySubtitle.isNotEmpty)
@@ -174,23 +164,21 @@ class AdvancedAccountsTable extends StatelessWidget {
               ),
             ),
             Expanded(flex: 2, child: _nomineeBadge(context, account)),
-            if (showContactColumns) ...[
-              Expanded(
-                flex: 2,
-                child: Text(
-                  account.displayEmail,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: 12, color: muted),
-                ),
+            Expanded(
+              flex: 2,
+              child: Text(
+                account.displayEmail,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(fontSize: 12, color: muted),
               ),
-              Expanded(
-                child: Text(
-                  account.displayMobile,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: 12, color: muted),
-                ),
+            ),
+            Expanded(
+              child: Text(
+                account.displayMobile,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(fontSize: 12, color: muted),
               ),
-            ],
+            ),
             Expanded(child: _statusCell(context, account)),
             Expanded(
               child: Column(

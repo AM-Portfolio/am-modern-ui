@@ -57,7 +57,8 @@ class EmailExtractorView extends StatefulWidget {
   /// Optional portfolio name for sync matching.
   final TextEditingController? portfolioNameController;
 
-  final void Function(String portfolioId, String portfolioName)? onOpenPortfolio;
+  final void Function(String portfolioId, String portfolioName)?
+      onOpenPortfolio;
   final void Function(String portfolioId, String portfolioName)? onOpenTrade;
 
   /// Notifies parent when Gmail discover finishes (password gate / previews).
@@ -79,6 +80,7 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
   bool? _isServiceConnected;
   bool _checkingHealth = true;
   String? _activeExtractingBrokerId;
+
   /// Persists highlight on the broker tile the user picked.
   String? _selectedBrokerId;
 
@@ -334,7 +336,8 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
             : const <String, dynamic>{};
         found.add(EmailDiscoverHit(
           brokerId: brokerId,
-          needsPassword: raw['needs_password'] != false && brokerId != 'angleone',
+          needsPassword:
+              raw['needs_password'] != false && brokerId != 'angleone',
           subject: email['subject']?.toString(),
           date: email['date']?.toString(),
           from: email['from']?.toString(),
@@ -370,7 +373,8 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
           phase: ImportProcessPhase.error,
         );
       } else if (found.isNotEmpty) {
-        final names = found.map((h) => brokerDisplayName(h.brokerId)).join(', ');
+        final names =
+            found.map((h) => brokerDisplayName(h.brokerId)).join(', ');
         final missNote = missing.isEmpty
             ? ''
             : ' · skipped ${missing.map((m) => brokerDisplayName(m.brokerId)).join(', ')}';
@@ -455,10 +459,7 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
   void _applyMailboxesFrom(Map<String, dynamic> status) {
     final raw = status['mailboxes'];
     final list = raw is List
-        ? raw
-            .whereType<Map>()
-            .map((m) => Map<String, dynamic>.from(m))
-            .toList()
+        ? raw.whereType<Map>().map((m) => Map<String, dynamic>.from(m)).toList()
         : <Map<String, dynamic>>[];
     _mailboxes = list;
     if (_selectedMailbox == null ||
@@ -484,8 +485,7 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
         _gmailStatus = status;
         _applyMailboxesFrom(status);
         // OAuth popup finished — poll flipped to connected.
-        if (status['connected'] == true &&
-            _phase == ImportProcessPhase.busy) {
+        if (status['connected'] == true && _phase == ImportProcessPhase.busy) {
           final email = status['email'];
           _setFeedback(
             email != null && '$email'.isNotEmpty
@@ -519,7 +519,8 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
       if (!mounted) return;
       if (result['connected'] == true && result['auth_url'] == null) {
         setState(() {
-          _setFeedback('Gmail already connected', phase: ImportProcessPhase.success);
+          _setFeedback('Gmail already connected',
+              phase: ImportProcessPhase.success);
         });
         await _checkGmail();
         return;
@@ -633,7 +634,8 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
     }
     if (_sharedSources.isEmpty) {
       setState(() {
-        _setFeedback('Select at least one source', phase: ImportProcessPhase.error);
+        _setFeedback('Select at least one source',
+            phase: ImportProcessPhase.error);
       });
       return;
     }
@@ -854,9 +856,8 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
       ));
 
       final typedName = widget.portfolioNameController?.text.trim() ?? '';
-      final targetName = typedName.isNotEmpty
-          ? typedName
-          : brokerDisplayName(brokerId);
+      final targetName =
+          typedName.isNotEmpty ? typedName : brokerDisplayName(brokerId);
       final sync = await waitForImportedPortfolio(
         brokerKey: normalizeBrokerKey(brokerId) ?? brokerId,
         targetPortfolioName: targetName,
@@ -1012,8 +1013,7 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
                   const SizedBox(height: 16),
                   if (_loading)
                     const ShimmerLoading(
-                        child:
-                            SkeletonBox(height: 64, width: double.infinity))
+                        child: SkeletonBox(height: 64, width: double.infinity))
                   else
                     _buildBrokerGrid(isConnected, contentWidth: contentWidth),
                   const SizedBox(height: 16),
@@ -1160,8 +1160,7 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
     );
   }
 
-  static const EdgeInsets _compactCardPad =
-      EdgeInsets.fromLTRB(12, 10, 12, 12);
+  static const EdgeInsets _compactCardPad = EdgeInsets.fromLTRB(12, 10, 12, 12);
 
   /// Gmail row + broker tiles in one full-width card (tiles align to card edges).
   Widget _buildCompactImportCard(
@@ -1171,7 +1170,8 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
   ) {
     final accent = Theme.of(context).colorScheme.primary;
     // Inner width after card pad — used so broker grid spans edge-to-edge.
-    final gridWidth = (contentWidth - _compactCardPad.horizontal).clamp(120.0, 4000.0);
+    final gridWidth =
+        (contentWidth - _compactCardPad.horizontal).clamp(120.0, 4000.0);
 
     return GlassCard(
       padding: EdgeInsets.zero,
@@ -1215,7 +1215,8 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
                       padding: const EdgeInsets.symmetric(horizontal: 14),
                       minimumSize: const Size(0, 32),
                     ),
-                    child: const Text('Connect', style: TextStyle(fontSize: 12)),
+                    child:
+                        const Text('Connect', style: TextStyle(fontSize: 12)),
                   )
                 else ...[
                   TextButton(
@@ -1234,8 +1235,8 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
                       visualDensity: VisualDensity.compact,
                       padding: const EdgeInsets.symmetric(horizontal: 8),
                     ),
-                    child:
-                        const Text('Disconnect', style: TextStyle(fontSize: 12)),
+                    child: const Text('Disconnect',
+                        style: TextStyle(fontSize: 12)),
                   ),
                 ],
               ],
@@ -1298,64 +1299,103 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Row(
-              children: [
-                Icon(
+            LayoutBuilder(
+              builder: (context, box) {
+                final narrow = box.maxWidth < 420;
+                final title = Text(
                   isConnected
-                      ? Icons.mark_email_read_outlined
-                      : Icons.mail_outline,
-                  size: 18,
-                  color: accent,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    isConnected
-                        ? (email.isNotEmpty && email != 'Not Connected'
-                            ? email
-                            : 'Gmail connected')
-                        : 'Connect Gmail',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 13,
-                    ),
+                      ? (email.isNotEmpty && email != 'Not Connected'
+                          ? email
+                          : 'Gmail connected')
+                      : 'Connect Gmail',
+                  maxLines: narrow ? 2 : 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13,
                   ),
-                ),
-                if (!isConnected)
-                  FilledButton(
-                    onPressed: () => _startOAuth(addMailbox: false),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: accent,
-                      visualDensity: VisualDensity.compact,
-                      padding: const EdgeInsets.symmetric(horizontal: 14),
-                      minimumSize: const Size(0, 32),
+                );
+                final actions = <Widget>[
+                  if (!isConnected)
+                    FilledButton(
+                      onPressed: () => _startOAuth(addMailbox: false),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: accent,
+                        visualDensity: VisualDensity.compact,
+                        padding: const EdgeInsets.symmetric(horizontal: 14),
+                        minimumSize: const Size(0, 32),
+                      ),
+                      child: const Text(
+                        'Connect',
+                        style: TextStyle(fontSize: 12),
+                      ),
+                    )
+                  else ...[
+                    TextButton(
+                      onPressed: _mailboxes.length >= 5
+                          ? null
+                          : () => _startOAuth(addMailbox: true),
+                      style: TextButton.styleFrom(
+                        visualDensity: VisualDensity.compact,
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                      ),
+                      child: const Text('Add', style: TextStyle(fontSize: 12)),
                     ),
-                    child: const Text('Connect', style: TextStyle(fontSize: 12)),
-                  )
-                else ...[
-                  TextButton(
-                    onPressed: _mailboxes.length >= 5
-                        ? null
-                        : () => _startOAuth(addMailbox: true),
-                    style: TextButton.styleFrom(
-                      visualDensity: VisualDensity.compact,
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                    TextButton(
+                      onPressed: () => _handleGmailConnectionToggle(true),
+                      style: TextButton.styleFrom(
+                        visualDensity: VisualDensity.compact,
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                      ),
+                      child: const Text(
+                        'Disconnect',
+                        style: TextStyle(fontSize: 12),
+                      ),
                     ),
-                    child: const Text('Add', style: TextStyle(fontSize: 12)),
-                  ),
-                  TextButton(
-                    onPressed: () => _handleGmailConnectionToggle(true),
-                    style: TextButton.styleFrom(
-                      visualDensity: VisualDensity.compact,
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                  ],
+                ];
+                if (narrow) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            isConnected
+                                ? Icons.mark_email_read_outlined
+                                : Icons.mail_outline,
+                            size: 18,
+                            color: accent,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(child: title),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 4,
+                        runSpacing: 4,
+                        alignment: WrapAlignment.end,
+                        children: actions,
+                      ),
+                    ],
+                  );
+                }
+                return Row(
+                  children: [
+                    Icon(
+                      isConnected
+                          ? Icons.mark_email_read_outlined
+                          : Icons.mail_outline,
+                      size: 18,
+                      color: accent,
                     ),
-                    child:
-                        const Text('Disconnect', style: TextStyle(fontSize: 12)),
-                  ),
-                ],
-              ],
+                    const SizedBox(width: 8),
+                    Expanded(child: title),
+                    ...actions,
+                  ],
+                );
+              },
             ),
             if (isConnected && _mailboxes.length > 1) ...[
               const SizedBox(height: 8),
@@ -1493,7 +1533,8 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
             ),
           if (file.isNotEmpty || date.isNotEmpty)
             Text(
-              [if (file.isNotEmpty) file, if (date.isNotEmpty) date].join(' · '),
+              [if (file.isNotEmpty) file, if (date.isNotEmpty) date]
+                  .join(' · '),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
@@ -1568,7 +1609,9 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
             Row(
               children: [
                 Icon(
-                  isConnected ? Icons.mark_email_read_outlined : Icons.mail_outline,
+                  isConnected
+                      ? Icons.mark_email_read_outlined
+                      : Icons.mail_outline,
                   size: 20,
                   color: isConnected ? Colors.green : accent,
                 ),
@@ -1614,7 +1657,8 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
                       ),
                       selected: _selectedMailbox == m['email'],
                       onSelected: (_) {
-                        setState(() => _selectedMailbox = m['email'] as String?);
+                        setState(
+                            () => _selectedMailbox = m['email'] as String?);
                       },
                     ),
                 ],
@@ -1694,16 +1738,15 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
 
     Widget buildBrokerTile(Map<String, dynamic> broker) {
       final String brokerId = broker['id']?.toString() ?? '';
-      final String brokerName =
-          broker['name']?.toString() ?? 'Unknown Broker';
-      final bool isCurrentlyExtracting =
-          _activeExtractingBrokerId == brokerId;
+      final String brokerName = broker['name']?.toString() ?? 'Unknown Broker';
+      final bool isCurrentlyExtracting = _activeExtractingBrokerId == brokerId;
       final bool selected = _selectedBrokerId == brokerId;
       // High-contrast select ring (works in light + dark app chrome).
       final selectColor = Theme.of(context).colorScheme.primary;
 
       final logoPath = brokerLogoAsset(brokerId);
-      final label = brokerDisplayName(brokerId.isNotEmpty ? brokerId : brokerName);
+      final label =
+          brokerDisplayName(brokerId.isNotEmpty ? brokerId : brokerName);
 
       return Tooltip(
         message: label,
