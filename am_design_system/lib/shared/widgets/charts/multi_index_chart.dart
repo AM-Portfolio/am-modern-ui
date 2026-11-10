@@ -75,6 +75,9 @@ class MultiIndexChart extends StatefulWidget {
   final VoidCallback? onOpenExpanded;
   final String? expandedChartPath;
   final bool showEndValuePills;
+
+  /// Animate left-to-right clip reveal when data/timeframe loads.
+  final bool streamDrawOnLoad;
   final bool preNormalizedPercent;
   final bool initialShowAbsoluteValues;
 
@@ -105,6 +108,7 @@ class MultiIndexChart extends StatefulWidget {
     this.onOpenExpanded,
     this.expandedChartPath,
     this.showEndValuePills = true,
+    this.streamDrawOnLoad = false,
     this.preNormalizedPercent = false,
     this.initialShowAbsoluteValues = false,
     this.accentColor,
@@ -132,6 +136,7 @@ class MultiIndexChart extends StatefulWidget {
     VoidCallback? onOpenExpanded,
     String? expandedChartPath,
     bool showEndValuePills = true,
+    bool streamDrawOnLoad = false,
     bool initialShowAbsoluteValues = false,
     double? Function(String symbol)? priceLookup,
     double? Function(String symbol)? changePctLookup,
@@ -152,6 +157,7 @@ class MultiIndexChart extends StatefulWidget {
       onOpenExpanded: onOpenExpanded,
       expandedChartPath: expandedChartPath,
       showEndValuePills: showEndValuePills,
+      streamDrawOnLoad: streamDrawOnLoad,
       initialShowAbsoluteValues: initialShowAbsoluteValues,
       priceLookup: priceLookup,
       changePctLookup: changePctLookup,
@@ -177,8 +183,10 @@ extension on MultiIndexChart {
   }
 }
 
-class _MultiIndexChartState extends State<MultiIndexChart> {
+class _MultiIndexChartState extends State<MultiIndexChart>
+    with SingleTickerProviderStateMixin {
   late ScrollController _scrollController;
+  late AnimationController _streamController;
   double _zoomScale = 1.0;
   double _pinchBaseScale = 1.0;
   double _lastChartViewportWidth = 300;
@@ -489,6 +497,16 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
     _showAbsoluteValues = widget.initialShowAbsoluteValues;
     _scrollController = ScrollController();
     _scrollController.addListener(_onScroll);
+    _streamController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1000),
+    );
+    if (widget.streamDrawOnLoad) {
+      _streamController.value = 0;
+      _streamController.forward();
+    } else {
+      _streamController.value = 1;
+    }
     _prepareDataAndRecalculate(isInitial: true);
   }
 
@@ -496,7 +514,25 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
   void dispose() {
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
+    _streamController.dispose();
     super.dispose();
+  }
+
+  void _restartStreamDraw() {
+    if (!widget.streamDrawOnLoad) {
+      _streamController.value = 1;
+      return;
+    }
+    _streamController
+      ..stop()
+      ..value = 0
+      ..forward();
+  }
+
+  void _completeStreamDraw() {
+    if (_streamController.value < 1) {
+      _streamController.value = 1;
+    }
   }
 
   @override
@@ -521,10 +557,14 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
 
     if (dataChanged || absoluteChanged) {
       _prepareDataAndRecalculate(resetViewport: true);
+      if (dataChanged) _restartStreamDraw();
+    } else if (!widget.streamDrawOnLoad && oldWidget.streamDrawOnLoad) {
+      _streamController.value = 1;
     }
   }
 
   void _onScroll() {
+    _completeStreamDraw();
     if (mounted) {
       setState(() {});
     }
@@ -917,6 +957,7 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
 
   /// 🔍 Center-Anchored Zooming
   void _zoom(double newScale, [double? viewportWidth]) {
+    _completeStreamDraw();
     final vw = viewportWidth ?? _lastChartViewportWidth;
     if (newScale < kChartFitZoomFloor) newScale = kChartFitZoomFloor;
     if (newScale > kChartFitZoomCeil) newScale = kChartFitZoomCeil;
@@ -950,6 +991,7 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
   }
 
   void _panBy(double dx) {
+    _completeStreamDraw();
     if (!_scrollController.hasClients) return;
     final maxScroll = _scrollController.position.maxScrollExtent;
     // Nothing to pan until zoomed in enough for overflow.
@@ -1813,7 +1855,20 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
                   return _wrapChartGestures(
                     viewportWidth:
                         constraints.maxWidth - _leftAxisReserve(context),
-                    child: LineChart(
+                    child: AnimatedBuilder(
+                      animation: _streamController,
+                      builder: (context, child) {
+                        final t = Curves.easeOutCubic
+                            .transform(_streamController.value.clamp(0.0, 1.0));
+                        return ClipRect(
+                          child: Align(
+                            alignment: Alignment.centerLeft,
+                            widthFactor: t <= 0 ? 0.001 : t,
+                            child: child,
+                          ),
+                        );
+                      },
+                      child: LineChart(
                       key: ValueKey(
                           '${_activeIndices.join('-')}_line_${visibleData.length}'),
                       LineChartData(
@@ -2137,18 +2192,28 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
                         ),
                       ),
                     ),
+                    ),
                   );
                 },
               ),
             ),
             _buildDummyScrollView(chartWidth),
-            _buildPricePills(
-              context,
-              chartData,
-              constraints,
-              cleanMin,
-              cleanMax,
-              widget.showEndValuePills && endIndex == chartData.length - 1,
+            AnimatedBuilder(
+              animation: _streamController,
+              builder: (context, child) {
+                if (_streamController.value < 0.98) {
+                  return const SizedBox.shrink();
+                }
+                return child!;
+              },
+              child: _buildPricePills(
+                context,
+                chartData,
+                constraints,
+                cleanMin,
+                cleanMax,
+                widget.showEndValuePills && endIndex == chartData.length - 1,
+              ),
             ),
           ],
         );

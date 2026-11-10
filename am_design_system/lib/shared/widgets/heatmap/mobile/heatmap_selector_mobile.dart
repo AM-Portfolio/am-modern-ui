@@ -253,7 +253,7 @@ class _HeatmapSelectorMobileState extends State<HeatmapSelectorMobile>
       isExpanded: true,
       fontSize: 12,
       iconSize: 16,
-      borderRadius: 10,
+      borderRadius: 999,
       menuMaxHeight: MobileTimeFrameDropdown.menuMaxHeightForThreeItems,
       menuMaxWidth: 160,
       primaryColor: widget.primaryColor ?? Theme.of(context).colorScheme.primary,

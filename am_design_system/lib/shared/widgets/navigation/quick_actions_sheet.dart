@@ -1,6 +1,6 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
+
+import '../../../core/theme/web_glass.dart';
 
 import '../../../core/constants/ui_constants.dart';
 import '../../../core/theme/app_colors_theme.dart';
@@ -51,11 +51,10 @@ class _QuickActionsSheet extends StatelessWidget {
     final bottomPad = MediaQuery.paddingOf(context).bottom +
         PlatformConstants.globalBottomNavReserve(context);
 
-    return ClipRRect(
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-        child: Container(
+    return webGlass(
+      sigma: 24,
+      clip: const BorderRadius.vertical(top: Radius.circular(24)),
+      child: Container(
           padding: EdgeInsets.fromLTRB(20, 12, 20, 20 + bottomPad),
           decoration: BoxDecoration(
             color: isDark
@@ -146,7 +145,6 @@ class _QuickActionsSheet extends StatelessWidget {
             ],
           ),
         ),
-      ),
     );
   }
 }

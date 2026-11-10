@@ -1,3 +1,4 @@
+import 'package:am_auth_ui/am_auth_ui.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -5,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:am_library/am_library.dart';
 import '../cubit/portfolio_cubit.dart';
 import '../cubit/portfolio_state.dart';
+import '../../providers/cas_providers.dart';
 import '../../providers/portfolio_providers.dart';
 import '../../internal/domain/entities/portfolio_list.dart';
 import 'package:am_common/am_common.dart';
@@ -57,6 +59,8 @@ class _PortfolioListWrapperState extends ConsumerState<PortfolioListWrapper> {
   String? selectedPortfolioName;
   String? _streamActivatedForId;
   bool _emittedNoPortfolios = false;
+  String? _defaultPortfolioId;
+  bool _defaultLoaded = false;
 
   @override
   void initState() {
@@ -66,12 +70,49 @@ class _PortfolioListWrapperState extends ConsumerState<PortfolioListWrapper> {
     }
     _logInitialization();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadDefaultPortfolio();
       final id = selectedPortfolioId ?? context.selectedPortfolioId;
       if (id != null && mounted) {
         _streamActivatedForId = null;
         _ensureStreamActive(id);
       }
     });
+  }
+
+  String _currentUserId() {
+    try {
+      final authState = context.read<AuthCubit>().state;
+      if (authState is Authenticated) return authState.user.id;
+    } catch (_) {}
+    return '';
+  }
+
+  Future<void> _loadDefaultPortfolio() async {
+    final userId = _currentUserId();
+    if (userId.isEmpty) {
+      if (mounted) setState(() => _defaultLoaded = true);
+      return;
+    }
+    final saved = await DefaultPortfolioStore.instance.load(userId);
+    if (!mounted) return;
+    setState(() {
+      _defaultPortfolioId = saved?.id;
+      _defaultLoaded = true;
+    });
+  }
+
+  Future<void> _toggleDefaultPortfolio(String id, String name) async {
+    final userId = _currentUserId();
+    if (userId.isEmpty || id == 'all') return;
+    if (_defaultPortfolioId == id) {
+      await DefaultPortfolioStore.instance.clear(userId);
+      if (!mounted) return;
+      setState(() => _defaultPortfolioId = null);
+      return;
+    }
+    await DefaultPortfolioStore.instance.save(userId, id: id, name: name);
+    if (!mounted) return;
+    setState(() => _defaultPortfolioId = id);
   }
 
   /// Logs the initialization of the wrapper
@@ -216,24 +257,28 @@ class _PortfolioListWrapperState extends ConsumerState<PortfolioListWrapper> {
     }
 
     if (selectedPortfolioId == null) {
-      final firstPortfolio = portfolios.first;
+      PortfolioItem pick = portfolios.first;
+      final defaultId = _defaultPortfolioId;
+      if (defaultId != null) {
+        for (final p in portfolios) {
+          if (p.portfolioId == defaultId) {
+            pick = p;
+            break;
+          }
+        }
+      }
       setState(() {
-        selectedPortfolioId = firstPortfolio.portfolioId;
-        selectedPortfolioName = firstPortfolio.portfolioName;
+        selectedPortfolioId = pick.portfolioId;
+        selectedPortfolioName = pick.portfolioName;
       });
       if (context.mounted) {
-        context.selectPortfolio(
-          firstPortfolio.portfolioId,
-          firstPortfolio.portfolioName,
-        );
-        widget.onPortfolioChanged?.call(
-          firstPortfolio.portfolioId,
-          firstPortfolio.portfolioName,
-        );
+        context.selectPortfolio(pick.portfolioId, pick.portfolioName);
+        widget.onPortfolioChanged?.call(pick.portfolioId, pick.portfolioName);
       }
 
       CommonLogger.info(
-        'Auto-selected first portfolio: ${firstPortfolio.portfolioName} (${firstPortfolio.portfolioId})',
+        'Auto-selected portfolio: ${pick.portfolioName} (${pick.portfolioId})'
+        '${defaultId == pick.portfolioId ? ' [default]' : ''}',
         tag: 'PortfolioListWrapper',
       );
     }
@@ -304,7 +349,14 @@ class _PortfolioListWrapperState extends ConsumerState<PortfolioListWrapper> {
   /// Handles portfolio state changes
   void _handlePortfolioStateChange(BuildContext context, PortfolioState state) {
     if (state is PortfolioListLoaded) {
-      _autoSelectFirstPortfolio(state.portfolioList!.portfolios);
+      if (!_defaultLoaded) {
+        _loadDefaultPortfolio().then((_) {
+          if (!mounted) return;
+          _autoSelectFirstPortfolio(state.portfolioList!.portfolios);
+        });
+      } else {
+        _autoSelectFirstPortfolio(state.portfolioList!.portfolios);
+      }
     } else if (state is PortfolioListError) {
       _handlePortfolioError(context, state.message);
     }
@@ -448,6 +500,8 @@ class _PortfolioListWrapperState extends ConsumerState<PortfolioListWrapper> {
         onOpenDocIntel: widget.onOpenDocIntel,
         uploadPortfolioBuilder: widget.uploadPortfolioBuilder,
         onQuickAdd: widget.onQuickAdd,
+        defaultPortfolioId: _defaultPortfolioId,
+        onToggleDefaultPortfolio: _toggleDefaultPortfolio,
       );
     }
   }
@@ -492,42 +546,55 @@ class _PortfolioListWrapperState extends ConsumerState<PortfolioListWrapper> {
         ),
       );
 
-  /// Builds empty portfolios screen
-  Widget _buildEmptyPortfoliosScreen() => Scaffold(
-    body: Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 420),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.account_balance_wallet_outlined,
-              size: 64,
-              color: context.textTertiary,
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'No portfolios found',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Upload a brokerage statement to create your first portfolio.',
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-            if (widget.onOpenDocIntel != null) ...[
-              ElevatedButton.icon(
-                onPressed: widget.onOpenDocIntel,
-                icon: const Icon(Icons.upload_file_outlined),
-                label: const Text('Upload portfolio'),
+  /// Builds empty portfolios screen (CAS-aware when directory exists).
+  Widget _buildEmptyPortfoliosScreen() {
+    final cas = ref.watch(casLatestProvider).asData?.value;
+    final demat = ref.watch(casAccountsProvider).asData?.value ?? const [];
+    final hasCas = cas != null || demat.isNotEmpty;
+    final title = hasCas ? 'CAS imported' : 'No portfolios found';
+    final subtitle = hasCas
+        ? 'Your CDSL statement is in Accounts. Open Users to review demat accounts, or import a broker statement for a named portfolio.'
+        : 'Upload a brokerage statement to create your first portfolio.';
+    final ctaLabel = hasCas ? 'Open import / Doc Intel' : 'Upload portfolio';
+
+    return Scaffold(
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 420),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                hasCas
+                    ? Icons.folder_shared_outlined
+                    : Icons.account_balance_wallet_outlined,
+                size: 64,
+                color: context.textTertiary,
               ),
+              const SizedBox(height: 16),
+              Text(
+                title,
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                subtitle,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              if (widget.onOpenDocIntel != null) ...[
+                ElevatedButton.icon(
+                  onPressed: widget.onOpenDocIntel,
+                  icon: const Icon(Icons.upload_file_outlined),
+                  label: Text(ctaLabel),
+                ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
-    ),
-  );
+    );
+  }
 
   /// Builds error screen for service initialization failure
   Widget _buildErrorScreen(Object error, StackTrace? stack) => Scaffold(

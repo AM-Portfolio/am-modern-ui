@@ -40,6 +40,7 @@ class ComparisonChartView extends StatelessWidget {
           onOpenExpanded: config.onOpenExpanded,
           expandedChartPath: config.expandedChartPath,
           showEndValuePills: config.showEndValuePills,
+          streamDrawOnLoad: config.streamDrawOnLoad,
           preNormalizedPercent: config.preNormalizedPercent,
           initialShowAbsoluteValues: config.initialShowAbsoluteValues,
           accentColor: config.accentColor,

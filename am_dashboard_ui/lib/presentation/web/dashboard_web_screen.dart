@@ -9,7 +9,6 @@ import 'package:am_common/am_common.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'dart:ui';
 
 bool _dashboardDataMarked = false;
 
@@ -18,6 +17,7 @@ class DashboardWebScreen extends ConsumerWidget {
   final String userId;
   final VoidCallback? onOpenDocIntel;
   final VoidCallback? onOpenPaper;
+  final VoidCallback? onOpenUsers;
   final ValueChanged<GlobalAddActionKind>? onQuickAdd;
 
   const DashboardWebScreen({
@@ -25,6 +25,7 @@ class DashboardWebScreen extends ConsumerWidget {
     required this.userId,
     this.onOpenDocIntel,
     this.onOpenPaper,
+    this.onOpenUsers,
     this.onQuickAdd,
   });
 
@@ -115,12 +116,6 @@ class DashboardWebScreen extends ConsumerWidget {
                 ),
               ),
             ),
-            Positioned.fill(
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 60, sigmaY: 60),
-                child: Container(color: Colors.transparent),
-              ),
-            ),
           ],
           Positioned.fill(
             child: SingleChildScrollView(
@@ -138,25 +133,48 @@ class DashboardWebScreen extends ConsumerWidget {
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        Text(
-                          'Dashboard',
-                          style: context.text.sectionTitle().copyWith(
-                                color: onSurface,
-                                fontWeight: FontWeight.w600,
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                'Dashboard',
+                                style: context.text.sectionTitle().copyWith(
+                                      color: onSurface,
+                                      fontWeight: FontWeight.w700,
+                                    ),
                               ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'Portfolio overview, performance and key metrics',
+                                style: TextStyle(
+                                  color: context.textSecondary,
+                                  fontSize: AppTypeScale.sm,
+                                  fontWeight: FontWeight.w500,
+                                  height: 1.2,
+                                ),
+                              ),
+                              if (showDemoBanner) ...[
+                                const SizedBox(height: AppSpacing.sm),
+                                const DemoAccountInlineBanner(),
+                              ],
+                            ],
+                          ),
                         ),
-                        if (showDemoBanner) ...[
-                          const SizedBox(width: AppSpacing.md),
-                          // Badge + welcome in one row; Upload is only "Add Portfolio".
-                          const Expanded(child: DemoAccountInlineBanner()),
-                        ] else
-                          const Spacer(),
-                        DashboardToolbar(
-                          userId: userId,
-                          glass: false,
-                          onSurface: onSurface,
-                          onOpenPaper: onOpenPaper,
-                          onQuickAdd: onQuickAdd,
+                        const SizedBox(width: AppSpacing.md),
+                        Flexible(
+                          child: Align(
+                            alignment: Alignment.centerRight,
+                            child: DashboardToolbar(
+                              userId: userId,
+                              glass: false,
+                              onSurface: onSurface,
+                              onOpenPaper: onOpenPaper,
+                              onOpenUsers: onOpenUsers,
+                              onQuickAdd: onQuickAdd,
+                            ),
+                          ),
                         ),
                       ],
                     ),
@@ -167,6 +185,7 @@ class DashboardWebScreen extends ConsumerWidget {
                       timeFrameCode: tfCode,
                       onOpenDocIntel: onOpenDocIntel,
                       onOpenPaper: onOpenPaper,
+                      onOpenUsers: onOpenUsers,
                     ),
                   ],
                 ),

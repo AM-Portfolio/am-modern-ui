@@ -152,10 +152,13 @@ class _GlobalPortfolioWrapperState
     _wasOnBasketsRoute = onBaskets;
   }
 
+  String get _persona =>
+      holdingsPersonaParam(ref.read(familyPortfolioFilterProvider));
+
   void _loadPortfolioDetail(PortfolioCubit cubit, String id) {
     if (_deferPortfolioDetailLoad) return;
     if (id == 'all') {
-      cubit.loadAllPortfolios();
+      cubit.loadAllPortfolios(persona: _persona);
     } else {
       cubit.loadPortfolioById(id);
     }
@@ -175,7 +178,7 @@ class _GlobalPortfolioWrapperState
       final cubit = innerContext.read<PortfolioCubit>();
       if (id == 'all') {
         if (!_deferPortfolioDetailLoad) {
-          cubit.loadAllPortfolios();
+          cubit.loadAllPortfolios(persona: _persona);
         }
       } else {
         if (_portfolioStreamingAllowed) {
@@ -291,7 +294,7 @@ class _GlobalPortfolioWrapperState
     if (_selectedPortfolioId != null) {
       if (_selectedPortfolioId == 'all') {
         if (!_deferPortfolioDetailLoad) {
-          cubit.loadAllPortfolios();
+          cubit.loadAllPortfolios(persona: _persona);
         }
       } else {
         if (_portfolioStreamingAllowed) {
@@ -318,6 +321,14 @@ class _GlobalPortfolioWrapperState
     ref.listen(marketIsOpenProvider, (previous, next) {
       final cubit = _readPortfolioCubit();
       if (cubit != null) _syncPortfolioStreaming(cubit);
+    });
+    ref.listen<String>(familyPortfolioFilterProvider, (previous, next) {
+      if (previous == next) return;
+      final id = _selectedPortfolioId;
+      if (id != null && id != 'all') return;
+      final cubit = _readPortfolioCubit();
+      if (cubit == null || _deferPortfolioDetailLoad) return;
+      cubit.loadAllPortfolios(persona: holdingsPersonaParam(next));
     });
 
     final portfolioServiceAsync = ref.watch(portfolioServiceProvider);

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'dart:ui';
 import 'package:am_design_system/am_design_system.dart';
 
 import '../../domain/models/basket_opportunity.dart';
@@ -144,11 +143,10 @@ class _BasketCompositionListState extends State<BasketCompositionList>
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
-          child: Container(
+      child: webGlass(
+        sigma: 5,
+        clip: BorderRadius.circular(16),
+        child: Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: context.colors.cardSurface.withValues(alpha: 0.5),
@@ -207,18 +205,16 @@ class _BasketCompositionListState extends State<BasketCompositionList>
             ),
           ),
         ),
-      ),
     );
   }
 
   Widget _buildSubstituteItem(BuildContext context, BasketItem item) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
-          child: Container(
+      child: webGlass(
+        sigma: 5,
+        clip: BorderRadius.circular(16),
+        child: Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: ModuleColors.portfolio.withValues(alpha: 0.08),
@@ -335,7 +331,6 @@ class _BasketCompositionListState extends State<BasketCompositionList>
             ),
           ),
         ),
-      ),
     );
   }
 

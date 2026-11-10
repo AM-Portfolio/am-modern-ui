@@ -103,11 +103,13 @@ class AdvancedHoldingRow {
       hasCostBasis ? _inr.format(investedAmount) : '—';
 
   String get displayProfitLoss {
+    if (!hasCostBasis) return '—';
     final prefix = totalGainLoss >= 0 ? '+' : '';
     return '$prefix${_inr.format(totalGainLoss)}';
   }
 
   String get displayProfitLossPercentage {
+    if (!hasCostBasis) return '—';
     final prefix = totalGainLossPercentage >= 0 ? '+' : '';
     return '$prefix${totalGainLossPercentage.toStringAsFixed(2)}%';
   }

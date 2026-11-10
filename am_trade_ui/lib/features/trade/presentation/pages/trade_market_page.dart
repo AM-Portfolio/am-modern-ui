@@ -1,4 +1,4 @@
-import 'dart:ui';
+import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -58,11 +58,10 @@ class _TradeMarketPageState extends ConsumerState<TradeMarketPage> {
             left: 0,
             right: 0,
             child: Center(
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(30),
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                  child: Container(
+              child: webGlass(
+                sigma: 10,
+                clip: BorderRadius.circular(30),
+                child: Container(
                     width: 400,
                     height: 50,
                     padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -129,7 +128,6 @@ class _TradeMarketPageState extends ConsumerState<TradeMarketPage> {
                     ),
                   ),
                 ),
-              ),
             ).animate().slideY(begin: -1, end: 0, duration: 600.ms, curve: Curves.easeOutBack).fadeIn(),
           ),
 

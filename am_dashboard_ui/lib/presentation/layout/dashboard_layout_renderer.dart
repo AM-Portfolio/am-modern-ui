@@ -5,7 +5,7 @@ import 'package:am_dashboard_ui/presentation/layout/dashboard_widget_id.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// Renders a [DashboardLayoutModel] with responsive grouping for chart/movers rows.
+/// Renders a [DashboardLayoutModel] with Chart|Health and X-Ray|Users peer rows.
 class DashboardLayoutRenderer extends ConsumerWidget {
   const DashboardLayoutRenderer({
     super.key,
@@ -14,9 +14,11 @@ class DashboardLayoutRenderer extends ConsumerWidget {
     required this.timeFrameCode,
     this.onOpenDocIntel,
     this.onOpenPaper,
-    this.compactBreakpoint = 1280,
-    this.chartHeight = 420,
+    this.onOpenUsers,
+    this.compactBreakpoint = 1100,
+    this.chartHeight = 460,
     this.mobileChartHeight = 350,
+    this.xrayRowHeight = 420,
   });
 
   final String userId;
@@ -24,9 +26,11 @@ class DashboardLayoutRenderer extends ConsumerWidget {
   final String timeFrameCode;
   final VoidCallback? onOpenDocIntel;
   final VoidCallback? onOpenPaper;
+  final VoidCallback? onOpenUsers;
   final double compactBreakpoint;
   final double chartHeight;
   final double mobileChartHeight;
+  final double xrayRowHeight;
 
   static const _slotGap = 24.0;
 
@@ -34,12 +38,20 @@ class DashboardLayoutRenderer extends ConsumerWidget {
       id == DashboardWidgetId.benchmarkComparison ||
       id == DashboardWidgetId.portfolioWealthChart;
 
+  static bool _isChartPeerSlot(DashboardWidgetId id) =>
+      _isComparisonChartSlot(id) || id == DashboardWidgetId.portfolioHealth;
+
+  static bool _isXrayPeerSlot(DashboardWidgetId id) =>
+      id == DashboardWidgetId.portfolioXray ||
+      id == DashboardWidgetId.accountsHub;
+
   DashboardWidgetContext _ctx(BuildContext context, {double? height}) {
     return DashboardWidgetContext(
       userId: userId,
       timeFrameCode: timeFrameCode,
       onOpenDocIntel: onOpenDocIntel,
       onOpenPaper: onOpenPaper,
+      onOpenUsers: onOpenUsers,
       chartHeight: height,
     );
   }
@@ -68,6 +80,56 @@ class DashboardLayoutRenderer extends ConsumerWidget {
     children.add(slot);
   }
 
+  Widget _peerRow(
+    BuildContext context,
+    WidgetRef ref, {
+    required DashboardWidgetId primaryId,
+    DashboardWidgetId? secondaryId,
+    required double height,
+    int primaryFlex = 67,
+    int secondaryFlex = 33,
+    bool primaryIsChart = false,
+  }) {
+    Widget panel(DashboardWidgetId id, {required int flex}) {
+      return Expanded(
+        flex: flex,
+        child: SizedBox(
+          height: height,
+          child: _buildSlot(
+            context,
+            ref,
+            id,
+            chartHeightOverride: primaryIsChart && _isComparisonChartSlot(id)
+                ? height - 32
+                : null,
+          ),
+        ),
+      );
+    }
+
+    if (secondaryId == null) {
+      return SizedBox(
+        height: height,
+        child: _buildSlot(
+          context,
+          ref,
+          primaryId,
+          chartHeightOverride:
+              primaryIsChart ? height - 32 : null,
+        ),
+      );
+    }
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        panel(primaryId, flex: primaryFlex),
+        const SizedBox(width: _slotGap),
+        panel(secondaryId, flex: secondaryFlex),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final slots = mergeWithDefaultLayout(layout).visibleSlots;
@@ -82,69 +144,151 @@ class DashboardLayoutRenderer extends ConsumerWidget {
             for (final slot in slots)
               if (newsEnabled || slot.id != DashboardWidgetId.news) slot,
           ];
+
     final children = <Widget>[];
-    var i = 0;
 
-    while (i < renderSlots.length) {
-      final slot = renderSlots[i];
-      final next = i + 1 < renderSlots.length ? renderSlots[i + 1] : null;
-      final afterNext = i + 2 < renderSlots.length ? renderSlots[i + 2] : null;
-
-      if (!isCompact &&
-          _isComparisonChartSlot(slot.id) &&
-          next?.id == DashboardWidgetId.movers) {
-        _appendSlot(
-          children,
-          SizedBox(
-            height: chartHeight,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Expanded(
-                  flex: 70,
-                  child: _buildSlot(
-                    context,
-                    ref,
-                    slot.id,
-                    chartHeightOverride: chartHeight - 32,
-                  ),
-                ),
-                const SizedBox(width: _slotGap),
-                Expanded(
-                  flex: 30,
-                  child: _buildSlot(context, ref, next!.id),
-                ),
-              ],
+    if (isCompact) {
+      for (final slot in renderSlots) {
+        if (_isComparisonChartSlot(slot.id)) {
+          _appendSlot(
+            children,
+            SizedBox(
+              height: mobileChartHeight,
+              child: _buildSlot(
+                context,
+                ref,
+                slot.id,
+                chartHeightOverride: mobileChartHeight - 32,
+              ),
             ),
-          ),
-        );
-        i += 2;
+          );
+        } else if (_isChartPeerSlot(slot.id) || _isXrayPeerSlot(slot.id)) {
+          _appendSlot(
+            children,
+            SizedBox(
+              height: _isXrayPeerSlot(slot.id) ? xrayRowHeight : chartHeight,
+              child: _buildSlot(context, ref, slot.id),
+            ),
+          );
+        } else {
+          _appendSlot(children, _buildSlot(context, ref, slot.id));
+        }
+      }
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: children,
+      );
+    }
+
+    DashboardWidgetId? chartId;
+    DashboardWidgetId? healthId;
+    DashboardWidgetId? xrayId;
+    DashboardWidgetId? accountsId;
+    final rest = <DashboardWidgetSlot>[];
+    for (final slot in renderSlots) {
+      if (_isComparisonChartSlot(slot.id) && chartId == null) {
+        chartId = slot.id;
+      } else if (slot.id == DashboardWidgetId.portfolioHealth) {
+        healthId = slot.id;
+      } else if (slot.id == DashboardWidgetId.portfolioXray) {
+        xrayId = slot.id;
+      } else if (slot.id == DashboardWidgetId.accountsHub) {
+        accountsId = slot.id;
+      } else if (!_isChartPeerSlot(slot.id) && !_isXrayPeerSlot(slot.id)) {
+        rest.add(slot);
+      }
+    }
+
+    var chartRowInserted = false;
+    var xrayRowInserted = false;
+
+    void insertChartRow() {
+      if (chartRowInserted || chartId == null) return;
+      // Always pair Health; stale layouts must not leave Chart alone.
+      final health = healthId ?? DashboardWidgetId.portfolioHealth;
+      _appendSlot(
+        children,
+        _peerRow(
+          context,
+          ref,
+          primaryId: chartId,
+          secondaryId: health,
+          height: chartHeight,
+          primaryIsChart: true,
+        ),
+      );
+      chartRowInserted = true;
+    }
+
+    void insertXrayRow() {
+      if (xrayRowInserted) return;
+      final primary = xrayId ?? DashboardWidgetId.portfolioXray;
+      final secondary = accountsId ?? DashboardWidgetId.accountsHub;
+      _appendSlot(
+        children,
+        _peerRow(
+          context,
+          ref,
+          primaryId: primary,
+          secondaryId: secondary,
+          height: xrayRowHeight,
+          primaryFlex: 67,
+          secondaryFlex: 33,
+        ),
+      );
+      xrayRowInserted = true;
+    }
+
+    var i = 0;
+    while (i < rest.length) {
+      final slot = rest[i];
+
+      if (slot.id == DashboardWidgetId.summary) {
+        _appendSlot(children, _buildSlot(context, ref, slot.id));
+        insertChartRow();
+        insertXrayRow();
+        i += 1;
         continue;
       }
 
-      if (!isCompact &&
-          slot.id == DashboardWidgetId.news &&
-          next?.id == DashboardWidgetId.recentActivity &&
-          afterNext?.id == DashboardWidgetId.portfolioList) {
+      if (!chartRowInserted) insertChartRow();
+      if (!xrayRowInserted) insertXrayRow();
+
+
+      final next = i + 1 < rest.length ? rest[i + 1] : null;
+      final afterNext = i + 2 < rest.length ? rest[i + 2] : null;
+
+      // Match X-Ray | Users (67/33). Right stack is Movers then Recent Activity.
+      final newsPeerIds = {
+        if (next != null) next.id,
+        if (afterNext != null) afterNext.id,
+      };
+      if (slot.id == DashboardWidgetId.news &&
+          newsPeerIds.contains(DashboardWidgetId.movers) &&
+          newsPeerIds.contains(DashboardWidgetId.recentActivity)) {
         _appendSlot(
           children,
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
-                flex: 70,
+                flex: 67,
                 child: _buildSlot(context, ref, slot.id),
               ),
               const SizedBox(width: _slotGap),
               Expanded(
-                flex: 30,
+                flex: 33,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    _buildSlot(context, ref, next!.id),
+                    _buildSlot(context, ref, DashboardWidgetId.movers),
                     const SizedBox(height: _slotGap),
-                    _buildSlot(context, ref, afterNext!.id),
+                    _buildSlot(
+                      context,
+                      ref,
+                      DashboardWidgetId.recentActivity,
+                    ),
                   ],
                 ),
               ),
@@ -155,23 +299,19 @@ class DashboardLayoutRenderer extends ConsumerWidget {
         continue;
       }
 
-      if (!isCompact &&
-          slot.id == DashboardWidgetId.recentActivity &&
-          next?.id == DashboardWidgetId.portfolioList) {
+      if ((slot.id == DashboardWidgetId.movers &&
+              next?.id == DashboardWidgetId.recentActivity) ||
+          (slot.id == DashboardWidgetId.recentActivity &&
+              next?.id == DashboardWidgetId.movers)) {
         _appendSlot(
           children,
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Expanded(
-                flex: 70,
-                child: _buildSlot(context, ref, slot.id),
-              ),
-              const SizedBox(width: _slotGap),
-              Expanded(
-                flex: 30,
-                child: _buildSlot(context, ref, next!.id),
-              ),
+              _buildSlot(context, ref, DashboardWidgetId.movers),
+              const SizedBox(height: _slotGap),
+              _buildSlot(context, ref, DashboardWidgetId.recentActivity),
             ],
           ),
         );
@@ -179,23 +319,22 @@ class DashboardLayoutRenderer extends ConsumerWidget {
         continue;
       }
 
-      if (!isCompact &&
-          slot.id == DashboardWidgetId.allocation &&
+      if (slot.id == DashboardWidgetId.allocation &&
           next != null &&
           (next.id == DashboardWidgetId.recentActivity ||
-              next.id == DashboardWidgetId.portfolioList)) {
+              next.id == DashboardWidgetId.movers)) {
         _appendSlot(
           children,
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
-                flex: 30,
+                flex: 33,
                 child: _buildSlot(context, ref, slot.id),
               ),
               const SizedBox(width: _slotGap),
               Expanded(
-                flex: 70,
+                flex: 67,
                 child: _buildSlot(context, ref, next.id),
               ),
             ],
@@ -205,26 +344,12 @@ class DashboardLayoutRenderer extends ConsumerWidget {
         continue;
       }
 
-      if (_isComparisonChartSlot(slot.id)) {
-        _appendSlot(
-          children,
-          SizedBox(
-            height: isCompact ? mobileChartHeight : chartHeight,
-            child: _buildSlot(
-              context,
-              ref,
-              slot.id,
-              chartHeightOverride:
-                  (isCompact ? mobileChartHeight : chartHeight) - 32,
-            ),
-          ),
-        );
-      } else {
-        _appendSlot(children, _buildSlot(context, ref, slot.id));
-      }
-
+      _appendSlot(children, _buildSlot(context, ref, slot.id));
       i += 1;
     }
+
+    if (!chartRowInserted) insertChartRow();
+    if (!xrayRowInserted) insertXrayRow();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,

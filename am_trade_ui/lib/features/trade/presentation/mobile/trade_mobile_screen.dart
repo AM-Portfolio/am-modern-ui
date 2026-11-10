@@ -22,6 +22,7 @@ import '../analysis/trade_analysis_page.dart';
 import 'package:am_portfolio_ui/features/portfolio/presentation/mobile/widgets/portfolio_form_modal.dart';
 import 'package:am_portfolio_ui/features/portfolio/internal/data/dtos/portfolio_update_request_dto.dart';
 import 'package:am_portfolio_ui/features/portfolio/internal/domain/entities/portfolio_list.dart';
+import 'package:am_portfolio_ui/features/portfolio/providers/accounts_hub_provider.dart';
 import 'package:am_portfolio_ui/features/portfolio/providers/portfolio_providers.dart';
 
 /// Trade view types for mobile navigation.
@@ -281,7 +282,132 @@ class _TradeMobileScreenState extends ConsumerState<TradeMobileScreen> {
                   onTap: () => _onViewChanged(MobileTradeViewType.analysis),
                 ),
             ],
-      body: _buildMainContent(context),
+      body: isAddTrade
+          ? _buildMainContent(context)
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _buildMobileFamilyPortfolioBar(),
+                Expanded(child: _buildMainContent(context)),
+              ],
+            ),
+    );
+  }
+
+  /// Household left of portfolio — visible on mobile (sidebar picker is desktop-only).
+  Widget _buildMobileFamilyPortfolioBar() {
+    final portfoliosAsync = ref.watch(enrichedTradePortfoliosProvider);
+    return portfoliosAsync.when(
+      data: (source) {
+        final omsCubit = ref.watch(omsCubitProvider).asData?.value;
+        final paper = omsCubit?.state.paperWallet;
+        final merged = mergePaperWallet(source, paper);
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 6),
+          child: _buildFamilyAwareMobilePicker(merged),
+        );
+      },
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+    );
+  }
+
+  Widget _buildFamilyAwareMobilePicker(List<TradePortfolioViewModel> source) {
+    final hub = ref.watch(accountsHubProvider).asData?.value;
+    final members = <({String id, String name})>[
+      for (final m in hub?.familyMembers ?? const [])
+        if ((m.id?.trim().isNotEmpty ?? false))
+          (
+            id: m.id!.trim(),
+            name: (m.name?.trim().isNotEmpty ?? false)
+                ? m.name!.trim()
+                : m.id!.trim(),
+          ),
+    ];
+    final showFamily = showFamilyPortfolioFilter(
+      members.map((m) => (id: m.id, name: m.name)),
+    );
+    final filterKey = ref.watch(familyPortfolioFilterProvider);
+    final memberNameById = {for (final m in members) m.id: m.name};
+    final enriched = <TradePortfolioViewModel>[];
+    for (final p in source) {
+      final famId = p.familyMemberId?.trim();
+      final needsName = famId != null &&
+          famId.isNotEmpty &&
+          (p.familyMemberName == null || p.familyMemberName!.trim().isEmpty);
+      enriched.add(
+        needsName ? p.copyWith(familyMemberName: memberNameById[famId]) : p,
+      );
+    }
+    final portfolios = applyFamilyPortfolioFilter<TradePortfolioViewModel>(
+      items: enriched,
+      filterKey: filterKey,
+      showFamilyUi: showFamily,
+      familyMemberIdOf: (p) => p.familyMemberId,
+      familyMemberNameOf: (p) => p.familyMemberName,
+      baseNameOf: (p) => p.name,
+      copyWithName: (p, labeled) => p.copyWith(name: labeled),
+    );
+
+    if (portfolios.isEmpty && !showFamily) return const SizedBox.shrink();
+
+    var currentId = _currentPortfolioId;
+    if (currentId != null &&
+        currentId != 'all' &&
+        !portfolios.any((p) => p.id == currentId)) {
+      final fallback = portfolios.isNotEmpty ? portfolios.first : null;
+      currentId = fallback?.id;
+      if (fallback != null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          _onPortfolioSelected(fallback.id, fallback.name);
+        });
+      }
+    }
+
+    final currentName = portfolios
+            .where((p) => p.id == currentId)
+            .map((p) => p.name)
+            .firstOrNull ??
+        _currentPortfolioName;
+
+    final primaryName = hub?.identity?.name?.trim();
+    final primaryLabel = (primaryName != null && primaryName.isNotEmpty)
+        ? primaryName.split(RegExp(r'\s+')).first
+        : 'You';
+
+    return FamilyAwarePortfolioPicker<TradePortfolioViewModel>(
+      showFamilyFilter: showFamily,
+      familyFilterKey: filterKey,
+      primaryLabel: primaryLabel,
+      members: members,
+      onFamilySelected: (key) {
+        ref.read(familyPortfolioFilterProvider.notifier).select(key);
+        final next = applyFamilyPortfolioFilter<TradePortfolioViewModel>(
+          items: enriched,
+          filterKey: key,
+          showFamilyUi: showFamily,
+          familyMemberIdOf: (p) => p.familyMemberId,
+          familyMemberNameOf: (p) => p.familyMemberName,
+          baseNameOf: (p) => p.name,
+          copyWithName: (p, labeled) => p.copyWith(name: labeled),
+        );
+        final id = _currentPortfolioId;
+        final stillValid =
+            id == null || id == 'all' || next.any((p) => p.id == id);
+        if (!stillValid && next.isNotEmpty) {
+          _onPortfolioSelected(next.first.id, next.first.name);
+        }
+      },
+      layout: FamilyAwarePortfolioPickerLayout.row,
+      compact: true,
+      currentPortfolioId: currentId,
+      currentPortfolioName: currentName,
+      portfolios: portfolios,
+      onPortfolioSelected: _onPortfolioSelected,
+      idExtractor: (p) => p.id,
+      nameExtractor: (p) => p.name,
+      accentColor: ModuleColors.trade,
     );
   }
 

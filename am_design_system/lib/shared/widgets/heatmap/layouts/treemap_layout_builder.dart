@@ -1,10 +1,9 @@
 import 'dart:math';
-import 'dart:ui';
 
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:am_common/am_common.dart';
 import 'package:am_design_system/core/theme/color_extensions.dart';
+import 'package:am_design_system/core/theme/web_glass.dart';
 import 'package:am_design_system/core/utils/string_utils.dart';
 
 import '../../../models/heatmap.dart';
@@ -432,13 +431,26 @@ class _NestedSectorPanel extends StatefulWidget {
 }
 
 class _NestedSectorPanelState extends State<_NestedSectorPanel> {
-  bool _focused = false;
+  final ValueNotifier<bool> _focused = ValueNotifier(false);
 
   static const double _radius = 7;
   static const double _bodyInset = 2.0;
 
   @override
+  void dispose() {
+    _focused.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    return ValueListenableBuilder<bool>(
+      valueListenable: _focused,
+      builder: (context, focused, _) => _panel(context, focused),
+    );
+  }
+
+  Widget _panel(BuildContext context, bool focused) {
     // Prefer full name so labels like "Consumer Discretionary" stay readable.
     final label = widget.tile.name.trim().isNotEmpty
         ? widget.tile.name
@@ -466,14 +478,14 @@ class _NestedSectorPanelState extends State<_NestedSectorPanel> {
     final scope = HeatmapInteractionScope.maybeOf(context);
     final isDark = context.isDark;
     final borderIdle = colors.border.withValues(alpha: isDark ? 0.75 : 0.85);
-    final headerBg = _focused
+    final headerBg = focused
         ? Color.lerp(
             colors.cardSurface,
             accent,
             isDark ? 0.08 : 0.06,
           )!
         : colors.cardSurface;
-    final panelFill = _focused
+    final panelFill = focused
         ? Color.lerp(
             colors.surface,
             accent,
@@ -482,7 +494,7 @@ class _NestedSectorPanelState extends State<_NestedSectorPanel> {
         : colors.surface;
     final titleColor = colors.textPrimary;
     final metaColor = colors.textSecondary;
-    final borderColor = _focused ? accent.withValues(alpha: 0.9) : borderIdle;
+    final borderColor = focused ? accent.withValues(alpha: 0.9) : borderIdle;
 
     final hoverOn = widget.data.configuration.enableHoverEffects;
     // SizedBox.expand + ClipRRect: never ask for more than the Positioned slot.
@@ -524,7 +536,7 @@ class _NestedSectorPanelState extends State<_NestedSectorPanel> {
                           Container(
                             width: 2,
                             color: accent.withValues(
-                              alpha: _focused ? 0.75 : 0.35,
+                              alpha: focused ? 0.75 : 0.35,
                             ),
                           ),
                           Expanded(
@@ -614,10 +626,10 @@ class _NestedSectorPanelState extends State<_NestedSectorPanel> {
     if (!hoverOn) return panel;
     return MouseRegion(
       onEnter: (_) {
-        if (!_focused) setState(() => _focused = true);
+        if (!_focused.value) _focused.value = true;
       },
       onExit: (_) {
-        if (_focused) setState(() => _focused = false);
+        if (_focused.value) _focused.value = false;
       },
       cursor: SystemMouseCursors.click,
       child: panel,
@@ -819,10 +831,23 @@ class _HoverTile extends StatefulWidget {
 }
 
 class _HoverTileState extends State<_HoverTile> {
-  bool _hovered = false;
+  final ValueNotifier<bool> _hovered = ValueNotifier(false);
+
+  @override
+  void dispose() {
+    _hovered.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
+    return ValueListenableBuilder<bool>(
+      valueListenable: _hovered,
+      builder: (context, hovered, _) => _hoverBody(context, hovered),
+    );
+  }
+
+  Widget _hoverBody(BuildContext context, bool hovered) {
     final solid = widget.data.configuration.effectiveLayout.solidFills;
     final hoverOn = widget.data.configuration.enableHoverEffects;
     // Always performance-tint so gain/loss reads clearly in glass mode.
@@ -832,7 +857,7 @@ class _HoverTileState extends State<_HoverTile> {
     );
     final colors = context.colors;
     final isDark = context.isDark;
-    if (hoverOn && _hovered) {
+    if (hoverOn && hovered) {
       // Lift with theme ink — never brand FG (washes gold/pink over green/red).
       tileColor = Color.lerp(
         tileColor,
@@ -858,6 +883,7 @@ class _HoverTileState extends State<_HoverTile> {
         textColor,
         solid: solid,
         animate: hoverOn,
+        hovered: hovered,
       );
     }
 
@@ -875,11 +901,11 @@ class _HoverTileState extends State<_HoverTile> {
     return SizedBox.expand(
       child: MouseRegion(
         onEnter: (_) {
-          if (!_hovered) setState(() => _hovered = true);
+          if (!_hovered.value) _hovered.value = true;
           scope?.onTileHover?.call(widget.tile);
         },
         onExit: (_) {
-          if (_hovered) setState(() => _hovered = false);
+          if (_hovered.value) _hovered.value = false;
           scope?.onTileHover?.call(null);
         },
         cursor: SystemMouseCursors.click,
@@ -902,21 +928,22 @@ class _HoverTileState extends State<_HoverTile> {
     Color textColor, {
     required bool solid,
     required bool animate,
+    required bool hovered,
   }) {
     final w = widget.width;
     final h = widget.height;
     final colors = context.colors;
     final isDark = context.isDark;
     final radius = solid ? 2.0 : 6.0;
-    final hovered = animate && _hovered;
+    final tileHovered = animate && hovered;
     // Theme ink for glass sheen — not actionPrimaryFg (brand wash → gold/pink tiles).
     final sheen = colors.textPrimary;
     // Module / theme primary only on hover rim (chrome), not tile fill.
     final moduleAccent = Theme.of(context).colorScheme.primary;
     final topSheen = sheen.withValues(
-      alpha: hovered ? (isDark ? 0.14 : 0.22) : (isDark ? 0.08 : 0.16),
+      alpha: tileHovered ? (isDark ? 0.14 : 0.22) : (isDark ? 0.08 : 0.16),
     );
-    final edge = hovered
+    final edge = tileHovered
         ? moduleAccent.withValues(alpha: isDark ? 0.75 : 0.65)
         : (solid
             ? tileColor.withValues(alpha: 0.15)
@@ -964,7 +991,7 @@ class _HoverTileState extends State<_HoverTile> {
             ),
           ),
         ),
-        if (hovered)
+        if (tileHovered)
           ColoredBox(
             color: sheen.withValues(alpha: isDark ? 0.06 : 0.08),
           ),
@@ -993,13 +1020,8 @@ class _HoverTileState extends State<_HoverTile> {
       );
     }
 
-    if (solid || kIsWeb) return card;
-    return ClipRect(
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
-        child: card,
-      ),
-    );
+    if (solid) return card;
+    return webGlass(sigma: 8, child: card);
   }
 
   Widget _buildInnerContent(

@@ -29,9 +29,11 @@ class DocumentProcessorView extends StatefulWidget {
     this.onImportCompleted,
     this.useSharedImportControls = false,
     this.sharedBrokerDocCode,
+    this.sharedSourceDocCodes,
     this.sharedDocumentType,
     this.portfolioNameController,
     this.passwordController,
+    this.npsPasswordController,
     this.onOpenPortfolio,
     this.onOpenTrade,
   });
@@ -45,9 +47,12 @@ class DocumentProcessorView extends StatefulWidget {
   /// Parent owns broker / doc type / name / password.
   final bool useSharedImportControls;
   final String? sharedBrokerDocCode;
+  /// Multi-select doc codes (e.g. GROWW, CDSL, NPS). First used as default broker hint.
+  final List<String>? sharedSourceDocCodes;
   final String? sharedDocumentType;
   final TextEditingController? portfolioNameController;
   final TextEditingController? passwordController;
+  final TextEditingController? npsPasswordController;
   final void Function(String portfolioId, String portfolioName)? onOpenPortfolio;
   final void Function(String portfolioId, String portfolioName)? onOpenTrade;
 
@@ -106,6 +111,7 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
   void didUpdateWidget(covariant DocumentProcessorView oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.sharedBrokerDocCode != widget.sharedBrokerDocCode ||
+        oldWidget.sharedSourceDocCodes != widget.sharedSourceDocCodes ||
         oldWidget.sharedDocumentType != widget.sharedDocumentType) {
       _applySharedSelections();
     }
@@ -113,8 +119,93 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
 
   void _applySharedSelections() {
     if (!widget.useSharedImportControls) return;
-    _selectedBrokerType = widget.sharedBrokerDocCode;
+    final multi = widget.sharedSourceDocCodes;
+    if (multi != null && multi.isNotEmpty) {
+      _selectedBrokerType = multi.first;
+    } else {
+      _selectedBrokerType = widget.sharedBrokerDocCode;
+    }
     _selectedDocType = widget.sharedDocumentType;
+    final autoDoc = defaultDocTypeForBrokerCode(_selectedBrokerType);
+    if (autoDoc != null &&
+        (_selectedDocType == null ||
+            _selectedDocType!.isEmpty ||
+            _selectedDocType == kImportDocTypeAuto)) {
+      _selectedDocType = autoDoc;
+    }
+    // Keep per-file cards in sync with the shared source (CDSL/NPS auto-select).
+    for (final file in _pendingFiles) {
+      if (_selectedBrokerType != null && _selectedBrokerType!.isNotEmpty) {
+        file.brokerType = _selectedBrokerType;
+      }
+      if (_selectedDocType != null && _selectedDocType!.isNotEmpty) {
+        file.documentType = _selectedDocType;
+      }
+    }
+  }
+
+  String _passwordForBroker(String? brokerCode) {
+    if (brokerCode == 'NPS') {
+      final nps = widget.npsPasswordController?.text.trim() ?? '';
+      if (nps.isNotEmpty) return nps;
+    }
+    return widget.passwordController?.text.trim() ?? '';
+  }
+
+  bool _isExtractorBroker(String? brokerCode) {
+    final b = (brokerCode ?? '').toUpperCase();
+    return b == 'CDSL' || b == 'NPS';
+  }
+
+  String? _extractorBrokerId(String? brokerCode) {
+    final key = normalizeBrokerKey(brokerCode);
+    return brokerKeyToEmailId(key);
+  }
+
+  Future<void> _probeExtractorPasswords(List<PendingSyncFile> files) async {
+    for (final file in files) {
+      if (!_isExtractorBroker(file.brokerType)) {
+        file.needsPassword = false;
+        continue;
+      }
+      final brokerId = _extractorBrokerId(file.brokerType);
+      if (brokerId == null) continue;
+      if (!file.filename.toLowerCase().endsWith('.pdf')) {
+        file.needsPassword = false;
+        continue;
+      }
+      try {
+        file.needsPassword = await apiProvider.probePdfEncrypted(
+          broker: brokerId,
+          fileBytes: file.bytes,
+          filename: file.filename,
+        );
+      } catch (e) {
+        debugPrint('[DocProcessor] probe failed for ${file.filename}: $e');
+        // Fail open: require password for CDSL/NPS PDFs if probe fails.
+        file.needsPassword = true;
+      }
+    }
+  }
+
+  bool _validateExtractorPasswords() {
+    var ok = true;
+    for (final file in _pendingFiles) {
+      if (!_isExtractorBroker(file.brokerType)) {
+        file.passwordError = null;
+        continue;
+      }
+      final unlock = file.passwordController.text.trim();
+      if (file.needsPassword && unlock.isEmpty) {
+        file.passwordError = file.brokerType?.toUpperCase() == 'NPS'
+            ? 'NPS statement password is required'
+            : 'PAN is required to unlock this CAS PDF';
+        ok = false;
+      } else {
+        file.passwordError = null;
+      }
+    }
+    return ok;
   }
 
   @override
@@ -395,6 +486,14 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
         return _docTypes
             .where((t) => t == 'STOCK_PORTFOLIO' || t == 'TRADE_EQ')
             .toList();
+      case 'CDSL':
+        final cas = _docTypes
+            .where((t) => t == 'MUTUAL_FUND' || t == 'STOCK_PORTFOLIO')
+            .toList();
+        return cas.isNotEmpty ? cas : const ['MUTUAL_FUND', 'STOCK_PORTFOLIO'];
+      case 'NPS':
+        final nps = _docTypes.where((t) => t == 'NPS_STATEMENT').toList();
+        return nps.isNotEmpty ? nps : const ['NPS_STATEMENT'];
       default:
         return _docTypes;
     }
@@ -473,6 +572,7 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
           defaultBroker: _selectedBrokerType,
           defaultDocType: _selectedDocType,
         );
+        await _probeExtractorPasswords(_pendingFiles);
         if (!mounted) return;
         setState(() {
           _dragHover = false;
@@ -497,6 +597,14 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
             'Replaced earlier $broker file with ${file.filename} (latest wins)';
       }
     });
+    if (_isExtractorBroker(broker)) {
+      _probeExtractorPasswords([file]).then((_) {
+        if (mounted) setState(() {});
+      });
+    } else {
+      file.needsPassword = false;
+      file.passwordError = null;
+    }
   }
 
   void _removePendingFile(int index) {
@@ -516,12 +624,17 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
     if (widget.useSharedImportControls) {
       final broker = _selectedBrokerType;
       // null / empty doc type = Auto (backend detect / leave unset).
-      final docType = (_selectedDocType == null ||
+      var docType = (_selectedDocType == null ||
               _selectedDocType!.isEmpty ||
               _selectedDocType == kImportDocTypeAuto ||
               kUnsupportedImportDocTypes.contains(_selectedDocType))
           ? null
           : _selectedDocType;
+      // CDSL/NPS always have a canonical type — never block the upload gate.
+      docType ??= defaultDocTypeForBrokerCode(broker);
+      if (docType != null) {
+        _selectedDocType = docType;
+      }
       var name = _effectivePortfolioController.text.trim();
       if (broker == null || broker.isEmpty) {
         setState(() {
@@ -535,7 +648,8 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
         );
         return;
       }
-      if (docType == null || docType.isEmpty) {
+      if (!_isExtractorBroker(broker) &&
+          (docType == null || docType.isEmpty)) {
         setState(() {
           _phaseOverride = ImportProcessPhase.error;
           _status = 'Select a document type before uploading';
@@ -551,17 +665,33 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
         name = brokerDisplayName(broker);
         _effectivePortfolioController.text = name;
       }
-      final sharedPassword = widget.passwordController?.text.trim() ?? '';
       for (final file in _pendingFiles) {
         file.brokerType = broker;
         file.documentType = docType;
         file.portfolioController.text = name;
-        if (sharedPassword.isNotEmpty &&
+        final unlock = _passwordForBroker(broker);
+        if (unlock.isNotEmpty &&
             file.passwordController.text.trim().isEmpty) {
-          file.passwordController.text = sharedPassword;
+          file.passwordController.text = unlock;
         }
       }
       _samePortfolioForAll = true;
+    }
+
+    // Ensure CDSL/NPS encryption probe is current before password gate.
+    await _probeExtractorPasswords(_pendingFiles);
+    if (!_validateExtractorPasswords()) {
+      if (!mounted) return;
+      setState(() {
+        _phaseOverride = ImportProcessPhase.error;
+        _status = 'Enter the unlock password for encrypted CDSL/NPS PDFs';
+      });
+      showImportSnackBar(
+        context,
+        message: _status,
+        phase: ImportProcessPhase.error,
+      );
+      return;
     }
 
     setState(() {
@@ -584,32 +714,42 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
       },
     );
 
+    final extractorFiles =
+        _pendingFiles.where((f) => _isExtractorBroker(f.brokerType)).toList();
+    final docProcFiles =
+        _pendingFiles.where((f) => !_isExtractorBroker(f.brokerType)).toList();
+
     try {
+      if (extractorFiles.isNotEmpty) {
+        await _submitExtractorUploads(extractorFiles);
+      }
+      if (docProcFiles.isEmpty) {
+        return;
+      }
       final submitted = await apiProvider.submitBatchSync(
-        fileBytes: _pendingFiles.map((f) => f.bytes).toList(),
-        filenames: _pendingFiles.map((f) => f.filename).toList(),
-        brokerTypes: _pendingFiles
+        fileBytes: docProcFiles.map((f) => f.bytes).toList(),
+        filenames: docProcFiles.map((f) => f.filename).toList(),
+        brokerTypes: docProcFiles
             .map((f) => apiProvider.mapBrokerForApi(f.brokerType))
             .toList(),
-        documentTypes: _pendingFiles
+        documentTypes: docProcFiles
             .map((f) => apiProvider.mapDocumentTypeForApi(f.documentType))
             .toList(),
-        passwords: _pendingFiles
+        passwords: docProcFiles
             .map((f) => f.passwordController.text.trim().isEmpty
                 ? null
                 : f.passwordController.text.trim())
             .toList(),
         portfolioIds: _samePortfolioForAll
             ? List<String?>.filled(
-                _pendingFiles.length,
+                docProcFiles.length,
                 sharedName.isEmpty ? null : sharedName,
               )
-            : _pendingFiles
+            : docProcFiles
                 .map((f) => f.portfolioController.text.trim().isEmpty
                     ? null
                     : f.portfolioController.text.trim())
                 .toList(),
-        // Belt-and-suspenders: batch-level portfolio when shared mode is on.
         portfolioId: _samePortfolioForAll && sharedName.isNotEmpty
             ? sharedName
             : null,
@@ -624,6 +764,15 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
       });
       _scrollResultsToTop();
       _startPolling(submitted.batchId);
+    } on ExtractUploadException catch (e) {
+      ProductTelemetry.instance.clientError(errorType: 'doc_process');
+      if (!mounted) return;
+      setState(() {
+        _endBusy(
+          message: e.message,
+          phase: ImportProcessPhase.error,
+        );
+      });
     } on SyncUnavailableException catch (e) {
       await _handleSyncUnavailable(e);
     } catch (e) {
@@ -642,6 +791,67 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
           phase: ImportProcessPhase.error,
         );
       });
+    }
+  }
+
+  Future<void> _submitExtractorUploads(List<PendingSyncFile> files) async {
+    var okCount = 0;
+    String? lastError;
+    for (final file in files) {
+      final brokerId = _extractorBrokerId(file.brokerType);
+      if (brokerId == null) continue;
+      try {
+        await apiProvider.extractFromUpload(
+          broker: brokerId,
+          fileBytes: file.bytes,
+          filename: file.filename,
+          password: file.passwordController.text.trim().isEmpty
+              ? null
+              : file.passwordController.text.trim(),
+        );
+        file.passwordError = null;
+        okCount++;
+      } on ExtractUploadException catch (e) {
+        file.passwordError = e.isPasswordRequired || e.isPasswordInvalid
+            ? e.message
+            : null;
+        lastError = shortImportError(e);
+        if (!mounted) return;
+        setState(() {});
+        if (e.isPasswordRequired || e.isPasswordInvalid) {
+          throw e;
+        }
+        if (okCount == 0) {
+          throw e;
+        }
+      }
+    }
+    if (!mounted) return;
+    if (okCount > 0 && lastError == null) {
+      for (final f in List<PendingSyncFile>.from(files)) {
+        _pendingFiles.remove(f);
+        f.dispose();
+      }
+      final names = files.map((f) => f.filename).toList();
+      setState(() {
+        _endBusy(
+          message:
+              'Imported $okCount CDSL/NPS file${okCount == 1 ? '' : 's'}. Holdings will appear shortly.',
+          phase: ImportProcessPhase.success,
+        );
+      });
+      widget.onImportCompleted?.call(RecentImportEntry(
+        id: 'up-extractor-${DateTime.now().millisecondsSinceEpoch}',
+        source: 'upload',
+        title: names.length == 1 ? names.first : 'CDSL/NPS · $okCount files',
+        status: 'success',
+        at: DateTime.now().toUtc(),
+        files: names,
+        detail: 'Parsed via email-extractor',
+      ));
+      _scrollResultsToTop();
+    } else if (lastError != null && okCount == 0) {
+      throw ExtractUploadException(message: lastError);
     }
   }
 
@@ -1911,8 +2121,16 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
   Widget _buildPendingFileCard(int index, {double? contentWidth}) {
     final file = _pendingFiles[index];
     final primary = Theme.of(context).colorScheme.primary;
+    // Ensure CDSL/NPS appear even if an older ApiService list is in memory.
+    final brokerCodes = <String>{
+      ...apiProvider.brokerTypes,
+      'CDSL',
+      'NPS',
+      if (file.brokerType != null && file.brokerType!.isNotEmpty)
+        file.brokerType!,
+    }.toList();
     final brokerItems = [
-      ...apiProvider.brokerTypes.map(
+      ...brokerCodes.map(
         (e) => DropdownMenuItem<String>(
           value: e,
           child: brokerDropdownLabel(e),
@@ -1930,10 +2148,14 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
         ),
       ),
     ];
-    final docTypeValues = <String>{..._docTypes};
-    if (file.documentType != null) {
-      docTypeValues.add(file.documentType!);
-    }
+    final docTypeValues = <String>{
+      ..._getFilteredDocTypes(),
+      ..._docTypes,
+      if (file.documentType != null) file.documentType!,
+      'MUTUAL_FUND',
+      'NPS_STATEMENT',
+      'STOCK_PORTFOLIO',
+    };
     final docItems = [
       ...docTypeValues
           .map((e) => e.toSimpleDropdownItem(text: _getDocTypeDisplayName(e))),
@@ -2072,9 +2294,27 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
                   const SizedBox(height: 10),
                   AppTextField(
                     controller: file.passwordController,
-                    labelText: 'Password (if encrypted)',
-                    hintText: 'Optional',
+                    labelText: file.brokerType?.toUpperCase() == 'NPS'
+                        ? 'NPS statement password'
+                        : file.brokerType?.toUpperCase() == 'CDSL'
+                            ? 'PAN (CAS unlock)'
+                            : 'Password (if encrypted)',
+                    hintText: file.needsPassword
+                        ? (file.brokerType?.toUpperCase() == 'NPS'
+                            ? 'Required'
+                            : 'Required PAN')
+                        : 'Optional',
                     obscureText: true,
+                    errorText: file.passwordError,
+                    suffix: IconButton(
+                      tooltip: 'Clear password',
+                      icon: const Icon(Icons.clear, size: 18),
+                      onPressed: () {
+                        file.passwordController.clear();
+                        file.passwordError = null;
+                        setState(() {});
+                      },
+                    ),
                   ),
                 ],
               ),

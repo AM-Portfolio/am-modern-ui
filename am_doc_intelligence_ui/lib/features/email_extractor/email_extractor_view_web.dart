@@ -6,6 +6,7 @@ import 'package:am_design_system/am_design_system.dart';
 import 'package:am_library/am_library.dart';
 import 'package:am_common/am_common.dart';
 import 'package:am_doc_intelligence_ui/features/broker_logo.dart';
+import 'package:am_doc_intelligence_ui/features/email_discover_models.dart';
 import 'package:am_doc_intelligence_ui/features/import_holdings_shared_controls.dart';
 import 'package:am_doc_intelligence_ui/features/import_portfolio_sync.dart';
 import 'package:am_doc_intelligence_ui/features/import_process_banner.dart';
@@ -20,10 +21,13 @@ class EmailExtractorView extends StatefulWidget {
     this.onImportCompleted,
     this.useSharedImportControls = false,
     this.sharedBrokerEmailId,
+    this.sharedSourceEmailIds,
     this.passwordController,
+    this.npsPasswordController,
     this.portfolioNameController,
     this.onOpenPortfolio,
     this.onOpenTrade,
+    this.onDiscoverChanged,
   });
 
   /// Hide standalone page chrome when embedded under Import holdings.
@@ -38,17 +42,27 @@ class EmailExtractorView extends StatefulWidget {
   /// When true, broker/password live on the parent shared controls.
   final bool useSharedImportControls;
 
-  /// Email-extractor broker id from shared icons (e.g. `dhan`, `angleone`).
+  /// Single email-extractor broker id (legacy). Prefer [sharedSourceEmailIds].
   final String? sharedBrokerEmailId;
+
+  /// Multi-select email-extractor ids (e.g. `groww`, `cdsl`, `nps`).
+  final List<String>? sharedSourceEmailIds;
 
   /// Shared PDF password (parent-owned when [useSharedImportControls]).
   final TextEditingController? passwordController;
 
+  /// NPS statement unlock when `nps` is selected.
+  final TextEditingController? npsPasswordController;
+
   /// Optional portfolio name for sync matching.
   final TextEditingController? portfolioNameController;
 
-  final void Function(String portfolioId, String portfolioName)? onOpenPortfolio;
+  final void Function(String portfolioId, String portfolioName)?
+      onOpenPortfolio;
   final void Function(String portfolioId, String portfolioName)? onOpenTrade;
+
+  /// Notifies parent when Gmail discover finishes (password gate / previews).
+  final ValueChanged<EmailDiscoverSnapshot>? onDiscoverChanged;
 
   @override
   State<EmailExtractorView> createState() => _EmailExtractorViewState();
@@ -66,6 +80,7 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
   bool? _isServiceConnected;
   bool _checkingHealth = true;
   String? _activeExtractingBrokerId;
+
   /// Persists highlight on the broker tile the user picked.
   String? _selectedBrokerId;
 
@@ -79,6 +94,10 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
   String? _resolvedPortfolioId;
   String? _resolvedPortfolioName;
 
+  bool _discovering = false;
+  int _discoverGen = 0;
+  EmailDiscoverSnapshot _discoverSnapshot = const EmailDiscoverSnapshot();
+
   TextEditingController get _effectivePasswordController =>
       widget.passwordController ?? _panController;
 
@@ -87,6 +106,8 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
     super.initState();
     _checkHealthAndLoad();
     _handleGmailQueryParams();
+    _effectivePasswordController.addListener(_onPasswordEdited);
+    widget.npsPasswordController?.addListener(_onPasswordEdited);
 
     // Popup callback posts here; also poll until status flips to connected
     _oauthMessageSub = html.window.onMessage.listen(_onOAuthMessage);
@@ -95,6 +116,31 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
         _checkGmail();
       }
     });
+  }
+
+  void _onPasswordEdited() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void didUpdateWidget(covariant EmailExtractorView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.passwordController != widget.passwordController) {
+      oldWidget.passwordController?.removeListener(_onPasswordEdited);
+      _panController.removeListener(_onPasswordEdited);
+      _effectivePasswordController.addListener(_onPasswordEdited);
+    }
+    if (oldWidget.npsPasswordController != widget.npsPasswordController) {
+      oldWidget.npsPasswordController?.removeListener(_onPasswordEdited);
+      widget.npsPasswordController?.addListener(_onPasswordEdited);
+    }
+    final oldIds = oldWidget.sharedSourceEmailIds ?? const <String>[];
+    final newIds = widget.sharedSourceEmailIds ?? const <String>[];
+    final sourcesChanged = oldIds.join('|') != newIds.join('|') ||
+        oldWidget.sharedBrokerEmailId != widget.sharedBrokerEmailId;
+    if (sourcesChanged && (_gmailStatus?['connected'] == true)) {
+      _scheduleDiscover();
+    }
   }
 
   void _setFeedback(
@@ -209,12 +255,155 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
   void dispose() {
     _statusPollTimer?.cancel();
     _oauthMessageSub?.cancel();
+    _effectivePasswordController.removeListener(_onPasswordEdited);
+    widget.npsPasswordController?.removeListener(_onPasswordEdited);
     // Only dispose locally owned controller.
     if (widget.passwordController == null) {
       _panController.dispose();
     }
     super.dispose();
   }
+
+  void _emitDiscover(EmailDiscoverSnapshot snap) {
+    _discoverSnapshot = snap;
+    widget.onDiscoverChanged?.call(snap);
+  }
+
+  void _scheduleDiscover() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _runDiscover();
+    });
+  }
+
+  Future<void> _runDiscover() async {
+    if (!widget.useSharedImportControls) return;
+    if (_gmailStatus?['connected'] != true) {
+      setState(() {
+        _discovering = false;
+        _emitDiscover(const EmailDiscoverSnapshot());
+      });
+      return;
+    }
+    final sources = _sharedSources;
+    if (sources.isEmpty) {
+      setState(() {
+        _discovering = false;
+        _emitDiscover(const EmailDiscoverSnapshot());
+      });
+      return;
+    }
+
+    final gen = ++_discoverGen;
+    setState(() {
+      _discovering = true;
+      _emitDiscover(EmailDiscoverSnapshot(
+        discovering: true,
+        found: _discoverSnapshot.found,
+        missing: _discoverSnapshot.missing,
+      ));
+      _setFeedback(
+        'Looking for statements in Gmail…',
+        phase: ImportProcessPhase.busy,
+        snack: false,
+      );
+    });
+
+    final found = <EmailDiscoverHit>[];
+    final missing = <EmailDiscoverMiss>[];
+
+    for (final brokerId in sources) {
+      if (!mounted || gen != _discoverGen) return;
+      try {
+        final raw = await apiProvider.discoverFromGmail(
+          brokerId,
+          mailbox: _selectedMailbox,
+        );
+        if (!mounted || gen != _discoverGen) return;
+        final ok = raw['found'] == true;
+        if (!ok) {
+          missing.add(EmailDiscoverMiss(
+            brokerId: brokerId,
+            message: raw['error']?.toString() ??
+                'No statement found for ${brokerDisplayName(brokerId)}',
+          ));
+          continue;
+        }
+        final email = raw['email'] is Map
+            ? Map<String, dynamic>.from(raw['email'] as Map)
+            : const <String, dynamic>{};
+        final att = raw['attachment'] is Map
+            ? Map<String, dynamic>.from(raw['attachment'] as Map)
+            : const <String, dynamic>{};
+        found.add(EmailDiscoverHit(
+          brokerId: brokerId,
+          needsPassword:
+              raw['needs_password'] != false && brokerId != 'angleone',
+          subject: email['subject']?.toString(),
+          date: email['date']?.toString(),
+          from: email['from']?.toString(),
+          filename: att['filename']?.toString(),
+        ));
+      } catch (e) {
+        final msg = shortImportError(e);
+        final notFound = msg.toLowerCase().contains('no recent') ||
+            msg.toLowerCase().contains('not found') ||
+            msg.contains('404');
+        missing.add(EmailDiscoverMiss(
+          brokerId: brokerId,
+          message: notFound
+              ? 'No statement found for ${brokerDisplayName(brokerId)}'
+              : msg,
+        ));
+      }
+    }
+
+    if (!mounted || gen != _discoverGen) return;
+
+    final snap = EmailDiscoverSnapshot(
+      discovering: false,
+      found: found,
+      missing: missing,
+    );
+    setState(() {
+      _discovering = false;
+      _emitDiscover(snap);
+      if (found.isEmpty && missing.isNotEmpty) {
+        _setFeedback(
+          missing.map((m) => m.message).join(' · '),
+          phase: ImportProcessPhase.error,
+        );
+      } else if (found.isNotEmpty) {
+        final names =
+            found.map((h) => brokerDisplayName(h.brokerId)).join(', ');
+        final missNote = missing.isEmpty
+            ? ''
+            : ' · skipped ${missing.map((m) => brokerDisplayName(m.brokerId)).join(', ')}';
+        _setFeedback(
+          'Found $names$missNote — enter password to process',
+          phase: ImportProcessPhase.success,
+          snack: false,
+        );
+      } else {
+        _setFeedback('', phase: ImportProcessPhase.idle, snack: false);
+      }
+    });
+  }
+
+  bool get _passwordsReadyForFound {
+    for (final hit in _discoverSnapshot.found) {
+      if (!hit.needsPassword) continue;
+      if (_unlockFor(hit.brokerId).isEmpty) return false;
+    }
+    return true;
+  }
+
+  bool get _canProcessDiscovered =>
+      !_discovering &&
+      _discoverSnapshot.hasAnyFound &&
+      _passwordsReadyForFound &&
+      _activeExtractingBrokerId == null &&
+      _phase != ImportProcessPhase.busy &&
+      _phase != ImportProcessPhase.syncing;
 
   Future<void> _checkHealthAndLoad() async {
     setState(() => _checkingHealth = true);
@@ -270,10 +459,7 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
   void _applyMailboxesFrom(Map<String, dynamic> status) {
     final raw = status['mailboxes'];
     final list = raw is List
-        ? raw
-            .whereType<Map>()
-            .map((m) => Map<String, dynamic>.from(m))
-            .toList()
+        ? raw.whereType<Map>().map((m) => Map<String, dynamic>.from(m)).toList()
         : <Map<String, dynamic>>[];
     _mailboxes = list;
     if (_selectedMailbox == null ||
@@ -294,12 +480,12 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
     try {
       final status = await apiProvider.checkGmailStatus();
       if (!mounted) return;
+      final wasConnected = _gmailStatus?['connected'] == true;
       setState(() {
         _gmailStatus = status;
         _applyMailboxesFrom(status);
         // OAuth popup finished — poll flipped to connected.
-        if (status['connected'] == true &&
-            _phase == ImportProcessPhase.busy) {
+        if (status['connected'] == true && _phase == ImportProcessPhase.busy) {
           final email = status['email'];
           _setFeedback(
             email != null && '$email'.isNotEmpty
@@ -309,6 +495,12 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
           );
         }
       });
+      final nowConnected = status['connected'] == true;
+      if (nowConnected &&
+          widget.useSharedImportControls &&
+          (!wasConnected || _discoverSnapshot.found.isEmpty)) {
+        _scheduleDiscover();
+      }
     } catch (e) {
       debugPrint('Gmail check error: $e');
     }
@@ -327,7 +519,8 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
       if (!mounted) return;
       if (result['connected'] == true && result['auth_url'] == null) {
         setState(() {
-          _setFeedback('Gmail already connected', phase: ImportProcessPhase.success);
+          _setFeedback('Gmail already connected',
+              phase: ImportProcessPhase.success);
         });
         await _checkGmail();
         return;
@@ -414,21 +607,178 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
     _extract(brokerId);
   }
 
-  Future<void> _importFromSharedControls({required bool gmailConnected}) async {
-    final brokerId = widget.sharedBrokerEmailId;
-    if (brokerId == null || brokerId.isEmpty) {
-      setState(() {
-        _setFeedback('Select a broker first', phase: ImportProcessPhase.error);
-      });
-      return;
+  List<String> get _sharedSources {
+    final multi = widget.sharedSourceEmailIds;
+    if (multi != null && multi.isNotEmpty) {
+      return orderedImportSources(multi);
     }
+    final one = widget.sharedBrokerEmailId;
+    if (one != null && one.isNotEmpty) return [one];
+    return const [];
+  }
+
+  String _unlockFor(String brokerId) {
+    if (brokerId.toLowerCase() == 'nps') {
+      final nps = widget.npsPasswordController?.text.trim() ?? '';
+      if (nps.isNotEmpty) return nps;
+    }
+    return _effectivePasswordController.text.trim();
+  }
+
+  Future<void> _importFromSharedControls({required bool gmailConnected}) async {
     if (!gmailConnected) {
       setState(() {
         _setFeedback('Connect Gmail first', phase: ImportProcessPhase.error);
       });
       return;
     }
-    await _extract(brokerId);
+    if (_sharedSources.isEmpty) {
+      setState(() {
+        _setFeedback('Select at least one source',
+            phase: ImportProcessPhase.error);
+      });
+      return;
+    }
+    if (_discovering) {
+      setState(() {
+        _setFeedback('Still searching Gmail…', phase: ImportProcessPhase.busy);
+      });
+      return;
+    }
+    // Discover-first: only process sources that were found.
+    final foundIds = _discoverSnapshot.found.map((h) => h.brokerId).toList();
+    if (foundIds.isEmpty) {
+      setState(() {
+        _setFeedback(
+          _discoverSnapshot.missing.isEmpty
+              ? 'No statements found — select sources and wait for Gmail search'
+              : _discoverSnapshot.missing.map((m) => m.message).join(' · '),
+          phase: ImportProcessPhase.error,
+        );
+      });
+      return;
+    }
+    if (!_passwordsReadyForFound) {
+      setState(() {
+        _setFeedback(
+          'Enter PDF / NPS password to unlock the found statement(s)',
+          phase: ImportProcessPhase.error,
+        );
+      });
+      return;
+    }
+    if (foundIds.length == 1) {
+      await _extract(foundIds.first);
+      return;
+    }
+    await _extractMany(foundIds);
+  }
+
+  Future<void> _extractMany(List<String> sources) async {
+    final ok = <String>[];
+    final failed = <String>[];
+    for (var i = 0; i < sources.length; i++) {
+      final brokerId = sources[i];
+      final label = brokerDisplayName(brokerId);
+      final pan = _unlockFor(brokerId);
+      if (pan.isEmpty && brokerId != 'angleone') {
+        failed.add(label);
+        setState(() {
+          _setFeedback(
+            'Missing password for $label — skipped (${i + 1}/${sources.length})',
+            phase: ImportProcessPhase.error,
+            snack: false,
+          );
+        });
+        continue;
+      }
+      setState(() {
+        _selectedBrokerId = brokerId;
+        _activeExtractingBrokerId = brokerId;
+        _busyStartedAt = DateTime.now();
+        _setFeedback(
+          'Importing $label… (${i + 1}/${sources.length})',
+          phase: ImportProcessPhase.busy,
+          snack: false,
+        );
+      });
+      try {
+        final result = await apiProvider.extractFromGmail(
+          brokerId,
+          pan: pan,
+          mailbox: _selectedMailbox,
+        );
+        if (!mounted) return;
+        final count = result['count'];
+        final fileName = result['filename']?.toString() ??
+            result['file_name']?.toString() ??
+            'Gmail · $label statement';
+        widget.onImportCompleted?.call(RecentImportEntry(
+          id: 'mb-${DateTime.now().millisecondsSinceEpoch}-$brokerId',
+          source: 'mailbox',
+          title: label,
+          status: 'success',
+          at: DateTime.now().toUtc(),
+          files: [fileName],
+          detail: count != null ? '$count holdings' : null,
+        ));
+        final typedName = widget.portfolioNameController?.text.trim() ?? '';
+        final targetName =
+            typedName.isNotEmpty ? typedName : brokerDisplayName(brokerId);
+        setState(() {
+          _setFeedback(
+            'Parsed $label — syncing… (${i + 1}/${sources.length})',
+            phase: ImportProcessPhase.syncing,
+            snack: false,
+          );
+        });
+        await waitForImportedPortfolio(
+          brokerKey: normalizeBrokerKey(brokerId) ?? brokerId,
+          targetPortfolioName: targetName,
+        );
+        ok.add(label);
+      } catch (e) {
+        failed.add(label);
+        widget.onImportCompleted?.call(RecentImportEntry(
+          id: 'mb-${DateTime.now().millisecondsSinceEpoch}-$brokerId-err',
+          source: 'mailbox',
+          title: label,
+          status: 'failed',
+          at: DateTime.now().toUtc(),
+          files: const [],
+          detail: e.toString(),
+        ));
+      }
+    }
+    if (!mounted) return;
+    setState(() {
+      _activeExtractingBrokerId = null;
+      _busyStartedAt = null;
+    });
+    if (ok.isEmpty) {
+      setState(() {
+        _setFeedback(
+          'Import failed for all sources',
+          phase: ImportProcessPhase.error,
+          actions: _deepLinkActions(),
+        );
+      });
+      return;
+    }
+    PortfolioDataRefresh.instance.notifyImported();
+    // Multi-source → open All so CDSL + NPS + brokers show together.
+    _resolvedPortfolioId = 'all';
+    _resolvedPortfolioName = 'All portfolios';
+    final summary = failed.isEmpty
+        ? 'Imported ${ok.join(', ')}'
+        : 'Imported ${ok.join(', ')}; failed ${failed.join(', ')}';
+    setState(() {
+      _setFeedback(
+        summary,
+        phase: ImportProcessPhase.success,
+        actions: _deepLinkActions(),
+      );
+    });
   }
 
   Future<void> _extract(String brokerId) async {
@@ -439,11 +789,13 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
       _bannerActions = null;
     });
 
-    final pan = _effectivePasswordController.text.trim();
+    final pan = _unlockFor(brokerId);
     if (pan.isEmpty && brokerId != 'angleone') {
       setState(() {
         _setFeedback(
-          'Enter PDF password, then import ${brokerDisplayName(brokerId)}',
+          brokerId == 'nps'
+              ? 'Enter NPS password, then import ${brokerDisplayName(brokerId)}'
+              : 'Enter PDF password, then import ${brokerDisplayName(brokerId)}',
           phase: ImportProcessPhase.error,
         );
       });
@@ -504,9 +856,8 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
       ));
 
       final typedName = widget.portfolioNameController?.text.trim() ?? '';
-      final targetName = typedName.isNotEmpty
-          ? typedName
-          : brokerDisplayName(brokerId);
+      final targetName =
+          typedName.isNotEmpty ? typedName : brokerDisplayName(brokerId);
       final sync = await waitForImportedPortfolio(
         brokerKey: normalizeBrokerKey(brokerId) ?? brokerId,
         targetPortfolioName: targetName,
@@ -662,8 +1013,7 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
                   const SizedBox(height: 16),
                   if (_loading)
                     const ShimmerLoading(
-                        child:
-                            SkeletonBox(height: 64, width: double.infinity))
+                        child: SkeletonBox(height: 64, width: double.infinity))
                   else
                     _buildBrokerGrid(isConnected, contentWidth: contentWidth),
                   const SizedBox(height: 16),
@@ -810,8 +1160,7 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
     );
   }
 
-  static const EdgeInsets _compactCardPad =
-      EdgeInsets.fromLTRB(12, 10, 12, 12);
+  static const EdgeInsets _compactCardPad = EdgeInsets.fromLTRB(12, 10, 12, 12);
 
   /// Gmail row + broker tiles in one full-width card (tiles align to card edges).
   Widget _buildCompactImportCard(
@@ -821,7 +1170,8 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
   ) {
     final accent = Theme.of(context).colorScheme.primary;
     // Inner width after card pad — used so broker grid spans edge-to-edge.
-    final gridWidth = (contentWidth - _compactCardPad.horizontal).clamp(120.0, 4000.0);
+    final gridWidth =
+        (contentWidth - _compactCardPad.horizontal).clamp(120.0, 4000.0);
 
     return GlassCard(
       padding: EdgeInsets.zero,
@@ -865,7 +1215,8 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
                       padding: const EdgeInsets.symmetric(horizontal: 14),
                       minimumSize: const Size(0, 32),
                     ),
-                    child: const Text('Connect', style: TextStyle(fontSize: 12)),
+                    child:
+                        const Text('Connect', style: TextStyle(fontSize: 12)),
                   )
                 else ...[
                   TextButton(
@@ -884,8 +1235,8 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
                       visualDensity: VisualDensity.compact,
                       padding: const EdgeInsets.symmetric(horizontal: 8),
                     ),
-                    child:
-                        const Text('Disconnect', style: TextStyle(fontSize: 12)),
+                    child: const Text('Disconnect',
+                        style: TextStyle(fontSize: 12)),
                   ),
                 ],
               ],
@@ -925,16 +1276,20 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
     );
   }
 
-  /// Mailbox connect + Import button (broker/password live on shared controls).
+  /// Mailbox connect + discover preview + Import (password on shared controls).
   Widget _buildSharedMailboxCard(bool isConnected, String email) {
     final accent = Theme.of(context).colorScheme.primary;
-    final brokerId = widget.sharedBrokerEmailId;
-    final brokerLabel = brokerId != null && brokerId.isNotEmpty
-        ? brokerDisplayName(brokerId)
-        : null;
+    final found = _discoverSnapshot.found;
+    final missing = _discoverSnapshot.missing;
+    final processLabel = found.isEmpty
+        ? null
+        : found.length == 1
+            ? brokerDisplayName(found.first.brokerId)
+            : '${found.length} found';
     final extracting = _activeExtractingBrokerId != null ||
         _phase == ImportProcessPhase.busy ||
         _phase == ImportProcessPhase.syncing;
+    final canProcess = isConnected && _canProcessDiscovered;
 
     return GlassCard(
       padding: EdgeInsets.zero,
@@ -944,64 +1299,103 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Row(
-              children: [
-                Icon(
+            LayoutBuilder(
+              builder: (context, box) {
+                final narrow = box.maxWidth < 420;
+                final title = Text(
                   isConnected
-                      ? Icons.mark_email_read_outlined
-                      : Icons.mail_outline,
-                  size: 18,
-                  color: accent,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    isConnected
-                        ? (email.isNotEmpty && email != 'Not Connected'
-                            ? email
-                            : 'Gmail connected')
-                        : 'Connect Gmail',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 13,
-                    ),
+                      ? (email.isNotEmpty && email != 'Not Connected'
+                          ? email
+                          : 'Gmail connected')
+                      : 'Connect Gmail',
+                  maxLines: narrow ? 2 : 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13,
                   ),
-                ),
-                if (!isConnected)
-                  FilledButton(
-                    onPressed: () => _startOAuth(addMailbox: false),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: accent,
-                      visualDensity: VisualDensity.compact,
-                      padding: const EdgeInsets.symmetric(horizontal: 14),
-                      minimumSize: const Size(0, 32),
+                );
+                final actions = <Widget>[
+                  if (!isConnected)
+                    FilledButton(
+                      onPressed: () => _startOAuth(addMailbox: false),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: accent,
+                        visualDensity: VisualDensity.compact,
+                        padding: const EdgeInsets.symmetric(horizontal: 14),
+                        minimumSize: const Size(0, 32),
+                      ),
+                      child: const Text(
+                        'Connect',
+                        style: TextStyle(fontSize: 12),
+                      ),
+                    )
+                  else ...[
+                    TextButton(
+                      onPressed: _mailboxes.length >= 5
+                          ? null
+                          : () => _startOAuth(addMailbox: true),
+                      style: TextButton.styleFrom(
+                        visualDensity: VisualDensity.compact,
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                      ),
+                      child: const Text('Add', style: TextStyle(fontSize: 12)),
                     ),
-                    child: const Text('Connect', style: TextStyle(fontSize: 12)),
-                  )
-                else ...[
-                  TextButton(
-                    onPressed: _mailboxes.length >= 5
-                        ? null
-                        : () => _startOAuth(addMailbox: true),
-                    style: TextButton.styleFrom(
-                      visualDensity: VisualDensity.compact,
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                    TextButton(
+                      onPressed: () => _handleGmailConnectionToggle(true),
+                      style: TextButton.styleFrom(
+                        visualDensity: VisualDensity.compact,
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                      ),
+                      child: const Text(
+                        'Disconnect',
+                        style: TextStyle(fontSize: 12),
+                      ),
                     ),
-                    child: const Text('Add', style: TextStyle(fontSize: 12)),
-                  ),
-                  TextButton(
-                    onPressed: () => _handleGmailConnectionToggle(true),
-                    style: TextButton.styleFrom(
-                      visualDensity: VisualDensity.compact,
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                  ],
+                ];
+                if (narrow) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            isConnected
+                                ? Icons.mark_email_read_outlined
+                                : Icons.mail_outline,
+                            size: 18,
+                            color: accent,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(child: title),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 4,
+                        runSpacing: 4,
+                        alignment: WrapAlignment.end,
+                        children: actions,
+                      ),
+                    ],
+                  );
+                }
+                return Row(
+                  children: [
+                    Icon(
+                      isConnected
+                          ? Icons.mark_email_read_outlined
+                          : Icons.mail_outline,
+                      size: 18,
+                      color: accent,
                     ),
-                    child:
-                        const Text('Disconnect', style: TextStyle(fontSize: 12)),
-                  ),
-                ],
-              ],
+                    const SizedBox(width: 8),
+                    Expanded(child: title),
+                    ...actions,
+                  ],
+                );
+              },
             ),
             if (isConnected && _mailboxes.length > 1) ...[
               const SizedBox(height: 8),
@@ -1018,19 +1412,70 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
                       selected: _selectedMailbox == m['email'],
                       visualDensity: VisualDensity.compact,
                       onSelected: (_) {
-                        setState(
-                            () => _selectedMailbox = m['email'] as String?);
+                        setState(() {
+                          _selectedMailbox = m['email'] as String?;
+                        });
+                        _scheduleDiscover();
                       },
                     ),
                 ],
               ),
             ],
+            if (isConnected && _sharedSources.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              if (_discovering)
+                Row(
+                  children: [
+                    SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: accent,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Searching mailbox for statements…',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                )
+              else ...[
+                for (final hit in found) ...[
+                  _discoverPreviewTile(hit, accent),
+                  const SizedBox(height: 6),
+                ],
+                for (final miss in missing)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: Text(
+                      miss.message,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Theme.of(context).colorScheme.error,
+                      ),
+                    ),
+                  ),
+                if (found.isEmpty && missing.isEmpty)
+                  Text(
+                    'Select sources above to search Gmail',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+              ],
+            ],
             const SizedBox(height: 10),
             FilledButton.icon(
-              onPressed: extracting
-                  ? null
-                  : () => _importFromSharedControls(gmailConnected: isConnected),
-              icon: extracting
+              onPressed: canProcess
+                  ? () => _importFromSharedControls(gmailConnected: isConnected)
+                  : null,
+              icon: extracting || _discovering
                   ? const SizedBox(
                       width: 16,
                       height: 16,
@@ -1038,9 +1483,11 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
                     )
                   : const Icon(Icons.mark_email_unread_outlined, size: 18),
               label: Text(
-                brokerLabel != null
-                    ? 'Import from mailbox · $brokerLabel'
-                    : 'Import from mailbox',
+                _discovering
+                    ? 'Searching Gmail…'
+                    : processLabel != null
+                        ? 'Process · $processLabel'
+                        : 'Process from mailbox',
                 style: const TextStyle(fontWeight: FontWeight.w700),
               ),
               style: FilledButton.styleFrom(
@@ -1050,6 +1497,52 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _discoverPreviewTile(EmailDiscoverHit hit, Color accent) {
+    final title = brokerDisplayName(hit.brokerId);
+    final subject = (hit.subject ?? '').trim();
+    final file = (hit.filename ?? '').trim();
+    final date = (hit.date ?? '').trim();
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: accent.withValues(alpha: 0.35)),
+        color: accent.withValues(alpha: 0.06),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: TextStyle(
+              fontWeight: FontWeight.w700,
+              fontSize: 12,
+              color: accent,
+            ),
+          ),
+          if (subject.isNotEmpty)
+            Text(
+              subject,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+            ),
+          if (file.isNotEmpty || date.isNotEmpty)
+            Text(
+              [if (file.isNotEmpty) file, if (date.isNotEmpty) date]
+                  .join(' · '),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 11,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -1116,7 +1609,9 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
             Row(
               children: [
                 Icon(
-                  isConnected ? Icons.mark_email_read_outlined : Icons.mail_outline,
+                  isConnected
+                      ? Icons.mark_email_read_outlined
+                      : Icons.mail_outline,
                   size: 20,
                   color: isConnected ? Colors.green : accent,
                 ),
@@ -1162,7 +1657,8 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
                       ),
                       selected: _selectedMailbox == m['email'],
                       onSelected: (_) {
-                        setState(() => _selectedMailbox = m['email'] as String?);
+                        setState(
+                            () => _selectedMailbox = m['email'] as String?);
                       },
                     ),
                 ],
@@ -1242,16 +1738,15 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
 
     Widget buildBrokerTile(Map<String, dynamic> broker) {
       final String brokerId = broker['id']?.toString() ?? '';
-      final String brokerName =
-          broker['name']?.toString() ?? 'Unknown Broker';
-      final bool isCurrentlyExtracting =
-          _activeExtractingBrokerId == brokerId;
+      final String brokerName = broker['name']?.toString() ?? 'Unknown Broker';
+      final bool isCurrentlyExtracting = _activeExtractingBrokerId == brokerId;
       final bool selected = _selectedBrokerId == brokerId;
       // High-contrast select ring (works in light + dark app chrome).
       final selectColor = Theme.of(context).colorScheme.primary;
 
       final logoPath = brokerLogoAsset(brokerId);
-      final label = brokerDisplayName(brokerId.isNotEmpty ? brokerId : brokerName);
+      final label =
+          brokerDisplayName(brokerId.isNotEmpty ? brokerId : brokerName);
 
       return Tooltip(
         message: label,

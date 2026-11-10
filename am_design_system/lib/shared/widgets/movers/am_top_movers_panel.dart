@@ -1,5 +1,5 @@
-import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import '../../../core/theme/web_glass.dart';
 import '../../../core/theme/color_extensions.dart';
 import '../../../shared/models/am_mover_item.dart';
 import 'am_mover_tile.dart';
@@ -150,11 +150,10 @@ class _AmTopMoversPanelState extends State<AmTopMoversPanel> {
     final accent = _headerAccent(context);
 
     final embedded = widget.scrollEmbedded;
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(widget.borderRadius),
-      child: BackdropFilter(
-        filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-        child: AnimatedContainer(
+    return webGlass(
+      sigma: 10,
+      clip: BorderRadius.circular(widget.borderRadius),
+      child: AnimatedContainer(
           duration: const Duration(milliseconds: 300),
           width: double.infinity,
           height: embedded ? null : double.infinity,
@@ -193,7 +192,6 @@ class _AmTopMoversPanelState extends State<AmTopMoversPanel> {
             ],
           ),
         ),
-      ),
     );
   }
 

@@ -33,7 +33,8 @@ class DashboardLayoutNotifier extends Notifier<DashboardLayoutModel> {
             s.visible,
       );
       final normalized = mergeWithDefaultLayout(normalizeDashboardLayout(saved));
-      if (hadLegacyPortfolioChart) {
+      final missingIntel = !_hasIntelLayout(normalized);
+      if (hadLegacyPortfolioChart || missingIntel) {
         state = defaultDashboardLayout();
         await repo.save(_userId, state);
         return;
@@ -42,6 +43,17 @@ class DashboardLayoutNotifier extends Notifier<DashboardLayoutModel> {
     } else {
       state = defaultDashboardLayout();
     }
+  }
+
+  /// True when Chart|Health and X-Ray|Users peers are present and visible.
+  static bool _hasIntelLayout(DashboardLayoutModel layout) {
+    final visible = {
+      for (final s in layout.slots)
+        if (s.visible) s.id,
+    };
+    return visible.contains(DashboardWidgetId.portfolioHealth) &&
+        visible.contains(DashboardWidgetId.portfolioXray) &&
+        visible.contains(DashboardWidgetId.accountsHub);
   }
 
   Future<void> reloadForUser(String userId) async {

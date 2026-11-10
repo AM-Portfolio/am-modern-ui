@@ -27,16 +27,16 @@ class AdvancedHoldingsCards extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        const spacing = 16.0;
-        const maxCardWidth = 360.0;
-        final usable = constraints.maxWidth - 24;
+        const spacing = 10.0;
+        const maxCardWidth = 280.0;
+        final usable = constraints.maxWidth - 20;
         var crossAxisCount = (usable / (maxCardWidth + spacing)).floor();
         if (crossAxisCount < 1) crossAxisCount = 1;
         final cardWidth =
             (usable - spacing * (crossAxisCount - 1)) / crossAxisCount;
 
         return SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(12, 12, 12, 16),
+          padding: const EdgeInsets.fromLTRB(10, 10, 10, 12),
           child: SizedBox(
             width: constraints.maxWidth,
             child: Wrap(
@@ -115,9 +115,9 @@ class _Card extends StatelessWidget {
             children: [
               Padding(
                 padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.md,
-                  AppSpacing.md,
-                  AppSpacing.md,
+                  AppSpacing.sm,
+                  AppSpacing.sm,
+                  AppSpacing.sm,
                   AppSpacing.sm,
                 ),
                 child: Row(

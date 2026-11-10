@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:am_common/am_common.dart';
 import 'package:am_design_system/core/theme/app_colors.dart';
+import 'package:am_design_system/core/theme/color_extensions.dart';
 import 'package:am_design_system/shared/widgets/inputs/custom_dropdown.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -32,7 +33,8 @@ class MobileTimeFrameDropdown extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final timeFrame = ref.watch(appTimeFrameProvider);
     final options = availableTimeFrames ?? TimeFrame.appTimeFrames;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colors = context.colors;
+    final accent = primaryColor ?? AppColors.primary;
 
     final selected = options.contains(timeFrame) ? timeFrame : options.first;
 
@@ -44,13 +46,12 @@ class MobileTimeFrameDropdown extends ConsumerWidget {
         isExpanded: true,
         fontSize: 12,
         iconSize: 16,
-        borderRadius: 10,
+        borderRadius: 999,
         menuMaxHeight: menuMaxHeightForThreeItems,
         menuMaxWidth: math.max(width, 120),
-        primaryColor: primaryColor ?? AppColors.primary,
-        backgroundColor:
-            isDark ? Colors.white.withValues(alpha: 0.06) : null,
-        borderColor: isDark ? Colors.white.withValues(alpha: 0.1) : null,
+        primaryColor: accent,
+        backgroundColor: colors.cardSurface,
+        borderColor: accent.withValues(alpha: 0.35),
         contentPadding: const EdgeInsets.symmetric(horizontal: 8),
         leading: leading,
         trailingDivider: trailingDivider,

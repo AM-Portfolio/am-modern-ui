@@ -10,6 +10,12 @@ class PendingSyncFile {
   final TextEditingController portfolioController;
   final TextEditingController passwordController;
 
+  /// True when PDF probe says encrypted (CDSL/NPS).
+  bool needsPassword;
+
+  /// Field-level unlock error from validation or API.
+  String? passwordError;
+
   PendingSyncFile({
     required this.bytes,
     required this.filename,
@@ -17,6 +23,8 @@ class PendingSyncFile {
     this.documentType,
     String? portfolioName,
     String? password,
+    this.needsPassword = false,
+    this.passwordError,
   })  : portfolioController = TextEditingController(text: portfolioName ?? ''),
         passwordController = TextEditingController(text: password ?? '');
 

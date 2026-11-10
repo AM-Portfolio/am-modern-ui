@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:math' as math;
 
+import 'package:am_common/am_common.dart';
 import 'package:am_design_system/am_design_system.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,6 +12,8 @@ import 'package:intl/intl.dart';
 import '../../../internal/domain/entities/portfolio_analytics.dart';
 import '../../../internal/domain/entities/portfolio_holding.dart';
 import '../../../internal/domain/entities/portfolio_intelligence.dart';
+import '../../../internal/data/dtos/accounts_hub_dto.dart';
+import '../../../providers/accounts_hub_provider.dart';
 import '../../../providers/portfolio_intelligence_providers.dart';
 import '../../../providers/portfolio_providers.dart';
 import '../../cubit/portfolio_analytics_cubit.dart';
@@ -24,6 +28,70 @@ import 'xray_display_name.dart';
 
 export 'xray_display_name.dart' show xrayDisplayName;
 
+/// Running book value — current only (never promote invested-only zeros).
+double _hubRowValue(AccountsPortfolioRowDto p) => p.current ?? 0;
+
+/// Hub → By Portfolio slices (FE fallback when API omits portfolioWeights).
+@visibleForTesting
+List<XrayWeight> portfolioWeightsFromHubRows({
+  required List<AccountsPortfolioRowDto> portfolios,
+  required String portfolioId,
+}) {
+  final rows = [
+    for (final p in portfolios)
+      if (!(p.dummy == true) &&
+          _hubRowValue(p) > 0 &&
+          (p.displayName ?? p.brokerType ?? '').trim().isNotEmpty)
+        p,
+  ];
+  if (portfolioId.isNotEmpty && portfolioId != 'all') {
+    final match = rows.where((p) => p.portfolioId == portfolioId).toList();
+    if (match.isEmpty) return const [];
+    final one = match.first;
+    final name = (one.displayName ?? one.brokerType ?? portfolioId).trim();
+    final value = _hubRowValue(one);
+    return [
+      XrayWeight(name: name, weightPct: 100, valueInr: value),
+    ];
+  }
+  final total = rows.fold<double>(0, (s, p) => s + _hubRowValue(p));
+  if (total <= 0) return const [];
+  final out = <XrayWeight>[
+    for (final p in rows)
+      XrayWeight(
+        name: (p.displayName ?? p.brokerType ?? 'Portfolio').trim(),
+        weightPct: (_hubRowValue(p) / total) * 100,
+        valueInr: _hubRowValue(p),
+      ),
+  ]..sort((a, b) => b.weightPct.compareTo(a.weightPct));
+  return out;
+}
+
+List<XrayWeight> _portfolioWeightsFromHub(
+  AccountsHubDto? hub,
+  String portfolioId,
+) {
+  if (hub == null) return const [];
+  return portfolioWeightsFromHubRows(
+    portfolios: hub.portfolios,
+    portfolioId: portfolioId,
+  );
+}
+
+/// Blank, dash, and Unknown are the same X-Ray bucket.
+@visibleForTesting
+bool xrayGroupMatches(String? holdingValue, String weightName) {
+  String key(String? raw) {
+    final t = (raw ?? '').trim().toLowerCase();
+    if (t.isEmpty || t == '-' || t == 'unknown' || t == 'unknown sector') {
+      return 'unknown';
+    }
+    return t;
+  }
+
+  return key(holdingValue) == key(weightName);
+}
+
 /// Normalize Class-tab / holdings `assetClass` for expand matching.
 String _normalizeAssetClassKey(String raw) {
   final key = raw.trim().toUpperCase();
@@ -31,10 +99,22 @@ String _normalizeAssetClassKey(String raw) {
   switch (key) {
     case 'BOND':
     case 'BONDS':
+    case 'DEBT':
       return 'FIXED_INCOME';
     case 'PRECIOUS METAL':
     case 'PRECIOUS_METAL':
+    case 'GOLD':
+    case 'SILVER':
       return 'COMMODITY';
+    case 'MF':
+    case 'ETF':
+    case 'MUTUAL':
+    case 'MUTUAL_FUND':
+    case 'MUTUAL_FUND_DEMAT':
+    case 'MUTUAL_FUND_FOLIO':
+      return 'MUTUAL_FUND';
+    case 'NPS':
+      return 'NPS';
     default:
       return key;
   }
@@ -123,6 +203,7 @@ class PortfolioXrayPanel extends ConsumerStatefulWidget {
     this.fillHeight = false,
     this.padding = const EdgeInsets.all(20),
     this.readOnly = false,
+    this.accentColor,
     @visibleForTesting this.holdingsOverride,
     super.key,
   });
@@ -134,6 +215,7 @@ class PortfolioXrayPanel extends ConsumerStatefulWidget {
   final EdgeInsetsGeometry padding;
   /// When true (All Portfolios), Class write CTAs are hidden.
   final bool readOnly;
+  final Color? accentColor;
 
   /// Test-only holdings injection when PortfolioCubit is unavailable.
   @visibleForTesting
@@ -195,6 +277,10 @@ class _PortfolioXrayPanelState extends ConsumerState<PortfolioXrayPanel>
   }
 
   void _ensurePulse() {
+    if (kIsWeb) {
+      _stopPulse();
+      return;
+    }
     if (_hoveredIndex != null || _selectedName != null) {
       _stopPulse();
       return;
@@ -221,13 +307,35 @@ class _PortfolioXrayPanelState extends ConsumerState<PortfolioXrayPanel>
     super.dispose();
   }
 
+  /// Prefer API portfolioWeights; fall back to accounts-hub book totals.
+  PortfolioXray? _resolveXray(PortfolioXray? xray) {
+    if (xray != null && xray.portfolioWeights.isNotEmpty) return xray;
+    final hub = ref.watch(accountsHubProvider).asData?.value;
+    final fromHub = _portfolioWeightsFromHub(hub, widget.portfolioId);
+    if (fromHub.isNotEmpty) {
+      return (xray ?? const PortfolioXray()).copyWith(portfolioWeights: fromHub);
+    }
+    // Single-book last resort: 100% of X-Ray totalValue.
+    final id = widget.portfolioId;
+    final tv = xray?.totalValueInr;
+    if (id.isNotEmpty && id != 'all' && tv != null && tv > 0) {
+      return (xray ?? const PortfolioXray()).copyWith(
+        portfolioWeights: [
+          XrayWeight(name: id, weightPct: 100, valueInr: tv),
+        ],
+      );
+    }
+    return xray;
+  }
+
   List<XrayWeight> _weightsForTab(PortfolioXray? xray) {
     if (xray == null) return const [];
-    // Tabs: Sector(0), Industry(1), Cap(2), Class(3).
+    // Tabs: Sector(0), Industry(1), Cap(2), Class(3), By Portfolio(4).
     List<XrayWeight> raw = switch (_tab) {
       1 => xray.industryWeights,
       2 => xray.marketCapWeights,
       3 => xray.assetClassWeights,
+      4 => xray.portfolioWeights,
       _ => xray.sectorWeights,
     };
 
@@ -429,7 +537,14 @@ class _PortfolioXrayPanelState extends ConsumerState<PortfolioXrayPanel>
 
   @override
   Widget build(BuildContext context) {
-    final async = ref.watch(portfolioIntelligenceProvider(widget.portfolioId));
+    // Parents pass scoped `all|persona` for aggregate; keep a fallback for bare `all`.
+    final requestPortfolioId = widget.portfolioId == 'all'
+        ? scopedAllPortfolioId(
+            widget.portfolioId,
+            ref.read(familyPortfolioFilterProvider),
+          )
+        : widget.portfolioId;
+    final async = ref.watch(portfolioIntelligenceProvider(requestPortfolioId));
     final wide = MediaQuery.sizeOf(context).width >= 600;
     final donutCap =
         widget.fillHeight ? _donutSizeFill : _donutSizePhone;
@@ -465,6 +580,8 @@ class _PortfolioXrayPanelState extends ConsumerState<PortfolioXrayPanel>
     }
 
     return async.when(
+      skipLoadingOnReload: true,
+      skipLoadingOnRefresh: true,
       loading: () => IntelligenceCardSkeleton(
         height: widget.minHeight ??
             widget.height ??
@@ -476,14 +593,16 @@ class _PortfolioXrayPanelState extends ConsumerState<PortfolioXrayPanel>
         minHeight: widget.minHeight,
         fillHeight: widget.fillHeight,
         padding: widget.padding,
+        accentColor: widget.accentColor,
         child: IntelligenceRetryRow(
           message: 'Could not load X-Ray',
           onRetry: () => ref
-              .invalidate(portfolioIntelligenceProvider(widget.portfolioId)),
+              .invalidate(portfolioIntelligenceProvider(requestPortfolioId)),
         ),
       ),
       data: (intel) {
-        final xray = intel?.xray;
+        final accent = widget.accentColor ?? ModuleColors.portfolio;
+        final xray = _resolveXray(intel?.xray);
         final weights = _weightsForTab(xray);
         final holdingsTotal = holdings == null || holdings.isEmpty
             ? null
@@ -496,6 +615,7 @@ class _PortfolioXrayPanelState extends ConsumerState<PortfolioXrayPanel>
           tab: _tab,
           onTab: _onTab,
           compact: true,
+          accentColor: accent,
         );
         final active = _activeIndex(weights);
 
@@ -516,7 +636,10 @@ class _PortfolioXrayPanelState extends ConsumerState<PortfolioXrayPanel>
           fillHeight: useFill,
           sideBySide: sideBySide,
           mobileShowList: _mobileShowList,
+          // Web: chips sit in the title row. Phone: chips in body under Chart/List.
           showTabsInBody: !wide,
+          readOnly: widget.readOnly,
+          accentColor: accent,
           tabs: tabs,
           onDonutSide: (side) {
             if (!mounted) return;
@@ -544,14 +667,16 @@ class _PortfolioXrayPanelState extends ConsumerState<PortfolioXrayPanel>
           minHeight: widget.minHeight,
           fillHeight: useFill,
           padding: widget.padding,
+          accentColor: accent,
           scrollable: false,
-          // Web: Sector/Industry/Cap in header. Phone: Chart/List in header
-          // so the donut can use the freed vertical space.
+          // Web: Sector…By Portfolio in the title row (one horizontal line).
+          // Phone: Chart/List in header; dimension tabs stay in the body.
           trailing: wide
               ? tabs
               : _MobilePaneSwap(
                   showList: _mobileShowList,
                   onShowList: _onMobileShowList,
+                  accentColor: accent,
                 ),
           child: body,
         );
@@ -594,6 +719,8 @@ class _XrayBody extends StatelessWidget {
     this.fillHeight = true,
     this.sideBySide = false,
     this.mobileShowList = false,
+    this.readOnly = false,
+    this.accentColor,
   });
 
   final List<XrayWeight> weights;
@@ -624,12 +751,18 @@ class _XrayBody extends StatelessWidget {
   final bool sideBySide;
   /// When [sideBySide] is false, show list instead of donut.
   final bool mobileShowList;
+  final bool readOnly;
+  final Color? accentColor;
 
   @override
   Widget build(BuildContext context) {
-    final emptyHint = tab == 3
-        ? 'No asset-class breakdown yet — use + Class'
-        : 'No allocation data';
+    final emptyHint = switch (tab) {
+      3 => readOnly
+          ? 'No asset-class breakdown for All Portfolios yet'
+          : 'No asset-class breakdown yet — use + Class',
+      4 => 'No portfolio contribution data yet',
+      _ => 'No allocation data',
+    };
     Widget weightList({required double paneWidth}) {
       if (weights.isEmpty) {
         return IntelligenceEmptyHint(message: emptyHint);
@@ -858,7 +991,7 @@ class _XrayBody extends StatelessWidget {
               formatIntelligenceCompactInr(totalValue),
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: ModuleColors.portfolio,
+                    color: accentColor ?? ModuleColors.portfolio,
                   ),
             ),
           ),
@@ -882,12 +1015,12 @@ class _XrayBody extends StatelessWidget {
     if (all == null || all.isEmpty) {
       return (holdings: const [], emptyMessage: noHoldings);
     }
-    // Tabs: Sector(0), Industry(1), Cap(2), Class(3).
+    // Tabs: Sector(0), Industry(1), Cap(2), Class(3), By Portfolio(4).
     Iterable<PortfolioHolding> filtered;
     if (tab == 0) {
-      filtered = all.where((h) => h.sector == weight.name);
+      filtered = all.where((h) => xrayGroupMatches(h.sector, weight.name));
     } else if (tab == 1) {
-      filtered = all.where((h) => h.industry == weight.name);
+      filtered = all.where((h) => xrayGroupMatches(h.industry, weight.name));
     } else if (tab == 2) {
       final display = xrayDisplayName(weight.name);
       final tops = marketCapAllocation?.segments
@@ -904,6 +1037,27 @@ class _XrayBody extends StatelessWidget {
         return (holdings: const [], emptyMessage: capUnavailable);
       }
       filtered = all.where((h) => tops.contains(h.symbol));
+    } else if (tab == 4) {
+      final target = weight.name.trim().toLowerCase();
+      filtered = all.where((h) {
+        for (final b in h.brokerHoldings) {
+          final name = b.brokerName.trim().toLowerCase();
+          final id = b.brokerId.trim().toLowerCase();
+          if (name == target || id == target) return true;
+          if (name.isNotEmpty && target.contains(name)) return true;
+          if (name.isNotEmpty && name.contains(target)) return true;
+        }
+        return false;
+      });
+      final list = filtered.toList()
+        ..sort((a, b) => b.portfolioWeight.compareTo(a.portfolioWeight));
+      if (list.isEmpty) {
+        return (
+          holdings: const [],
+          emptyMessage: 'Value-only — no holding book tags for this portfolio',
+        );
+      }
+      return (holdings: list, emptyMessage: noHoldings);
     } else {
       final target = _normalizeAssetClassKey(weight.name);
       filtered = all.where((h) {
@@ -920,48 +1074,49 @@ class _XrayBody extends StatelessWidget {
   }
 }
 
+/// X-Ray primary tab labels (Sector…By Portfolio).
+@visibleForTesting
+const List<String> xrayTabLabels = [
+  'Sector',
+  'Industry',
+  'Cap',
+  'Class',
+  'By Portfolio',
+];
+
 class _Tabs extends StatelessWidget {
   const _Tabs({
     required this.tab,
     required this.onTab,
     this.compact = false,
+    this.accentColor,
   });
 
   final int tab;
   final ValueChanged<int> onTab;
   final bool compact;
+  final Color? accentColor;
 
   @override
   Widget build(BuildContext context) {
-    return Wrap(
-      spacing: 6,
-      runSpacing: 6,
-      children: [
-        IntelligenceModeChip(
-          label: 'Sector',
-          selected: tab == 0,
-          accentColor: ModuleColors.portfolio,
-          onTap: () => onTab(0),
-        ),
-        IntelligenceModeChip(
-          label: 'Industry',
-          selected: tab == 1,
-          accentColor: ModuleColors.portfolio,
-          onTap: () => onTab(1),
-        ),
-        IntelligenceModeChip(
-          label: 'Cap',
-          selected: tab == 2,
-          accentColor: ModuleColors.portfolio,
-          onTap: () => onTab(2),
-        ),
-        IntelligenceModeChip(
-          label: 'Class',
-          selected: tab == 3,
-          accentColor: ModuleColors.portfolio,
-          onTap: () => onTab(3),
-        ),
-      ],
+    final accent = accentColor ?? ModuleColors.portfolio;
+    // Keep Sector…By Portfolio on one row; scroll horizontally if needed.
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (var i = 0; i < xrayTabLabels.length; i++) ...[
+            if (i > 0) SizedBox(width: compact ? 4 : 6),
+            IntelligenceModeChip(
+              label: xrayTabLabels[i],
+              selected: tab == i,
+              accentColor: accent,
+              onTap: () => onTab(i),
+            ),
+          ],
+        ],
+      ),
     );
   }
 }
@@ -971,13 +1126,16 @@ class _MobilePaneSwap extends StatelessWidget {
   const _MobilePaneSwap({
     required this.showList,
     required this.onShowList,
+    this.accentColor,
   });
 
   final bool showList;
   final ValueChanged<bool> onShowList;
+  final Color? accentColor;
 
   @override
   Widget build(BuildContext context) {
+    final accent = accentColor ?? ModuleColors.portfolio;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     Widget chip({
       required bool list,
@@ -994,7 +1152,7 @@ class _MobilePaneSwap extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
-              color: selected ? ModuleColors.portfolio : Colors.transparent,
+              color: selected ? accent : Colors.transparent,
               borderRadius: BorderRadius.circular(14),
             ),
             child: Row(
@@ -1025,31 +1183,35 @@ class _MobilePaneSwap extends StatelessWidget {
       );
     }
 
-    return Container(
-      padding: const EdgeInsets.all(2),
-      decoration: BoxDecoration(
-        color: isDark
-            ? context.colors.cardSurface.withValues(alpha: 0.55)
-            : context.colors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: context.colors.border.withValues(alpha: 0.45),
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      alignment: Alignment.centerRight,
+      child: Container(
+        padding: const EdgeInsets.all(2),
+        decoration: BoxDecoration(
+          color: isDark
+              ? context.colors.cardSurface.withValues(alpha: 0.55)
+              : context.colors.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: context.colors.border.withValues(alpha: 0.45),
+          ),
         ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          chip(
-            list: false,
-            icon: Icons.donut_large_rounded,
-            label: 'Chart',
-          ),
-          chip(
-            list: true,
-            icon: Icons.view_list_rounded,
-            label: 'List',
-          ),
-        ],
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            chip(
+              list: false,
+              icon: Icons.donut_large_rounded,
+              label: 'Chart',
+            ),
+            chip(
+              list: true,
+              icon: Icons.view_list_rounded,
+              label: 'List',
+            ),
+          ],
+        ),
       ),
     );
   }

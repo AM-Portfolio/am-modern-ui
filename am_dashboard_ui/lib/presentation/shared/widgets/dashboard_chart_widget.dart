@@ -1,3 +1,4 @@
+import 'package:am_common/am_common.dart';
 import 'package:am_dashboard_ui/domain/models/overlay_chart_models.dart';
 import 'package:am_dashboard_ui/domain/models/overlay_series_adapter.dart';
 import 'package:am_dashboard_ui/presentation/providers/dashboard_overlay_provider.dart';
@@ -25,13 +26,19 @@ class DashboardChartWidget extends ConsumerWidget {
     final overlay = ref.watch(dashboardOverlayProvider(userId).notifier);
     final state = ref.watch(dashboardOverlayProvider(userId));
     final tfCode = dashboardTimeFrameCode(ref);
+    final accent = accentColor ?? ModuleColors.dashboard;
+    final trailing = _ChartTrailingControls(
+      overlay: overlay,
+      state: state,
+      accent: accent,
+    );
 
     return LayoutBuilder(
       builder: (context, constraints) {
         final height =
             constraints.maxHeight.isFinite && constraints.maxHeight > 0
-            ? constraints.maxHeight
-            : 420.0;
+                ? constraints.maxHeight
+                : 420.0;
         return SizedBox(
           width: double.infinity,
           height: height,
@@ -42,11 +49,46 @@ class DashboardChartWidget extends ConsumerWidget {
               overlay: overlay,
               tfCode: tfCode,
               accentColor: accentColor,
-              legendTrailing: _AddSeriesButton(overlay: overlay, state: state),
+              legendTrailing: trailing,
             ),
           ),
         );
       },
+    );
+  }
+}
+
+class _ChartTrailingControls extends StatelessWidget {
+  const _ChartTrailingControls({
+    required this.overlay,
+    required this.state,
+    required this.accent,
+  });
+
+  final DashboardOverlayNotifier overlay;
+  final OverlayChartState state;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        GlobalTimeFrameBar(
+          key: const Key('dashboard-chart-timeframe'),
+          variant: GlobalTimeFrameVariant.dropdown,
+          dropdownWidth: 72,
+          primaryColor: accent,
+          dropdownTrailingDivider: false,
+          dropdownLeading: Icon(
+            Icons.calendar_today_outlined,
+            size: AppTypeScale.sm,
+            color: accent,
+          ),
+        ),
+        const SizedBox(width: 6),
+        _AddSeriesButton(overlay: overlay, state: state),
+      ],
     );
   }
 }
@@ -68,8 +110,7 @@ class _AddSeriesButton extends StatelessWidget {
     final remainingIndices = OverlayChartIds.addableIndices
         .where((id) => !selected.contains(id))
         .toList();
-    final canAdd =
-        !state.atCap &&
+    final canAdd = !state.atCap &&
         (remainingOverall ||
             remainingPortfolios.isNotEmpty ||
             remainingIndices.isNotEmpty);
@@ -132,22 +173,47 @@ class _ChartBody extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final colors = context.colors;
     if (state.isBootstrapping) {
-      return _ChartBootstrapSkeleton(
-        accent: accentColor ?? ModuleColors.dashboard,
+      return Column(
+        children: [
+          Row(
+            children: [
+              const Spacer(),
+              legendTrailing,
+            ],
+          ),
+          const SizedBox(height: 12),
+          Expanded(
+            child: _ChartBootstrapSkeleton(
+              accent: accentColor ?? ModuleColors.dashboard,
+            ),
+          ),
+        ],
       );
     }
 
     final selectedLabels = overlaySelectedLabels(state);
     if (selectedLabels.isEmpty) {
-      return Center(
-        child: Text(
-          'No overlay data for ${state.timeFrame}',
-          style: TextStyle(
-            color: colors.textSecondary,
-            fontSize: 14,
-            fontFamily: 'Inter',
+      return Column(
+        children: [
+          Row(
+            children: [
+              const Spacer(),
+              legendTrailing,
+            ],
           ),
-        ),
+          Expanded(
+            child: Center(
+              child: Text(
+                'No overlay data for ${state.timeFrame}',
+                style: TextStyle(
+                  color: colors.textSecondary,
+                  fontSize: 14,
+                  fontFamily: 'Inter',
+                ),
+              ),
+            ),
+          ),
+        ],
       );
     }
 
@@ -160,7 +226,8 @@ class _ChartBody extends ConsumerWidget {
         preferredSeriesOrder: selectedLabels,
         embedMode: true,
         timeFrameCode: tfCode,
-        showEndValuePills: false,
+        showEndValuePills: true,
+        streamDrawOnLoad: true,
         showExpandButton: true,
         expandedChartPath:
             '/app/market/chart?symbol=${Uri.encodeComponent(primarySymbol)}&tf=${Uri.encodeComponent(tfCode)}',
@@ -228,14 +295,6 @@ class _ChartBootstrapSkeleton extends StatelessWidget {
                     ),
                   ),
                   const Spacer(),
-                  Container(
-                    width: 120,
-                    height: 22,
-                    decoration: BoxDecoration(
-                      color: base,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
                 ],
               ),
               const SizedBox(height: 16),

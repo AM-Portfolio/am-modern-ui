@@ -1,5 +1,3 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:am_design_system/am_design_system.dart';
 import '../../utils/basket_responsive.dart';
@@ -264,11 +262,10 @@ class BasketStickyActionBar extends StatelessWidget {
         : context.cardColor.withValues(alpha: 0.85);
     final glassBorder = context.glassOverlay(isDark ? 0.08 : 0.06);
 
-    final glass = ClipRRect(
-      borderRadius: BorderRadius.circular(_capsuleRadius),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-        child: Container(
+    final glass = webGlass(
+      sigma: 20,
+      clip: BorderRadius.circular(_capsuleRadius),
+      child: Container(
           padding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.md,
             vertical: AppSpacing.sm,
@@ -287,7 +284,6 @@ class BasketStickyActionBar extends StatelessWidget {
           ),
           child: content,
         ),
-      ),
     );
 
     // Desktop / no company nav: static glass bar.

@@ -9,7 +9,8 @@
     "androidClientId": "307768822337-ad7tee4d82cc0b4flgrfs157e5e6rc0g.apps.googleusercontent.com"
   },
   "growthbook": {
-    "enabled": true,
+    "_comment": "sdk-GLujAhix8Foe5qoC returns 400 Invalid API Key on Contabo GB — disabled so dig/dev fail-softs to flag defaults (news ON). Re-enable after recreating SDK connection in GrowthBook UI and updating this key + Vault GROWTHBOOK_CLIENT_KEY.",
+    "enabled": false,
     "apiHost": "https://growthbook.asrax.in/gbapi",
     "clientKey": "sdk-GLujAhix8Foe5qoC"
   }

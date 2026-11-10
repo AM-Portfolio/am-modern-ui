@@ -84,6 +84,10 @@ class RecentImportEntry {
     if (files.length == 1) return files.first;
     return '${files.length} files';
   }
+
+  /// Process-by label for history table.
+  String get processByLabel =>
+      source == 'mailbox' ? 'Email' : 'Document upload';
 }
 
 /// Optional device cache for Recent imports (server history APIs are SoT).
@@ -170,6 +174,19 @@ class RecentImportsStore {
       key,
       jsonEncode(next.map((e) => e.toJson()).toList()),
     );
+  }
+
+  /// Remove one row from the local cache (v1 — no server delete).
+  Future<List<RecentImportEntry>> remove(String userId, String entryId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final key = _storageKey(userId);
+    final current = _decodeList(prefs.getString(key));
+    final next = current.where((e) => e.id != entryId).toList();
+    await prefs.setString(
+      key,
+      jsonEncode(next.map((e) => e.toJson()).toList()),
+    );
+    return next;
   }
 
   Future<List<RecentImportEntry>> prepend(

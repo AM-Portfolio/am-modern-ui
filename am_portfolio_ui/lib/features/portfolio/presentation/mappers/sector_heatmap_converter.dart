@@ -121,7 +121,7 @@ class SectorHeatmapConverter {
     Color? accentColor,
   }) {
     if (_shouldUseAllocationFallback(heatmap, sectorAllocation)) {
-      return _convertFromSectorAllocation(
+      final fromAllocation = _convertFromSectorAllocation(
         allocation: sectorAllocation!,
         heatmap: heatmap,
         title: title,
@@ -129,6 +129,11 @@ class SectorHeatmapConverter {
         showSubCards: showSubCards,
         accentColor: accentColor,
       );
+      final heatmapHasValue = heatmap != null &&
+          heatmap.sectors.any((sector) => sector.totalValue > 0);
+      if (fromAllocation.uiTiles.isNotEmpty || !heatmapHasValue) {
+        return fromAllocation;
+      }
     }
 
     if (heatmap == null || heatmap.sectors.isEmpty) {
@@ -756,10 +761,11 @@ class SectorHeatmapConverter {
         }
       }
 
+      final single = combinedChildren.length == 1 ? combinedChildren.first : null;
       tiles.add(HeatmapTileData(
         id: 'sector_unknown',
-        name: unknownTileName,
-        displayName: unknownTileName,
+        name: single?.name ?? unknownTileName,
+        displayName: single?.displayName ?? unknownTileName,
         weightage: combinedWeight,
         performance: avgPerformance,
         value: combinedValue,
@@ -1007,15 +1013,19 @@ class SectorHeatmapConverter {
         ? (stockValue / totalPortfolioValue) * 100
         : stockSectorWeightage;
 
-    if (stockSectorWeightage <= 0) return null;
+    if (stockSectorWeightage <= 0) {
+      if (sector.stocks.length != 1 || sectorValue <= 0) return null;
+    }
+    final shownWeight = stockSectorWeightage > 0 ? stockSectorWeightage : 100.0;
+    final shownValue = stockValue > 0 ? stockValue : sectorValue;
 
     return HeatmapTileData(
       id: 'stock_${sector.sectorName}_${stock.symbol}',
       name: stock.symbol,
       displayName: _getStockDisplayName(stock),
-      weightage: stockSectorWeightage.toDouble(),
+      weightage: shownWeight.toDouble(),
       performance: stock.changePercent,
-      value: stockValue,
+      value: shownValue,
       metadata: {
         'type': 'stock',
         'symbol': stock.symbol,

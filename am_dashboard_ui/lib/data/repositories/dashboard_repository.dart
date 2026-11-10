@@ -409,6 +409,7 @@ class DashboardRepository {
     ApiClient portfolioClient, {
     required String timeFrame,
     String? portfolioId,
+    String? persona,
   }) async {
     final isIntraday = timeFrame.toUpperCase() == '1D';
     final singleId = (portfolioId != null &&
@@ -421,10 +422,19 @@ class DashboardRepository {
         : (isIntraday
             ? '/v1/portfolios/$singleId/intraday'
             : '/v1/portfolios/$singleId/history');
+    final query = <String, String>{};
+    if (!isIntraday) {
+      query['timeFrame'] = timeFrame;
+    }
+    if (singleId == null &&
+        persona != null &&
+        persona.trim().isNotEmpty) {
+      query['persona'] = persona.trim();
+    }
     try {
       final data = await portfolioClient.get(
         path,
-        queryParams: isIntraday ? null : {'timeFrame': timeFrame},
+        queryParams: query.isEmpty ? null : query,
         parser: (raw) => raw,
       );
       return parsePortfolioOverlayHistory(data, isIntraday: isIntraday);
