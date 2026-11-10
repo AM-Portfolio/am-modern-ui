@@ -48,8 +48,6 @@ class PaperEnablePage extends StatelessWidget {
                     style: FilledButton.styleFrom(
                       backgroundColor: ModuleColors.market,
                       foregroundColor: colors.actionPrimaryFg,
-                      disabledBackgroundColor: colors.actionDisabledBg,
-                      disabledForegroundColor: colors.actionDisabledFg,
                     ),
                     child: state.submitting
                         ? SizedBox(
