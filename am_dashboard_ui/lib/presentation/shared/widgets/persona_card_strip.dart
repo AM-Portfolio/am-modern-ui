@@ -1,10 +1,17 @@
+import 'dart:ui' as ui;
+
 import 'package:am_common/am_common.dart';
 import 'package:am_dashboard_ui/domain/models/accounts_hub.dart';
 import 'package:am_design_system/am_design_system.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-/// Horizontal All | You | family persona cards with favorite star and delete.
+/// Horizontal All | You | family persona cards.
+///
+/// Shows **2.5 cards** in the viewport so the next card peeks, and scrolls
+/// horizontally on both mobile and web.
 class PersonaCardStrip extends StatelessWidget {
   const PersonaCardStrip({
     super.key,
@@ -15,7 +22,10 @@ class PersonaCardStrip extends StatelessWidget {
     required this.onSelected,
     required this.onFavorite,
     this.onDelete,
+    this.onAddFamily,
     this.compact = false,
+    this.showRoleIcon = true,
+    this.sizeToContent = false,
     this.householdTotalValue,
     this.householdXirrPct,
     this.householdAccountCount = 0,
@@ -24,6 +34,9 @@ class PersonaCardStrip extends StatelessWidget {
     this.primaryAccountCount = 0,
     this.memberAccountCounts = const {},
   });
+
+  /// How many cards fit in the viewport (fractional peek of the next card).
+  static const double visibleCards = 2.5;
 
   final List<FamilyMemberRow> members;
   final String? selectedId;
@@ -36,7 +49,16 @@ class PersonaCardStrip extends StatelessWidget {
 
   /// Family-member delete; omitted when null (read-only strip).
   final ValueChanged<FamilyMemberRow>? onDelete;
+
+  /// Opens add-family when the filler card is tapped.
+  final VoidCallback? onAddFamily;
   final bool compact;
+
+  /// When false (dashboard hub), hide the leading role icon so the name can breathe.
+  final bool showRoleIcon;
+
+  /// When true (dashboard hub), card width follows the persona name length.
+  final bool sizeToContent;
 
   /// Metrics for the All / Household card (from hub stats).
   final double? householdTotalValue;
@@ -53,84 +75,10 @@ class PersonaCardStrip extends StatelessWidget {
 
   static final _currency = NumberFormat.currency(symbol: '₹', decimalDigits: 0);
 
-  @override
-  Widget build(BuildContext context) {
-    final cards = <Widget>[
-      _PersonaCard(
-        label: 'All',
-        accountCountLabel: _countLabel(householdAccountCount),
-        initials: '∀',
-        balance: householdTotalValue,
-        xirrPct: householdXirrPct,
-        selected: selectedId == FavoritePersonaStore.kAll,
-        favorited: favoriteKey == FavoritePersonaStore.kAll,
-        compact: compact,
-        onTap: () => onSelected(FavoritePersonaStore.kAll),
-        onFavorite: () => onFavorite(FavoritePersonaStore.kAll),
-      ),
-      _PersonaCard(
-        label: primaryLabel,
-        accountCountLabel: _countLabel(primaryAccountCount),
-        initials: _initials(primaryLabel),
-        balance: primaryTotalValue,
-        xirrPct: primaryXirrPct,
-        selected: selectedId == null,
-        favorited: favoriteKey == FavoritePersonaStore.kYou,
-        compact: compact,
-        onTap: () => onSelected(null),
-        onFavorite: () => onFavorite(FavoritePersonaStore.kYou),
-      ),
-      for (final m in members)
-        if (m.id != null && m.id!.trim().isNotEmpty)
-          _PersonaCard(
-            label: m.name?.trim().isNotEmpty == true
-                ? m.name!.trim()
-                : 'Family member',
-            accountCountLabel: _countLabel(memberAccountCounts[m.id!] ?? 0),
-            initials: _initials(
-              m.name?.trim().isNotEmpty == true
-                  ? m.name!.trim()
-                  : 'Family member',
-            ),
-            balance: m.totalValue,
-            xirrPct: m.xirrPct,
-            selected: selectedId == m.id,
-            favorited: favoriteKey == m.id,
-            compact: compact,
-            onTap: () => onSelected(m.id),
-            onFavorite: () => onFavorite(m.id!),
-            onDelete: onDelete == null ? null : () => onDelete!(m),
-          ),
-    ];
-
-    return SizedBox(
-      height: compact ? 72 : 78,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        itemCount: cards.length,
-        separatorBuilder: (_, __) => SizedBox(width: compact ? 6 : 8),
-        itemBuilder: (_, i) => cards[i],
-      ),
-    );
-  }
-
   static String _countLabel(int count) {
     if (count <= 0) return '0 accounts';
     if (count == 1) return '1 account';
     return '$count accounts';
-  }
-
-  static String _initials(String name) {
-    final n = name.trim();
-    if (n.isEmpty) return '?';
-    final parts = n.split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
-    if (parts.length >= 2) {
-      return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
-    }
-    return (parts.first.length >= 2
-            ? parts.first.substring(0, 2)
-            : parts.first)
-        .toUpperCase();
   }
 
   static String formatBalance(double? value) {
@@ -143,13 +91,216 @@ class PersonaCardStrip extends StatelessWidget {
     final sign = pct > 0 ? '+' : '';
     return '$sign${pct.toStringAsFixed(1)}%';
   }
+
+  /// Card width from measured name / account-count text (hub density mode).
+  static double widthForLabel({
+    required String label,
+    required String accountCountLabel,
+    required bool showRoleIcon,
+    required bool compact,
+    required bool hasDelete,
+  }) {
+    double measure(String text, TextStyle style) {
+      final painter = TextPainter(
+        text: TextSpan(text: text, style: style),
+        maxLines: 1,
+        textDirection: ui.TextDirection.ltr,
+      )..layout();
+      return painter.width;
+    }
+
+    final nameStyle = TextStyle(
+      fontSize: compact ? 10 : 12,
+      fontWeight: FontWeight.w700,
+      height: 1.1,
+    );
+    final countStyle = TextStyle(
+      fontSize: compact ? 8 : 10,
+      height: 1.1,
+    );
+    final identityW = [
+      measure(label, nameStyle),
+      measure(accountCountLabel, countStyle),
+    ].reduce((a, b) => a > b ? a : b);
+    final iconW = showRoleIcon ? (compact ? 30.0 : 36.0) : 0.0;
+    final metricsW = compact ? 88.0 : 104.0;
+    final actionsW = hasDelete ? 26.0 : 26.0;
+    final pad = compact ? 18.0 : 26.0;
+    final gaps = compact ? 16.0 : 22.0;
+    return (pad + iconW + identityW + gaps + metricsW + actionsW)
+        .clamp(compact ? 140.0 : 160.0, 320.0);
+  }
+
+  List<({Widget child, double width})> _buildEntries({
+    required double equalWidth,
+  }) {
+    ({Widget child, double width}) entry({
+      required String label,
+      required String accountCountLabel,
+      required _PersonaRole role,
+      required double? balance,
+      required double? xirrPct,
+      required bool selected,
+      required bool favorited,
+      required VoidCallback onTap,
+      required VoidCallback onFavorite,
+      VoidCallback? onDelete,
+    }) {
+      final width = sizeToContent
+          ? widthForLabel(
+              label: label,
+              accountCountLabel: accountCountLabel,
+              showRoleIcon: showRoleIcon,
+              compact: compact,
+              hasDelete: onDelete != null,
+            )
+          : equalWidth;
+      return (
+        width: width,
+        child: _PersonaCard(
+          width: width,
+          label: label,
+          accountCountLabel: accountCountLabel,
+          role: role,
+          balance: balance,
+          xirrPct: xirrPct,
+          selected: selected,
+          favorited: favorited,
+          compact: compact,
+          showRoleIcon: showRoleIcon,
+          sizeToContent: sizeToContent,
+          onTap: onTap,
+          onFavorite: onFavorite,
+          onDelete: onDelete,
+        ),
+      );
+    }
+
+    final cards = <({Widget child, double width})>[
+      entry(
+        label: 'All',
+        accountCountLabel: _countLabel(householdAccountCount),
+        role: _PersonaRole.all,
+        balance: householdTotalValue,
+        xirrPct: householdXirrPct,
+        selected: selectedId == FavoritePersonaStore.kAll,
+        favorited: favoriteKey == FavoritePersonaStore.kAll,
+        onTap: () => onSelected(FavoritePersonaStore.kAll),
+        onFavorite: () => onFavorite(FavoritePersonaStore.kAll),
+      ),
+      entry(
+        label: primaryLabel,
+        accountCountLabel: _countLabel(primaryAccountCount),
+        role: _PersonaRole.primary,
+        balance: primaryTotalValue,
+        xirrPct: primaryXirrPct,
+        selected: selectedId == null,
+        favorited: favoriteKey == FavoritePersonaStore.kYou,
+        onTap: () => onSelected(null),
+        onFavorite: () => onFavorite(FavoritePersonaStore.kYou),
+      ),
+      for (final m in members)
+        if (m.id != null && m.id!.trim().isNotEmpty)
+          entry(
+            label: m.name?.trim().isNotEmpty == true
+                ? m.name!.trim()
+                : 'Family member',
+            accountCountLabel: _countLabel(memberAccountCounts[m.id!] ?? 0),
+            role: _PersonaRole.member,
+            balance: m.totalValue,
+            xirrPct: m.xirrPct,
+            selected: selectedId == m.id,
+            favorited: favoriteKey == m.id,
+            onTap: () => onSelected(m.id),
+            onFavorite: () => onFavorite(m.id!),
+            onDelete: onDelete == null ? null : () => onDelete!(m),
+          ),
+    ];
+
+    while (cards.length < 3) {
+      final addWidth = sizeToContent
+          ? widthForLabel(
+              label: 'Add family',
+              accountCountLabel: ' ',
+              showRoleIcon: true,
+              compact: compact,
+              hasDelete: false,
+            )
+          : equalWidth;
+      cards.add((
+        width: addWidth,
+        child: _AddFamilyCard(
+          width: addWidth,
+          compact: compact,
+          enabled: onAddFamily != null,
+          onTap: onAddFamily,
+        ),
+      ));
+    }
+    return cards;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final gap = compact ? 6.0 : 8.0;
+    final stripHeight = compact ? 96.0 : 86.0;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final maxW = constraints.maxWidth.isFinite && constraints.maxWidth > 0
+            ? constraints.maxWidth
+            : 360.0;
+        // Two gaps sit between the three card slots that make up 2.5 visible.
+        final equalWidth =
+            ((maxW - gap * 2) / visibleCards).clamp(96.0, 320.0);
+        final cards = _buildEntries(equalWidth: equalWidth);
+        final cacheHint = cards.isEmpty ? equalWidth : cards.first.width;
+
+        return SizedBox(
+          height: stripHeight,
+          child: ScrollConfiguration(
+            behavior: ScrollConfiguration.of(context).copyWith(
+              scrollbars: false,
+              dragDevices: {
+                PointerDeviceKind.touch,
+                PointerDeviceKind.mouse,
+                PointerDeviceKind.trackpad,
+                PointerDeviceKind.stylus,
+              },
+            ),
+            child: ListView.separated(
+              key: const Key('persona-card-strip-scroll'),
+              scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(
+                parent: AlwaysScrollableScrollPhysics(),
+              ),
+              itemCount: cards.length,
+              separatorBuilder: (_, __) => SizedBox(width: gap),
+              itemBuilder: (context, index) {
+                final entry = cards[index];
+                return SizedBox(width: entry.width, child: entry.child);
+              },
+              cacheExtent: cacheHint * 2,
+              primary: false,
+              keyboardDismissBehavior: kIsWeb
+                  ? ScrollViewKeyboardDismissBehavior.onDrag
+                  : ScrollViewKeyboardDismissBehavior.manual,
+            ),
+          ),
+        );
+      },
+    );
+  }
 }
+
+enum _PersonaRole { all, primary, member }
 
 class _PersonaCard extends StatelessWidget {
   const _PersonaCard({
+    required this.width,
     required this.label,
     required this.accountCountLabel,
-    required this.initials,
+    required this.role,
     required this.selected,
     required this.favorited,
     required this.onTap,
@@ -158,11 +309,14 @@ class _PersonaCard extends StatelessWidget {
     this.xirrPct,
     this.onDelete,
     this.compact = false,
+    this.showRoleIcon = true,
+    this.sizeToContent = false,
   });
 
+  final double width;
   final String label;
   final String accountCountLabel;
-  final String initials;
+  final _PersonaRole role;
   final double? balance;
   final double? xirrPct;
   final bool selected;
@@ -171,18 +325,180 @@ class _PersonaCard extends StatelessWidget {
   final VoidCallback onFavorite;
   final VoidCallback? onDelete;
   final bool compact;
+  final bool showRoleIcon;
+  final bool sizeToContent;
+
+  IconData get _roleIcon {
+    switch (role) {
+      case _PersonaRole.all:
+        return Icons.layers_rounded;
+      case _PersonaRole.primary:
+        return Icons.groups_rounded;
+      case _PersonaRole.member:
+        return Icons.work_outline_rounded;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final accent = ModuleColors.dashboard;
+    final positive = xirrPct != null && xirrPct! > 0;
+    final negative = xirrPct != null && xirrPct! < 0;
+    final glow = selected
+        ? accent
+        : positive
+            ? context.colors.statusSuccess
+            : negative
+                ? context.colors.statusError
+                : accent;
     final border = selected
         ? accent
         : context.colors.border.withValues(alpha: 0.45);
-    final width = compact ? 260.0 : 292.0;
-    final avatar = compact ? 26.0 : 30.0;
+    final avatar = compact ? 24.0 : 28.0;
+    final gap = compact ? 4.0 : 6.0;
     final starColor = favorited
         ? context.colors.statusWarning
         : context.colors.textSecondary;
+
+    final avatarWidget = Container(
+      width: avatar,
+      height: avatar,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: glow.withValues(alpha: 0.16),
+        boxShadow: [
+          BoxShadow(
+            color: glow.withValues(alpha: 0.22),
+            blurRadius: 8,
+            spreadRadius: 0,
+          ),
+        ],
+      ),
+      child: Icon(
+        _roleIcon,
+        size: compact ? 13 : 15,
+        color: glow,
+      ),
+    );
+
+    final nameStyle = context.text.label().copyWith(
+          fontWeight: FontWeight.w700,
+          fontSize: compact ? 10 : 12,
+          height: 1.1,
+        );
+    final countStyle = context.text.caption().copyWith(
+          color: context.colors.textSecondary,
+          fontSize: compact ? 8 : 10,
+          height: 1.1,
+        );
+    final identityChild = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Tooltip(
+          message: label,
+          child: Text(
+            label,
+            maxLines: 1,
+            softWrap: false,
+            overflow: TextOverflow.ellipsis,
+            style: nameStyle,
+          ),
+        ),
+        Text(
+          accountCountLabel,
+          maxLines: 1,
+          softWrap: false,
+          overflow: TextOverflow.ellipsis,
+          style: countStyle,
+        ),
+      ],
+    );
+    // Always flex identity so a slightly-tight width never overflows metrics/actions.
+    final identity = Expanded(child: identityChild);
+
+    final divider = Container(
+      width: 1,
+      height: compact ? 28 : 34,
+      margin: EdgeInsets.symmetric(horizontal: gap),
+      color: context.colors.border.withValues(alpha: 0.45),
+    );
+
+    final metricsChild = Column(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.centerRight,
+          child: Text(
+            PersonaCardStrip.formatBalance(balance),
+            maxLines: 1,
+            textAlign: TextAlign.right,
+            style: context.text.label().copyWith(
+                  fontWeight: FontWeight.w800,
+                  fontSize: compact ? 11 : 13,
+                  height: 1.1,
+                ),
+          ),
+        ),
+        const SizedBox(height: 2),
+        _XirrTrendPill(xirrPct: xirrPct, compact: compact),
+      ],
+    );
+    final metrics = sizeToContent
+        ? SizedBox(
+            width: compact ? 78 : 92,
+            child: metricsChild,
+          )
+        : Flexible(child: metricsChild);
+
+    final actions = SizedBox(
+      width: 24,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          SizedBox(
+            width: 24,
+            height: 24,
+            child: IconButton(
+              onPressed: onFavorite,
+              padding: EdgeInsets.zero,
+              visualDensity: VisualDensity.compact,
+              constraints: const BoxConstraints.tightFor(width: 24, height: 24),
+              icon: Icon(
+                favorited ? Icons.star_rounded : Icons.star_outline_rounded,
+                size: compact ? 16 : 17,
+                color: starColor,
+              ),
+              tooltip: favorited ? 'Unfavorite' : 'Favorite',
+            ),
+          ),
+          if (onDelete != null)
+            SizedBox(
+              width: 24,
+              height: 24,
+              child: IconButton(
+                onPressed: onDelete,
+                padding: EdgeInsets.zero,
+                visualDensity: VisualDensity.compact,
+                constraints:
+                    const BoxConstraints.tightFor(width: 24, height: 24),
+                icon: Icon(
+                  Icons.delete_outline_rounded,
+                  size: compact ? 15 : 16,
+                  color: context.colors.textSecondary,
+                ),
+                tooltip: 'Delete',
+              ),
+            ),
+        ],
+      ),
+    );
 
     return Material(
       color: selected
@@ -195,122 +511,109 @@ class _PersonaCard extends StatelessWidget {
         child: Container(
           width: width,
           padding: EdgeInsets.fromLTRB(
-            compact ? 8 : 10,
             compact ? 6 : 8,
             compact ? 6 : 8,
+            compact ? 4 : 6,
             compact ? 6 : 8,
           ),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(AppRadii.sm),
-            border: Border.all(color: border, width: selected ? 1.5 : 1),
+            border: Border.all(color: border, width: selected ? 1.8 : 1),
+            boxShadow: [
+              if (selected)
+                BoxShadow(
+                  color: accent.withValues(alpha: 0.35),
+                  blurRadius: 10,
+                  spreadRadius: 0,
+                ),
+              BoxShadow(
+                color: glow.withValues(alpha: 0.16),
+                blurRadius: 14,
+                offset: const Offset(0, 8),
+              ),
+            ],
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
+              if (showRoleIcon) ...[
+                avatarWidget,
+                SizedBox(width: gap),
+              ],
+              identity,
+              divider,
+              metrics,
+              SizedBox(width: compact ? 2 : 4),
+              actions,
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AddFamilyCard extends StatelessWidget {
+  const _AddFamilyCard({
+    required this.width,
+    required this.compact,
+    required this.enabled,
+    this.onTap,
+  });
+
+  final double width;
+  final bool compact;
+  final bool enabled;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = ModuleColors.dashboard;
+    final muted = context.colors.textSecondary;
+    return Material(
+      color: Theme.of(context).colorScheme.surface,
+      borderRadius: BorderRadius.circular(AppRadii.sm),
+      child: InkWell(
+        onTap: enabled ? onTap : null,
+        borderRadius: BorderRadius.circular(AppRadii.sm),
+        child: Container(
+          width: width,
+          padding: EdgeInsets.all(compact ? 8 : 10),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppRadii.sm),
+            border: Border.all(
+              color: context.colors.border.withValues(alpha: 0.45),
+              style: BorderStyle.solid,
+            ),
+          ),
+          child: Row(
+            children: [
               Container(
-                width: avatar,
-                height: avatar,
+                width: compact ? 26 : 30,
+                height: compact ? 26 : 30,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8),
-                  color: accent.withValues(alpha: 0.16),
+                  shape: BoxShape.circle,
+                  color: accent.withValues(alpha: 0.12),
                 ),
-                child: Text(
-                  initials,
-                  style: context.text.caption().copyWith(
-                        fontSize: compact ? 9 : 10,
-                        fontWeight: FontWeight.w700,
-                        color: accent,
-                      ),
+                child: Icon(
+                  Icons.person_add_alt_1_rounded,
+                  size: compact ? 14 : 16,
+                  color: enabled ? accent : muted,
                 ),
               ),
               const SizedBox(width: 8),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Tooltip(
-                      message: label,
-                      child: Text(
-                        label,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: context.text.label().copyWith(
-                              fontWeight: FontWeight.w700,
-                              fontSize: compact ? 11 : 12,
-                              height: 1.1,
-                            ),
+                child: Text(
+                  'Add family',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: context.text.label().copyWith(
+                        fontWeight: FontWeight.w700,
+                        fontSize: compact ? 11 : 12,
+                        color: enabled ? null : muted,
                       ),
-                    ),
-                    Text(
-                      accountCountLabel,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: context.text.caption().copyWith(
-                            color: context.colors.textSecondary,
-                            fontSize: compact ? 9 : 10,
-                            height: 1.1,
-                          ),
-                    ),
-                  ],
                 ),
-              ),
-              const SizedBox(width: 8),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.only(top: 2),
-                        child: Text(
-                          PersonaCardStrip.formatBalance(balance),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: context.text.label().copyWith(
-                                fontWeight: FontWeight.w800,
-                                fontSize: compact ? 12 : 13,
-                                height: 1.1,
-                              ),
-                        ),
-                      ),
-                      const SizedBox(width: 2),
-                      Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          InkWell(
-                            onTap: onFavorite,
-                            customBorder: const CircleBorder(),
-                            child: Icon(
-                              favorited
-                                  ? Icons.star_rounded
-                                  : Icons.star_outline_rounded,
-                              size: compact ? 15 : 16,
-                              color: starColor,
-                            ),
-                          ),
-                          if (onDelete != null)
-                            InkWell(
-                              onTap: onDelete,
-                              customBorder: const CircleBorder(),
-                              child: Icon(
-                                Icons.delete_outline_rounded,
-                                size: compact ? 14 : 15,
-                                color: context.colors.textSecondary,
-                              ),
-                            ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 2),
-                  _XirrTrendPill(xirrPct: xirrPct, compact: compact),
-                ],
               ),
             ],
           ),
@@ -346,29 +649,37 @@ class _XirrTrendPill extends StatelessWidget {
       icon = Icons.south_east_rounded;
     }
 
-    return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: compact ? 6 : 8,
-        vertical: compact ? 2 : 3,
-      ),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: compact ? 10 : 11, color: color),
-          const SizedBox(width: 3),
-          Text(
-            'XIRR ${PersonaCardStrip.formatXirr(xirrPct)}',
-            style: context.text.caption().copyWith(
-                  fontWeight: FontWeight.w700,
-                  fontSize: compact ? 9 : 10,
-                  color: color,
-                ),
-          ),
-        ],
+    final label = compact
+        ? PersonaCardStrip.formatXirr(xirrPct)
+        : 'XIRR ${PersonaCardStrip.formatXirr(xirrPct)}';
+
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      alignment: Alignment.centerRight,
+      child: Container(
+        padding: EdgeInsets.symmetric(
+          horizontal: compact ? 6 : 8,
+          vertical: compact ? 2 : 3,
+        ),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: compact ? 10 : 11, color: color),
+            const SizedBox(width: 3),
+            Text(
+              label,
+              style: context.text.caption().copyWith(
+                    fontWeight: FontWeight.w700,
+                    fontSize: compact ? 9 : 10,
+                    color: color,
+                  ),
+            ),
+          ],
+        ),
       ),
     );
   }

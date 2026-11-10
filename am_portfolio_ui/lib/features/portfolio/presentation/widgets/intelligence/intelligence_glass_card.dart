@@ -36,62 +36,74 @@ class IntelligenceGlassCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final header = Row(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(7),
-          decoration: BoxDecoration(
-            color: ModuleColors.portfolio.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Icon(
-            icon,
-            color: ModuleColors.portfolio,
-            size: 18,
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                title,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
+    // Title keeps leftover width; trailing is capped so mobile names
+    // (e.g. Portfolio X-Ray) are not crushed by Chart/List or tab chips.
+    final header = LayoutBuilder(
+      builder: (context, constraints) {
+        final trailMax = trailing == null
+            ? 0.0
+            : (constraints.maxWidth * 0.48).clamp(120.0, 420.0);
+        return Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(7),
+              decoration: BoxDecoration(
+                color: ModuleColors.portfolio.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(8),
               ),
-              if (subtitle != null && subtitle!.trim().isNotEmpty) ...[
-                const SizedBox(height: 2),
-                Text(
-                  subtitle!,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w500,
-                        color: Theme.of(context)
-                            .colorScheme
-                            .onSurfaceVariant
-                            .withValues(alpha: 0.8),
-                      ),
-                ),
-              ],
-            ],
-          ),
-        ),
-        if (trailing != null)
-          Flexible(
-            child: Align(
-              alignment: Alignment.centerRight,
-              child: trailing,
+              child: Icon(
+                icon,
+                color: ModuleColors.portfolio,
+                size: 18,
+              ),
             ),
-          ),
-      ],
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                  ),
+                  if (subtitle != null && subtitle!.trim().isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle!,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurfaceVariant
+                                .withValues(alpha: 0.8),
+                          ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            if (trailing != null) ...[
+              const SizedBox(width: 8),
+              ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: trailMax),
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: trailing,
+                ),
+              ),
+            ],
+          ],
+        );
+      },
     );
 
     Widget bodyChild = child;

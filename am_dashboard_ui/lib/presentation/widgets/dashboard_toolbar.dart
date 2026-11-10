@@ -1,14 +1,16 @@
 import 'package:am_common/am_common.dart';
 import 'package:am_dashboard_ui/presentation/layout/dashboard_customize_sheet.dart';
 import 'package:am_dashboard_ui/presentation/layout/dashboard_layout_store.dart';
+import 'package:am_dashboard_ui/presentation/widgets/dashboard_greeting.dart';
 import 'package:am_dashboard_ui/presentation/widgets/dashboard_portfolio_selector.dart';
 import 'package:am_dashboard_ui/presentation/widgets/paper_trading_nav_chip.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// Dashboard sticky controls matching the header mock:
-/// Paper Trading | Advanced · Family · Portfolio · Timeframe · +
-class DashboardToolbar extends StatelessWidget {
+/// Dashboard sticky controls: Paper | Advanced · Family · Portfolio · +
+/// Mobile brand row shows a time-based greeting instead of the product name.
+class DashboardToolbar extends ConsumerWidget {
   const DashboardToolbar({
     super.key,
     required this.userId,
@@ -22,6 +24,7 @@ class DashboardToolbar extends StatelessWidget {
     this.showDemoBadge = false,
     this.glass = true,
     this.onSurface,
+    this.now,
   });
 
   final String userId;
@@ -36,10 +39,13 @@ class DashboardToolbar extends StatelessWidget {
   final bool glass;
   final Color? onSurface;
 
+  /// Injectable clock for greeting tests.
+  final DateTime Function()? now;
+
   static const double _controlSize = 36;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final accent = ModuleColors.dashboard;
     final width = MediaQuery.sizeOf(context).width;
@@ -102,19 +108,6 @@ class DashboardToolbar extends StatelessWidget {
             userId: userId,
             compact: true,
             layout: FamilyAwarePortfolioPickerLayout.row,
-          ),
-        ),
-        const SizedBox(width: AppSpacing.sm),
-        GlobalTimeFrameBar(
-          key: const Key('dashboard-toolbar-timeframe'),
-          variant: GlobalTimeFrameVariant.dropdown,
-          dropdownWidth: compact ? 78 : 92,
-          primaryColor: accent,
-          dropdownTrailingDivider: false,
-          dropdownLeading: Icon(
-            Icons.calendar_today_outlined,
-            size: AppTypeScale.sm,
-            color: accent,
           ),
         ),
         if (onQuickAdd != null) ...[
@@ -180,8 +173,12 @@ class DashboardToolbar extends StatelessWidget {
     required Color accent,
     required bool demoCompact,
   }) {
+    final greeting = dashboardTimeGreeting(now?.call());
+
     final brand = _BrandProfileControl(
       brandLabel: brandLabel,
+      greetingPhrase: greeting,
+      useGreeting: true,
       accent: accent,
       leading: profileLeading,
       onTap: onProfileTap,
@@ -220,19 +217,6 @@ class DashboardToolbar extends StatelessWidget {
             userId: userId,
             compact: true,
             layout: FamilyAwarePortfolioPickerLayout.row,
-          ),
-        ),
-        const SizedBox(width: 6),
-        GlobalTimeFrameBar(
-          key: const Key('dashboard-toolbar-timeframe'),
-          variant: GlobalTimeFrameVariant.dropdown,
-          dropdownWidth: 72,
-          primaryColor: accent,
-          dropdownTrailingDivider: false,
-          dropdownLeading: Icon(
-            Icons.calendar_today_outlined,
-            size: AppTypeScale.sm,
-            color: accent,
           ),
         ),
         if (onQuickAdd != null) ...[
@@ -301,11 +285,15 @@ class _BrandProfileControl extends StatelessWidget {
   const _BrandProfileControl({
     required this.brandLabel,
     required this.accent,
+    this.greetingPhrase,
+    this.useGreeting = false,
     this.leading,
     this.onTap,
   });
 
   final String brandLabel;
+  final String? greetingPhrase;
+  final bool useGreeting;
   final Color accent;
   final Widget? leading;
   final VoidCallback? onTap;
@@ -318,6 +306,18 @@ class _BrandProfileControl extends StatelessWidget {
           backgroundColor: accent.withValues(alpha: 0.18),
           child: Icon(Icons.person_rounded, size: 18, color: accent),
         );
+
+    final label = Text(
+      useGreeting ? (greetingPhrase ?? 'Hello') : brandLabel,
+      maxLines: 1,
+      softWrap: false,
+      overflow: TextOverflow.visible,
+      style: TextStyle(
+        fontSize: AppTypeScale.md,
+        fontWeight: FontWeight.w700,
+        color: context.textPrimary,
+      ),
+    );
 
     return InkWell(
       key: const Key('dashboard-toolbar-profile'),
@@ -337,19 +337,16 @@ class _BrandProfileControl extends StatelessWidget {
             padding: const EdgeInsets.all(1.5),
             child: avatar,
           ),
-          const SizedBox(width: 8),
-          Flexible(
-            child: Text(
-              brandLabel,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w700,
-                color: context.textPrimary,
-              ),
+          if (useGreeting) ...[
+            const SizedBox(width: 8),
+            Container(
+              width: 1,
+              height: 22,
+              color: context.colors.border.withValues(alpha: 0.55),
             ),
-          ),
+          ],
+          const SizedBox(width: 8),
+          Flexible(child: label),
         ],
       ),
     );

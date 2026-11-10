@@ -16,17 +16,27 @@ class DashboardSummaryWidget extends StatelessWidget {
       builder: (context, constraints) {
         final width = constraints.maxWidth;
         final gap = SizedBox(width: AppSpacing.md, height: AppSpacing.md);
+        final unknown = _costBasisUnknown;
+        final mobile = width < 960;
+        Widget slot2Built() => unknown
+            ? _buildHoldingsCard(context, showIcon: !mobile)
+            : _buildInvestedCard(context, showIcon: !mobile);
+        Widget slot3Built() => unknown
+            ? _buildDayChangeCard(context, showIcon: !mobile)
+            : _buildReturnCard(context, showIcon: !mobile);
 
-        if (width < 960) {
+        if (mobile) {
           return Column(
             children: [
               IntrinsicHeight(
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Expanded(child: _buildPortfolioCard(context, true)),
+                    Expanded(
+                      child: _buildPortfolioCard(context, isMobile: true),
+                    ),
                     gap,
-                    Expanded(child: _buildInvestedCard(context)),
+                    Expanded(child: slot2Built()),
                   ],
                 ),
               ),
@@ -35,9 +45,11 @@ class DashboardSummaryWidget extends StatelessWidget {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Expanded(child: _buildReturnCard(context)),
+                    Expanded(child: slot3Built()),
                     gap,
-                    Expanded(child: _buildPortfoliosCard(context)),
+                    Expanded(
+                      child: _buildPortfoliosCard(context, showIcon: false),
+                    ),
                   ],
                 ),
               ),
@@ -49,119 +61,17 @@ class DashboardSummaryWidget extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Expanded(child: _buildPortfolioCard(context, false)),
+              Expanded(child: _buildPortfolioCard(context, isMobile: false)),
               gap,
-              Expanded(child: _buildInvestedCard(context)),
+              Expanded(child: slot2Built()),
               gap,
-              Expanded(child: _buildReturnCard(context)),
+              Expanded(child: slot3Built()),
               gap,
-              Expanded(child: _buildPortfoliosCard(context)),
+              Expanded(child: _buildPortfoliosCard(context, showIcon: true)),
             ],
           ),
         );
       },
-    );
-  }
-
-  TextStyle _labelStyle(BuildContext context) =>
-      context.text.label().copyWith(color: context.colors.textSecondary);
-
-  TextStyle _valueStyle(BuildContext context, {bool compact = false}) =>
-      context.text
-          .pageTitle(compact: compact)
-          .copyWith(
-            color: context.colors.textPrimary,
-            fontWeight: FontWeight.w800,
-            letterSpacing: -0.5,
-          );
-
-  Widget _buildPortfolioCard(BuildContext context, bool isMobile) {
-    final currencyFormat =
-        NumberFormat.currency(symbol: '₹ ', decimalDigits: 0);
-    final isPositiveDay = summary.dayChangePercentage >= 0;
-    final isDark = context.isDark;
-
-    final content = Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text('Total Portfolio Value', style: _labelStyle(context)),
-        const SizedBox(height: AppSpacing.xs),
-        FittedBox(
-          fit: BoxFit.scaleDown,
-          alignment: Alignment.centerLeft,
-          child: Text(
-            currencyFormat.format(summary.totalValue),
-            style: _valueStyle(context, compact: isMobile),
-          ),
-        ),
-        const SizedBox(height: AppSpacing.xs),
-        Text(
-          '${isPositiveDay ? "+" : ""}${summary.dayChangePercentage}% Today',
-          style: context.text.label().copyWith(
-                color: isPositiveDay
-                    ? context.colors.statusSuccess
-                    : context.colors.statusError,
-                fontWeight: FontWeight.w600,
-              ),
-        ),
-      ],
-    );
-
-    if (!isDark) {
-      return Container(
-        padding: const EdgeInsets.all(AppSpacing.md),
-        decoration: BoxDecoration(
-          color: context.colors.actionPrimaryBg,
-          borderRadius: AppRadii.dialog,
-          border: Border.all(
-            color: context.colors.border.withValues(alpha: 0.2),
-          ),
-        ),
-        child: DefaultTextStyle.merge(
-          style: TextStyle(color: context.colors.actionPrimaryFg),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'Total Portfolio Value',
-                style: context.text.label().copyWith(
-                      color: context.colors.actionPrimaryFg
-                          .withValues(alpha: 0.85),
-                    ),
-              ),
-              const SizedBox(height: AppSpacing.xs),
-              FittedBox(
-                fit: BoxFit.scaleDown,
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  currencyFormat.format(summary.totalValue),
-                  style: context.text
-                      .pageTitle(compact: isMobile)
-                      .copyWith(
-                        color: context.colors.actionPrimaryFg,
-                        fontWeight: FontWeight.w800,
-                      ),
-                ),
-              ),
-              const SizedBox(height: AppSpacing.xs),
-              Text(
-                '${isPositiveDay ? "+" : ""}${summary.dayChangePercentage}% Today',
-                style: context.text.label().copyWith(
-                      color: context.colors.actionPrimaryFg,
-                      fontWeight: FontWeight.w600,
-                    ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    return AmGlassCard(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      child: content,
     );
   }
 
@@ -174,110 +84,181 @@ class DashboardSummaryWidget extends StatelessWidget {
     return (invested - value).abs() / value < 0.005;
   }
 
-  Widget _buildInvestedCard(BuildContext context) {
+  Widget _buildPortfolioCard(BuildContext context, {required bool isMobile}) {
     final currencyFormat =
         NumberFormat.currency(symbol: '₹ ', decimalDigits: 0);
-    final unknown = _costBasisUnknown;
-
-    return AmGlassCard(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text('Total Invested', style: _labelStyle(context)),
-          const SizedBox(height: AppSpacing.xs),
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: Alignment.centerLeft,
-            child: Text(
-              unknown ? '—' : currencyFormat.format(summary.totalInvested),
-              style: _valueStyle(context),
-            ),
-          ),
-          const SizedBox(height: AppSpacing.xs),
-          Text(
-            unknown ? 'Not in CAS (market value)' : 'Principal Capital',
-            style: context.text
-                .caption()
-                .copyWith(color: context.colors.textSecondary),
-          ),
-        ],
-      ),
+    final isPositiveDay = summary.dayChangePercentage >= 0;
+    return _KpiTile(
+      icon: Icons.account_balance_wallet_rounded,
+      showIcon: !isMobile,
+      title: 'Total Portfolio Value',
+      value: currencyFormat.format(summary.totalValue),
+      secondary:
+          '${isPositiveDay ? "+" : ""}${summary.dayChangePercentage}% Today',
+      secondaryColor: isPositiveDay
+          ? context.colors.statusSuccess
+          : context.colors.statusError,
+      compactValue: isMobile,
     );
   }
 
-  Widget _buildReturnCard(BuildContext context) {
+  Widget _buildInvestedCard(BuildContext context, {required bool showIcon}) {
+    final currencyFormat =
+        NumberFormat.currency(symbol: '₹ ', decimalDigits: 0);
+    return _KpiTile(
+      icon: Icons.savings_outlined,
+      showIcon: showIcon,
+      title: 'Total Invested',
+      value: currencyFormat.format(summary.totalInvested),
+      secondary: 'Principal Capital',
+    );
+  }
+
+  Widget _buildReturnCard(BuildContext context, {required bool showIcon}) {
     final currencyFormat =
         NumberFormat.currency(symbol: '₹ ', decimalDigits: 0);
     final percentFormat = NumberFormat.decimalPercentPattern(decimalDigits: 2);
-    final unknown = _costBasisUnknown;
     final isPositiveReturn = summary.totalGainLoss >= 0;
     final valueColor = isPositiveReturn
         ? context.colors.statusSuccess
         : context.colors.statusError;
-
-    return AmGlassCard(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text('Total Return', style: _labelStyle(context)),
-          const SizedBox(height: AppSpacing.xs),
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: Alignment.centerLeft,
-            child: Text(
-              unknown
-                  ? '—'
-                  : '${isPositiveReturn ? "+" : "-"}${currencyFormat.format(summary.totalGainLoss.abs())}',
-              style: _valueStyle(context).copyWith(
-                color: unknown ? context.colors.textPrimary : valueColor,
-              ),
-            ),
-          ),
-          const SizedBox(height: AppSpacing.xs),
-          Text(
-            unknown
-                ? 'Use day change on value'
-                : '${isPositiveReturn ? "+" : ""}${percentFormat.format(summary.totalGainLossPercentage / 100)}',
-            style: context.text.label().copyWith(
-                  color: unknown ? context.colors.textSecondary : valueColor,
-                  fontWeight: FontWeight.w600,
-                ),
-          ),
-        ],
-      ),
+    return _KpiTile(
+      icon: Icons.trending_up_rounded,
+      showIcon: showIcon,
+      title: 'Total Return',
+      value:
+          '${isPositiveReturn ? "+" : "-"}${currencyFormat.format(summary.totalGainLoss.abs())}',
+      valueColor: valueColor,
+      secondary:
+          '${isPositiveReturn ? "+" : ""}${percentFormat.format(summary.totalGainLossPercentage / 100)}',
+      secondaryColor: valueColor,
     );
   }
 
-  Widget _buildPortfoliosCard(BuildContext context) {
+  Widget _buildHoldingsCard(BuildContext context, {required bool showIcon}) {
+    return _KpiTile(
+      icon: Icons.layers_rounded,
+      showIcon: showIcon,
+      title: 'Total Holdings',
+      value: summary.totalHoldings.toString(),
+      secondary: 'Securities in Portfolio',
+    );
+  }
+
+  Widget _buildDayChangeCard(BuildContext context, {required bool showIcon}) {
+    final currencyFormat =
+        NumberFormat.currency(symbol: '₹ ', decimalDigits: 0);
+    final isPositive = summary.dayChange >= 0;
+    final valueColor = isPositive
+        ? context.colors.statusSuccess
+        : context.colors.statusError;
+    return _KpiTile(
+      icon: Icons.bar_chart_rounded,
+      showIcon: showIcon,
+      title: '1D Price Change',
+      value:
+          '${isPositive ? "+" : "-"}${currencyFormat.format(summary.dayChange.abs())}',
+      valueColor: valueColor,
+      secondary:
+          '${isPositive ? "+" : ""}${summary.dayChangePercentage.toStringAsFixed(2)}%',
+      secondaryColor: valueColor,
+    );
+  }
+
+  Widget _buildPortfoliosCard(BuildContext context, {required bool showIcon}) {
+    return _KpiTile(
+      icon: Icons.layers_outlined,
+      showIcon: showIcon,
+      title: 'Active Portfolios',
+      value: summary.totalPortfolios.toString(),
+      secondary: 'Live Strategies',
+    );
+  }
+}
+
+class _KpiTile extends StatelessWidget {
+  const _KpiTile({
+    required this.icon,
+    required this.title,
+    required this.value,
+    required this.secondary,
+    this.showIcon = true,
+    this.valueColor,
+    this.secondaryColor,
+    this.compactValue = false,
+  });
+
+  final IconData icon;
+  final bool showIcon;
+  final String title;
+  final String value;
+  final String secondary;
+  final Color? valueColor;
+  final Color? secondaryColor;
+  final bool compactValue;
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = ModuleColors.dashboard;
+    final muted = context.colors.textSecondary;
+    final content = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          title,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: context.text.label().copyWith(color: muted),
+        ),
+        const SizedBox(height: AppSpacing.xs),
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.centerLeft,
+          child: Text(
+            value,
+            style: context.text.pageTitle(compact: compactValue).copyWith(
+                  color: valueColor ?? context.colors.textPrimary,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.5,
+                ),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.xs),
+        Text(
+          secondary,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: context.text.label().copyWith(
+                color: secondaryColor ?? muted,
+                fontWeight: FontWeight.w600,
+              ),
+        ),
+      ],
+    );
+
     return AmGlassCard(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text('Active Portfolios', style: _labelStyle(context)),
-          const SizedBox(height: AppSpacing.xs),
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: Alignment.centerLeft,
-            child: Text(
-              summary.totalPortfolios.toString(),
-              style: _valueStyle(context),
-            ),
-          ),
-          const SizedBox(height: AppSpacing.xs),
-          Text(
-            'Live Strategies',
-            style: context.text
-                .caption()
-                .copyWith(color: context.colors.textSecondary),
-          ),
-        ],
-      ),
+      padding: EdgeInsets.all(showIcon ? AppSpacing.md : AppSpacing.sm),
+      child: showIcon
+          ? Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 34,
+                  height: 34,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: accent.withValues(alpha: 0.14),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: accent.withValues(alpha: 0.35)),
+                  ),
+                  child: Icon(icon, size: 18, color: accent),
+                ),
+                const SizedBox(width: 10),
+                Expanded(child: content),
+              ],
+            )
+          : content,
     );
   }
 }

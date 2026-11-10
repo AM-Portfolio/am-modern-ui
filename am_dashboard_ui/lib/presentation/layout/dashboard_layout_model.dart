@@ -97,7 +97,7 @@ class DashboardLayoutModel extends Equatable {
   List<Object?> get props => [slots];
 }
 
-/// Default: Chart|Health, X-Ray|Users, then news/activity/movers.
+/// Default: Chart|Health, X-Ray|Users, then news/movers/activity.
 /// Risk Radar is off by default (customize only).
 DashboardLayoutModel defaultDashboardLayout() {
   return const DashboardLayoutModel(
@@ -139,13 +139,13 @@ DashboardLayoutModel defaultDashboardLayout() {
         size: DashboardWidgetSize.twoThirds,
       ),
       DashboardWidgetSlot(
-        id: DashboardWidgetId.recentActivity,
+        id: DashboardWidgetId.movers,
         visible: true,
         order: 6,
         size: DashboardWidgetSize.oneThird,
       ),
       DashboardWidgetSlot(
-        id: DashboardWidgetId.movers,
+        id: DashboardWidgetId.recentActivity,
         visible: true,
         order: 7,
         size: DashboardWidgetSize.oneThird,
@@ -194,8 +194,8 @@ DashboardLayoutModel normalizeDashboardLayout(DashboardLayoutModel layout) {
 
 const _newsRowSlotIds = {
   DashboardWidgetId.news,
-  DashboardWidgetId.recentActivity,
   DashboardWidgetId.movers,
+  DashboardWidgetId.recentActivity,
   DashboardWidgetId.allocation,
 };
 
@@ -254,7 +254,7 @@ DashboardWidgetSlot _mergeDefaultSlot(
   return saved;
 }
 
-/// Narrow dashboards keep intelligence then activity before news.
+/// Narrow dashboards keep movers then activity before news.
 List<DashboardWidgetSlot> compactDashboardSlots(
   List<DashboardWidgetSlot> slots, {
   required bool newsEnabled,
@@ -292,8 +292,8 @@ List<DashboardWidgetSlot> compactDashboardSlots(
         break;
     }
   }
-  if (activity != null) out.add(activity);
   if (movers != null) out.add(movers);
+  if (activity != null) out.add(activity);
   if (news != null) out.add(news);
   return out;
 }

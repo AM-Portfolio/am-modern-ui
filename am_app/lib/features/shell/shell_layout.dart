@@ -159,34 +159,11 @@ mixin ShellLayout
                             isDarkMode: isDark,
                             accentColor: _moduleAccentFor(_activeNavItem),
                             userName: authState.user.displayName,
-                            visibleCount: 4,
+                            visibleCount: 5,
                             moduleShareUrls: AppRoutes.navTitleToDefaultPath,
                             onNavigate: (title) =>
                                 _onGlobalNavigate(title, userId),
-                            items: [
-                              const SidebarItem(
-                                title: 'Dashboard',
-                                icon: Icons.dashboard_rounded,
-                              ),
-                              const SidebarItem(
-                                title: 'Trade',
-                                icon: Icons.swap_horiz_rounded,
-                              ),
-                              const SidebarItem(
-                                title: 'Market',
-                                icon: Icons.show_chart_rounded,
-                              ),
-                              const SidebarItem(
-                                title: 'AI Chat',
-                                icon: Icons.auto_awesome_rounded,
-                              ),
-                              if (isAdmin) ...[
-                                const SidebarItem(
-                                  title: 'Analysis',
-                                  icon: Icons.analytics_outlined,
-                                ),
-                              ],
-                            ],
+                            items: _sidebarItemsFor(isAdmin: isAdmin),
                           ),
                         ),
                       ),

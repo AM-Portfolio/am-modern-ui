@@ -1,6 +1,7 @@
 import 'package:am_common/am_common.dart';
 import 'package:am_dashboard_ui/domain/models/accounts_hub.dart';
 import 'package:am_dashboard_ui/presentation/layout/dashboard_widget_id.dart';
+import 'package:am_dashboard_ui/presentation/mappers/advanced_account_row_mapper.dart';
 import 'package:am_dashboard_ui/presentation/providers/dashboard_overlay_provider.dart';
 import 'package:am_dashboard_ui/presentation/providers/dashboard_portfolio_scope.dart';
 import 'package:am_dashboard_ui/presentation/providers/dashboard_provider.dart';
@@ -135,12 +136,38 @@ class _DashboardUsersHubWidgetState
           final showCasCta = isOverview && !hasCas;
 
           final scopeTotal = _scopeTotalValue(
-            demat: const [],
+            demat: [...dematOnly, ...mfRows],
             brokers: valueBooks,
             nps: personaNps,
             allNps: familyMemberId == FavoritePersonaStore.kAll
                 ? hub.npsAccounts
                 : null,
+          );
+
+          final householdAccountCount = valuedAccountCountForPersona(
+            hub: hub,
+            familyMemberId: FavoritePersonaStore.kAll,
+          );
+          final primaryAccountCount = valuedAccountCountForPersona(
+            hub: hub,
+            familyMemberId: null,
+          );
+          final memberAccountCounts = <String, int>{
+            for (final m in familyMembers)
+              if (m.id != null && m.id!.trim().isNotEmpty)
+                m.id!: valuedAccountCountForPersona(
+                  hub: hub,
+                  familyMemberId: m.id,
+                ),
+          };
+
+          final mappedItems = _buildMappedItems(
+            dematOnly: dematOnly,
+            mfRows: mfRows,
+            portfolios: portfolios,
+            personaNps: hasNps ? personaNps : null,
+            currency: currency,
+            scopeTotal: scopeTotal,
           );
 
           return Column(
@@ -150,14 +177,13 @@ class _DashboardUsersHubWidgetState
                 identity: hub.identity,
                 nps: personaNps,
                 onOpenUsers: widget.onOpenUsers,
-              ),
-              const SizedBox(height: 8),
-              _CompactFilterRow(
-                selected: _primary,
-                onTabSelected: (tab) => setState(() {
-                  _primary = tab;
-                  _brokerFilter = 'all';
-                }),
+                tabs: _CompactFilterRow(
+                  selected: _primary,
+                  onTabSelected: (tab) => setState(() {
+                    _primary = tab;
+                    _brokerFilter = 'all';
+                  }),
+                ),
               ),
               const SizedBox(height: 8),
               PersonaCardStrip(
@@ -168,142 +194,186 @@ class _DashboardUsersHubWidgetState
                     : 'You',
                 favoriteKey: _favoriteKey,
                 compact: true,
+                showRoleIcon: false,
+                sizeToContent: true,
                 householdTotalValue: hub.stats?.householdTotalValue,
                 householdXirrPct: hub.stats?.householdXirrPct,
+                householdAccountCount: householdAccountCount,
                 primaryTotalValue: hub.stats?.primaryTotalValue,
                 primaryXirrPct: hub.stats?.overallXirrPct,
+                primaryAccountCount: primaryAccountCount,
+                memberAccountCounts: memberAccountCounts,
                 onSelected: (id) => _onFamilyMemberSelected(hub, id),
                 onFavorite: _setFavorite,
                 onDelete: (m) => _deleteFamilyMember(context, m),
+                onAddFamily: () => _addFamilyMember(context),
               ),
               const SizedBox(height: 8),
-              Expanded(
-                child: SingleChildScrollView(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      if (isFamily) ...[
-                        _FamilyTab(
-                          members: familyMembers,
-                          onAdd: () => _addFamilyMember(context),
-                          onEdit: (m) => _editFamilyMember(context, m),
-                          onDelete: (m) => _deleteFamilyMember(context, m),
-                          onSelect: (id) => _onFamilyMemberSelected(hub, id),
-                        ),
-                      ] else ...[
-                        if (showCasCta && widget.onOpenDocIntel != null)
-                          Align(
-                            alignment: Alignment.centerLeft,
-                            child: TextButton(
-                              style: TextButton.styleFrom(
-                                padding: EdgeInsets.zero,
-                                visualDensity: VisualDensity.compact,
-                              ),
-                              onPressed: widget.onOpenDocIntel,
-                              child: const Text(
-                                'Import CDSL CAS via Doc Intel',
-                              ),
-                            ),
-                          ),
-                        if (hasNps && personaNps != null) ...[
-                          _NpsStrip(
-                            nps: personaNps,
-                            currency: currency,
-                            pctOfScope: _pctOfScope(
-                              personaNps.totalValue,
-                              scopeTotal,
-                            ),
-                          ),
-                        ],
-                        if (dematOnly.isNotEmpty) ...[
-                          const SizedBox(height: 12),
-                          Text(
-                            'Demat accounts',
-                            style: context.text.label().copyWith(
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 12,
-                                ),
-                          ),
-                          const SizedBox(height: 6),
-                          ...dematOnly.map(
-                            (a) => Padding(
-                              padding: const EdgeInsets.only(bottom: 8),
-                              child: _DematDetailCard(
-                                account: a,
-                                currency: currency,
-                                pctOfScope: _pctOfScope(
-                                  a.holdingValue,
-                                  scopeTotal,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                        if (mfRows.isNotEmpty) ...[
-                          const SizedBox(height: 8),
-                          Text(
-                            'MF folios',
-                            style: context.text.label().copyWith(
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 12,
-                                ),
-                          ),
-                          const SizedBox(height: 6),
-                          ...mfRows.map(
-                            (a) => Padding(
-                              padding: const EdgeInsets.only(bottom: 8),
-                              child: _FolioDetailCard(
-                                account: a,
-                                currency: currency,
-                                pctOfScope: _pctOfScope(
-                                  a.holdingValue,
-                                  scopeTotal,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                        if (portfolios.isNotEmpty) ...[
-                          const SizedBox(height: 12),
-                          Text(
-                            'Brokers',
-                            style: context.text.label().copyWith(
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 12,
-                                ),
-                          ),
-                          const SizedBox(height: 6),
-                          ...portfolios.map(
-                            (p) => Padding(
-                              padding: const EdgeInsets.only(bottom: 8),
-                              child: _PortfolioCard(
-                                row: p,
-                                currency: currency,
-                                pctOfScope: _pctOfScope(p.current, scopeTotal),
-                                onTap: () => _selectPortfolio(p),
-                              ),
-                            ),
-                          ),
-                        ],
-                        if (dematOnly.isNotEmpty ||
-                            mfRows.isNotEmpty ||
-                            hasNps) ...[
-                          const SizedBox(height: 8),
-                          _NomineeSection(
-                            accounts: [...dematOnly, ...mfRows],
-                            nps: personaNps,
-                          ),
-                        ],
-                      ],
-                    ],
+              if (isFamily)
+                Expanded(
+                  child: SingleChildScrollView(
+                    child: _FamilyTab(
+                      members: familyMembers,
+                      onAdd: () => _addFamilyMember(context),
+                      onEdit: (m) => _editFamilyMember(context, m),
+                      onDelete: (m) => _deleteFamilyMember(context, m),
+                      onSelect: (id) {
+                        _onFamilyMemberSelected(hub, id);
+                        setState(() => _primary = _UsersPrimaryTab.overview);
+                      },
+                    ),
                   ),
+                )
+              else ...[
+                if (showCasCta && widget.onOpenDocIntel != null)
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton(
+                      style: TextButton.styleFrom(
+                        padding: EdgeInsets.zero,
+                        visualDensity: VisualDensity.compact,
+                      ),
+                      onPressed: widget.onOpenDocIntel,
+                      child: const Text('Import CDSL CAS via Doc Intel'),
+                    ),
+                  ),
+                _MappedAccountsHeader(count: mappedItems.length),
+                const SizedBox(height: 8),
+                Expanded(
+                  child: mappedItems.isEmpty
+                      ? Center(
+                          child: Text(
+                            'No mapped accounts',
+                            style: context.text.caption().copyWith(
+                                  color: context.colors.textSecondary,
+                                ),
+                          ),
+                        )
+                      : ListView.separated(
+                          itemCount: mappedItems.length,
+                          separatorBuilder: (_, __) =>
+                              const SizedBox(height: 8),
+                          itemBuilder: (context, i) {
+                            final item = mappedItems[i];
+                            return _MappedAccountCard(
+                              item: item,
+                              onTap: () {
+                                if (item.kind == _MappedKind.broker &&
+                                    item.portfolio != null) {
+                                  _selectPortfolio(item.portfolio!);
+                                } else {
+                                  widget.onOpenUsers?.call();
+                                }
+                              },
+                            );
+                          },
+                        ),
                 ),
-              ),
+              ],
             ],
           );
         },
       ),
     );
+  }
+
+  List<_MappedItem> _buildMappedItems({
+    required List<DematAccountRow> dematOnly,
+    required List<DematAccountRow> mfRows,
+    required List<AccountsPortfolioRow> portfolios,
+    required NpsMetaRow? personaNps,
+    required NumberFormat currency,
+    required double scopeTotal,
+  }) {
+    final items = <_MappedItem>[
+      if (personaNps != null)
+        _MappedItem(
+          kind: _MappedKind.nps,
+          title: 'NPS',
+          typeLabel: 'NPS',
+          meta: [
+            if (personaNps.pran != null && personaNps.pran!.isNotEmpty)
+              'PRAN ${personaNps.pran}',
+          ].join(' · '),
+          status: 'Active',
+          valueLabel: personaNps.totalValue != null
+              ? currency.format(personaNps.totalValue)
+              : '—',
+          weightLabel: _pctOfScope(personaNps.totalValue, scopeTotal),
+          letter: 'N',
+          tintSeed: 'nps',
+          searchBlob: 'nps ${personaNps.pran ?? ''}',
+        ),
+      for (final a in dematOnly)
+        _MappedItem(
+          kind: _MappedKind.demat,
+          title: a.dpName ?? a.boid ?? a.accountNo,
+          typeLabel: 'Demat',
+          meta: [
+            if (a.boid != null && a.boid!.isNotEmpty) 'BOID ${a.boid}',
+            if (a.clientId != null && a.clientId!.isNotEmpty)
+              'Client ${a.clientId}',
+            if (a.dpId != null && a.dpId!.isNotEmpty) 'DP ${a.dpId}',
+          ].join(' · '),
+          status: a.status?.trim().isNotEmpty == true ? a.status!.trim() : 'Active',
+          valueLabel: a.holdingValue != null
+              ? currency.format(a.holdingValue)
+              : '—',
+          weightLabel: _pctOfScope(a.holdingValue, scopeTotal),
+          letter: _letterOf(a.dpName ?? a.mappedBroker ?? a.accountNo),
+          tintSeed: a.mappedBroker ?? a.dpName ?? a.accountNo,
+          searchBlob:
+              '${a.dpName} ${a.boid} ${a.clientId} ${a.dpId} ${a.mappedBroker} demat',
+        ),
+      for (final a in mfRows)
+        _MappedItem(
+          kind: _MappedKind.mf,
+          title: a.folio?.trim().isNotEmpty == true
+              ? 'Folio ${a.folio}'
+              : (a.amcName ?? a.accountNo),
+          typeLabel: 'Mutual Fund',
+          meta: [
+            if (a.amcName != null && a.amcName!.isNotEmpty) a.amcName!,
+            if (a.mappedBroker != null) a.mappedBroker!,
+          ].join(' · '),
+          status: a.status?.trim().isNotEmpty == true ? a.status!.trim() : 'Active',
+          valueLabel: a.holdingValue != null
+              ? currency.format(a.holdingValue)
+              : '—',
+          weightLabel: _pctOfScope(a.holdingValue, scopeTotal),
+          letter: _letterOf(a.amcName ?? a.folio ?? 'M'),
+          tintSeed: a.amcName ?? a.folio ?? 'mf',
+          searchBlob: '${a.folio} ${a.amcName} ${a.mappedBroker} mf mutual',
+        ),
+      for (final p in portfolios)
+        _MappedItem(
+          kind: _MappedKind.broker,
+          title: p.displayName?.trim().isNotEmpty == true
+              ? p.displayName!.trim()
+              : (p.brokerType ?? p.portfolioId ?? 'Broker'),
+          typeLabel: 'Broker',
+          meta: [
+            if (p.brokerType != null && p.brokerType!.isNotEmpty) p.brokerType!,
+            if (p.dematBoid != null && p.dematBoid!.isNotEmpty)
+              'BOID ${p.dematBoid}',
+          ].join(' · '),
+          status: 'Active',
+          valueLabel: p.current != null ? currency.format(p.current) : '—',
+          weightLabel: _pctOfScope(p.current, scopeTotal),
+          letter: _letterOf(p.displayName ?? p.brokerType ?? 'B'),
+          tintSeed: p.brokerType ?? p.displayName ?? 'broker',
+          searchBlob:
+              '${p.displayName} ${p.brokerType} ${p.dematBoid} ${p.portfolioId} broker',
+          portfolio: p,
+        ),
+    ];
+    return items;
+  }
+
+  String _letterOf(String raw) {
+    final t = raw.trim();
+    if (t.isEmpty) return '?';
+    return t[0].toUpperCase();
   }
 
   Future<(String, String?)?> _promptFamilyFields(
@@ -639,6 +709,7 @@ class _DashboardUsersHubWidgetState
 class _CompactHeader extends StatelessWidget {
   const _CompactHeader({
     required this.onOpenUsers,
+    required this.tabs,
     this.identity,
     this.nps,
   });
@@ -646,6 +717,7 @@ class _CompactHeader extends StatelessWidget {
   final AccountsIdentity? identity;
   final NpsMetaRow? nps;
   final VoidCallback? onOpenUsers;
+  final Widget tabs;
 
   @override
   Widget build(BuildContext context) {
@@ -656,9 +728,7 @@ class _CompactHeader extends StatelessWidget {
       if (!n.contains(' ') && n.length <= 12) return n.toUpperCase();
       return n;
     }();
-    final pran = identity?.pran ?? nps?.pran;
     final accent = ModuleColors.dashboard;
-    final muted = context.colors.textSecondary;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -700,45 +770,33 @@ class _CompactHeader extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 4),
-        Text(
-          name,
-          style: context.text.body().copyWith(
-                fontWeight: FontWeight.w800,
-                fontSize: 18,
-              ),
-        ),
-        if (pran != null && pran.isNotEmpty) ...[
-          const SizedBox(height: 6),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: Theme.of(context)
-                  .colorScheme
-                  .surfaceContainerHighest
-                  .withValues(alpha: 0.45),
-              borderRadius: BorderRadius.circular(6),
-              border: Border.all(
-                color: context.colors.border.withValues(alpha: 0.45),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Expanded(
+              child: Text(
+                name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: context.text.body().copyWith(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 18,
+                    ),
               ),
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'PRAN $pran',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: muted,
-                    fontFamily: 'monospace',
-                  ),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerRight,
+                  child: tabs,
                 ),
-                const SizedBox(width: 4),
-                Icon(Icons.copy_rounded, size: 12, color: muted),
-              ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ],
     );
   }
@@ -755,24 +813,79 @@ class _CompactFilterRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tabs = <(_UsersPrimaryTab, String)>[
-      (_UsersPrimaryTab.overview, 'Overview'),
-      (_UsersPrimaryTab.family, 'Family'),
+    final accent = ModuleColors.dashboard;
+    final tabs = <(_UsersPrimaryTab, String, IconData)>[
+      (_UsersPrimaryTab.overview, 'Overview', Icons.bar_chart_rounded),
+      (_UsersPrimaryTab.family, 'Family', Icons.groups_rounded),
     ];
-    return Wrap(
-      spacing: 6,
-      runSpacing: 6,
-      crossAxisAlignment: WrapCrossAlignment.center,
+    return Row(
       children: [
-        for (final t in tabs)
-          ChoiceChip(
-            label: Text(t.$2, style: const TextStyle(fontSize: 11)),
+        for (final t in tabs) ...[
+          if (t.$1 != tabs.first.$1) const SizedBox(width: 8),
+          _TabPill(
+            label: t.$2,
+            icon: t.$3,
             selected: selected == t.$1,
-            onSelected: (_) => onTabSelected(t.$1),
-            visualDensity: VisualDensity.compact,
-            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            accent: accent,
+            onTap: () => onTabSelected(t.$1),
           ),
+        ],
       ],
+    );
+  }
+}
+
+class _TabPill extends StatelessWidget {
+  const _TabPill({
+    required this.label,
+    required this.icon,
+    required this.selected,
+    required this.accent,
+    required this.onTap,
+  });
+
+  final String label;
+  final IconData icon;
+  final bool selected;
+  final Color accent;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final fg = selected ? const Color(0xFF1A1208) : Colors.white;
+    return Material(
+      color: selected ? accent : Colors.transparent,
+      borderRadius: BorderRadius.circular(20),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: selected
+                  ? accent
+                  : Colors.white.withValues(alpha: 0.7),
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 14, color: fg),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: fg,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
@@ -794,6 +907,7 @@ class _FamilyTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final accent = ModuleColors.dashboard;
     if (members.isEmpty) {
       return Container(
         padding: const EdgeInsets.all(14),
@@ -822,12 +936,17 @@ class _FamilyTab extends StatelessWidget {
             const SizedBox(height: 12),
             Align(
               alignment: Alignment.centerLeft,
-              child: FilledButton.tonal(
+              child: FilledButton(
+                style: FilledButton.styleFrom(backgroundColor: accent),
                 onPressed: members.length >= 5 ? null : onAdd,
                 child: Text(
                   members.length >= 5
                       ? 'Family limit reached (5)'
                       : 'Add family member',
+                  style: const TextStyle(
+                    color: Color(0xFF1A1208),
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
             ),
@@ -842,43 +961,74 @@ class _FamilyTab extends StatelessWidget {
           alignment: Alignment.centerLeft,
           child: TextButton.icon(
             onPressed: members.length >= 5 ? null : onAdd,
-            icon: const Icon(Icons.person_add_alt_1, size: 16),
+            icon: Icon(Icons.person_add_alt_1, size: 16, color: accent),
             label: Text(
               members.length >= 5 ? 'Limit 5' : 'Add',
+              style: TextStyle(color: accent, fontWeight: FontWeight.w700),
             ),
           ),
         ),
         for (final m in members)
-          Material(
-            type: MaterialType.transparency,
-            child: ListTile(
-              contentPadding: EdgeInsets.zero,
-              title: Text(m.name?.trim().isNotEmpty == true
-                  ? m.name!.trim()
-                  : 'Family member'),
-              subtitle: Text(
-                [
-                  if (m.email != null && m.email!.isNotEmpty) m.email,
-                  if (m.portfolioCount != null) '${m.portfolioCount} demat',
-                  if (m.source != null) m.source,
-                ].whereType<String>().join(' · '),
-              ),
-              trailing: Wrap(
-                spacing: 0,
-                children: [
-                  IconButton(
-                    tooltip: 'Edit',
-                    icon: const Icon(Icons.edit_outlined, size: 18),
-                    onPressed: () => onEdit(m),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Material(
+              color: Theme.of(context).colorScheme.surface,
+              borderRadius: BorderRadius.circular(AppRadii.sm),
+              child: InkWell(
+                onTap: () => onSelect(m.id),
+                borderRadius: BorderRadius.circular(AppRadii.sm),
+                child: Container(
+                  padding: const EdgeInsets.fromLTRB(10, 8, 4, 8),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(AppRadii.sm),
+                    border: Border.all(
+                      color: context.colors.border.withValues(alpha: 0.4),
+                    ),
                   ),
-                  IconButton(
-                    tooltip: 'Delete',
-                    icon: const Icon(Icons.delete_outline, size: 18),
-                    onPressed: () => onDelete(m),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              m.name?.trim().isNotEmpty == true
+                                  ? m.name!.trim()
+                                  : 'Family member',
+                              style: context.text.label().copyWith(
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 12,
+                                  ),
+                            ),
+                            Text(
+                              [
+                                if (m.email != null && m.email!.isNotEmpty)
+                                  m.email,
+                                if (m.portfolioCount != null)
+                                  '${m.portfolioCount} demat',
+                                if (m.source != null) m.source,
+                              ].whereType<String>().join(' · '),
+                              style: context.text.caption().copyWith(
+                                    fontSize: 10,
+                                  ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        tooltip: 'Edit',
+                        icon: const Icon(Icons.edit_outlined, size: 18),
+                        onPressed: () => onEdit(m),
+                      ),
+                      IconButton(
+                        tooltip: 'Delete',
+                        icon: const Icon(Icons.delete_outline, size: 18),
+                        onPressed: () => onDelete(m),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
-              onTap: () => onSelect(m.id),
             ),
           ),
       ],
@@ -886,584 +1036,253 @@ class _FamilyTab extends StatelessWidget {
   }
 }
 
-class _PortfolioCard extends StatelessWidget {
-  const _PortfolioCard({
-    required this.row,
-    required this.currency,
-    required this.onTap,
-    this.pctOfScope,
+enum _MappedKind { broker, demat, mf, nps }
+
+class _MappedItem {
+  const _MappedItem({
+    required this.kind,
+    required this.title,
+    required this.typeLabel,
+    required this.meta,
+    required this.status,
+    required this.valueLabel,
+    required this.letter,
+    required this.tintSeed,
+    required this.searchBlob,
+    this.weightLabel,
+    this.portfolio,
   });
 
-  final AccountsPortfolioRow row;
-  final NumberFormat currency;
-  final VoidCallback onTap;
-  final String? pctOfScope;
-
-  @override
-  Widget build(BuildContext context) {
-    final title = row.displayName?.trim().isNotEmpty == true
-        ? row.displayName!.trim()
-        : (row.brokerType ?? row.portfolioId ?? 'Portfolio');
-    final broker = row.brokerType?.trim();
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(AppRadii.sm),
-      child: Container(
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          border:
-              Border.all(color: context.colors.border.withValues(alpha: 0.4)),
-          borderRadius: BorderRadius.circular(AppRadii.sm),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: context.text.label().copyWith(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 12,
-                  ),
-            ),
-            if (broker != null &&
-                broker.isNotEmpty &&
-                broker.toUpperCase() != title.toUpperCase())
-              Text(broker, style: context.text.caption()),
-            const SizedBox(height: 4),
-            Text(
-              [
-                if (row.current != null) currency.format(row.current),
-                if (pctOfScope != null) pctOfScope!,
-                if (row.assetCount != null) '${row.assetCount} assets',
-                if (row.returnPct != null)
-                  '${row.returnPct!.toStringAsFixed(1)}%',
-              ].join(' · '),
-              style: context.text.caption().copyWith(fontWeight: FontWeight.w600),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  final _MappedKind kind;
+  final String title;
+  final String typeLabel;
+  final String meta;
+  final String status;
+  final String valueLabel;
+  final String? weightLabel;
+  final String letter;
+  final String tintSeed;
+  final String searchBlob;
+  final AccountsPortfolioRow? portfolio;
 }
 
-class _NpsStrip extends StatelessWidget {
-  const _NpsStrip({
-    required this.nps,
-    required this.currency,
-    this.pctOfScope,
-  });
+class _MappedAccountsHeader extends StatelessWidget {
+  const _MappedAccountsHeader({required this.count});
 
-  final NpsMetaRow nps;
-  final NumberFormat currency;
-  final String? pctOfScope;
+  final int count;
 
   @override
   Widget build(BuildContext context) {
     final accent = ModuleColors.dashboard;
-    final muted = context.colors.textSecondary;
-    final t1 = nps.tier1Value;
-    final t2 = nps.tier2Value;
-    final total = nps.totalValue ??
-        ((t1 ?? 0) + (t2 ?? 0) > 0 ? (t1 ?? 0) + (t2 ?? 0) : null);
-    final t1Pct = (total != null && total > 0 && t1 != null)
-        ? (t1 / total).clamp(0.0, 1.0)
-        : null;
-    final nomineeRaw = nps.nomineeDetails?.trim();
-    String? nomineeName;
-    String? nomineePct;
-    if (nomineeRaw != null && nomineeRaw.isNotEmpty) {
-      final m = RegExp(r'^(.*?)\s*\(?(\d+(?:\.\d+)?%)\)?\s*$')
-          .firstMatch(nomineeRaw);
-      if (m != null) {
-        nomineeName = m.group(1)?.trim();
-        nomineePct = m.group(2);
-      } else {
-        nomineeName = nomineeRaw;
-      }
-    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Divider(height: 16, color: accent.withValues(alpha: 0.45)),
+        Row(
+          children: [
+            Icon(Icons.layers_rounded, size: 14, color: accent),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(
+                'Mapped Accounts ($count)',
+                style: context.text.label().copyWith(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 12,
+                      color: accent,
+                    ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
 
-    return Container(
-      key: const Key('users_nps_strip'),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        border: Border.all(color: context.colors.border.withValues(alpha: 0.4)),
+class _MappedAccountCard extends StatelessWidget {
+  const _MappedAccountCard({
+    required this.item,
+    required this.onTap,
+  });
+
+  final _MappedItem item;
+  final VoidCallback onTap;
+
+  Color _tint(BuildContext context) {
+    final seed = item.tintSeed.toUpperCase();
+    if (seed.contains('GROWW')) return context.colors.statusSuccess;
+    if (seed.contains('ZERODHA')) return context.colors.statusError;
+    if (seed.contains('ANGEL')) return ModuleColors.dashboard;
+    if (item.kind == _MappedKind.nps) return ModuleColors.dashboard;
+    final hash = seed.codeUnits.fold<int>(0, (a, b) => a + b);
+    final palette = [
+      context.colors.statusSuccess,
+      context.colors.statusError,
+      ModuleColors.dashboard,
+      context.colors.statusWarning,
+    ];
+    return palette[hash % palette.length];
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = ModuleColors.dashboard;
+    final tint = _tint(context);
+    final muted = context.colors.textSecondary;
+    final active = item.status.toLowerCase().contains('active');
+
+    return Material(
+      color: Theme.of(context).colorScheme.surface,
+      borderRadius: BorderRadius.circular(AppRadii.sm),
+      child: InkWell(
+        onTap: onTap,
         borderRadius: BorderRadius.circular(AppRadii.sm),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  'NPS (National Pension System)',
-                  style: context.text.label().copyWith(
-                        fontWeight: FontWeight.w800,
-                        fontSize: 13,
-                      ),
-                ),
+        child: Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppRadii.sm),
+            border: Border.all(
+              color: context.colors.border.withValues(alpha: 0.4),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: tint.withValues(alpha: 0.14),
+                blurRadius: 12,
+                offset: const Offset(6, 8),
               ),
+            ],
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                width: 36,
+                height: 36,
+                alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: context.statusSuccess.withValues(alpha: 0.14),
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(
-                    color: context.statusSuccess.withValues(alpha: 0.5),
-                  ),
+                  color: tint.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(10),
+                  boxShadow: [
+                    BoxShadow(
+                      color: tint.withValues(alpha: 0.25),
+                      blurRadius: 8,
+                    ),
+                  ],
                 ),
                 child: Text(
-                  'REGULAR',
+                  item.letter,
                   style: TextStyle(
-                    fontSize: 10,
+                    fontSize: 14,
                     fontWeight: FontWeight.w800,
-                    color: context.statusSuccess,
+                    color: tint,
                   ),
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 10,
-            runSpacing: 4,
-            children: [
-              if (nps.pran != null)
-                Text(
-                  'PRAN ${nps.pran}',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: muted,
-                    fontFamily: 'monospace',
-                  ),
-                ),
-              if (nps.registrationDate != null &&
-                  nps.registrationDate!.trim().isNotEmpty)
-                Text(
-                  'Reg ${nps.registrationDate}',
-                  style: TextStyle(fontSize: 11, color: muted),
-                ),
-              if (nps.asOfDate != null)
-                Text(
-                  'As of ${nps.asOfDate}',
-                  style: TextStyle(fontSize: 11, color: muted),
-                ),
-            ],
-          ),
-          if (t1 != null || t2 != null || total != null) ...[
-            const SizedBox(height: 10),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (t1 != null)
-                        Text(
-                          'T-I ${currency.format(t1)}'
-                          '${t1Pct != null ? ' (${(t1Pct * 100).toStringAsFixed(1)}%)' : ''}',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                          ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(
+                          color: accent.withValues(alpha: 0.55),
                         ),
-                      if (t2 != null)
-                        Text(
-                          'T-II ${currency.format(t2)}'
-                          '${t1Pct != null ? ' (${((1 - t1Pct) * 100).toStringAsFixed(1)}%)' : ''}',
-                          style: TextStyle(fontSize: 12, color: muted),
-                        ),
-                    ],
-                  ),
-                ),
-                if (total != null)
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(
-                        currency.format(total),
+                        color: accent.withValues(alpha: 0.1),
+                      ),
+                      child: Text(
+                        item.typeLabel,
                         style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w800,
+                          fontSize: 9,
+                          fontWeight: FontWeight.w700,
                           color: accent,
                         ),
                       ),
-                      if (pctOfScope != null)
-                        Text(
-                          pctOfScope!,
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: muted,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      item.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: context.text.label().copyWith(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 12,
+                          ),
+                    ),
+                    if (item.meta.isNotEmpty)
+                      Text(
+                        item.meta,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: context.text.caption().copyWith(
+                              fontSize: 10,
+                              color: muted,
+                            ),
+                      ),
+                    const SizedBox(height: 2),
+                    Row(
+                      children: [
+                        Container(
+                          width: 6,
+                          height: 6,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: active
+                                ? context.colors.statusSuccess
+                                : muted,
                           ),
                         ),
-                    ],
-                  ),
-              ],
-            ),
-            if (t1Pct != null) ...[
-              const SizedBox(height: 8),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(4),
-                child: SizedBox(
-                  height: 6,
-                  child: Row(
-                    children: [
-                      Expanded(
-                        flex: (t1Pct * 1000).round().clamp(1, 999),
-                        child: ColoredBox(color: accent),
-                      ),
-                      Expanded(
-                        flex: ((1 - t1Pct) * 1000).round().clamp(1, 999),
-                        child: ColoredBox(
-                          color: accent.withValues(alpha: 0.25),
+                        const SizedBox(width: 5),
+                        Text(
+                          item.status,
+                          style: context.text.caption().copyWith(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                                color: active
+                                    ? context.colors.statusSuccess
+                                    : muted,
+                              ),
                         ),
-                      ),
-                    ],
-                  ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
-            ],
-          ],
-          if (nomineeName != null && nomineeName.isNotEmpty) ...[
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                Text(
-                  'Nominee: $nomineeName',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                if (nomineePct != null) ...[
-                  const SizedBox(width: 8),
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: accent.withValues(alpha: 0.14),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text(
-                      nomineePct,
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w800,
-                        color: accent,
-                      ),
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ],
-          const SizedBox(height: 8),
-          Row(
-            children: [
               Container(
-                width: 6,
-                height: 6,
-                decoration: BoxDecoration(
-                  color: accent,
-                  shape: BoxShape.circle,
-                ),
+                width: 1,
+                height: 42,
+                margin: const EdgeInsets.symmetric(horizontal: 10),
+                color: context.colors.border.withValues(alpha: 0.55),
               ),
-              const SizedBox(width: 6),
-              Text(
-                'Consolidated NPS Folio',
-                style: TextStyle(fontSize: 10, color: muted),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _DematDetailCard extends StatelessWidget {
-  const _DematDetailCard({
-    required this.account,
-    required this.currency,
-    this.pctOfScope,
-  });
-
-  final DematAccountRow account;
-  final NumberFormat currency;
-  final String? pctOfScope;
-
-  @override
-  Widget build(BuildContext context) {
-    final title = account.dpName ?? account.boid ?? account.accountNo;
-    final ids = [
-      if (account.boid != null && account.boid!.isNotEmpty)
-        'BOID ${account.boid}',
-      if (account.clientId != null && account.clientId!.isNotEmpty)
-        'Client ${account.clientId}',
-      if (account.dpId != null && account.dpId!.isNotEmpty) 'DP ${account.dpId}',
-      if (account.accountNo.isNotEmpty && account.accountNo != account.boid)
-        'A/c ${account.accountNo}',
-    ].join(' · ');
-    final meta = [
-      if (account.accountType != null) account.accountType!.toUpperCase(),
-      if (account.status != null) account.status,
-      if (account.mappedBroker != null) account.mappedBroker,
-    ].whereType<String>().where((s) => s.isNotEmpty).join(' · ');
-
-    return Container(
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        border: Border.all(color: context.colors.border.withValues(alpha: 0.35)),
-        borderRadius: BorderRadius.circular(AppRadii.sm),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  title,
-                  style: context.text.label().copyWith(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 12,
-                      ),
-                ),
-              ),
-              if (account.holdingValue != null)
-                Text(
-                  [
-                    currency.format(account.holdingValue),
-                    if (pctOfScope != null) pctOfScope!,
-                  ].join(' · '),
-                  style: context.text.label().copyWith(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 12,
-                      ),
-                ),
-            ],
-          ),
-          if (ids.isNotEmpty)
-            Text(ids, style: context.text.caption().copyWith(fontSize: 10)),
-          if (meta.isNotEmpty)
-            Text(meta, style: context.text.caption().copyWith(fontSize: 10)),
-          if (_dematAccountDetailLine(account).isNotEmpty)
-            Text(
-              _dematAccountDetailLine(account),
-              style: context.text.caption().copyWith(fontSize: 10),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-String _dematAccountDetailLine(DematAccountRow a) {
-  final nominee = a.nominee?.trim();
-  final nomineeLabel = (nominee != null &&
-          nominee.isNotEmpty &&
-          !nominee.toLowerCase().contains('not registered') &&
-          nominee.toLowerCase() != 'please nominate')
-      ? 'Nominee $nominee'
-      : (a.nomineeRegistered == false ? 'No nominee' : null);
-  final frozen = a.frozenStatus?.trim();
-  final frozenLabel = (frozen != null &&
-          frozen.isNotEmpty &&
-          !frozen.toLowerCase().contains('not frozen'))
-      ? frozen
-      : null;
-  return [
-    if (nomineeLabel != null) nomineeLabel,
-    if (frozenLabel != null) frozenLabel,
-  ].join(' · ');
-}
-
-class _FolioDetailCard extends StatelessWidget {
-  const _FolioDetailCard({
-    required this.account,
-    required this.currency,
-    this.pctOfScope,
-  });
-
-  final DematAccountRow account;
-  final NumberFormat currency;
-  final String? pctOfScope;
-
-  @override
-  Widget build(BuildContext context) {
-    final folio = account.folio?.trim().isNotEmpty == true
-        ? account.folio!
-        : account.accountNo;
-    return Container(
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        border: Border.all(color: context.colors.border.withValues(alpha: 0.35)),
-        borderRadius: BorderRadius.circular(AppRadii.sm),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  'Folio $folio',
-                  style: context.text.label().copyWith(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 12,
-                      ),
-                ),
-              ),
-              if (account.holdingValue != null)
-                Text(
-                  [
-                    currency.format(account.holdingValue),
-                    if (pctOfScope != null) pctOfScope!,
-                  ].join(' · '),
-                  style: context.text.label().copyWith(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 12,
-                      ),
-                ),
-            ],
-          ),
-          if (account.amcName != null && account.amcName!.isNotEmpty)
-            Text(account.amcName!, style: context.text.caption()),
-          Text(
-            [
-              if (account.mappedBroker != null) account.mappedBroker,
-              if (account.status != null) account.status,
-            ].whereType<String>().where((s) => s.isNotEmpty).join(' · '),
-            style: context.text.caption().copyWith(fontSize: 10),
-          ),
-          if (_dematAccountDetailLine(account).isNotEmpty)
-            Text(
-              _dematAccountDetailLine(account),
-              style: context.text.caption().copyWith(fontSize: 10),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-class _NomineeSection extends StatelessWidget {
-  const _NomineeSection({required this.accounts, this.nps});
-
-  final List<DematAccountRow> accounts;
-  final NpsMetaRow? nps;
-
-  @override
-  Widget build(BuildContext context) {
-    final rows = <Widget>[];
-    for (final a in accounts) {
-      final accountLabel = a.accountType == 'mf'
-          ? 'Folio ${a.folio ?? a.accountNo}'
-          : (a.dpName ?? a.boid ?? a.accountNo);
-      final name = a.nominee?.trim();
-      final status = a.nomineeRegistered == true
-          ? 'Registered'
-          : (a.nomineeRegistered == false
-              ? 'Not registered'
-              : (name != null && name.isNotEmpty ? 'Listed' : 'Unknown'));
-      rows.add(
-        Padding(
-          padding: const EdgeInsets.only(bottom: 6),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                flex: 2,
-                child: Text(
-                  accountLabel,
-                  style: context.text.caption().copyWith(fontSize: 11),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              Expanded(
-                flex: 2,
-                child: Text(
-                  name != null && name.isNotEmpty ? name : '—',
-                  style: context.text.caption().copyWith(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 11,
-                      ),
-                ),
-              ),
-              Text(
-                status,
-                style: context.text.caption().copyWith(
-                      fontSize: 10,
-                      color: a.nomineeRegistered == false
-                          ? context.colors.statusError
-                          : context.colors.textSecondary,
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    item.valueLabel,
+                    style: context.text.label().copyWith(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 13,
+                        ),
+                  ),
+                  if (item.weightLabel != null)
+                    Text(
+                      item.weightLabel!,
+                      style: context.text.caption().copyWith(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: context.colors.statusSuccess,
+                          ),
                     ),
+                ],
               ),
             ],
           ),
         ),
-      );
-    }
-    final npsNominee = nps?.nomineeDetails?.trim();
-    if (npsNominee != null && npsNominee.isNotEmpty) {
-      rows.add(
-        Padding(
-          padding: const EdgeInsets.only(bottom: 6),
-          child: Row(
-            children: [
-              Expanded(
-                flex: 2,
-                child: Text('NPS', style: context.text.caption()),
-              ),
-              Expanded(
-                flex: 3,
-                child: Text(
-                  npsNominee,
-                  style: context.text.caption().copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-    if (rows.isEmpty) {
-      rows.add(
-        Text(
-          'No nominee details on file.',
-          style: context.text.caption().copyWith(
-                color: context.colors.textSecondary,
-              ),
-        ),
-      );
-    }
-
-    return Container(
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: context.colors.surface.withValues(alpha: 0.35),
-        borderRadius: BorderRadius.circular(AppRadii.sm),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            'Nominee details',
-            style: context.text.label().copyWith(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 12,
-                ),
-          ),
-          const SizedBox(height: 8),
-          ...rows,
-        ],
       ),
     );
   }

@@ -33,8 +33,8 @@ void main() {
       1,
     );
     expect(
-      ids.indexOf(DashboardWidgetId.movers),
-      greaterThan(ids.indexOf(DashboardWidgetId.recentActivity)),
+      ids.indexOf(DashboardWidgetId.recentActivity),
+      greaterThan(ids.indexOf(DashboardWidgetId.movers)),
     );
     expect(ids.contains(DashboardWidgetId.portfolioList), isFalse);
 
@@ -97,7 +97,7 @@ void main() {
     expect(byId[DashboardWidgetId.portfolioRisk]!.visible, isTrue);
   });
 
-  test('compactDashboardSlots emits activity then movers then news', () {
+  test('compactDashboardSlots emits movers then activity then news', () {
     final merged = mergeWithDefaultLayout(
       const DashboardLayoutModel(slots: []),
     );
@@ -116,8 +116,8 @@ void main() {
     expect(healthAt, greaterThanOrEqualTo(0));
     expect(activityAt, lessThan(newsAt));
     expect(moversAt, lessThan(newsAt));
-    expect(activityAt, lessThan(moversAt));
-    expect(healthAt, lessThan(activityAt));
+    expect(moversAt, lessThan(activityAt));
+    expect(healthAt, lessThan(moversAt));
   });
 
   test('compactDashboardSlots skips news when flag is off', () {

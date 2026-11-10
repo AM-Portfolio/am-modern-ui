@@ -54,6 +54,8 @@ const _fixtureHub = AccountsHub(
       accountType: 'demat',
       dpName: 'Zerodha DP',
       mappedBroker: 'ZERODHA',
+      holdingValue: 100000,
+      status: 'Active',
     ),
   ],
   nps: NpsMetaRow(
@@ -63,7 +65,7 @@ const _fixtureHub = AccountsHub(
 );
 
 Future<ProviderContainer> _pumpUsers(WidgetTester tester) async {
-  tester.view.physicalSize = const Size(400, 900);
+  tester.view.physicalSize = const Size(480, 900);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
@@ -82,6 +84,7 @@ Future<ProviderContainer> _pumpUsers(WidgetTester tester) async {
         theme: _theme(),
         home: const Scaffold(
           body: SizedBox(
+            width: 420,
             height: 700,
             child: DashboardUsersHubWidget(userId: 'u1'),
           ),
@@ -104,17 +107,26 @@ void main() {
     expect(find.text('USERS'), findsOneWidget);
     expect(find.text('test@example.com'), findsNothing);
     expect(find.text('All'), findsWidgets);
-    expect(find.text('Household'), findsOneWidget);
-    expect(find.text('Priyanshu'), findsWidgets);
-    expect(find.widgetWithText(ChoiceChip, 'Overview'), findsOneWidget);
-    expect(find.widgetWithText(ChoiceChip, 'Family'), findsOneWidget);
-    expect(find.widgetWithText(ChoiceChip, 'Broker (1)'), findsNothing);
-    expect(find.widgetWithText(ChoiceChip, 'NPS (1)'), findsNothing);
+    expect(find.text('Overview'), findsOneWidget);
+    expect(find.text('Family'), findsOneWidget);
+    expect(find.byType(ChoiceChip), findsNothing);
     expect(find.textContaining('Family 60% of portfolio'), findsNothing);
-    expect(find.textContaining('Demat 1'), findsNothing);
-    expect(find.textContaining('XIRR +10.2%'), findsOneWidget);
-    expect(find.textContaining('XIRR +8.1%'), findsOneWidget);
-    expect(find.textContaining('XIRR +12.5%'), findsOneWidget);
+    expect(find.textContaining('+10.2%'), findsOneWidget);
+    expect(find.textContaining('+8.1%'), findsOneWidget);
+    // Persona role icons removed on hub; Family tab still uses groups icon.
+    expect(find.byIcon(Icons.work_outline_rounded), findsNothing);
+    expect(find.text('Search mapped accounts...'), findsNothing);
+    expect(find.textContaining('Mapped Accounts'), findsOneWidget);
+    expect(find.textContaining('Nominee'), findsNothing);
+
+    await tester.drag(
+      find.byKey(const Key('persona-card-strip-scroll')),
+      const Offset(-240, 0),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Priyanshu'), findsWidgets);
+    expect(find.textContaining('+12.5%'), findsOneWidget);
+
     await tester.tap(find.text('Family'));
     await tester.pumpAndSettle();
     expect(find.text('Add'), findsOneWidget);
@@ -129,10 +141,21 @@ void main() {
       FavoritePersonaStore.kAll,
     );
 
+    await tester.drag(
+      find.byKey(const Key('persona-card-strip-scroll')),
+      const Offset(-240, 0),
+    );
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Priyanshu').first);
     await tester.pumpAndSettle();
     expect(container.read(familyPortfolioFilterProvider), 'fm1');
 
+    await tester.drag(
+      find.byKey(const Key('persona-card-strip-scroll')),
+      const Offset(240, 0),
+    );
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('All').first);
     await tester.tap(find.text('All').first);
     await tester.pumpAndSettle();
     expect(
@@ -141,10 +164,13 @@ void main() {
     );
   });
 
-  testWidgets('Overview shows NPS strip without Broker/NPS tabs', (tester) async {
+  testWidgets('Overview shows Mapped Accounts without nominee section',
+      (tester) async {
     await _pumpUsers(tester);
-    expect(find.byKey(const Key('users_nps_strip')), findsOneWidget);
+    expect(find.textContaining('Mapped Accounts'), findsOneWidget);
     expect(find.text('Zerodha'), findsWidgets);
-    expect(find.widgetWithText(ChoiceChip, 'Broker (1)'), findsNothing);
+    expect(find.text('NPS'), findsWidgets);
+    expect(find.textContaining('Nominee details'), findsNothing);
+    expect(find.text('Broker'), findsWidgets);
   });
 }

@@ -142,6 +142,14 @@ DashboardSummary _dashboardSummaryFromPortfolioRaw(Map<String, dynamic> rawData)
   final totalPortfolios = brokerPortfolios?.keys.length ??
       (brokers is List ? brokers.length : 0);
 
+  final holdingsRaw =
+      rawData['totalHoldings'] ?? rawData['totalAssets'] ?? rawData['holdingsCount'];
+  final holdings = holdingsRaw is int
+      ? holdingsRaw
+      : holdingsRaw is num
+          ? holdingsRaw.toInt()
+          : int.tryParse('$holdingsRaw') ?? 0;
+
   return DashboardSummary(
     totalValue: _parseDouble(rawData['currentValue'] ?? rawData['totalValue']),
     totalInvested: _parseDouble(
@@ -154,6 +162,7 @@ DashboardSummary _dashboardSummaryFromPortfolioRaw(Map<String, dynamic> rawData)
       rawData['todayGainLossPercentage'] ?? rawData['dayChangePercentage'],
     ),
     totalPortfolios: totalPortfolios == 0 ? 1 : totalPortfolios,
+    totalHoldings: holdings,
   );
 }
 

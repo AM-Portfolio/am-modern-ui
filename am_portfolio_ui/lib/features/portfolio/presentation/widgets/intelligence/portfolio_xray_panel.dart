@@ -631,6 +631,7 @@ class _PortfolioXrayPanelState extends ConsumerState<PortfolioXrayPanel>
           fillHeight: useFill,
           sideBySide: sideBySide,
           mobileShowList: _mobileShowList,
+          // Web: chips sit in the title row. Phone: chips in body under Chart/List.
           showTabsInBody: !wide,
           readOnly: widget.readOnly,
           tabs: tabs,
@@ -661,8 +662,8 @@ class _PortfolioXrayPanelState extends ConsumerState<PortfolioXrayPanel>
           fillHeight: useFill,
           padding: widget.padding,
           scrollable: false,
-          // Web: Sector/Industry/Cap in header. Phone: Chart/List in header
-          // so the donut can use the freed vertical space.
+          // Web: Sector…By Portfolio in the title row (one horizontal line).
+          // Phone: Chart/List in header; dimension tabs stay in the body.
           trailing: wide
               ? tabs
               : _MobilePaneSwap(
@@ -1086,18 +1087,23 @@ class _Tabs extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Wrap(
-      spacing: 6,
-      runSpacing: 6,
-      children: [
-        for (var i = 0; i < xrayTabLabels.length; i++)
-          IntelligenceModeChip(
-            label: xrayTabLabels[i],
-            selected: tab == i,
-            accentColor: ModuleColors.portfolio,
-            onTap: () => onTab(i),
-          ),
-      ],
+    // Keep Sector…By Portfolio on one row; scroll horizontally if needed.
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (var i = 0; i < xrayTabLabels.length; i++) ...[
+            if (i > 0) SizedBox(width: compact ? 4 : 6),
+            IntelligenceModeChip(
+              label: xrayTabLabels[i],
+              selected: tab == i,
+              accentColor: ModuleColors.portfolio,
+              onTap: () => onTab(i),
+            ),
+          ],
+        ],
+      ),
     );
   }
 }
@@ -1161,31 +1167,35 @@ class _MobilePaneSwap extends StatelessWidget {
       );
     }
 
-    return Container(
-      padding: const EdgeInsets.all(2),
-      decoration: BoxDecoration(
-        color: isDark
-            ? context.colors.cardSurface.withValues(alpha: 0.55)
-            : context.colors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: context.colors.border.withValues(alpha: 0.45),
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      alignment: Alignment.centerRight,
+      child: Container(
+        padding: const EdgeInsets.all(2),
+        decoration: BoxDecoration(
+          color: isDark
+              ? context.colors.cardSurface.withValues(alpha: 0.55)
+              : context.colors.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: context.colors.border.withValues(alpha: 0.45),
+          ),
         ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          chip(
-            list: false,
-            icon: Icons.donut_large_rounded,
-            label: 'Chart',
-          ),
-          chip(
-            list: true,
-            icon: Icons.view_list_rounded,
-            label: 'List',
-          ),
-        ],
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            chip(
+              list: false,
+              icon: Icons.donut_large_rounded,
+              label: 'Chart',
+            ),
+            chip(
+              list: true,
+              icon: Icons.view_list_rounded,
+              label: 'List',
+            ),
+          ],
+        ),
       ),
     );
   }

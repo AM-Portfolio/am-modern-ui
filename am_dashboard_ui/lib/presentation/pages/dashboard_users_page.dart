@@ -365,7 +365,7 @@ class _DashboardUsersPageState extends ConsumerState<DashboardUsersPage> {
                     ? pran
                     : personaNps?.pran,
                 registrationDate: personaNps?.registrationDate,
-                nomineeDetails: personaNps?.nomineeDetails,
+                nomineeDetails: null,
                 hasLinked: hasLinked,
                 familySharePct: null,
                 showKpis: false,
@@ -374,67 +374,66 @@ class _DashboardUsersPageState extends ConsumerState<DashboardUsersPage> {
                 xirrPct: selectedXirr,
                 activeAccountCount: activeAccountCount,
               ),
-              if (hub.familyMembers.isNotEmpty) ...[
-                const SizedBox(height: 10),
-                Builder(
-                  builder: (context) {
-                    final compact = MediaQuery.sizeOf(context).width < 720;
-                    final primaryLabel =
-                        hub.identity?.name?.trim().isNotEmpty == true
-                            ? hub.identity!.name!.trim()
-                            : 'You';
-                    final selectedKey =
-                        FavoritePersonaStore.keyFromSelection(_familyMemberId);
-                    if (compact) {
-                      return _MobilePersonaBar(
-                        selectedKey: selectedKey,
-                        primaryLabel: primaryLabel,
-                        members: [
-                          for (final m in hub.familyMembers)
-                            if (m.id != null && m.id!.trim().isNotEmpty)
-                              (
-                                id: m.id!,
-                                name: m.name?.trim().isNotEmpty == true
-                                    ? m.name!.trim()
-                                    : 'Family member',
-                              ),
-                        ],
-                        favoriteKey: _favoriteKey,
-                        onSelected: (key) => _selectPersona(
-                          FavoritePersonaStore.selectionFromKey(key),
-                        ),
-                        onFavorite: () => _setFavorite(selectedKey),
-                        selectedTab: _tab,
-                        tabLabelFor: (t) => _tabLabel(
-                          t,
-                          runningBrokers,
-                          mf,
-                          demat,
-                          hasNps,
-                          hub.familyMembers.length,
-                        ),
-                        onTabSelected: (t) => setState(() => _tab = t),
-                      );
-                    }
-                    return PersonaCardStrip(
-                      members: hub.familyMembers,
-                      selectedId: _familyMemberId,
+              const SizedBox(height: 10),
+              Builder(
+                builder: (context) {
+                  final compact = MediaQuery.sizeOf(context).width < 720;
+                  final primaryLabel =
+                      hub.identity?.name?.trim().isNotEmpty == true
+                          ? hub.identity!.name!.trim()
+                          : 'You';
+                  final selectedKey =
+                      FavoritePersonaStore.keyFromSelection(_familyMemberId);
+                  if (compact) {
+                    return _MobilePersonaBar(
+                      selectedKey: selectedKey,
                       primaryLabel: primaryLabel,
+                      members: [
+                        for (final m in hub.familyMembers)
+                          if (m.id != null && m.id!.trim().isNotEmpty)
+                            (
+                              id: m.id!,
+                              name: m.name?.trim().isNotEmpty == true
+                                  ? m.name!.trim()
+                                  : 'Family member',
+                            ),
+                      ],
                       favoriteKey: _favoriteKey,
-                      householdTotalValue: hub.stats?.householdTotalValue,
-                      householdXirrPct: hub.stats?.householdXirrPct,
-                      householdAccountCount: householdAccountCount,
-                      primaryTotalValue: hub.stats?.primaryTotalValue,
-                      primaryXirrPct: hub.stats?.overallXirrPct,
-                      primaryAccountCount: primaryAccountCount,
-                      memberAccountCounts: memberAccountCounts,
-                      onSelected: _selectPersona,
-                      onFavorite: _setFavorite,
-                      onDelete: (m) => _deleteFamilyFromCard(context, m),
+                      onSelected: (key) => _selectPersona(
+                        FavoritePersonaStore.selectionFromKey(key),
+                      ),
+                      onFavorite: () => _setFavorite(selectedKey),
+                      selectedTab: _tab,
+                      tabLabelFor: (t) => _tabLabel(
+                        t,
+                        runningBrokers,
+                        mf,
+                        demat,
+                        hasNps,
+                        hub.familyMembers.length,
+                      ),
+                      onTabSelected: (t) => setState(() => _tab = t),
                     );
-                  },
-                ),
-              ],
+                  }
+                  return PersonaCardStrip(
+                    members: hub.familyMembers,
+                    selectedId: _familyMemberId,
+                    primaryLabel: primaryLabel,
+                    favoriteKey: _favoriteKey,
+                    householdTotalValue: hub.stats?.householdTotalValue,
+                    householdXirrPct: hub.stats?.householdXirrPct,
+                    householdAccountCount: householdAccountCount,
+                    primaryTotalValue: hub.stats?.primaryTotalValue,
+                    primaryXirrPct: hub.stats?.overallXirrPct,
+                    primaryAccountCount: primaryAccountCount,
+                    memberAccountCounts: memberAccountCounts,
+                    onSelected: _selectPersona,
+                    onFavorite: _setFavorite,
+                    onDelete: (m) => _deleteFamilyFromCard(context, m),
+                    onAddFamily: () => _addFamilyFromCard(context),
+                  );
+                },
+              ),
               if ((_tab == _UsersPageTab.demat || _tab == _UsersPageTab.mf) &&
                   personaDemat.isEmpty) ...[
                 const SizedBox(height: 10),
@@ -656,6 +655,40 @@ class _DashboardUsersPageState extends ConsumerState<DashboardUsersPage> {
         _UsersPageTab.family => 'family members',
         _ => 'accounts',
       };
+
+  Future<void> _addFamilyFromCard(BuildContext context) async {
+    final hub = ref.read(accountsHubProvider(widget.userId)).asData?.value;
+    if (hub != null && hub.familyMembers.length >= 5) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Maximum of 5 family members allowed')),
+        );
+      }
+      return;
+    }
+    final result = await _UsersFamilyPanel._promptFamilyMember(context);
+    if (result == null || !context.mounted) return;
+    try {
+      final client = await ref.read(portfolioApiClientProvider.future);
+      await createFamilyMember(
+        client: client,
+        displayName: result.$1,
+        email: result.$2,
+      );
+      ref.invalidate(accountsHubProvider(widget.userId));
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Family member added')),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not add: $e')),
+        );
+      }
+    }
+  }
 
   Future<void> _deleteFamilyFromCard(
     BuildContext context,

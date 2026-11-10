@@ -258,28 +258,37 @@ class DashboardLayoutRenderer extends ConsumerWidget {
       final next = i + 1 < rest.length ? rest[i + 1] : null;
       final afterNext = i + 2 < rest.length ? rest[i + 2] : null;
 
+      // Match X-Ray | Users (67/33). Right stack is Movers then Recent Activity.
+      final newsPeerIds = {
+        if (next != null) next.id,
+        if (afterNext != null) afterNext.id,
+      };
       if (slot.id == DashboardWidgetId.news &&
-          next?.id == DashboardWidgetId.recentActivity &&
-          afterNext?.id == DashboardWidgetId.movers) {
+          newsPeerIds.contains(DashboardWidgetId.movers) &&
+          newsPeerIds.contains(DashboardWidgetId.recentActivity)) {
         _appendSlot(
           children,
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
-                flex: 70,
+                flex: 67,
                 child: _buildSlot(context, ref, slot.id),
               ),
               const SizedBox(width: _slotGap),
               Expanded(
-                flex: 30,
+                flex: 33,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    _buildSlot(context, ref, next!.id),
+                    _buildSlot(context, ref, DashboardWidgetId.movers),
                     const SizedBox(height: _slotGap),
-                    _buildSlot(context, ref, afterNext!.id),
+                    _buildSlot(
+                      context,
+                      ref,
+                      DashboardWidgetId.recentActivity,
+                    ),
                   ],
                 ),
               ),
@@ -290,22 +299,19 @@ class DashboardLayoutRenderer extends ConsumerWidget {
         continue;
       }
 
-      if (slot.id == DashboardWidgetId.recentActivity &&
-          next?.id == DashboardWidgetId.movers) {
+      if ((slot.id == DashboardWidgetId.movers &&
+              next?.id == DashboardWidgetId.recentActivity) ||
+          (slot.id == DashboardWidgetId.recentActivity &&
+              next?.id == DashboardWidgetId.movers)) {
         _appendSlot(
           children,
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Expanded(
-                flex: 70,
-                child: _buildSlot(context, ref, slot.id),
-              ),
-              const SizedBox(width: _slotGap),
-              Expanded(
-                flex: 30,
-                child: _buildSlot(context, ref, next!.id),
-              ),
+              _buildSlot(context, ref, DashboardWidgetId.movers),
+              const SizedBox(height: _slotGap),
+              _buildSlot(context, ref, DashboardWidgetId.recentActivity),
             ],
           ),
         );
@@ -323,12 +329,12 @@ class DashboardLayoutRenderer extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
-                flex: 30,
+                flex: 33,
                 child: _buildSlot(context, ref, slot.id),
               ),
               const SizedBox(width: _slotGap),
               Expanded(
-                flex: 70,
+                flex: 67,
                 child: _buildSlot(context, ref, next.id),
               ),
             ],
