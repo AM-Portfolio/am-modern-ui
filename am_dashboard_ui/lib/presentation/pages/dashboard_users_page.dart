@@ -1711,7 +1711,6 @@ class _MobilePersonaBar extends StatelessWidget {
           flex: 5,
           child: SharedFamilyFilterDropdown(
             compact: true,
-            fillWidth: true,
             selectedKey: selectedKey,
             primaryLabel: primaryLabel,
             members: members,

@@ -89,22 +89,26 @@ class FamilyAwarePortfolioPicker<T> extends StatelessWidget {
     if (layout == FamilyAwarePortfolioPickerLayout.row) {
       // Compact mobile toolbars: share width (family left, portfolio right).
       if (compact) {
-        return Row(
-          children: [
-            Flexible(
-              flex: 2,
-              child: familyWidth == null
-                  ? Align(alignment: Alignment.centerLeft, child: family)
-                  : SizedBox(width: familyWidth, child: family),
-            ),
-            const SizedBox(width: 6),
-            Flexible(
-              flex: 3,
-              child: portfolioWidth == null
-                  ? portfolio
-                  : SizedBox(width: portfolioWidth, child: portfolio),
-            ),
-          ],
+        return SizedBox(
+          height: 36,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Flexible(
+                flex: 2,
+                child: familyWidth == null
+                    ? Align(alignment: Alignment.centerLeft, child: family)
+                    : SizedBox(width: familyWidth, child: family),
+              ),
+              const SizedBox(width: 6),
+              Flexible(
+                flex: 3,
+                child: portfolioWidth == null
+                    ? portfolio
+                    : SizedBox(width: portfolioWidth, child: portfolio),
+              ),
+            ],
+          ),
         );
       }
       return Row(
@@ -134,7 +138,7 @@ class FamilyAwarePortfolioPicker<T> extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Align(alignment: Alignment.centerLeft, child: family),
+        family,
         const SizedBox(height: 8),
         portfolio,
       ],

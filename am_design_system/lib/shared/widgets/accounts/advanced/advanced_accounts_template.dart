@@ -32,6 +32,8 @@ class AdvancedAccountsTemplate extends StatefulWidget {
     this.footerNoun = 'accounts',
     this.footerCenterNote,
     this.searchHint = 'Search accounts, broker, DP ID…',
+    this.initialViewMode = 'table',
+    this.allowViewModeToggle = true,
   });
 
   final List<AdvancedAccountRow> accounts;
@@ -53,6 +55,12 @@ class AdvancedAccountsTemplate extends StatefulWidget {
   final String? footerCenterNote;
   final String searchHint;
 
+  /// `table` or `card`. Defaults to table for web callers.
+  final String initialViewMode;
+
+  /// When false, hides the Table/Card toggle (mobile card-only).
+  final bool allowViewModeToggle;
+
   @override
   State<AdvancedAccountsTemplate> createState() =>
       _AdvancedAccountsTemplateState();
@@ -65,7 +73,7 @@ class _AdvancedAccountsTemplateState extends State<AdvancedAccountsTemplate>
   bool _sortAscending = true;
   List<AdvancedAccountRow> _sortedAccounts = [];
   late AnimationController _refreshController;
-  String _viewMode = 'table';
+  late String _viewMode;
   late final TextEditingController _searchController;
   String _searchQuery = '';
 
@@ -76,6 +84,7 @@ class _AdvancedAccountsTemplateState extends State<AdvancedAccountsTemplate>
   @override
   void initState() {
     super.initState();
+    _viewMode = widget.initialViewMode == 'card' ? 'card' : 'table';
     _sortedAccounts = List.from(widget.accounts);
     _searchQuery = widget.initialSearchQuery;
     _searchController = TextEditingController(text: _searchQuery);
@@ -108,6 +117,9 @@ class _AdvancedAccountsTemplateState extends State<AdvancedAccountsTemplate>
         _searchController.text = _searchQuery;
       }
       _currentPage = 0;
+    }
+    if (!widget.allowViewModeToggle && _viewMode != 'card') {
+      _viewMode = 'card';
     }
   }
 
@@ -351,7 +363,10 @@ class _AdvancedAccountsTemplateState extends State<AdvancedAccountsTemplate>
               height: _controlHeight,
               child: Row(
                 children: [
-                  _buildViewModeToggle(),
+                  if (widget.allowViewModeToggle) ...[
+                    _buildViewModeToggle(),
+                    const SizedBox(width: AppSpacing.sm),
+                  ],
                   const Spacer(),
                   _buildRefreshButton(),
                 ],
@@ -364,6 +379,9 @@ class _AdvancedAccountsTemplateState extends State<AdvancedAccountsTemplate>
       );
 
   Widget _buildViewModeToggle() {
+    if (!widget.allowViewModeToggle) {
+      return const SizedBox.shrink();
+    }
     Widget pill(String mode, IconData icon, String label) {
       final selected = _viewMode == mode;
       return InkWell(

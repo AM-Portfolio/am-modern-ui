@@ -236,8 +236,10 @@ class SharedPortfolioSelector<T> extends StatelessWidget {
           child: PopupMenuButton<String>(
             tooltip: 'Select Portfolio',
             offset: Offset(0, dense ? 40 : 48),
+            padding: EdgeInsets.zero,
             color: cardBgColor,
             surfaceTintColor: Colors.transparent,
+            // Menu width only — trigger height lives on the child Container.
             constraints: BoxConstraints(
               minWidth: menuWidth,
               maxWidth: menuWidth,
@@ -263,7 +265,9 @@ class SharedPortfolioSelector<T> extends StatelessWidget {
               decoration: BoxDecoration(
                 color: cardBgColor,
                 borderRadius: BorderRadius.circular(dense ? 999 : 8),
-                border: Border.all(color: idleFieldBorder),
+                border: Border.all(
+                  color: dense ? cardBorderColor : idleFieldBorder,
+                ),
               ),
               child: Row(
                 children: [

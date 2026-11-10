@@ -203,6 +203,7 @@ class PortfolioXrayPanel extends ConsumerStatefulWidget {
     this.fillHeight = false,
     this.padding = const EdgeInsets.all(20),
     this.readOnly = false,
+    this.accentColor,
     @visibleForTesting this.holdingsOverride,
     super.key,
   });
@@ -214,6 +215,7 @@ class PortfolioXrayPanel extends ConsumerStatefulWidget {
   final EdgeInsetsGeometry padding;
   /// When true (All Portfolios), Class write CTAs are hidden.
   final bool readOnly;
+  final Color? accentColor;
 
   /// Test-only holdings injection when PortfolioCubit is unavailable.
   @visibleForTesting
@@ -591,6 +593,7 @@ class _PortfolioXrayPanelState extends ConsumerState<PortfolioXrayPanel>
         minHeight: widget.minHeight,
         fillHeight: widget.fillHeight,
         padding: widget.padding,
+        accentColor: widget.accentColor,
         child: IntelligenceRetryRow(
           message: 'Could not load X-Ray',
           onRetry: () => ref
@@ -598,6 +601,7 @@ class _PortfolioXrayPanelState extends ConsumerState<PortfolioXrayPanel>
         ),
       ),
       data: (intel) {
+        final accent = widget.accentColor ?? ModuleColors.portfolio;
         final xray = _resolveXray(intel?.xray);
         final weights = _weightsForTab(xray);
         final holdingsTotal = holdings == null || holdings.isEmpty
@@ -611,6 +615,7 @@ class _PortfolioXrayPanelState extends ConsumerState<PortfolioXrayPanel>
           tab: _tab,
           onTab: _onTab,
           compact: true,
+          accentColor: accent,
         );
         final active = _activeIndex(weights);
 
@@ -634,6 +639,7 @@ class _PortfolioXrayPanelState extends ConsumerState<PortfolioXrayPanel>
           // Web: chips sit in the title row. Phone: chips in body under Chart/List.
           showTabsInBody: !wide,
           readOnly: widget.readOnly,
+          accentColor: accent,
           tabs: tabs,
           onDonutSide: (side) {
             if (!mounted) return;
@@ -661,6 +667,7 @@ class _PortfolioXrayPanelState extends ConsumerState<PortfolioXrayPanel>
           minHeight: widget.minHeight,
           fillHeight: useFill,
           padding: widget.padding,
+          accentColor: accent,
           scrollable: false,
           // Web: Sector…By Portfolio in the title row (one horizontal line).
           // Phone: Chart/List in header; dimension tabs stay in the body.
@@ -669,6 +676,7 @@ class _PortfolioXrayPanelState extends ConsumerState<PortfolioXrayPanel>
               : _MobilePaneSwap(
                   showList: _mobileShowList,
                   onShowList: _onMobileShowList,
+                  accentColor: accent,
                 ),
           child: body,
         );
@@ -712,6 +720,7 @@ class _XrayBody extends StatelessWidget {
     this.sideBySide = false,
     this.mobileShowList = false,
     this.readOnly = false,
+    this.accentColor,
   });
 
   final List<XrayWeight> weights;
@@ -743,6 +752,7 @@ class _XrayBody extends StatelessWidget {
   /// When [sideBySide] is false, show list instead of donut.
   final bool mobileShowList;
   final bool readOnly;
+  final Color? accentColor;
 
   @override
   Widget build(BuildContext context) {
@@ -981,7 +991,7 @@ class _XrayBody extends StatelessWidget {
               formatIntelligenceCompactInr(totalValue),
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: ModuleColors.portfolio,
+                    color: accentColor ?? ModuleColors.portfolio,
                   ),
             ),
           ),
@@ -1079,14 +1089,17 @@ class _Tabs extends StatelessWidget {
     required this.tab,
     required this.onTab,
     this.compact = false,
+    this.accentColor,
   });
 
   final int tab;
   final ValueChanged<int> onTab;
   final bool compact;
+  final Color? accentColor;
 
   @override
   Widget build(BuildContext context) {
+    final accent = accentColor ?? ModuleColors.portfolio;
     // Keep Sector…By Portfolio on one row; scroll horizontally if needed.
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
@@ -1098,7 +1111,7 @@ class _Tabs extends StatelessWidget {
             IntelligenceModeChip(
               label: xrayTabLabels[i],
               selected: tab == i,
-              accentColor: ModuleColors.portfolio,
+              accentColor: accent,
               onTap: () => onTab(i),
             ),
           ],
@@ -1113,13 +1126,16 @@ class _MobilePaneSwap extends StatelessWidget {
   const _MobilePaneSwap({
     required this.showList,
     required this.onShowList,
+    this.accentColor,
   });
 
   final bool showList;
   final ValueChanged<bool> onShowList;
+  final Color? accentColor;
 
   @override
   Widget build(BuildContext context) {
+    final accent = accentColor ?? ModuleColors.portfolio;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     Widget chip({
       required bool list,
@@ -1136,7 +1152,7 @@ class _MobilePaneSwap extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
-              color: selected ? ModuleColors.portfolio : Colors.transparent,
+              color: selected ? accent : Colors.transparent,
               borderRadius: BorderRadius.circular(14),
             ),
             child: Row(

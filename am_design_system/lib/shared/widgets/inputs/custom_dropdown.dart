@@ -21,6 +21,7 @@ class CustomDropdown<T> extends StatefulWidget {
     this.fontSize = 14,
     this.iconSize = 18,
     this.borderRadius = 12,
+    this.menuBorderRadius,
     this.contentPadding = const EdgeInsets.symmetric(horizontal: 12),
     this.backgroundColor,
     this.menuBackgroundColor,
@@ -68,8 +69,12 @@ class CustomDropdown<T> extends StatefulWidget {
   /// Size of the dropdown icon
   final double iconSize;
 
-  /// Border radius for the container
+  /// Border radius for the closed trigger
   final double borderRadius;
+
+  /// Open-menu corner radius. Defaults to [borderRadius], capped at 12 when
+  /// the trigger is a pill so the panel stays a normal rounded rect.
+  final double? menuBorderRadius;
 
   /// Padding inside the container
   final EdgeInsets contentPadding;
@@ -117,6 +122,13 @@ class _CustomDropdownState<T> extends State<CustomDropdown<T>> {
   final LayerLink _layerLink = LayerLink();
   OverlayEntry? _overlayEntry;
   bool _isOpen = false;
+
+  double get _menuRadius {
+    final override = widget.menuBorderRadius;
+    if (override != null) return override;
+    // Pill triggers (radius >= height) keep a normal rounded menu panel.
+    return widget.borderRadius > 24 ? 12.0 : widget.borderRadius;
+  }
 
   void _toggleDropdown() {
     if (!widget.enabled) return;
@@ -188,7 +200,7 @@ class _CustomDropdownState<T> extends State<CustomDropdown<T>> {
             child: Material(
               elevation: widget.enableGlass ? 0 : 8,
               color: Colors.transparent,
-              borderRadius: BorderRadius.circular(widget.borderRadius),
+              borderRadius: BorderRadius.circular(_menuRadius),
               child: ConstrainedBox(
                 constraints: BoxConstraints(
                   maxHeight: widget.menuMaxHeight,
@@ -198,15 +210,13 @@ class _CustomDropdownState<T> extends State<CustomDropdown<T>> {
                 child: Container(
                   decoration: widget.enableGlass
                       ? AppGlassmorphism.dropdownDecoration(context).copyWith(
-                          borderRadius:
-                              BorderRadius.circular(widget.borderRadius),
+                          borderRadius: BorderRadius.circular(_menuRadius),
                         )
                       : BoxDecoration(
                           color: widget.menuBackgroundColor ??
                               widget.backgroundColor ??
                               theme.colorScheme.surface,
-                          borderRadius:
-                              BorderRadius.circular(widget.borderRadius),
+                          borderRadius: BorderRadius.circular(_menuRadius),
                           border: Border.all(
                             color: theme.colorScheme.outlineVariant
                                 .withValues(alpha: 0.3),
@@ -222,7 +232,7 @@ class _CustomDropdownState<T> extends State<CustomDropdown<T>> {
                           ],
                         ),
                   child: ClipRRect(
-                    borderRadius: BorderRadius.circular(widget.borderRadius),
+                    borderRadius: BorderRadius.circular(_menuRadius),
                     child: SingleChildScrollView(
                       padding: const EdgeInsets.all(8),
                       child: Column(

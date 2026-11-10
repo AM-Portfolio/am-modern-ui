@@ -17,6 +17,7 @@ class IntelligenceGlassCard extends StatelessWidget {
     this.minHeight,
     this.scrollable = false,
     this.fillHeight = false,
+    this.accentColor,
     super.key,
   });
 
@@ -33,8 +34,12 @@ class IntelligenceGlassCard extends StatelessWidget {
   /// When true (peer stretch rows), expand to parent height and pin [footer].
   final bool fillHeight;
 
+  /// Module chrome (defaults to portfolio pink). Dashboard hosts pass blue.
+  final Color? accentColor;
+
   @override
   Widget build(BuildContext context) {
+    final accent = accentColor ?? ModuleColors.portfolio;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     // Title keeps leftover width; trailing is capped so mobile names
     // (e.g. Portfolio X-Ray) are not crushed by Chart/List or tab chips.
@@ -48,12 +53,12 @@ class IntelligenceGlassCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(7),
               decoration: BoxDecoration(
-                color: ModuleColors.portfolio.withValues(alpha: 0.12),
+                color: accent.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(
                 icon,
-                color: ModuleColors.portfolio,
+                color: accent,
                 size: 18,
               ),
             ),
@@ -146,7 +151,7 @@ class IntelligenceGlassCard extends StatelessWidget {
                   context.colors.cardSurface.withValues(alpha: 0.95),
                   Color.lerp(
                         context.colors.cardSurface,
-                        ModuleColors.portfolio,
+                        accent,
                         ModuleColors.isBrandSynced ? 0.12 : 0.04,
                       )!
                       .withValues(alpha: 0.85),
@@ -159,7 +164,7 @@ class IntelligenceGlassCard extends StatelessWidget {
         ),
         border: Border.all(
           color: ModuleColors.isBrandSynced
-              ? ModuleColors.portfolio.withValues(alpha: 0.28)
+              ? accent.withValues(alpha: 0.28)
               : context.glassOverlay(0.07),
         ),
         borderRadius: BorderRadius.circular(18),
@@ -218,20 +223,23 @@ class IntelligenceTextLink extends StatelessWidget {
   const IntelligenceTextLink({
     required this.label,
     required this.onPressed,
+    this.accentColor,
     super.key,
   });
 
   final String label;
   final VoidCallback onPressed;
+  final Color? accentColor;
 
   @override
   Widget build(BuildContext context) {
+    final accent = accentColor ?? ModuleColors.portfolio;
     return Align(
       alignment: Alignment.centerLeft,
       child: TextButton(
         onPressed: onPressed,
         style: TextButton.styleFrom(
-          foregroundColor: ModuleColors.portfolio,
+          foregroundColor: accent,
           padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
           minimumSize: Size.zero,
           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -253,7 +261,9 @@ InputDecoration intelligenceFieldDecoration(
   required String label,
   String? hint,
   bool compact = false,
+  Color? accentColor,
 }) {
+  final accent = accentColor ?? ModuleColors.portfolio;
   final isDark = Theme.of(context).brightness == Brightness.dark;
   final hintStyle = TextStyle(
     color: context.colors.textTertiary,
@@ -276,7 +286,7 @@ InputDecoration intelligenceFieldDecoration(
     border: OutlineInputBorder(
       borderRadius: BorderRadius.circular(compact ? 8 : 10),
       borderSide: BorderSide(
-        color: ModuleColors.portfolio.withValues(alpha: 0.25),
+        color: accent.withValues(alpha: 0.25),
       ),
     ),
     enabledBorder: OutlineInputBorder(
@@ -287,7 +297,7 @@ InputDecoration intelligenceFieldDecoration(
     ),
     focusedBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(compact ? 8 : 10),
-      borderSide: BorderSide(color: ModuleColors.portfolio, width: 1.4),
+      borderSide: BorderSide(color: accent, width: 1.4),
     ),
   );
 }

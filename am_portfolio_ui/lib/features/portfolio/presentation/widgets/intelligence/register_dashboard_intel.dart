@@ -1,6 +1,7 @@
 import 'package:am_common/am_common.dart';
 import 'package:am_dashboard_ui/presentation/layout/dashboard_widget_catalog.dart';
 import 'package:am_dashboard_ui/presentation/providers/dashboard_portfolio_scope.dart';
+import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -18,6 +19,7 @@ void registerDashboardIntelWidgets() {
       portfolioId: portfolioId,
       fillHeight: true,
       padding: const EdgeInsets.all(14),
+      accentColor: ModuleColors.dashboard,
     );
   };
 
@@ -31,6 +33,7 @@ void registerDashboardIntelWidgets() {
       fillHeight: true,
       padding: const EdgeInsets.all(14),
       readOnly: aggregate,
+      accentColor: ModuleColors.dashboard,
     );
   };
 
@@ -41,6 +44,7 @@ void registerDashboardIntelWidgets() {
       portfolioId: portfolioId,
       fillHeight: true,
       padding: const EdgeInsets.all(14),
+      accentColor: ModuleColors.dashboard,
     );
   };
 }

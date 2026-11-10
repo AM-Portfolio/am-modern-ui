@@ -707,46 +707,49 @@ class _PortfolioMobileViewState extends ConsumerState<PortfolioMobileView>
         // Match pill track horizontal inset (16) so Paper / settings align
         // with the top nav bar edges.
         padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            // Household (left) + portfolio — mobile-optimized pair.
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _buildFamilyAwareMobilePicker(context, currentName),
-                  if (hasSelectedPortfolio) _buildStickyAsOfLabel(context),
-                ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            Listener(
-              behavior: HitTestBehavior.opaque,
-              onPointerDown: (_) {
-                GlobalBottomNavVisibility.suppressChromeTapReveal = true;
-                GlobalBottomNavVisibility.requestHide();
-              },
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  GlobalTimeFrameBar(
-                    variant: GlobalTimeFrameVariant.dropdown,
-                    primaryColor: ModuleColors.portfolio,
+            // Family · Portfolio · 1D · settings share one 36px baseline.
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(
+                  child: _buildFamilyAwareMobilePicker(context, currentName),
+                ),
+                const SizedBox(width: 8),
+                Listener(
+                  behavior: HitTestBehavior.opaque,
+                  onPointerDown: (_) {
+                    GlobalBottomNavVisibility.suppressChromeTapReveal = true;
+                    GlobalBottomNavVisibility.requestHide();
+                  },
+                  child: SizedBox(
+                    height: 36,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        GlobalTimeFrameBar(
+                          variant: GlobalTimeFrameVariant.dropdown,
+                          primaryColor: ModuleColors.portfolio,
+                        ),
+                        if (hasSelectedPortfolio) ...[
+                          const SizedBox(width: 4),
+                          _buildPortfolioManageDropdown(context),
+                        ],
+                        if (_tabController.index == 1) ...[
+                          const SizedBox(width: 4),
+                          _buildHoldingsFilterToggle(context),
+                        ],
+                      ],
+                    ),
                   ),
-                  if (hasSelectedPortfolio) ...[
-                    const SizedBox(width: 4),
-                    _buildPortfolioManageDropdown(context),
-                  ],
-                  // Holdings only: filter toggle sits to the right of settings.
-                  if (_tabController.index == 1) ...[
-                    const SizedBox(width: 4),
-                    _buildHoldingsFilterToggle(context),
-                  ],
-                ],
-              ),
+                ),
+              ],
             ),
+            if (hasSelectedPortfolio) _buildStickyAsOfLabel(context),
           ],
         ),
       ),
@@ -863,7 +866,7 @@ class _PortfolioMobileViewState extends ConsumerState<PortfolioMobileView>
         onTap: () {
           ref.read(mobileHoldingsFiltersExpandedProvider.notifier).toggle();
         },
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(999),
         child: Container(
           width: 40,
           height: 36,
@@ -871,12 +874,12 @@ class _PortfolioMobileViewState extends ConsumerState<PortfolioMobileView>
           decoration: BoxDecoration(
             color: lit
                 ? accent.withValues(alpha: isDark ? 0.18 : 0.12)
-                : (isDark ? context.glassOverlay(0.06) : null),
-            borderRadius: BorderRadius.circular(10),
+                : context.colors.cardSurface,
+            borderRadius: BorderRadius.circular(999),
             border: Border.all(
               color: lit
                   ? accent.withValues(alpha: 0.55)
-                  : (isDark ? context.glassOverlay(0.1) : context.borderColor),
+                  : accent.withValues(alpha: 0.35),
             ),
           ),
           child: Icon(
@@ -932,8 +935,8 @@ class _PortfolioMobileViewState extends ConsumerState<PortfolioMobileView>
 
     if (portfolio == null) return const SizedBox.shrink();
 
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final error = context.statusError;
+    final accent = ModuleColors.portfolio;
 
     return SizedBox(
       width: 40,
@@ -945,12 +948,12 @@ class _PortfolioMobileViewState extends ConsumerState<PortfolioMobileView>
         fontSize: 12,
         iconSize: 18,
         icon: Icons.settings_outlined,
-        borderRadius: 10,
+        borderRadius: 999,
         menuMaxHeight: 148,
         menuMaxWidth: 200,
-        primaryColor: ModuleColors.portfolio,
-        backgroundColor: isDark ? context.glassOverlay(0.06) : null,
-        borderColor: isDark ? context.glassOverlay(0.1) : null,
+        primaryColor: accent,
+        backgroundColor: context.colors.cardSurface,
+        borderColor: accent.withValues(alpha: 0.35),
         contentPadding: const EdgeInsets.symmetric(horizontal: 6),
         items: [
           DropdownMenuItem<String>(

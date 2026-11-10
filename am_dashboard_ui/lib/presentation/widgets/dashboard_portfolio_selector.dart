@@ -400,7 +400,7 @@ class DashboardPortfolioSelector extends ConsumerWidget {
         if (broker.contains('NPS')) return 'PRAN $id';
         return id;
       },
-      accentColor: ModuleColors.portfolio,
+      accentColor: ModuleColors.dashboard,
       isSelectableExtractor: (choice) => choice.isSelectable,
       showNoHoldingsBadgeExtractor: (choice) =>
           choice.id != 'all' && !choice.isPaper && !choice.hasHoldings,

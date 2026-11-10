@@ -16,6 +16,7 @@ class PortfolioRiskRadarCard extends ConsumerWidget {
     this.minHeight,
     this.fillHeight = false,
     this.padding = const EdgeInsets.all(20),
+    this.accentColor,
     super.key,
   });
 
@@ -23,6 +24,7 @@ class PortfolioRiskRadarCard extends ConsumerWidget {
   final double? minHeight;
   final bool fillHeight;
   final EdgeInsetsGeometry padding;
+  final Color? accentColor;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -39,6 +41,7 @@ class PortfolioRiskRadarCard extends ConsumerWidget {
         minHeight: minHeight,
         fillHeight: fillHeight,
         padding: padding,
+        accentColor: accentColor,
         child: IntelligenceRetryRow(
           message: 'Could not load risk radar',
           onRetry: () =>
@@ -54,6 +57,7 @@ class PortfolioRiskRadarCard extends ConsumerWidget {
             minHeight: minHeight,
             fillHeight: fillHeight,
             padding: padding,
+            accentColor: accentColor,
             child: const IntelligenceEmptyHint(message: 'Risk data unavailable'),
           );
         }
@@ -63,6 +67,7 @@ class PortfolioRiskRadarCard extends ConsumerWidget {
           minHeight: minHeight,
           fillHeight: fillHeight,
           padding: padding,
+          accentColor: accentColor,
         );
       },
     );
@@ -75,12 +80,14 @@ class _RiskRadarLoadedBody extends StatefulWidget {
     required this.padding,
     this.minHeight,
     this.fillHeight = false,
+    this.accentColor,
   });
 
   final PortfolioRisk risk;
   final double? minHeight;
   final bool fillHeight;
   final EdgeInsetsGeometry padding;
+  final Color? accentColor;
 
   @override
   State<_RiskRadarLoadedBody> createState() => _RiskRadarLoadedBodyState();
@@ -166,7 +173,7 @@ class _RiskRadarLoadedBodyState extends State<_RiskRadarLoadedBody> {
             height: side,
             child: RiskRadarLiveView(
               axes: chartAxes,
-              color: ModuleColors.portfolio,
+              color: widget.accentColor ?? ModuleColors.portfolio,
               selectedAxisId: pinnedAxisId,
               focusAxisId: focusAxisId,
               semanticsLabel: 'Risk radar. Overall $semanticsBand.',
@@ -270,6 +277,7 @@ class _RiskRadarLoadedBodyState extends State<_RiskRadarLoadedBody> {
       minHeight: widget.minHeight,
       fillHeight: widget.fillHeight,
       padding: widget.padding,
+      accentColor: widget.accentColor,
       scrollable: false,
       trailing: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),

@@ -106,6 +106,7 @@ class PortfolioHealthCard extends ConsumerStatefulWidget {
     this.minHeight,
     this.fillHeight = false,
     this.padding = const EdgeInsets.all(20),
+    this.accentColor,
     super.key,
   });
 
@@ -115,6 +116,7 @@ class PortfolioHealthCard extends ConsumerStatefulWidget {
   final double? minHeight;
   final bool fillHeight;
   final EdgeInsetsGeometry padding;
+  final Color? accentColor;
 
   @override
   ConsumerState<PortfolioHealthCard> createState() =>
@@ -140,6 +142,7 @@ class _PortfolioHealthCardState extends ConsumerState<PortfolioHealthCard> {
         minHeight: widget.minHeight,
         fillHeight: widget.fillHeight,
         padding: widget.padding,
+        accentColor: widget.accentColor,
         child: IntelligenceRetryRow(
           message: 'Could not load health score',
           onRetry: () =>
@@ -155,6 +158,7 @@ class _PortfolioHealthCardState extends ConsumerState<PortfolioHealthCard> {
             minHeight: widget.minHeight,
             fillHeight: widget.fillHeight,
             padding: widget.padding,
+            accentColor: widget.accentColor,
             child: Text(
               'Health data unavailable',
               style: Theme.of(context).textTheme.bodySmall,
@@ -171,6 +175,7 @@ class _PortfolioHealthCardState extends ConsumerState<PortfolioHealthCard> {
           minHeight: widget.minHeight,
           fillHeight: widget.fillHeight,
           padding: widget.padding,
+          accentColor: widget.accentColor,
           // Never nest a card-level scroll here: Overview already scrolls, and
           // fillHeight peers use _FactorList's own ListView. Nested
           // SingleChildScrollView + ListView + BackdropFilter caused stuck /
