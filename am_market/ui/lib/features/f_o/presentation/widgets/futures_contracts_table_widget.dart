@@ -34,9 +34,11 @@ class FuturesContractsTableWidget extends ConsumerWidget {
             );
           }).toList(growable: false);
 
-    // Filter out expired contracts (older than 30 days prior to current date)
+    // Filter out expired contracts (older than 30 days prior to current date).
+    // If backend data only has past contracts (e.g. pending DB instrument refresh),
+    // fall back to scoped contracts so user can still view and interact with available data.
     final nowMs = DateTime.now().millisecondsSinceEpoch;
-    final validContracts = scopedContracts.where((c) {
+    final unexpiredContracts = scopedContracts.where((c) {
       if (c is Map) {
         final rawExp = c['expiry'];
         if (rawExp is num && rawExp > 0) {
@@ -45,6 +47,25 @@ class FuturesContractsTableWidget extends ConsumerWidget {
       }
       return true;
     }).toList();
+
+    final baseContracts = unexpiredContracts.isNotEmpty
+        ? unexpiredContracts
+        : List<dynamic>.from(scopedContracts);
+
+    // Deduplicate duplicate contracts from backend response
+    final seen = <String>{};
+    final validContracts = <dynamic>[];
+    for (final c in baseContracts) {
+      if (c is Map) {
+        final key = (c['trading_symbol'] ??
+                c['tradingSymbol'] ??
+                c['instrument_key'] ??
+                '')
+            .toString();
+        if (key.isNotEmpty && !seen.add(key)) continue;
+      }
+      validContracts.add(c);
+    }
 
     // Sort active contracts chronologically by expiry date (near-month Sep 2026 first)
     validContracts.sort((a, b) {

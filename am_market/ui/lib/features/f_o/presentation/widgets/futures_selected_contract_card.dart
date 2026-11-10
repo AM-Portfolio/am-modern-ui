@@ -5,6 +5,7 @@ import 'package:am_market_ui/features/f_o/providers/fo_provider.dart';
 import 'package:am_market_ui/features/f_o/providers/futures_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 
 class FuturesSelectedContractCard extends ConsumerWidget {
   const FuturesSelectedContractCard({super.key});
@@ -20,7 +21,12 @@ class FuturesSelectedContractCard extends ConsumerWidget {
         ? (selectedContract['trading_symbol'] ?? selectedContract['tradingSymbol'] ?? '$activeSymbol FUT 24 SEP 26').toString()
         : '$activeSymbol FUT 24 SEP 26';
 
-    final expiryStr = (selectedContract?['expiry'] ?? '24 Sep 2026').toString();
+    final rawExp = selectedContract?['expiry'] ?? selectedContract?['expiry_ms'];
+    final expiryStr = rawExp is num && rawExp > 0
+        ? DateFormat('d MMM yyyy')
+            .format(DateTime.fromMillisecondsSinceEpoch(rawExp.toInt()))
+        : (selectedContract?['expiry_display'] ?? rawExp ?? '24 Sep 2026')
+            .toString();
     final ltp = (selectedContract?['ltp'] as num?)?.toDouble() ?? 2203.50;
     final change = (selectedContract?['change'] as num?)?.toDouble() ?? -2.10;
     final pChange = (selectedContract?['pChange'] as num?)?.toDouble() ?? -0.10;

@@ -121,6 +121,7 @@ class _FuturesPriceChartWidgetState extends ConsumerState<FuturesPriceChartWidge
                             selectedTimeFrame: _selectedTimeframe,
                             availableTimeFrames: TimeFrame.tradingTimeFrames,
                             compact: true,
+                            primaryColor: ModuleColors.market,
                             onTimeFrameChanged: (tf) =>
                                 setState(() => _selectedTimeframe = tf),
                           ),

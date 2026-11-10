@@ -269,18 +269,13 @@ class _TimeFrameSelectorState extends State<TimeFrameSelector> {
     BuildContext context,
     List<TimeFrame> timeFrames,
   ) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final accent = widget.primaryColor ?? context.colors.actionPrimaryBg;
-    final barBg = isDark
-        ? Colors.white.withOpacity(0.06)
-        : theme.colorScheme.surfaceContainerHighest;
-    final borderColor = isDark
-        ? Colors.white.withOpacity(0.1)
-        : theme.colorScheme.outline.withOpacity(0.2);
-    final idleText = isDark
-        ? Colors.white.withOpacity(0.65)
-        : theme.colorScheme.onSurfaceVariant;
+    final colors = context.colors;
+    final accent = widget.primaryColor ?? colors.actionPrimaryBg;
+    final barBg = colors.surface;
+    final borderColor = colors.border;
+    final idleText = colors.textSecondary;
+    final isSelectedDark = ThemeData.estimateBrightnessForColor(accent) == Brightness.dark;
+    final selectedText = isSelectedDark ? Colors.white : const Color(0xFF0F172A);
 
     return Container(
       padding: const EdgeInsets.all(3),
@@ -322,7 +317,7 @@ class _TimeFrameSelectorState extends State<TimeFrameSelector> {
                       child: Text(
                         widget.showDisplayNames ? timeFrame.displayName : timeFrame.code,
                         style: TextStyle(
-                          color: isSelected ? Colors.white : idleText,
+                          color: isSelected ? selectedText : idleText,
                           fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                           fontSize: 12,
                         ),
