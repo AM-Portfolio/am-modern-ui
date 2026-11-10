@@ -517,8 +517,8 @@ final accountsHubProvider =
     return AccountsHub.fromJson(raw);
   } catch (e, st) {
     AppLogger.warning('Accounts hub fetch failed', error: e, stackTrace: st);
-    // Soft-fail so chart-row panels render empty / retry instead of spinning forever.
-    return const AccountsHub();
+    // Surface error so Users hub / Users page can show Retry (not empty hub).
+    Error.throwWithStackTrace(e, st);
   }
 });
 

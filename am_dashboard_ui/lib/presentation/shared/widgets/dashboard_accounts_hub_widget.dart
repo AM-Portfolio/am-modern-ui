@@ -128,20 +128,16 @@ class _DashboardUsersHubWidgetState
           final dematOnly =
               directoryDemat.isNotEmpty ? directoryDemat : casDemat;
           final portfolios = _filteredPortfolios(hub, familyMemberId);
-          final valueBooks =
-              personaBooks.where((p) => !p.isNps).toList();
           final isFamily = _primary == _UsersPrimaryTab.family;
           final isOverview = _primary == _UsersPrimaryTab.overview;
           final familyMembers = hub.familyMembers;
           final showCasCta = isOverview && !hasCas;
 
-          final scopeTotal = _scopeTotalValue(
-            demat: [...dematOnly, ...mfRows],
-            brokers: valueBooks,
-            nps: personaNps,
-            allNps: familyMemberId == FavoritePersonaStore.kAll
-                ? hub.npsAccounts
-                : null,
+          // Prefer server persona totals (same as Users page) so demat+broker
+          // books are not double-counted in weight %.
+          final scopeTotal = _personaScopeTotal(
+            hub: hub,
+            familyMemberId: familyMemberId,
           );
 
           final householdAccountCount = valuedAccountCountForPersona(
@@ -633,30 +629,21 @@ class _DashboardUsersHubWidgetState
     }).toList();
   }
 
-  double _scopeTotalValue({
-    required List<DematAccountRow> demat,
-    required List<AccountsPortfolioRow> brokers,
-    NpsMetaRow? nps,
-    List<NpsMetaRow>? allNps,
+  double _personaScopeTotal({
+    required AccountsHub hub,
+    required String? familyMemberId,
   }) {
-    var sum = 0.0;
-    for (final a in demat) {
-      final v = a.holdingValue;
-      if (v != null && v > 0) sum += v;
+    if (familyMemberId == FavoritePersonaStore.kAll) {
+      return hub.stats?.householdTotalValue ?? 0.0;
     }
-    for (final p in brokers) {
-      final v = p.current;
-      if (v != null && v > 0) sum += v;
-    }
-    if (allNps != null) {
-      for (final n in allNps) {
-        final v = n.totalValue;
-        if (v != null && v > 0) sum += v;
+    if (familyMemberId != null) {
+      for (final m in hub.familyMembers) {
+        if (m.id == familyMemberId && m.totalValue != null) {
+          return m.totalValue!;
+        }
       }
-    } else if (nps?.totalValue != null && nps!.totalValue! > 0) {
-      sum += nps.totalValue!;
     }
-    return sum;
+    return hub.stats?.primaryTotalValue ?? 0.0;
   }
 
   String? _pctOfScope(double? value, double scopeTotal) {
@@ -852,7 +839,8 @@ class _TabPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final fg = selected ? const Color(0xFF1A1208) : Colors.white;
+    final colors = context.colors;
+    final fg = selected ? colors.actionPrimaryFg : colors.textSecondary;
     return Material(
       color: selected ? accent : Colors.transparent,
       borderRadius: BorderRadius.circular(20),
@@ -866,7 +854,7 @@ class _TabPill extends StatelessWidget {
             border: Border.all(
               color: selected
                   ? accent
-                  : Colors.white.withValues(alpha: 0.7),
+                  : colors.border.withValues(alpha: 0.7),
             ),
           ),
           child: Row(
@@ -937,16 +925,16 @@ class _FamilyTab extends StatelessWidget {
             Align(
               alignment: Alignment.centerLeft,
               child: FilledButton(
-                style: FilledButton.styleFrom(backgroundColor: accent),
+                style: FilledButton.styleFrom(
+                  backgroundColor: accent,
+                  foregroundColor: context.colors.actionPrimaryFg,
+                ),
                 onPressed: members.length >= 5 ? null : onAdd,
                 child: Text(
                   members.length >= 5
                       ? 'Family limit reached (5)'
                       : 'Add family member',
-                  style: const TextStyle(
-                    color: Color(0xFF1A1208),
-                    fontWeight: FontWeight.w700,
-                  ),
+                  style: const TextStyle(fontWeight: FontWeight.w700),
                 ),
               ),
             ),

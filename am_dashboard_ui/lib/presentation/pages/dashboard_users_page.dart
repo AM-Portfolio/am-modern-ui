@@ -1580,7 +1580,7 @@ class _CategoryTabs extends StatelessWidget {
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
                   color: isSelected
-                      ? const Color(0xFF1A1208)
+                      ? context.colors.actionPrimaryFg
                       : context.colors.textSecondary,
                 ),
               ),
