@@ -711,42 +711,40 @@ class _PortfolioMobileViewState extends ConsumerState<PortfolioMobileView>
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Family · Portfolio · 1D · settings share one 36px baseline.
+            // Family · Portfolio · settings share one 36px baseline.
+            // Chart owns timeframe (no duplicate 1D in this sticky row).
             Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Expanded(
                   child: _buildFamilyAwareMobilePicker(context, currentName),
                 ),
-                const SizedBox(width: 8),
-                Listener(
-                  behavior: HitTestBehavior.opaque,
-                  onPointerDown: (_) {
-                    GlobalBottomNavVisibility.suppressChromeTapReveal = true;
-                    GlobalBottomNavVisibility.requestHide();
-                  },
-                  child: SizedBox(
-                    height: 36,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        GlobalTimeFrameBar(
-                          variant: GlobalTimeFrameVariant.dropdown,
-                          primaryColor: ModuleColors.portfolio,
-                        ),
-                        if (hasSelectedPortfolio) ...[
-                          const SizedBox(width: 4),
-                          _buildPortfolioManageDropdown(context),
+                if (hasSelectedPortfolio || _tabController.index == 1) ...[
+                  const SizedBox(width: 8),
+                  Listener(
+                    behavior: HitTestBehavior.opaque,
+                    onPointerDown: (_) {
+                      GlobalBottomNavVisibility.suppressChromeTapReveal = true;
+                      GlobalBottomNavVisibility.requestHide();
+                    },
+                    child: SizedBox(
+                      height: 36,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          if (hasSelectedPortfolio)
+                            _buildPortfolioManageDropdown(context),
+                          if (hasSelectedPortfolio &&
+                              _tabController.index == 1)
+                            const SizedBox(width: 4),
+                          if (_tabController.index == 1)
+                            _buildHoldingsFilterToggle(context),
                         ],
-                        if (_tabController.index == 1) ...[
-                          const SizedBox(width: 4),
-                          _buildHoldingsFilterToggle(context),
-                        ],
-                      ],
+                      ),
                     ),
                   ),
-                ),
+                ],
               ],
             ),
             if (hasSelectedPortfolio) _buildStickyAsOfLabel(context),

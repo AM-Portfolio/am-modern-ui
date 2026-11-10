@@ -141,9 +141,10 @@ class SharedFamilyFilterDropdown extends StatelessWidget {
         builder: (context, constraints) {
           final bounded =
               constraints.maxWidth.isFinite && constraints.maxWidth > 0;
+          // Use the full flex slot so labels like "All Users" stay readable.
           final width = bounded
-              ? constraints.maxWidth.clamp(96.0, 140.0)
-              : 120.0;
+              ? constraints.maxWidth.clamp(96.0, double.infinity)
+              : 140.0;
           return menu(menuWidth: width);
         },
       );

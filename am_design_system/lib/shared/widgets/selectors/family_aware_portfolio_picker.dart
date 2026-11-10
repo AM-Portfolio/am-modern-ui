@@ -95,16 +95,16 @@ class FamilyAwarePortfolioPicker<T> extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Flexible(
-                flex: 2,
+                flex: 1,
                 child: familyWidth == null
-                    ? Align(alignment: Alignment.centerLeft, child: family)
+                    ? SizedBox(width: double.infinity, child: family)
                     : SizedBox(width: familyWidth, child: family),
               ),
               const SizedBox(width: 6),
               Flexible(
-                flex: 3,
+                flex: 1,
                 child: portfolioWidth == null
-                    ? portfolio
+                    ? SizedBox(width: double.infinity, child: portfolio)
                     : SizedBox(width: portfolioWidth, child: portfolio),
               ),
             ],
