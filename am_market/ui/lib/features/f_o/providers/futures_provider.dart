@@ -6,8 +6,8 @@ import 'package:am_market_ui/features/f_o/providers/fo_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
-/// Fetches the list of Futures contracts for the active symbol with market quotes via backend SDK.
-final futuresContractsProvider =
+/// Fetches futures metadata without waiting for quote enrichment.
+final futuresContractsMetadataProvider =
     FutureProvider.autoDispose<List<dynamic>>((ref) async {
   final symbol = ref.watch(foActiveSymbolProvider);
   if (symbol == null || symbol.trim().isEmpty) return [];
@@ -23,9 +23,33 @@ final futuresContractsProvider =
   );
 
   final results = await sdkService.instrumentApi.searchInstruments(criteria);
-  if (results == null || results.isEmpty) return [];
+  return results ?? const <dynamic>[];
+});
 
+/// Full futures table data. Quote enrichment remains here for the Futures tab,
+/// while Margin Calculator consumes metadata and selected-contract quotes
+/// independently.
+final futuresContractsProvider =
+    FutureProvider.autoDispose<List<dynamic>>((ref) async {
+  final results = await ref.watch(futuresContractsMetadataProvider.future);
+  if (results.isEmpty) return results;
   return _enrichWithLiveQuotes(results);
+});
+
+/// Loads a quote only for the selected contract instead of the entire futures list.
+final selectedFutureQuoteProvider = FutureProvider.autoDispose
+    .family<Map<String, dynamic>?, String>((ref, quoteKey) async {
+  final key = quoteKey.trim();
+  if (key.isEmpty) return null;
+
+  final response = await MarketDataSdkService().marketDataApi.getQuotes(key);
+  if (response == null || response.isEmpty) return null;
+  final raw = response['quotes'];
+  if (raw is Map && raw.isNotEmpty) {
+    final first = raw.values.first;
+    if (first is Map) return Map<String, dynamic>.from(first);
+  }
+  return response.cast<String, dynamic>();
 });
 
 class SelectedFutureContractNotifier extends Notifier<Map<String, dynamic>?> {

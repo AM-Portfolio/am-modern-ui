@@ -61,8 +61,9 @@ class WatchlistSourceDropdown extends StatelessWidget {
                   child: Text(
                     s.name,
                     style: TextStyle(
-                      fontWeight:
-                          s.id == selected.id ? FontWeight.w700 : FontWeight.w500,
+                      fontWeight: s.id == selected.id
+                          ? FontWeight.w700
+                          : FontWeight.w500,
                       color: s.id == selected.id ? accent : null,
                     ),
                   ),
@@ -76,7 +77,8 @@ class WatchlistSourceDropdown extends StatelessWidget {
             value: '__all_indices__',
             child: Row(
               children: [
-                Icon(Icons.dashboard_customize_outlined, size: 16, color: accent),
+                Icon(Icons.dashboard_customize_outlined,
+                    size: 16, color: accent),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -244,9 +246,7 @@ class WatchlistPaginationFooter extends StatelessWidget {
                       ? accent.withValues(alpha: 0.15)
                       : Colors.transparent,
                   border: Border.all(
-                    color: controller.pageSize == size
-                        ? accent
-                        : colors.border,
+                    color: controller.pageSize == size ? accent : colors.border,
                   ),
                 ),
                 child: Text(
@@ -279,14 +279,15 @@ class WatchlistPaginationFooter extends StatelessWidget {
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
             icon: const Icon(Icons.chevron_right),
-            onPressed: page < totalPages - 1 ? () => controller.setPage(page + 1) : null,
+            onPressed: page < totalPages - 1
+                ? () => controller.setPage(page + 1)
+                : null,
           ),
         ],
       ),
     );
   }
 }
-
 
 class WatchlistRow extends StatelessWidget {
   const WatchlistRow({
@@ -360,7 +361,26 @@ class WatchlistRow extends StatelessWidget {
                   ],
                 ),
               ),
-              if (showActions) ...[
+              if (enableHover)
+                SizedBox(
+                  width: 144,
+                  child: AnimatedOpacity(
+                    opacity: showActions ? 1 : 0,
+                    duration: const Duration(milliseconds: 160),
+                    curve: Curves.easeOut,
+                    child: IgnorePointer(
+                      ignoring: !showActions,
+                      child: WatchlistActionToolbar(
+                        symbol: stock.symbol,
+                        onBuy: onBuy,
+                        onSell: onSell,
+                        onFundamentals: onFundamentals,
+                        onAddToWatchlist: onAddToWatchlist,
+                      ),
+                    ),
+                  ),
+                )
+              else if (showActions) ...[
                 WatchlistActionToolbar(
                   symbol: stock.symbol,
                   onBuy: onBuy,
@@ -405,13 +425,38 @@ class WatchlistRow extends StatelessWidget {
                   ),
                 ],
               ),
-              if (showActions)
+              if (enableHover)
+                SizedBox(
+                  width: 28,
+                  child: AnimatedOpacity(
+                    opacity: showActions ? 1 : 0,
+                    duration: const Duration(milliseconds: 160),
+                    curve: Curves.easeOut,
+                    child: IgnorePointer(
+                      ignoring: !showActions,
+                      child: IconButton(
+                        tooltip: 'Remove',
+                        iconSize: 18,
+                        visualDensity: VisualDensity.compact,
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(
+                          minWidth: 28,
+                          minHeight: 28,
+                        ),
+                        onPressed: onRemove,
+                        icon: Icon(Icons.close, color: colors.textSecondary),
+                      ),
+                    ),
+                  ),
+                )
+              else if (showActions)
                 IconButton(
                   tooltip: 'Remove',
                   iconSize: 18,
                   visualDensity: VisualDensity.compact,
                   padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                  constraints:
+                      const BoxConstraints(minWidth: 28, minHeight: 28),
                   onPressed: onRemove,
                   icon: Icon(Icons.close, color: colors.textSecondary),
                 ),
@@ -551,7 +596,8 @@ class WatchlistDepthExpandPanel extends StatelessWidget {
                         [
                           WatchlistStat(
                             label: 'LTP',
-                            value: quote!.ltp > 0 ? fmt.format(quote!.ltp) : '—',
+                            value:
+                                quote!.ltp > 0 ? fmt.format(quote!.ltp) : '—',
                           ),
                           WatchlistStat(
                             label: 'Change',
@@ -1042,10 +1088,10 @@ class _DepthQtyCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final frac = maxQuantity > 0 ? (quantity / maxQuantity).clamp(0.0, 1.0) : 0.0;
-    final label = orders != null && orders! > 0
-        ? '$quantity ($orders)'
-        : '$quantity';
+    final frac =
+        maxQuantity > 0 ? (quantity / maxQuantity).clamp(0.0, 1.0) : 0.0;
+    final label =
+        orders != null && orders! > 0 ? '$quantity ($orders)' : '$quantity';
 
     return SizedBox(
       height: 20,
@@ -1065,8 +1111,7 @@ class _DepthQtyCell extends StatelessWidget {
             ),
           ),
           Align(
-            alignment:
-                alignEnd ? Alignment.centerRight : Alignment.centerLeft,
+            alignment: alignEnd ? Alignment.centerRight : Alignment.centerLeft,
             child: Text(
               label,
               style: Theme.of(context).textTheme.bodySmall,

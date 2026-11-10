@@ -1,5 +1,4 @@
 import 'package:am_design_system/am_design_system.dart';
-import 'package:am_market_ui/features/f_o/providers/fo_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -18,14 +17,17 @@ class FoEmptyLandingView extends ConsumerWidget {
     final surfaceColor = colors.cardSurface;
     final borderColor = colors.border;
 
-    final recommendationsAsync = ref.watch(dynamicFoRecommendationsProvider);
-    final rawSymbols = recommendationsAsync.maybeWhen(
-      data: (d) => d,
-      orElse: () => const <String>[],
-    );
-    final recSymbols = rawSymbols.isNotEmpty
-        ? rawSymbols.take(6).toList()
-        : const ['NIFTY', 'BANKNIFTY', 'FINNIFTY', 'MIDCPNIFTY'];
+    // Keep a small, predictable set of liquid F&O shortcuts. The existing
+    // search provider remains available through the global search action, but
+    // landing-page chips must not be replaced by arbitrary recommendations.
+    const recSymbols = <({String label, String symbol})>[
+      (label: 'NIFTY', symbol: 'NIFTY'),
+      (label: 'BANK NIFTY', symbol: 'BANKNIFTY'),
+      (label: 'HDFC BANK', symbol: 'HDFCBANK'),
+      (label: 'RELIANCE', symbol: 'RELIANCE'),
+      (label: 'WIPRO', symbol: 'WIPRO'),
+      (label: 'INFOSYS', symbol: 'INFY'),
+    ];
 
     return Center(
       child: SingleChildScrollView(
@@ -84,9 +86,9 @@ class FoEmptyLandingView extends ConsumerWidget {
                   alignment: WrapAlignment.center,
                   children: recSymbols
                       .map(
-                        (s) => ActionChip(
+                        (item) => ActionChip(
                           label: Text(
-                            s,
+                            item.label,
                             style: TextStyle(
                               color: colors.textPrimary,
                               fontWeight: FontWeight.w600,
@@ -98,7 +100,7 @@ class FoEmptyLandingView extends ConsumerWidget {
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          onPressed: () => onSelected(s),
+                          onPressed: () => onSelected(item.symbol),
                         ),
                       )
                       .toList(),

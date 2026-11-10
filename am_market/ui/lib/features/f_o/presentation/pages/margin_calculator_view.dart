@@ -3,7 +3,6 @@ import 'package:am_market_ui/core/styles/market_theme_extension.dart';
 import 'package:am_market_ui/features/f_o/fo_lot_size_config.dart';
 import 'package:am_market_ui/features/f_o/providers/fo_provider.dart';
 import 'package:am_market_ui/features/f_o/providers/futures_provider.dart';
-import 'package:am_market_ui/features/f_o/providers/option_chain_provider.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -30,10 +29,10 @@ class _MarginCalculatorViewState extends ConsumerState<MarginCalculatorView> {
   int? _lastResolvedLotSize;
   double? _lastResolvedLtp;
   bool _userEditedQuantity = false;
-  bool _userEditedPrice = false;
   bool _isSynchronizingControllers = false;
 
-  void _updateControllerSilently(TextEditingController controller, String text) {
+  void _updateControllerSilently(
+      TextEditingController controller, String text) {
     if (controller.text == text) return;
     _isSynchronizingControllers = true;
     try {
@@ -72,30 +71,36 @@ class _MarginCalculatorViewState extends ConsumerState<MarginCalculatorView> {
     final colors = context.colors;
     final marketTheme = context.marketTheme;
     final activeSymbol = ref.watch(foActiveSymbolProvider) ?? 'NIFTY';
-    final chainAsync = ref.watch(optionChainProvider);
-    final chainData = chainAsync.maybeWhen(data: (d) => d, orElse: () => null);
-
     final selectedContract = ref.watch(selectedFutureContractProvider);
-    final contracts = ref.watch(futuresContractsProvider).maybeWhen(
-          data: (d) => d,
-          orElse: () => <dynamic>[],
-        );
+    final contractsAsync = ref.watch(futuresContractsMetadataProvider);
+    final contracts = contractsAsync.maybeWhen(
+      data: (d) => d,
+      orElse: () => <dynamic>[],
+    );
     final firstContract = contracts.isNotEmpty && contracts.first is Map
         ? Map<String, dynamic>.from(contracts.first as Map)
         : null;
     final activeContract = selectedContract ?? firstContract;
+    final quoteKey = activeContract?['instrument_key'] ??
+        activeContract?['instrumentKey'] ??
+        activeContract?['trading_symbol'] ??
+        activeContract?['tradingSymbol'];
+    final selectedQuoteAsync = quoteKey == null
+        ? null
+        : ref.watch(selectedFutureQuoteProvider(quoteKey.toString()));
+    final selectedQuote =
+        quoteKey == null ? null : selectedQuoteAsync?.asData?.value;
 
     final lotSize = FoLotSizeConfig.resolveLotSize(
       symbol: activeSymbol,
       contract: activeContract,
-      chainData: chainData,
     );
-    final rawLtp = activeContract?['ltp'] ??
-        activeContract?['last_price'] ??
-        chainData?['underlyingLtp'];
-    final ltp = rawLtp is num
-        ? rawLtp.toDouble()
-        : double.tryParse('$rawLtp');
+    final rawLtp = selectedQuote?['lastPrice'] ??
+        selectedQuote?['last_price'] ??
+        selectedQuote?['ltp'] ??
+        activeContract?['ltp'] ??
+        activeContract?['last_price'];
+    final ltp = rawLtp is num ? rawLtp.toDouble() : double.tryParse('$rawLtp');
 
     final contractId = activeContract?['trading_symbol'] ??
         activeContract?['tradingSymbol'] ??
@@ -105,7 +110,6 @@ class _MarginCalculatorViewState extends ConsumerState<MarginCalculatorView> {
       _lastBoundSymbol = activeSymbol;
       _lastBoundContractId = contractId;
       _userEditedQuantity = false;
-      _userEditedPrice = false;
       _lastResolvedLotSize = lotSize;
       _updateControllerSilently(_quantityController, '$lotSize');
       if (ltp != null && ltp > 0) {
@@ -118,18 +122,19 @@ class _MarginCalculatorViewState extends ConsumerState<MarginCalculatorView> {
         _lastResolvedLotSize = lotSize;
         _updateControllerSilently(_quantityController, '$lotSize');
       }
-      if (!_userEditedPrice && ltp != null && ltp > 0) {
+      if (ltp != null && ltp > 0) {
         _lastResolvedLtp = ltp;
         _updateControllerSilently(_priceController, ltp.toStringAsFixed(2));
       }
     } else {
       // Actively listen to asynchronous data response updates for the same symbol
-      if (!_userEditedQuantity && lotSize > 0 && lotSize != _lastResolvedLotSize) {
+      if (!_userEditedQuantity &&
+          lotSize > 0 &&
+          lotSize != _lastResolvedLotSize) {
         _lastResolvedLotSize = lotSize;
         _updateControllerSilently(_quantityController, '$lotSize');
       }
-      if (!_userEditedPrice &&
-          ltp != null &&
+      if (ltp != null &&
           ltp > 0 &&
           (_lastResolvedLtp == null || _priceController.text.isEmpty)) {
         _lastResolvedLtp = ltp;
@@ -146,6 +151,7 @@ class _MarginCalculatorViewState extends ConsumerState<MarginCalculatorView> {
 
     final qty = int.tryParse(_quantityController.text) ?? lotSize;
     final price = double.tryParse(_priceController.text) ?? (ltp ?? 0.0);
+    final canCalculate = lotSize > 0 && price > 0;
     final notionalValue = qty * price;
 
     final spanMargin = notionalValue * 0.15;
@@ -157,6 +163,32 @@ class _MarginCalculatorViewState extends ConsumerState<MarginCalculatorView> {
     final isMobile = width < AmBreakpoints.mobile;
     final isNarrowMobile = width < 400;
     final viewInsets = MediaQuery.viewInsetsOf(context);
+
+    if (contractsAsync.isLoading && contracts.isEmpty) {
+      return _buildAsyncState(
+        colors,
+        icon: Icons.sync_rounded,
+        title: 'Loading margin inputs',
+        message: 'Fetching the available futures contracts…',
+        showProgress: true,
+      );
+    }
+    if (contractsAsync.hasError && contracts.isEmpty) {
+      return _buildAsyncState(
+        colors,
+        icon: Icons.error_outline_rounded,
+        title: 'Unable to load margin inputs',
+        message: 'The futures contract service did not return metadata.',
+      );
+    }
+    if (contracts.isEmpty) {
+      return _buildAsyncState(
+        colors,
+        icon: Icons.inventory_2_outlined,
+        title: 'No futures contract available',
+        message: 'Select another F&O symbol and try again.',
+      );
+    }
 
     if (kIsWeb && !isMobile) {
       return _buildWebDashboard(
@@ -170,6 +202,7 @@ class _MarginCalculatorViewState extends ConsumerState<MarginCalculatorView> {
         exposureMargin: exposureMargin,
         additionalMargin: additionalMargin,
         totalMargin: totalMargin,
+        canCalculate: canCalculate,
       );
     }
 
@@ -269,18 +302,7 @@ class _MarginCalculatorViewState extends ConsumerState<MarginCalculatorView> {
                       Expanded(
                         child: _buildInputGroup(
                           'Price (₹)',
-                          TextField(
-                            controller: _priceController,
-                            style: TextStyle(
-                              color: colors.textPrimary,
-                              fontSize: 13,
-                            ),
-                            keyboardType: const TextInputType.numberWithOptions(
-                              decimal: true,
-                            ),
-                            onChanged: (_) => _userEditedPrice = true,
-                            decoration: _fieldDecoration(colors, compact: true),
-                          ),
+                          _buildReadOnlyPrice(colors, compact: true),
                           colors,
                           compact: true,
                         ),
@@ -362,15 +384,7 @@ class _MarginCalculatorViewState extends ConsumerState<MarginCalculatorView> {
                   SizedBox(height: isMobile ? 8 : 12),
                   _buildInputGroup(
                     'Price (₹)',
-                    TextField(
-                      controller: _priceController,
-                      style: TextStyle(color: colors.textPrimary),
-                      keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true,
-                      ),
-                      onChanged: (_) => _userEditedPrice = true,
-                      decoration: _fieldDecoration(colors, compact: isMobile),
-                    ),
+                    _buildReadOnlyPrice(colors, compact: isMobile),
                     colors,
                     compact: isMobile,
                   ),
@@ -432,6 +446,52 @@ class _MarginCalculatorViewState extends ConsumerState<MarginCalculatorView> {
     );
   }
 
+  Widget _buildAsyncState(
+    AppColorsTheme colors, {
+    required IconData icon,
+    required String title,
+    required String message,
+    bool showProgress = false,
+  }) {
+    return Center(
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 520),
+        margin: const EdgeInsets.all(AppSpacing.lg),
+        padding: const EdgeInsets.all(AppSpacing.xl),
+        decoration: BoxDecoration(
+          color: colors.cardSurface,
+          border: Border.all(color: colors.border),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (showProgress)
+              CircularProgressIndicator(color: ModuleColors.market)
+            else
+              Icon(icon, color: ModuleColors.market, size: 36),
+            const SizedBox(height: AppSpacing.md),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: colors.textPrimary,
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: TextStyle(color: colors.textSecondary),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildWebDashboard({
     required String contractTitle,
     required dynamic selectedContract,
@@ -443,6 +503,7 @@ class _MarginCalculatorViewState extends ConsumerState<MarginCalculatorView> {
     required double exposureMargin,
     required double additionalMargin,
     required double totalMargin,
+    required bool canCalculate,
   }) {
     return LayoutBuilder(
       builder: (context, viewport) {
@@ -471,7 +532,9 @@ class _MarginCalculatorViewState extends ConsumerState<MarginCalculatorView> {
             children: [
               if (isWide)
                 Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  // The vertical scroll view provides unbounded height.
+                  // Stretching this row would force infinite child height.
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Expanded(flex: 11, child: positionPanel),
                     const SizedBox(width: AppSpacing.lg),
@@ -487,6 +550,7 @@ class _MarginCalculatorViewState extends ConsumerState<MarginCalculatorView> {
               _buildWebActionPanel(
                 colors: colors,
                 marketTheme: marketTheme,
+                canCalculate: canCalculate,
               ),
             ],
           ),
@@ -504,9 +568,6 @@ class _MarginCalculatorViewState extends ConsumerState<MarginCalculatorView> {
     required MarketThemeExtension marketTheme,
     required double labelWidth,
   }) {
-    final rawLtp = selectedContract?['ltp'] ?? selectedContract?['last_price'];
-    final ltp = rawLtp is num ? rawLtp.toDouble() : double.tryParse('$rawLtp');
-    final hasLtp = ltp != null && ltp > 0;
     final lotSize = FoLotSizeConfig.resolveLotSize(
       symbol: activeSymbol,
       contract: selectedContract,
@@ -624,36 +685,7 @@ class _MarginCalculatorViewState extends ConsumerState<MarginCalculatorView> {
           const SizedBox(height: AppSpacing.sm),
           _buildWebLabeledRow(
             'Price (₹)',
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _priceController,
-                    style: TextStyle(
-                      color: colors.textPrimary,
-                      fontSize: 15,
-                    ),
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
-                    ),
-                    onChanged: (_) => _userEditedPrice = true,
-                    decoration: _fieldDecoration(colors),
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.sm),
-                TextButton(
-                  onPressed: hasLtp
-                      ? () {
-                          _userEditedPrice = false;
-                          _lastResolvedLtp = ltp;
-                          _updateControllerSilently(
-                              _priceController, ltp.toStringAsFixed(2));
-                        }
-                      : null,
-                  child: const Text('Use LTP'),
-                ),
-              ],
-            ),
+            _buildReadOnlyPrice(colors),
             colors: colors,
             labelWidth: labelWidth,
           ),
@@ -681,6 +713,33 @@ class _MarginCalculatorViewState extends ConsumerState<MarginCalculatorView> {
         const SizedBox(width: AppSpacing.sm),
         Expanded(child: field),
       ],
+    );
+  }
+
+  Widget _buildReadOnlyPrice(
+    AppColorsTheme colors, {
+    bool compact = false,
+  }) {
+    final value = _priceController.text.trim();
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(
+        horizontal: 12,
+        vertical: compact ? 10 : 12,
+      ),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        border: Border.all(color: colors.border),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        value.isEmpty ? '—' : '₹$value',
+        style: TextStyle(
+          color: value.isEmpty ? colors.textSecondary : colors.textPrimary,
+          fontSize: compact ? 13 : 15,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
     );
   }
 
@@ -910,6 +969,7 @@ class _MarginCalculatorViewState extends ConsumerState<MarginCalculatorView> {
   Widget _buildWebActionPanel({
     required AppColorsTheme colors,
     required MarketThemeExtension marketTheme,
+    required bool canCalculate,
   }) {
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -960,7 +1020,7 @@ class _MarginCalculatorViewState extends ConsumerState<MarginCalculatorView> {
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                onPressed: _calculateMargin,
+                onPressed: canCalculate ? _calculateMargin : null,
                 child: const Text('Calculate Margin'),
               ),
             ),
@@ -1017,7 +1077,7 @@ class _MarginCalculatorViewState extends ConsumerState<MarginCalculatorView> {
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                onPressed: _calculateMargin,
+                onPressed: canCalculate ? _calculateMargin : null,
                 child: const Text('Calculate Margin'),
               ),
             ),
@@ -1041,6 +1101,8 @@ class _MarginCalculatorViewState extends ConsumerState<MarginCalculatorView> {
 
   void _calculateMargin() {
     FocusScope.of(context).unfocus();
+    final price = double.tryParse(_priceController.text) ?? 0;
+    if (price <= 0) return;
     // The estimate is derived directly from the current controllers in build;
     // this rebuild commits the latest field values without changing the math.
     if (mounted) setState(() {});
@@ -1098,7 +1160,6 @@ class _MarginCalculatorViewState extends ConsumerState<MarginCalculatorView> {
                       contractMap;
                   _lastBoundContractId = title;
                   _userEditedQuantity = false;
-                  _userEditedPrice = false;
                   final newLot = FoLotSizeConfig.resolveLotSize(
                     symbol: activeSymbol,
                     contract: contractMap,

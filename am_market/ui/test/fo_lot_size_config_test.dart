@@ -6,6 +6,7 @@ import 'package:am_market_ui/features/f_o/providers/fo_provider.dart';
 import 'package:am_market_ui/features/f_o/providers/futures_provider.dart';
 import 'package:am_market_ui/features/f_o/providers/option_chain_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -39,10 +40,12 @@ void main() {
       expect(FoLotSizeConfig.resolveLotSize(symbol: 'BANKNIFTY'), 30);
       expect(FoLotSizeConfig.resolveLotSize(symbol: 'NIFTY BANK'), 30);
       expect(FoLotSizeConfig.resolveLotSize(symbol: 'FINNIFTY'), 60);
-      expect(FoLotSizeConfig.resolveLotSize(symbol: 'NIFTY FINANCIAL SERVICES'), 60);
+      expect(FoLotSizeConfig.resolveLotSize(symbol: 'NIFTY FINANCIAL SERVICES'),
+          60);
       expect(FoLotSizeConfig.resolveLotSize(symbol: 'NIFTY FIN SERVICE'), 60);
       expect(FoLotSizeConfig.resolveLotSize(symbol: 'MIDCPNIFTY'), 120);
-      expect(FoLotSizeConfig.resolveLotSize(symbol: 'NIFTY MIDCAP SELECT'), 120);
+      expect(
+          FoLotSizeConfig.resolveLotSize(symbol: 'NIFTY MIDCAP SELECT'), 120);
       expect(FoLotSizeConfig.resolveLotSize(symbol: 'NIFTYNXT50'), 25);
       expect(FoLotSizeConfig.resolveLotSize(symbol: 'NIFTY NEXT 50'), 25);
     });
@@ -56,7 +59,9 @@ void main() {
       expect(FoLotSizeConfig.resolveLotSize(symbol: 'BSE SENSEX 50'), 75);
     });
 
-    test('Dynamic contract API response takes priority for stock underliers (e.g., TCS)', () {
+    test(
+        'Dynamic contract API response takes priority for stock underliers (e.g., TCS)',
+        () {
       // Unloaded TCS defaults to 1
       expect(FoLotSizeConfig.resolveLotSize(symbol: 'TCS'), 1);
 
@@ -72,7 +77,8 @@ void main() {
       );
     });
 
-    test('Resolves string and camelCase lotSize properties from API response', () {
+    test('Resolves string and camelCase lotSize properties from API response',
+        () {
       expect(
         FoLotSizeConfig.resolveLotSize(
           symbol: 'INFY',
@@ -89,7 +95,9 @@ void main() {
       );
     });
 
-    test('Resolves lot size from Option Chain root and strikes when contract is null', () {
+    test(
+        'Resolves lot size from Option Chain root and strikes when contract is null',
+        () {
       final chainRoot = {
         'lotSize': 175,
         'underlyingLtp': 1500.0,
@@ -107,14 +115,46 @@ void main() {
         ],
       };
       expect(
-        FoLotSizeConfig.resolveLotSize(symbol: 'CUSTOM', chainData: chainStrikes),
+        FoLotSizeConfig.resolveLotSize(
+            symbol: 'CUSTOM', chainData: chainStrikes),
         350,
       );
     });
   });
 
   group('MarginCalculatorView Active Dynamic Lot Size Binding Tests', () {
-    testWidgets('Automatically binds dynamic contract lot size when API response arrives', (tester) async {
+    testWidgets('Desktop margin panels render with confirmed contract data',
+        (tester) async {
+      tester.view.physicalSize = const Size(1600, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+      final contract = {
+        'trading_symbol': 'TCS26MAYFUT',
+        'lot_size': 225,
+        'ltp': 3450.0,
+      };
+      await tester.pumpWidget(_wrapWithApp(
+        const MarginCalculatorView(),
+        overrides: [
+          foActiveSymbolProvider.overrideWith(() => _TestSymbolNotifier('TCS')),
+          futuresContractsMetadataProvider
+              .overrideWith((ref) async => [contract]),
+          selectedFutureQuoteProvider('TCS26MAYFUT')
+              .overrideWith((ref) async => {'lastPrice': 3450.0}),
+        ],
+      ));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      expect(find.text('Margin Required'), findsWidgets);
+      expect(find.textContaining('3450.00'), findsWidgets);
+    }, skip: !kIsWeb);
+
+    testWidgets(
+        'Automatically binds dynamic contract lot size when API response arrives',
+        (tester) async {
       final tcsContract = {
         'trading_symbol': 'TCS26MAYFUT',
         'lot_size': 225,
@@ -125,8 +165,10 @@ void main() {
         _wrapWithApp(
           const MarginCalculatorView(),
           overrides: [
-            foActiveSymbolProvider.overrideWith(() => _TestSymbolNotifier('TCS')),
-            futuresContractsProvider.overrideWith((ref) async => [tcsContract]),
+            foActiveSymbolProvider
+                .overrideWith(() => _TestSymbolNotifier('TCS')),
+            futuresContractsMetadataProvider
+                .overrideWith((ref) async => [tcsContract]),
             optionChainProvider.overrideWith((ref) async => null),
           ],
         ),
@@ -136,11 +178,12 @@ void main() {
 
       // Quantity TextField should actively match the contract lot size (225)
       expect(find.text('225'), findsWidgets);
-      // Price TextField should actively match the contract LTP (3450.00)
-      expect(find.text('3450.00'), findsWidgets);
+      // Read-only price display should actively match the contract LTP.
+      expect(find.textContaining('3450.00'), findsWidgets);
     });
 
-    testWidgets('Preserves user custom edit when widget rebuilds', (tester) async {
+    testWidgets('Preserves user custom edit when widget rebuilds',
+        (tester) async {
       final tcsContract = {
         'trading_symbol': 'TCS26MAYFUT',
         'lot_size': 225,
@@ -151,8 +194,10 @@ void main() {
         _wrapWithApp(
           const MarginCalculatorView(),
           overrides: [
-            foActiveSymbolProvider.overrideWith(() => _TestSymbolNotifier('TCS')),
-            futuresContractsProvider.overrideWith((ref) async => [tcsContract]),
+            foActiveSymbolProvider
+                .overrideWith(() => _TestSymbolNotifier('TCS')),
+            futuresContractsMetadataProvider
+                .overrideWith((ref) async => [tcsContract]),
             optionChainProvider.overrideWith((ref) async => null),
           ],
         ),

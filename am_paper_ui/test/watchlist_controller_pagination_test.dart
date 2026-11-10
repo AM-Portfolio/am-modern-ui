@@ -9,7 +9,10 @@ class _FakePaperMarketClient extends PaperMarketClient {
   final List<List<String>> enrichCalls = [];
 
   @override
-  Future<List<WatchlistStock>> enrichQuotes(List<WatchlistStock> rows) async {
+  Future<List<WatchlistStock>> enrichQuotes(
+    List<WatchlistStock> rows, {
+    bool forceRefresh = false,
+  }) async {
     enrichCalls.add(rows.map((r) => r.symbol).toList());
     return rows.map((r) => r.copyWith(ltp: 100.0)).toList();
   }

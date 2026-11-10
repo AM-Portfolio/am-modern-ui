@@ -49,24 +49,7 @@ class _PaperWatchlistWebState extends State<PaperWatchlistWeb> {
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
                 const Spacer(),
-                IconButton(
-                  tooltip: 'Add stock/index to watchlist',
-                  iconSize: 18,
-                  visualDensity: VisualDensity.compact,
-                  icon: Icon(Icons.bookmark_add_outlined, color: colors.textSecondary),
-                  onPressed: () async {
-                    final sym = widget.selectedSymbol.isNotEmpty
-                        ? widget.selectedSymbol
-                        : (pageRows.isNotEmpty ? pageRows.first.symbol : 'NIFTY 50');
-                    final saved = await AddToWatchlistPopup.show(context, sym);
-                    if (saved == true) {
-                      await controller.loadSources();
-                      await controller.refreshVisibleQuotes();
-                    }
-                  },
-                ),
-                if ((controller.refreshing && controller.pageNeedsQuoteSpinner) ||
-                    controller.loadingList)
+                if (controller.refreshing || controller.loadingList)
                   SizedBox(
                     width: 14,
                     height: 14,
@@ -80,8 +63,11 @@ class _PaperWatchlistWebState extends State<PaperWatchlistWeb> {
                     tooltip: 'Refresh quotes',
                     iconSize: 18,
                     visualDensity: VisualDensity.compact,
-                    onPressed:
-                        pageRows.isEmpty ? null : controller.refreshVisibleQuotes,
+                    onPressed: pageRows.isEmpty || controller.refreshing
+                        ? null
+                        : () => controller.refreshVisibleQuotes(
+                              forceRefresh: true,
+                            ),
                     icon: Icon(Icons.refresh, color: colors.textSecondary),
                   ),
               ],
@@ -96,7 +82,9 @@ class _PaperWatchlistWebState extends State<PaperWatchlistWeb> {
               onCreateWatchlist: () async {
                 final sym = widget.selectedSymbol.isNotEmpty
                     ? widget.selectedSymbol
-                    : (pageRows.isNotEmpty ? pageRows.first.symbol : 'NIFTY 50');
+                    : (pageRows.isNotEmpty
+                        ? pageRows.first.symbol
+                        : 'NIFTY 50');
                 final saved = await AddToWatchlistPopup.show(context, sym);
                 if (saved == true) {
                   await controller.loadSources();

@@ -114,8 +114,11 @@ class WatchlistController extends ChangeNotifier {
     try {
       final lists = await _watchlistApi.getWatchlists();
       if (_disposed) return;
-      final currentCustom =
-          sources.where((s) => s.id.startsWith('index:') && !defaultIndexSources.any((d) => d.id == s.id)).toList();
+      final currentCustom = sources
+          .where((s) =>
+              s.id.startsWith('index:') &&
+              !defaultIndexSources.any((d) => d.id == s.id))
+          .toList();
       sources
         ..clear()
         ..addAll(defaultIndexSources)
@@ -191,7 +194,7 @@ class WatchlistController extends ChangeNotifier {
     }
   }
 
-  Future<void> refreshVisibleQuotes() async {
+  Future<void> refreshVisibleQuotes({bool forceRefresh = false}) async {
     final currentPageIndex = pageIndex;
     final page = pageRows;
     if (page.isEmpty) return;
@@ -199,14 +202,16 @@ class WatchlistController extends ChangeNotifier {
 
     final gen = ++_quoteGen;
     _inflightPage = currentPageIndex;
-    final needSpinner = pageNeedsQuoteSpinner;
-    refreshing = needSpinner;
+    refreshing = true;
     quotesUnavailable = false;
     _notify();
 
     try {
       // Compile all stocks on the page and execute strictly ONE batch request:
-      final enriched = await _client.enrichQuotes(List.of(page));
+      final enriched = await _client.enrichQuotes(
+        List.of(page),
+        forceRefresh: forceRefresh,
+      );
       if (_disposed || gen != _quoteGen) {
         if (_inflightPage == currentPageIndex) _inflightPage = null;
         return;
@@ -241,8 +246,7 @@ class WatchlistController extends ChangeNotifier {
     pageIndex = clamped;
     expandedDepthSymbol = null;
     depthQuote = null;
-    refreshing =
-        pageRows.every((r) => r.ltp <= 0) && pageRows.isNotEmpty;
+    refreshing = pageRows.every((r) => r.ltp <= 0) && pageRows.isNotEmpty;
     quotesUnavailable = false;
     _notify();
     await refreshVisibleQuotes();
@@ -349,7 +353,7 @@ class WatchlistController extends ChangeNotifier {
   }
 
   Future<void> pullToRefresh() async {
-    await selectSource(selectedSourceId);
+    await refreshVisibleQuotes(forceRefresh: true);
   }
 
   void setHoveredSymbol(String? symbol) {

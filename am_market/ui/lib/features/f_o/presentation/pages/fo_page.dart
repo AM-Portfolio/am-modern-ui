@@ -90,6 +90,7 @@ class FoPageState extends ConsumerState<FoPage>
       ref.read(futuresShowAllUnderlyingsProvider.notifier).state = false;
       ref.read(futuresExpiryFilterProvider.notifier).state = 'All';
       ref.read(foActiveSymbolProvider.notifier).state = next;
+      resetToOptionChain();
     }
   }
 
@@ -263,21 +264,38 @@ class FoPageState extends ConsumerState<FoPage>
         Expanded(
           child: Padding(
             padding: EdgeInsets.only(bottom: isMobile ? bottomInset : 0),
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                OptionChainView(
-                  key: _optionChainKey,
-                  showExpiryInToolbar: !isMobile,
-                ),
-                const FuturesView(),
-                const MarginCalculatorView(),
-              ],
+            child: AnimatedBuilder(
+              animation: _tabController,
+              builder: (context, _) => _buildActiveTab(isMobile),
             ),
           ),
         ),
       ],
     );
+  }
+
+  Widget _buildActiveTab(bool isMobile) {
+    switch (_tabController.index) {
+      case 1:
+        return const KeyedSubtree(
+          key: ValueKey('futures-tab'),
+          child: FuturesView(),
+        );
+      case 2:
+        return const KeyedSubtree(
+          key: ValueKey('margin-tab'),
+          child: MarginCalculatorView(),
+        );
+      case 0:
+      default:
+        return KeyedSubtree(
+          key: const ValueKey('option-chain-tab'),
+          child: OptionChainView(
+            key: _optionChainKey,
+            showExpiryInToolbar: !isMobile,
+          ),
+        );
+    }
   }
 
   /// Chart bottom embed — no symbol tile; body only for the selected main tag.

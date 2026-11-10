@@ -144,6 +144,7 @@ class _MarketContentState extends ConsumerState<MarketContent> {
   final GlobalKey<EquityInsiderPageState> _equityInsiderKey =
       GlobalKey<EquityInsiderPageState>();
   final GlobalKey<FoPageState> _foPageKey = GlobalKey<FoPageState>();
+  String? _lastNavigationTitle;
 
   void _openEquityInsiderForSymbol(String rawSymbol) {
     final symbol = rawSymbol.trim().toUpperCase();
@@ -277,6 +278,9 @@ class _MarketContentState extends ConsumerState<MarketContent> {
       _bindPriceService();
       final provider = context.read<MarketProvider>();
       final title = _swipeController.currentItem.title;
+      if (title == 'Futures & Options') {
+        _resetFuturesOptionsTabAfterMount();
+      }
       unawaited(provider.activateSurface(_streamSurfaceForTitle(title)));
       _maybePromptAuthFromQuery();
     });
@@ -357,7 +361,11 @@ class _MarketContentState extends ConsumerState<MarketContent> {
       if (!mounted) return;
       final currentTitle = _swipeController.currentItem.title;
 
-      if (currentTitle == 'Futures & Options') {
+      final enteredFuturesOptions = currentTitle == 'Futures & Options' &&
+          _lastNavigationTitle != currentTitle;
+      _lastNavigationTitle = currentTitle;
+
+      if (enteredFuturesOptions) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) _foPageKey.currentState?.resetToOptionChain();
         });
@@ -411,9 +419,22 @@ class _MarketContentState extends ConsumerState<MarketContent> {
     super.didUpdateWidget(oldWidget);
     if (widget.initialTab != oldWidget.initialTab) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _syncTabFromUrl(notify: false);
+        if (!mounted) return;
+        _syncTabFromUrl(notify: false);
+        if (_swipeController.currentItem.title == 'Futures & Options') {
+          _resetFuturesOptionsTabAfterMount();
+        }
       });
     }
+  }
+
+  void _resetFuturesOptionsTabAfterMount() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _foPageKey.currentState?.resetToOptionChain();
+      });
+    });
   }
 
   /// Pages are not wrapped for vertical edge nav — section changes are

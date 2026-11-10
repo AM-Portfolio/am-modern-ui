@@ -59,48 +59,16 @@ class _PaperWatchlistMobileState extends State<PaperWatchlistMobile> {
                     onCreateWatchlist: () async {
                       final sym = widget.selectedSymbol.isNotEmpty
                           ? widget.selectedSymbol
-                          : (controller.pageRows.isNotEmpty ? controller.pageRows.first.symbol : 'NIFTY 50');
-                      final saved = await AddToWatchlistPopup.show(context, sym);
+                          : (controller.pageRows.isNotEmpty
+                              ? controller.pageRows.first.symbol
+                              : 'NIFTY 50');
+                      final saved =
+                          await AddToWatchlistPopup.show(context, sym);
                       if (saved == true) {
                         await controller.loadSources();
                         await controller.refreshVisibleQuotes();
                       }
                     },
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Tooltip(
-                  message: 'Add to Watchlist',
-                  child: InkWell(
-                    onTap: () async {
-                      final sym = widget.selectedSymbol.isNotEmpty
-                          ? widget.selectedSymbol
-                          : (controller.pageRows.isNotEmpty ? controller.pageRows.first.symbol : 'NIFTY 50');
-                      final saved = await AddToWatchlistPopup.show(context, sym);
-                      if (saved == true) {
-                        await controller.loadSources();
-                        await controller.refreshVisibleQuotes();
-                      }
-                    },
-                    borderRadius: BorderRadius.circular(8),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 9,
-                        vertical: 9,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.35),
-                        ),
-                      ),
-                      child: Icon(
-                        Icons.bookmark_add_outlined,
-                        size: 16,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                    ),
                   ),
                 ),
                 if (widget.onOpenAllIndices != null) ...[
@@ -116,10 +84,16 @@ class _PaperWatchlistMobileState extends State<PaperWatchlistMobile> {
                           vertical: 9,
                         ),
                         decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                          color: Theme.of(context)
+                              .colorScheme
+                              .primary
+                              .withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(8),
                           border: Border.all(
-                            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.35),
+                            color: Theme.of(context)
+                                .colorScheme
+                                .primary
+                                .withValues(alpha: 0.35),
                           ),
                         ),
                         child: Row(

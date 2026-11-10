@@ -1,258 +1,189 @@
-# PLAN — Paper Trading fast load, live streaming, and consistent watchlist UX
+# Market and Paper Trading Plan
 
-Status: **plan updated; waiting for user review before implementation**
-Lead repo: `am-modern-ui`
-Target: `preprod`
-Code changes: **not started**
+Status: **implementation in progress; first scoped slice applied**
+Scope: `am-modern-ui` Market UI, Market common, and the centralized `am_design_system`, including Paper Trading, Market F&O, and Market Analytics.
+Out of scope: Portfolio, Trade, backend services, generated SDK contracts, and unrelated modules.
+
+## Implementation TODO
+
+- [x] Make F&O contract metadata and selected-contract LTP load independently and asynchronously.
+- [~] Add Margin loading/error/empty states. (Present in code, but the desktop layout defect can prevent the body from painting.)
+- [~] Fix the desktop Margin layout failure. (Invalid stretch removed; browser-only layout regression still awaits Chrome runner.)
+- [~] Fix the tab-switch freeze. (Outgoing heavy tab removed from the transition; browser interaction timing remains to verify.)
+- [~] Prevent duplicate/restarted requests during F&O tab switching and retained-page navigation. (Active-tab mounting is fixed; request-cache coverage remains.)
+- [x] Avoid eager work from inactive F&O tabs where the existing tab architecture permits.
+- [x] Curate F&O landing shortcuts to HDFC Bank, Reliance, Wipro, Infosys, NIFTY, and BANKNIFTY.
+- [~] Add or update focused regression tests for async loading, failure states, tab switching, and landing shortcuts. (Existing F&O regression tests pass; new provider-state coverage remains.)
+- [~] Run formatting and focused tests. (15 VM tests pass; the added web-only desktop test is skipped on VM because the Chrome test runner did not complete. Browser and rapid-switch verification remain.)
 
 ## Goal
 
-Show the correct Paper desk as soon as the Paper wallet is known. Load everything else afterward without displaying fake, stale, or falsely empty data. While Market → Paper is visible, stream only the symbols the user can currently see, keep position P&L live, provide safe position/order actions, and use the same themed star-based watchlist interaction as the rest of Market.
+Make Paper Trading and F&O open quickly, show only confirmed data, stream only visible symbols, and keep the UI consistent with the global Market theme.
 
-## Current problem
+## Mandatory implementation and design-system rule
 
-The desk currently waits for four sequential OMS calls:
+Before changing or adding code:
 
-```text
-wallet → orders → positions → preference → render desk
-```
+1. Search the complete codebase for an existing implementation of the required behavior.
+2. Reuse the existing provider, controller, widget, theme token, stream lifecycle, API client, animation, or test whenever it already satisfies the requirement.
+3. If existing logic is incomplete, fine-tune or extend it instead of creating a parallel implementation.
+4. Introduce new logic only after confirming that no suitable reusable implementation exists.
+5. Do not implement the same endpoint call, state, subscription handling, validation, animation, or theme behavior twice.
+6. Use the centralized design system and existing Market components before creating a new widget or style.
+7. Every changed widget must actively listen to global theme and Market theme changes through the approved design-system tokens; no raw colors, duplicate theme constants, or module-local visual replacements.
+8. Restrict code changes to `am_paper_ui`, `am_market`, and `am_design_system` within this workspace.
+9. Document the reuse decision or the reason new logic was necessary before implementation.
 
-Only the wallet is required to decide between the Enable page and Paper desk.
+## Problems and solutions
 
-After the desk renders, the watchlist separately loads:
+| Problem | Solution |
+|---|---|
+| Paper page waits for Wallet, Orders, Positions, Preferences, and prices | Block only on `GET /v1/wallets?kind=PAPER`; lazy-load the rest independently. |
+| Loading is shown as an empty list | Track `idle/loading/data/empty/error` separately and show the correct state. |
+| Watchlist prices arrive slowly or trigger many calls | Load visible symbols first, batch LTP, and use Quotes only for fallback/depth. Never invent prices. |
+| Hidden Overview/analyser work runs early | Load analyser/fundamental/chart data only when Overview opens. |
+| Paper symbols keep streaming after navigation | Subscribe only to the visible watchlist/position symbol union; unsubscribe when leaving, paginating, or changing tabs. |
+| Paper P&L is not live | Consume valid WebSocket ticks for visible positions and recalculate row and total P&L without mutating OMS data. |
+| Position/order actions are incomplete or unsafe | Add confirmed Buy/Sell/Exit ticket flows, revalidate OMS quantity before submit, and refresh after success. Preserve Cancel, Re-order, and Retry with complete order values. |
+| Paper uses a bookmark instead of the shared star | Reuse the shared Market watchlist membership and star behavior, including confirmed add/remove, rollback, accessibility, and pending state. |
+| Paper Watchlist header contains a redundant Add to Watchlist action | Remove only the header-level Add to Watchlist button on desktop and mobile. Keep the shared row-level star and existing source/dropdown flows available. |
+| Refresh button may return cached values or refresh more than necessary | Reuse `WatchlistController.refreshVisibleQuotes()` and `PaperMarketClient.enrichQuotes()`, but add an explicit user-refresh path that sends `refresh=true` to the existing LTP/Quotes calls. Refresh only the current visible page, preserve source/page/selection/depth state, and keep the request generation guard. |
+| Refresh causes list jitter or duplicate requests | Keep one in-flight refresh per visible page, disable/relabel the control while active, merge valid responses into existing rows, and avoid rebuilding the Paper desk or OMS state. |
+| Hovering between Paper Watchlist stocks shifts the row layout | Reuse the current hover/action state, but reserve a stable action-toolbar width and animate opacity/visibility instead of conditionally inserting/removing the toolbar. The price column must not move when hover changes. |
+| Hover transitions feel abrupt when moving between stocks | Animate the outgoing/incoming action state with a short `AnimatedSwitcher`/`AnimatedOpacity` transition while keeping row height and width fixed. Do not use a full-list animation or rebuild the entire watchlist. |
+| Paper controls use hardcoded or inherited colors | Use global theme tokens, `context.colors`, `context.marketTheme`, and `ModuleColors.market` for every state. |
+| Enable Paper Trading button appears purple | Apply the Market CTA theme for normal, hover, pressed, focus, disabled, and loading states. |
+| F&O can reopen on Margin/Futures | Reset the retained F&O tab to Option Chain on every new entry, symbol change, search, and deep link. |
+| Margin Calculator waits for unrelated data | Remove its dependency on the full Option Chain. Load only the selected futures contract metadata and LTP. |
+| Margin selects an illiquid first contract | Prefer the nearest valid contract with a positive actual LTP; otherwise show LTP unavailable and disable calculation. |
+| Margin loads quotes for every futures contract | Fetch metadata first, then quote only the selected contract. Cache results by symbol/contract. |
+| Margin quantity/price can be wrong or blank | Quantity comes from authoritative NSE contract lot size; price is the selected contract's read-only actual LTP. No universal `50`, fake price, or synthetic carry price. |
+| Margin is intermittently blank or slow | The current `futuresContractsProvider` waits for instrument search and then waits for one quote request containing every returned contract. `MarginCalculatorView` converts loading/error into an empty list, so a slow or failed request looks like a blank calculator. The provider is also `autoDispose` while all `TabBarView` children are constructed, so switching tabs can restart the same request. Split the existing path into cached metadata and selected-contract quote loading, expose loading/error/unavailable states, and let Margin render the confirmed lot size as soon as metadata arrives. Fetch the selected contract LTP independently, deduplicate in-flight requests, and never block Margin on Option Chain or the full Futures table. |
+| F&O page freezes while opening or switching tabs | `TabBarView` constructs Option Chain, Futures, and Margin content together. Their providers and widgets can therefore start option-chain loading, full futures instrument search, all-contract quote enrichment, charts, and margin binding at the same time. The first visible header may already have its data, but the body still waits on the slowest full-list request. Keep the tab shell light, activate each tab's data path only when that tab is selected, and schedule non-visible work asynchronously after first paint. Avoid provider writes and expensive selection/enrichment during build. |
 
-```text
-index symbols → live LTP → quote fallback
-```
+| F&O landing recommendations show too many stocks and omit key indices | `dynamicFoRecommendationsProvider` currently returns the first security-search recommendations, so stock results can replace the intended index shortcuts. Reuse the existing recommendation provider/service but normalize and curate the landing list to keep `HDFC Bank`, `Reliance`, `Wipro`, and `Infosys`, and add `NIFTY` and `BANKNIFTY`. Preserve the existing fallback and click-to-select flow; do not add a new endpoint. |
 
-On mobile, an offstage analyser may also start hidden fundamental/chart calls after symbol selection.
+### Latest F&O audit: Margin blank, tab latency, and default-tab regression
 
-Verified in:
+Confirmed from the current widget/provider graph:
 
-- `am_paper_ui/lib/presentation/paper_oms_cubit.dart`
-- `am_paper_ui/lib/providers/paper_oms_providers.dart`
-- `am_paper_ui/lib/presentation/pages/paper_gate_screen.dart`
-- `am_paper_ui/lib/presentation/widgets/watchlist/watchlist_controller.dart`
-- `am_paper_ui/lib/presentation/pages/paper_desk_screen.dart`
+- `FoPage._buildTabDetailView` watches Option Chain data for the mobile expiry picker and constructs all three `TabBarView` children together.
+- `FoHeaderCard` independently watches market status, Option Chain, and the full enriched Futures provider. This means the header can display correctly while the body is still waiting on unrelated work.
+- `MarginCalculatorView` watches metadata, then creates a selected-contract quote provider during its build. It currently collapses metadata loading/error to an empty list and has no dedicated visible loading/error state, so a slow or failed search appears blank.
+- The Futures provider still performs full-list quote enrichment for the Futures tab. If that provider is retained or rebuilt during tab changes, it can compete with the selected-contract Margin request.
+- The retained `FoPage` owns the `TabController`; parent reset calls can occur before the retained F&O child is mounted on direct-route/deep-link entry. That explains why the initial tab can remain Margin even though `initialIndex` is zero.
 
-## Endpoint decisions
+Fix sequence:
 
-| Endpoint | Needed for first desk render? | Plan |
-|----------|-------------------------------|------|
-| `GET /v1/wallets?kind=PAPER` | Yes | Keep blocking |
-| `GET /v1/orders?walletId=...` | No | Lazy-load |
-| `GET /v1/wallets/{id}/positions` | No | Lazy-load |
-| `GET /v1/prefs` | No | Load when ticket opens/background |
-| `GET /v1/watchlists` | No | Background |
-| `POST /v1/indices/batch` | Only for watchlist rows | Load after desk shell |
-| `GET /v1/market-data/live-ltp` | Only for prices | Load after symbol rows |
-| `GET /v1/market-data/quotes` | Fallback/depth only | Call only when needed |
-| Historical/fundamental endpoints | No | Load only when Overview opens |
+1. Add an explicit active-tab state boundary. Ensure only the selected body mounts its data-heavy widget, while preserving tab state through a keyed cache only after first activation. Do not let inactive tabs start providers.
+2. Move expiry data needed by the mobile picker behind the Option Chain tab’s active state; the header must use a lightweight cached summary or show an unavailable state instead of forcing the full chain.
+3. Make `FoHeaderCard` consume the smallest existing cached quote/summary path. It must not trigger full Futures enrichment just to render the header.
+4. In Margin, render metadata-loading, metadata-error, no-contract, quote-loading, quote-error, and valid-price states explicitly. Keep the selected-contract quote request independent and deduplicated.
+5. Move all default-contract selection and controller synchronization out of the build method into provider/listener or post-frame state transitions guarded by symbol/contract identity. This prevents rebuild feedback and UI stalls.
+6. Reset the F&O tab from a route-entry token delivered after the retained `FoPage` is mounted, rather than relying only on a parent `GlobalKey` call during navigation.
+7. Add timeline tests and widget tests for: cold direct route, retained route return, tab switches, delayed metadata, delayed quote, failed quote, and inactive-tab request counts. Verify the header paints first and that one tab cannot block another.
 
-## Implementation phases
+### Follow-up runtime investigation from the blank Margin screenshot
 
-### 1. Fast first paint
+Latest finding: `_buildWebDashboard` puts a `Row(crossAxisAlignment: CrossAxisAlignment.stretch)` inside a vertical `SingleChildScrollView`. This gives the row unbounded height and can fail during desktop layout after metadata arrives. Existing Margin tests use the default narrow viewport and miss this branch. Capture the Flutter exception in a desktop-width widget test before changing it. The header uses a separate data path, so its values can appear even while the Margin body fails.
 
-- Call the wallet endpoint.
-- If no Paper wallet exists, show Enable Paper Trading.
-- If a wallet exists, immediately show the desk and confirmed wallet balance.
-- Do not wait for Orders, Positions, or Preferences.
+Screen freeze: the repeated layout failure is a plausible source of dropped frames. The current `AnimatedSwitcher` also retains an outgoing heavy tab in a full-size `Stack` during the 180 ms transition; it can continue layout and hit testing while the next tab is selected. Confirm the exact contribution of each with Flutter errors, frame timing, and rapid-click tests before attributing the remaining delay to API latency.
 
-### 2. Safe lazy loading
+Prioritized fix: reproduce the desktop layout failure; correct the stretch constraint with bounded or natural panel heights; assert the Margin panels and actual values paint; then test rapid Option Chain → Futures → Margin → Option Chain switching with delayed providers, ensuring the outgoing child cannot intercept clicks or keep failing layout. Verify all loading/error/unavailable states and the direct-entry Option Chain default afterward.
 
-Track each resource separately:
+The screenshot confirms that the tab label changes to Margin, but it does not prove that the Margin widget produced a valid frame. The current code still has several observable points that must be instrumented before another fix:
 
-```text
-idle → loading → data / empty / error
-```
+- `AnimatedSwitcher` is now the body host. Its custom `StackFit.expand` layout must be verified with a frame marker for the active tab; otherwise a transition can report the new tab while the visible child is still an old or zero-content subtree.
+- `MarginCalculatorView` watches metadata and conditionally watches the selected-contract quote provider. The provider state, request key, and first frame must be logged/tested separately. A blank screen is not an acceptable loading representation.
+- The metadata request can remain pending indefinitely because the SDK call has no UI-level timeout or cancellation state. Add a bounded timeout around the existing request path and show a retryable error while preserving stale cached metadata.
+- `FoPage` still watches Option Chain data for the mobile expiry picker even when Margin or Futures is active. Move that watch behind the active Option Chain state so a non-Option tab cannot rebuild from chain updates.
+- Default-tab reset must be tested after the retained child is mounted, not only when the parent navigation callback fires. Use a route-entry/reset token or an explicit visibility callback and assert the controller index after the frame settles.
 
-An unloaded list must never display “No orders” or “No positions.” It must show loading until the server confirms an empty result.
+Required next fix pass:
 
-### 3. Progressive watchlist
+1. Add structured diagnostics for tab index, active child key, metadata state, quote state, request start/end, and provider disposal. Reproduce the blank screenshot and identify the first missing state transition.
+2. Replace the custom `AnimatedSwitcher` body host with a constrained active-tab transition that has one authoritative child and a guaranteed loading/error fallback. Do not keep previous heavy tab subtrees in the layout during the transition.
+3. Gate the mobile expiry-provider watch to Option Chain only and remove any remaining full Futures provider watch from the header path.
+4. Add timeout, cancellation/deduplication, and retry behavior to the existing metadata/selected-quote path. Keep endpoint calls asynchronous and independent.
+5. Add a widget test that switches Option Chain → Futures → Margin → Option Chain with delayed providers and asserts every tab is clickable and paints a non-empty state within the expected frame budget.
 
-- Show real symbol rows as soon as index/watchlist data arrives.
-- Show `—` or a loader until a real price arrives.
-- Batch LTP requests for visible rows.
-- Use Quotes only as fallback or when depth is opened.
-- Never invent a price; block order submission if no valid positive LTP exists.
+### Margin Calculator intermittent-load fix plan
 
-### 4. Remove hidden work
+1. Reproduce with DevTools Network and logs for a cold load, tab switch, symbol change, and return to F&O. Record instrument-search time, quote time, provider state, and whether the widget is disposed/recreated.
+2. Reuse the existing `futuresContractsProvider`, `selectedFutureContractProvider`, and SDK client, but separate their responsibilities: metadata list first, selected-contract quote second. Do not add a second API client or duplicate endpoint wrapper.
+3. Add a stable cached/in-flight request layer keyed by normalized symbol and contract identifier. A tab switch must reuse an active request instead of restarting it.
+4. Make Margin observe the full `AsyncValue` rather than `.maybeWhen(... orElse: [])`, so loading, backend error, no-contract, missing-LTP, and valid-data states are distinct and visible.
+5. Select the nearest valid contract with a positive confirmed LTP. If metadata exists but LTP is unavailable, show the contract and an explicit unavailable-price state; disable calculation rather than leaving blank fields.
+6. Keep the existing authoritative lot-size resolver and read-only LTP binding. Update controllers only when symbol/contract identity or confirmed response data changes, avoiding provider writes during build.
+7. Ensure the F&O page does not eagerly force the Margin/Futures request when the user only opens Option Chain; preserve the existing default Option Chain behavior and load each tab’s data when its content becomes active where the current navigator permits.
+8. Add regression tests for slow metadata, quote failure, empty contracts, repeated tab switches, cached return, dynamic lot size, and read-only actual LTP. Verify no request multiplication and no blank-without-state UI.
+9. Profile the F&O first frame and tab-switch frame. Confirm the header can paint independently, then confirm Option Chain, Futures, and Margin requests do not block one another or run duplicate full-list enrichment in the background.
+10. Curate the landing shortcuts using the existing search response: retain HDFC Bank, Reliance, Wipro, and Infosys, add NIFTY and BANKNIFTY, and verify each selection resolves to the correct F&O symbol and contract search.
 
-- Do not build the mobile analyser until Overview is opened.
-- Reuse in-flight requests when a tab is tapped repeatedly.
-- Ignore stale responses after rapid symbol changes.
-- Fetch Quote and LTP concurrently when the order ticket opens.
+### Market Analytics: Historical Monthly Performance
 
-### 5. Backend measurement and optimization
+| Problem | Solution |
+|---|---|
+| Compact monthly cards display `NIFTY` even when the ranking contains `NIFTY METAL`, `NIFTY IT`, or another actual index | First compare `topPerformer.symbol` with `allIndices[0].symbol` in the existing `/v1/analysis/indices/historical-performance` response. Reuse the existing `allIndices` data for the compact card if it contains the correct ranked name. Change the backend only if the response itself is inconsistent after cache/API verification. |
+| Monthly cells are too narrow because available width is divided by all 12 months | Keep all 12 months in the horizontal scroll, but use a uniform desktop cell width instead of dividing the viewport by 12. |
+| Wide layout shows October and sidebar-open layout shows August before the names are readable | Derive the visible window from the actual `LayoutBuilder` width: target approximately January–September on the wide layout and January–July when the secondary sidebar is open. Do not remove later months; keep them reachable by scrolling. |
+| Long index names are clipped or visually reduced to `NIFTY` | Give every month column the same minimum width and render the full index name on one line. Keep the month header, card, and every year row aligned to that width. |
+| Hover scaling changes the apparent card size | Preserve uniform card dimensions and use border/shadow emphasis instead of changing layout size on hover. |
+| Desktop and compact month scrollers can use different sizing rules | Reuse the existing horizontal scroll and responsive `LayoutBuilder` logic; update both `HistoricalPerformanceSection` and `CylinderMonthScroller` only where their current sizing rules differ. |
 
-- Measure cold/warm latency and payload size for Wallet, Orders, Positions, Index, LTP, and Quotes.
-- Keep Wallet and Index responses lean and cached safely.
-- Confirm LTP is a real batch operation.
-- Consider `includeDepth=false` for lightweight watchlist quote fallback only after measurement.
-- Verify the actual `am-oms` source before changing its backend; it is not present in this workspace.
+Affected files:
 
-### 6. Market → Paper streaming lifecycle
+- `am_market/ui/lib/features/market_analysis/presentation/widgets/historical_performance_section.dart`
+- `am_market/ui/lib/features/market_analysis/presentation/widgets/monthly_performance_card.dart`
+- `am_market/ui/lib/features/market_analysis/presentation/widgets/cylinder_month_scroller.dart`
+- `am_market/common/lib/models/indices_performance_model.dart` only if response normalization is required
 
-- Keep REST LTP as the truthful initial snapshot; WebSocket ticks progressively replace it only when valid and newer.
-- Connect incoming `PriceService` ticks to Paper watchlist rows and open-position LTP/P&L. Publishing symbols without consuming ticks is incomplete.
-- Maintain separate Paper sub-scopes for visible watchlist symbols and visible position symbols, then publish their deduplicated union. One pane must not overwrite the other pane's interest.
-- On pagination, watchlist/index change, or position-book change, subscribe additions and unsubscribe removals.
-- On Paper → another Market tab, release Paper interest. On leaving Market entirely, release the `market-ui` scope. Keep the authenticated STOMP connection open; remove only unnecessary symbol interest.
-- On return, fetch/retain the safe REST snapshot and replay the currently visible Paper scope.
-- During market close, retain desired symbols locally but remove frontend topics and send the gateway's supported backend unsubscribe command. At market open, force-refresh status and replay active scopes.
-- Validate the gateway contract before implementation: `/app/market/subscribe` exists in the UI; a matching batched market-unsubscribe destination was not found locally and must not be invented silently.
-- Fix market-session boundary refresh so the one-hour status cache cannot suppress the opening/closing transition.
-- Preserve the existing fail-open policy for a transient status failure, but use the last valid session/calendar boundary where available.
+No new endpoint or backend change is part of this plan. The existing historical-performance endpoint, `allIndices` payload, ranking dialog, horizontal scroll controller, and responsive layout logic must be reused first. If the backend response is inconsistent, record it separately rather than changing the backend in this scope.
 
-### 7. Live Positions and safe trade actions
+## Endpoint behavior
 
-- Subscribe to open-position symbols only while Positions is visible (or simultaneously visible beside Watchlist on desktop).
-- Recalculate per-row unrealized P&L and total P&L on every valid, in-order tick without refreshing Orders/Positions REST data.
-- Add themed `Buy`, `Sell`, and `Exit` actions to desktop rows and mobile cards.
-- `Exit` opens the existing Paper order ticket for confirmation; it never submits immediately.
-- For a positive quantity, prefill `SELL` and the full available quantity. If short Paper positions are supported, a negative quantity prefills `BUY` and the absolute quantity.
-- Revalidate the latest OMS position and quantity at submission; prevent oversell unless short selling is explicitly supported by the Paper OMS contract.
-- Refresh wallet, orders, and positions after a successful order without blocking the ticket success state.
+- Wallet is the only blocking Paper request.
+- Orders, Positions, Preferences, Watchlists, Index batch, LTP, and Quotes load independently.
+- Explicit Watchlist refresh uses the existing live-LTP batch and Quotes fallback with `refresh=true`; ordinary background loads may continue using the normal cache policy.
+- Historical/fundamental endpoints do not block Paper or Margin Calculator.
+- F&O uses `/v1/instruments/search` for contract metadata and `/v1/market-data/quotes` only for the selected contract where possible.
+- `/v1/market-data/option-chain` is used by Option Chain, not as a prerequisite for Margin Calculator.
+- F&O endpoints must be asynchronous and independently rendered: header quote, option-chain data, futures metadata, selected-contract LTP, and margin calculation must not wait on one another unless the displayed calculation actually requires that response.
+- The F&O landing shortcuts reuse the existing security-search response; no new recommendations endpoint is required.
 
-### 8. Orders correctness and live status
+## Implementation order
 
-- Preserve working-order Cancel, filled-order Re-order, and rejected-order Details/Retry.
-- Re-order and Retry must prefill the complete safe order intent: symbol, side, quantity, order type, and applicable limit/target/stop values. The current flow copies only symbol and side and defaults quantity to `1`.
-- A filled BUY order's `Re-order` remains another BUY; selling a holding is done through the Position `Sell`/`Exit` action.
-- Verify whether OMS/gateway exposes an owner-scoped Paper order-event topic. If it exists, subscribe only while Paper is active and merge events idempotently. If it does not exist, keep explicit refresh-after-mutation behavior and document any proposed backend contract separately.
-- Unsubscribe Paper order events on leaving Paper/Market and on logout.
-
-### 9. Consistent watchlist star and global theme
-
-- Replace the Paper bookmark affordance with the exact shared Market watchlist star interaction.
-- Unfilled star means the symbol is not in the selected/global watchlist; filled star means membership is confirmed.
-- Clicking the star uses the existing watchlist source of truth and mutation flow. Do not create a Paper-only membership flag or optimistic state that can disagree with the Watchlist page.
-- Show a pending/disabled state during mutation, roll back on failure, and prevent duplicate add/remove submissions.
-- Reflect membership changes made elsewhere in Market without requiring a Paper page reload.
-- Reuse the shared watchlist star widget/icon semantics where practical so tooltip, accessibility label, hit target, and behavior remain uniform.
-- The control must react to the global light/dark theme and Market module theme. Use `context.colors.*`, `context.marketTheme.*`, and `ModuleColors.market`; no raw `Colors.*`, hex values, or Paper-specific hardcoded icon colors.
-- Preserve keyboard focus, screen-reader labels (`Add to watchlist` / `Remove from watchlist`), and an accessible tap target on desktop and mobile.
-
-### 10. Enable Paper Trading screen theme correction
-
-- `PaperEnablePage` currently uses an unstyled `FilledButton`, so it inherits the app-wide primary CTA theme and appears purple. The page has no raw purple literal, but the inherited result is incorrect for Market → Paper.
-- Style `Enable paper trading` from the Market module theme, following existing Market CTA patterns: Market accent background, theme-derived foreground, and theme-derived hover, pressed, focus, disabled, and loading states.
-- Use `ModuleColors.market` or the equivalent shared Market semantic token for the accent, and `context.colors.actionPrimaryFg`/the approved design-system foreground token for contrast. Do not introduce a raw hex value or `Colors.*` workaround.
-- Keep title, explanatory copy, error text, loading indicator, focus ring, and surrounding background bound to `Theme.of(context)`, `context.colors.*`, and Market semantic tokens.
-- The CTA must update immediately when the global light/dark theme changes and must visually align with the active Market navigation accent.
-- Prefer a reusable Market CTA style/component when one already exists; do not create a Paper-only color constant.
-
-### 11. Market F&O — Option Chain default and margin-data correctness
-
-This is an adjacent Market-module execution slice, not Paper OMS behavior. Keep changes inside `am_market/ui` and its existing Market SDK/providers; do not modify Portfolio, Trade, Dashboard, or unrelated modules.
-
-#### Verified current behavior
-
-- `FoPage` creates its three-tab controller with index `0`, where index `0` is `Option Chain`.
-- Entering Futures & Options through the Market navigator calls `resetToOptionChain()`, and selecting another F&O symbol also calls it. The user's Option Chain-first expectation is therefore already represented in the current local source.
-- The margin calculator does not currently hardcode quantity `50` for every symbol. `FoLotSizeConfig.resolveLotSize()` prioritizes selected-contract metadata, then Option Chain metadata, then a local index fallback table, then `1`.
-- The local fallback table is still hardcoded exchange metadata and can become stale. It must not silently override or substitute for authoritative contract metadata when calculating real margin.
-- The margin price is an editable `TextField`. Once edited, `_userEditedPrice` prevents later LTP rebinding. This does not meet the requirement for a read-only actual selected-contract price.
-- Futures enrichment contains synthetic/fallback contract pricing derived from spot and other hardcoded fallback values in adjacent widgets. Synthetic prices must never feed a production margin calculation presented as actual.
-
-#### Required correction
-
-- Preserve Option Chain as the initial tab whenever F&O opens for a selected stock/index, including sidebar entry, swipe entry, deep link, global search, retained-page return, and `initialSymbol` changes.
-- Add a regression test proving a previously selected Futures Contracts or Margin Calculator tab resets to Option Chain on a new F&O entry/symbol journey.
-- Make the selected contract's authoritative `lot_size`/`lotSize`/minimum-lot metadata the quantity basis. Option Chain contract metadata may be used when it identifies the same selected contract/underlier.
-- Treat NSE/BSE lot sizes as dynamic contract metadata owned by the backend/instrument master. Do not introduce a universal `50`, and do not silently calculate using a stale local table when authoritative metadata is unavailable.
-- Until authoritative lot metadata arrives, show quantity/lot size as unavailable or loading and disable margin calculation. Never substitute an arbitrary quantity.
-- Keep quantity user-adjustable only in valid whole-lot multiples. `+` and `−` move exactly one resolved lot; typed values must be positive multiples of that lot or show validation.
-- Replace the editable Price `TextField` and `Use LTP` action with a read-only themed price display bound to the selected contract's actual LTP.
-- Update the read-only price from the existing Market price stream while the Margin Calculator is visible, using the selected contract/instrument key rather than only the underlier symbol.
-- If no valid positive selected-contract LTP exists, show `—`/unavailable and disable calculation. Do not use spot-derived carry estimates, demo values, `2203.50`, or another contract's price.
-- On contract or symbol change, clear the previous contract's quantity, price, and computed margin immediately; show loading until metadata and LTP for the new contract are confirmed.
-- Derived notional and margin values must recompute from the confirmed lot-multiple quantity and latest valid selected-contract LTP only.
-- Use global and Market theme tokens for read-only, loading, unavailable, validation, hover, focus, and disabled states; no raw colors or static visual data.
-
-## Correctness rules
-
-- Wallet response controls Enable vs Desk.
-- Loading is not treated as empty.
-- Missing price remains unavailable, not zero.
-- Remote preference failure may use the confirmed local/default `MARKET` preference.
-- JWT ownership and PAPER-only isolation stay unchanged.
-- Existing order idempotency and submit guards stay unchanged.
-- A WebSocket tick may update displayed market value but may not mutate OMS quantity, fills, wallet balance, or order status.
-- Watchlist membership is confirmed by the shared Market watchlist state/API, not by icon-local state.
-- Position Exit always requires ticket confirmation and a fresh OMS quantity validation.
-- Theme and module colors come only from shared design-system tokens.
-- Generic app-primary button styling must not override the Market semantic accent on the Enable Paper Trading screen.
-- No new service, database, or response contract unless separately approved.
-
-## Required tests
-
-| Case | Expected |
-|------|----------|
-| Wallet succeeds while Orders/Positions are slow | Desk renders immediately |
-| No Paper wallet | Enable page renders |
-| Orders/Positions still loading | Loader, not false empty state |
-| Index loads before prices | Symbols render; prices show unavailable |
-| LTP and Quotes fail | No fake price; order cannot submit |
-| Overview remains closed | No analyser API calls |
-| Repeated tab taps | One in-flight request |
-| Rapid symbol changes | Only latest symbol updates UI |
-| OMS/Redis/provider failure | Explicit error/fallback; no corrupted data |
-| Valid tick for visible watchlist symbol | Only that row updates from the real tick |
-| Valid tick for open position | LTP, row P&L, and total P&L update consistently |
-| Out-of-order/zero tick | Existing valid value is preserved |
-| Change watchlist page/index | Removed symbols unsubscribe; new visible symbols subscribe once |
-| Watchlist and Positions visible together | Deduplicated union is streamed; neither scope overwrites the other |
-| Leave Paper/Market and return | Interest is released, then current visible scope is replayed |
-| Market opens/closes near cached status boundary | Forced status refresh applies the correct subscription transition |
-| Exit long position | SELL ticket opens with current symbol and available quantity; no immediate submit |
-| Oversell/racing position update | Submission is rejected or corrected from latest OMS truth |
-| Re-order/Retry | Complete supported order values are prefilled for user confirmation |
-| Paper order event duplicated/out of order | Idempotent merge leaves one correct order state |
-| Symbol not in watchlist | Unfilled themed star with Add semantics |
-| Add/remove watchlist succeeds | Star changes only to the confirmed membership state |
-| Add/remove watchlist fails/double-clicked | State rolls back; no duplicate mutation |
-| Global theme changes | Star, hover, focus, disabled, and selected states update from theme tokens |
-| Enable screen in light and dark themes | CTA uses the Market accent with accessible themed foreground and surface colors |
-| Enable CTA hover/press/focus/disabled/loading | Every state is theme-token driven; no purple app-primary fallback or raw color |
-| Open F&O after previously leaving it on Margin/Futures | Option Chain is selected for the new entry journey |
-| Open F&O with `initialSymbol` or search/deep-link symbol | Symbol is selected and Option Chain is the visible tab |
-| Selected contract metadata arrives | Quantity initializes to that contract's authoritative lot size, never universal `50` |
-| Lot metadata is missing/stale | Quantity remains unavailable and calculation is disabled; no arbitrary fallback |
-| User changes quantity | Only positive whole-lot multiples are accepted; controls step by one lot |
-| Selected contract LTP arrives/ticks | Read-only price and derived margins update from that exact contract |
-| Contract/symbol changes | Previous quantity, price, and margin clear before new data is shown |
-| Contract LTP is missing/zero | Price shows unavailable and calculation is disabled; no synthetic price |
-| User attempts to edit price | Price is not editable and has no `Use LTP` override action |
+1. Capture baseline Network timings and browser Console errors.
+2. Fix Paper first paint and independent loading states.
+3. Add visible-symbol WebSocket subscribe/unsubscribe lifecycle.
+4. Add live position P&L and safe Buy/Sell/Exit actions.
+5. Remove the redundant Watchlist header Add action, make current-page refresh force fresh quotes, and smooth row hover transitions.
+6. Replace Paper bookmark and Enable CTA with shared Market theme/star behavior.
+7. Fix F&O tab reset and decouple Margin Calculator from Option Chain.
+8. Fix futures contract selection, authoritative lot size, and read-only actual LTP.
+9. Fix Market Analytics index-name selection and responsive monthly-card sizing.
+10. Add regression tests and compare before/after waterfalls locally and in preprod.
 
 ## Acceptance criteria
 
-- First desk render depends only on Wallet latency.
-- Orders, Positions, Preferences, prices, and analyser data no longer block the desk shell.
-- No arbitrary or silently stale values are shown.
-- No hidden analyser calls occur before Overview opens.
-- No duplicate request storm occurs.
-- Visible Paper watchlist and position values consume live ticks during market hours.
-- Paper symbol interest is removed when no longer visible and restored on return.
-- Position P&L changes from valid ticks without repeated OMS or REST quote polling.
-- Position Sell/Buy/Exit and complete Re-order/Retry flows open a correctly prefilled confirmation ticket.
-- Paper uses the same unfilled/filled watchlist star behavior and shared membership truth as the Market Watchlist page.
-- No hardcoded icon, state, or theme colors are introduced.
-- The Enable Paper Trading CTA follows the Market module theme in every interaction state instead of inheriting the purple app-primary CTA.
-- F&O always opens a selected symbol on Option Chain, and Margin Calculator uses only authoritative lot metadata and read-only actual selected-contract LTP.
-- Before/after request waterfalls are captured in preprod.
-
-## Delivery order
-
-1. Capture baseline.
-2. Implement wallet-only gate and resource loading states.
-3. Add lazy loading and analyser gating.
-4. Add tests.
-5. Measure again locally/preprod.
-6. Optimize backend endpoints only where measurements justify it.
+- Paper desk renders after Wallet only; slow secondary endpoints do not block it.
+- Loading, empty, error, and unavailable-price states are explicit; no fake values are shown.
+- Only visible Paper watchlist and position symbols are subscribed; subscriptions are removed on navigation and restored on return.
+- Watchlist header has no redundant Add button; row-level shared star behavior remains available.
+- Watchlist Refresh updates only the visible page with fresh market values, preserves UI state, and does not rebuild the Paper desk.
+- Moving hover between stocks does not shift the price column or change row dimensions; the action transition is smooth.
+- Position P&L updates from valid in-order ticks.
+- Buy/Sell/Exit actions require confirmation and latest OMS validation.
+- Paper watchlist uses the same shared filled/unfilled star and membership truth as Market Watchlist.
+- All Paper controls follow light/dark global and Market themes.
+- New F&O journeys always open on Option Chain.
+- Margin uses the selected contract's authoritative lot size and actual read-only LTP.
+- Illiquid contracts show an explicit unavailable state rather than blank or synthetic values.
+- Historical monthly cards display the actual ranked index name, not a generic `NIFTY` label.
+- All monthly cells have uniform dimensions; wide layout initially shows about September and sidebar-open layout about July.
+- October–December remain available through horizontal scrolling.
+- Only `am_paper_ui`, `am_market`, and `am_design_system` are changed; no backend, Portfolio, Trade, or unrelated module is changed.
 
 ## Review gate
 
-UI previews: not requested.
-Architecture: `architecture.drawio`.
-Implementation, Postman execution, deployment, and production changes remain blocked until the user explicitly approves this plan.
+Implementation, API changes, Postman execution, and deployment remain blocked until the user approves this consolidated plan.
