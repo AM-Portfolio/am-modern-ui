@@ -111,13 +111,17 @@ class _MarginCalculatorViewState extends ConsumerState<MarginCalculatorView> {
       _lastBoundContractId = contractId;
       _userEditedQuantity = false;
       _lastResolvedLotSize = lotSize;
+      _lastResolvedLtp = null;
       _updateControllerSilently(_quantityController, '$lotSize');
+      _updateControllerSilently(_priceController, '');
       if (ltp != null && ltp > 0) {
         _lastResolvedLtp = ltp;
         _updateControllerSilently(_priceController, ltp.toStringAsFixed(2));
       }
     } else if (_lastBoundContractId != contractId) {
       _lastBoundContractId = contractId;
+      _lastResolvedLtp = null;
+      _updateControllerSilently(_priceController, '');
       if (!_userEditedQuantity) {
         _lastResolvedLotSize = lotSize;
         _updateControllerSilently(_quantityController, '$lotSize');

@@ -383,10 +383,11 @@ class _PaperPositionsPnlPaneState extends State<PaperPositionsPnlPane> {
                     const SizedBox(height: 4),
                     Text(
                       '₹${fmt.format(todayPnl)}',
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                            color: _pnlColor(context, todayPnl),
-                            fontWeight: FontWeight.w700,
-                          ),
+                      style:
+                          Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                color: _pnlColor(context, todayPnl),
+                                fontWeight: FontWeight.w700,
+                              ),
                     ),
                   ],
                 ),
@@ -437,6 +438,17 @@ class _PaperPositionsPnlPaneState extends State<PaperPositionsPnlPane> {
                         width: 24,
                         height: 24,
                         child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    ),
+                  )
+                else if (state.positionsError != null)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 24),
+                    child: Center(
+                      child: Text(
+                        state.positionsError!,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: colors.statusError),
                       ),
                     ),
                   )
@@ -512,12 +524,21 @@ class _PaperPositionsPnlPaneState extends State<PaperPositionsPnlPane> {
                             height: 24,
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
-                        : Text(
-                            'No open positions.',
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                  color: colors.textSecondary,
-                                ),
-                          ),
+                        : state.positionsError != null
+                            ? Text(
+                                state.positionsError!,
+                                textAlign: TextAlign.center,
+                                style: TextStyle(color: colors.statusError),
+                              )
+                            : Text(
+                                'No open positions.',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium
+                                    ?.copyWith(
+                                      color: colors.textSecondary,
+                                    ),
+                              ),
                   ),
                   tableBuilder: _buildTable,
                   cardBuilder: _buildCard,

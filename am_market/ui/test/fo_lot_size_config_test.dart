@@ -2,6 +2,7 @@ import 'package:am_design_system/am_design_system.dart';
 import 'package:am_market_ui/core/styles/market_theme_extension.dart';
 import 'package:am_market_ui/features/f_o/fo_lot_size_config.dart';
 import 'package:am_market_ui/features/f_o/presentation/pages/margin_calculator_view.dart';
+import 'package:am_market_ui/features/f_o/presentation/widgets/futures_contracts_table_widget.dart';
 import 'package:am_market_ui/features/f_o/providers/fo_provider.dart';
 import 'package:am_market_ui/features/f_o/providers/futures_provider.dart';
 import 'package:am_market_ui/features/f_o/providers/option_chain_provider.dart';
@@ -34,6 +35,20 @@ Widget _wrapWithApp(Widget child, {List<dynamic> overrides = const []}) {
 
 void main() {
   group('FoLotSizeConfig Unit Tests', () {
+    test('Expired futures are not restored when no active contract exists', () {
+      final now = DateTime(2026, 11, 11).millisecondsSinceEpoch;
+      final contracts = filterActiveFutureContracts(
+        [
+          {'trading_symbol': 'NIFTY25JANFUT', 'expiry': now - 86400000 * 60},
+          {'trading_symbol': 'NIFTY26DEC FUT', 'expiry': now + 86400000 * 20},
+        ],
+        nowMs: now,
+      );
+
+      expect(contracts, hasLength(1));
+      expect(contracts.single['trading_symbol'], 'NIFTY26DEC FUT');
+    });
+
     test('Default exchange lot sizes for NSE indices match 2026 mandates', () {
       expect(FoLotSizeConfig.resolveLotSize(symbol: 'NIFTY'), 65);
       expect(FoLotSizeConfig.resolveLotSize(symbol: 'NIFTY 50'), 65);

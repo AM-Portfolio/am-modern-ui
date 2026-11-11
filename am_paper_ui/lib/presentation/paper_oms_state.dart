@@ -13,6 +13,8 @@ class PaperOmsState extends Equatable {
     this.loadingPositions = false,
     this.submitting = false,
     this.error,
+    this.ordersError,
+    this.positionsError,
     this.toast,
   });
 
@@ -25,6 +27,8 @@ class PaperOmsState extends Equatable {
   final bool loadingPositions;
   final bool submitting;
   final String? error;
+  final String? ordersError;
+  final String? positionsError;
   final String? toast;
 
   PaperOmsState copyWith({
@@ -37,8 +41,12 @@ class PaperOmsState extends Equatable {
     bool? loadingPositions,
     bool? submitting,
     String? error,
+    String? ordersError,
+    String? positionsError,
     String? toast,
     bool clearError = false,
+    bool clearOrdersError = false,
+    bool clearPositionsError = false,
     bool clearToast = false,
   }) {
     return PaperOmsState(
@@ -51,6 +59,9 @@ class PaperOmsState extends Equatable {
       loadingPositions: loadingPositions ?? this.loadingPositions,
       submitting: submitting ?? this.submitting,
       error: clearError ? null : (error ?? this.error),
+      ordersError: clearOrdersError ? null : (ordersError ?? this.ordersError),
+      positionsError:
+          clearPositionsError ? null : (positionsError ?? this.positionsError),
       toast: clearToast ? null : (toast ?? this.toast),
     );
   }
@@ -66,6 +77,8 @@ class PaperOmsState extends Equatable {
         loadingPositions,
         submitting,
         error,
+        ordersError,
+        positionsError,
         toast,
       ];
 }

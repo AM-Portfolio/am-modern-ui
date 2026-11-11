@@ -17,6 +17,8 @@ class PaperOmsCubit extends Cubit<PaperOmsState> {
       loadingOrders: false,
       loadingPositions: false,
       clearError: true,
+      clearOrdersError: true,
+      clearPositionsError: true,
       clearToast: true,
     ));
     try {
@@ -37,6 +39,8 @@ class PaperOmsCubit extends Cubit<PaperOmsState> {
           loadingOrders: false,
           loadingPositions: false,
           clearError: true,
+          clearOrdersError: true,
+          clearPositionsError: true,
         ));
         return;
       }
@@ -48,6 +52,8 @@ class PaperOmsCubit extends Cubit<PaperOmsState> {
         loadingOrders: true,
         loadingPositions: true,
         clearError: true,
+        clearOrdersError: true,
+        clearPositionsError: true,
       ));
 
       // Lazy-load orders, positions, and preferences in parallel.
@@ -69,7 +75,10 @@ class PaperOmsCubit extends Cubit<PaperOmsState> {
       final orders = await _source.listOrders(walletId: walletId);
       emit(state.copyWith(orders: orders, loadingOrders: false));
     } catch (_) {
-      emit(state.copyWith(loadingOrders: false));
+      emit(state.copyWith(
+        loadingOrders: false,
+        ordersError: 'Unable to load orders. Tap refresh to retry.',
+      ));
     }
   }
 
@@ -78,7 +87,10 @@ class PaperOmsCubit extends Cubit<PaperOmsState> {
       final positions = await _source.listPositions(walletId);
       emit(state.copyWith(positions: positions, loadingPositions: false));
     } catch (_) {
-      emit(state.copyWith(loadingPositions: false));
+      emit(state.copyWith(
+        loadingPositions: false,
+        positionsError: 'Unable to load positions. Tap refresh to retry.',
+      ));
     }
   }
 
@@ -109,7 +121,12 @@ class PaperOmsCubit extends Cubit<PaperOmsState> {
   Future<void> refreshBooks() async {
     final wallet = state.wallet;
     if (wallet == null) return;
-    emit(state.copyWith(loadingOrders: true, loadingPositions: true));
+    emit(state.copyWith(
+      loadingOrders: true,
+      loadingPositions: true,
+      clearOrdersError: true,
+      clearPositionsError: true,
+    ));
     try {
       final fresh = await _source.getWallet(wallet.walletId);
       final orders = await _source.listOrders(walletId: wallet.walletId);
@@ -120,9 +137,16 @@ class PaperOmsCubit extends Cubit<PaperOmsState> {
         positions: positions,
         loadingOrders: false,
         loadingPositions: false,
+        clearOrdersError: true,
+        clearPositionsError: true,
       ));
     } catch (_) {
-      emit(state.copyWith(loadingOrders: false, loadingPositions: false));
+      emit(state.copyWith(
+        loadingOrders: false,
+        loadingPositions: false,
+        ordersError: 'Unable to refresh paper trading books.',
+        positionsError: 'Unable to refresh paper trading books.',
+      ));
     }
   }
 
@@ -218,7 +242,9 @@ class PaperOmsCubit extends Cubit<PaperOmsState> {
       final n = await _source.cancelAllOrders(walletId: wallet.walletId);
       emit(state.copyWith(
         submitting: false,
-        toast: n == 0 ? 'No pending orders to cancel' : 'Cancelled $n pending order(s)',
+        toast: n == 0
+            ? 'No pending orders to cancel'
+            : 'Cancelled $n pending order(s)',
       ));
       await refreshBooks();
     } catch (e) {
