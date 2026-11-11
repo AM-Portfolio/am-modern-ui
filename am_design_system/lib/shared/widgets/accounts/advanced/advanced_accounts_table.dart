@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 
 import '../../../../core/theme/color_extensions.dart';
 import 'advanced_account_row.dart';
@@ -33,12 +32,17 @@ class AdvancedAccountsTable extends StatelessWidget {
         Expanded(
           child: ListView.builder(
             itemCount: accounts.length,
-            itemBuilder: (context, index) =>
-                _buildRow(context, accounts[index], index),
+            itemBuilder: (context, index) {
+              final account = accounts[index];
+              return KeyedSubtree(
+                key: ValueKey(account.id),
+                child: _buildRow(context, account, index),
+              );
+            },
           ),
         ),
       ],
-    ).animate().fadeIn(duration: 300.ms).slideY(begin: 0.05, end: 0);
+    );
   }
 
   Widget _buildHeader(BuildContext context) => Padding(

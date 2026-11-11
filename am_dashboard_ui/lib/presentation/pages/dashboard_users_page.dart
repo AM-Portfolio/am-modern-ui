@@ -501,6 +501,7 @@ class _DashboardUsersPageState extends ConsumerState<DashboardUsersPage> {
                           final compact =
                               MediaQuery.sizeOf(context).width < 720;
                           return AdvancedAccountsTemplate(
+                            key: ValueKey('users-accounts-${_tab.name}'),
                             accounts: rows,
                             isLoading: false,
                             accentColor: ModuleColors.dashboard,

@@ -152,11 +152,11 @@ class _CustomDropdownState<T> extends State<CustomDropdown<T>> {
   }
 
   void _closeDropdown() {
-    _overlayEntry?.remove();
+    final entry = _overlayEntry;
     _overlayEntry = null;
-    if (mounted) {
-      setState(() => _isOpen = false);
-    }
+    _isOpen = false;
+    entry?.remove();
+    if (mounted) setState(() {});
   }
 
   OverlayEntry _createOverlayEntry() {
@@ -316,9 +316,10 @@ class _CustomDropdownState<T> extends State<CustomDropdown<T>> {
 
   @override
   void dispose() {
-    if (_isOpen) {
-      _overlayEntry?.remove();
-    }
+    final entry = _overlayEntry;
+    _overlayEntry = null;
+    _isOpen = false;
+    entry?.remove();
     super.dispose();
   }
 
