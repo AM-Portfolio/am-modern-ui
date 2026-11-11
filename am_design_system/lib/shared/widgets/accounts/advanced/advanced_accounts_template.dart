@@ -349,34 +349,38 @@ class _AdvancedAccountsTemplateState extends State<AdvancedAccountsTemplate>
         ),
       );
 
-  Widget _buildNarrowFilterLayout() => Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.md,
-          vertical: AppSpacing.sm,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _buildToolbarLeading(),
+  Widget _buildNarrowFilterLayout() {
+    final leading = widget.toolbarLeading;
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.sm,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (leading != null) ...[
+            leading,
             const SizedBox(height: AppSpacing.sm),
-            SizedBox(
-              height: _controlHeight,
-              child: Row(
-                children: [
-                  if (widget.allowViewModeToggle) ...[
-                    _buildViewModeToggle(),
-                    const SizedBox(width: AppSpacing.sm),
-                  ],
-                  const Spacer(),
-                  _buildRefreshButton(),
-                ],
-              ),
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            _buildSearchField(),
           ],
-        ),
-      );
+          SizedBox(
+            height: _controlHeight,
+            child: Row(
+              children: [
+                if (widget.allowViewModeToggle) ...[
+                  _buildViewModeToggle(),
+                  const SizedBox(width: AppSpacing.sm),
+                ],
+                Expanded(child: _buildSearchField()),
+                const SizedBox(width: AppSpacing.sm),
+                _buildRefreshButton(),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   Widget _buildViewModeToggle() {
     if (!widget.allowViewModeToggle) {
@@ -446,12 +450,22 @@ class _AdvancedAccountsTemplateState extends State<AdvancedAccountsTemplate>
   }
 
   Widget _buildRefreshButton() {
-    return IconButton(
-      tooltip: 'Refresh',
-      onPressed: _onRefreshPressed,
-      icon: RotationTransition(
-        turns: _refreshController,
-        child: const Icon(Icons.refresh_rounded),
+    return SizedBox(
+      width: _controlHeight,
+      height: _controlHeight,
+      child: IconButton(
+        tooltip: 'Refresh',
+        padding: EdgeInsets.zero,
+        visualDensity: VisualDensity.compact,
+        constraints: BoxConstraints.tightFor(
+          width: _controlHeight,
+          height: _controlHeight,
+        ),
+        onPressed: _onRefreshPressed,
+        icon: RotationTransition(
+          turns: _refreshController,
+          child: const Icon(Icons.refresh_rounded, size: 20),
+        ),
       ),
     );
   }

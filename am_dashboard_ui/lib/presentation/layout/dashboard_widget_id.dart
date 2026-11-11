@@ -9,6 +9,8 @@ class DashboardWidgetContext {
     this.onOpenPaper,
     this.onOpenUsers,
     this.chartHeight,
+    this.fillHeight = true,
+    this.compact = false,
   });
 
   final String userId;
@@ -17,6 +19,12 @@ class DashboardWidgetContext {
   final VoidCallback? onOpenPaper;
   final VoidCallback? onOpenUsers;
   final double? chartHeight;
+
+  /// Stretch into a fixed peer-band height (web Chart|Health). Off on mobile stack.
+  final bool fillHeight;
+
+  /// Stacked / phone chrome (matches Portfolio overview phone Health).
+  final bool compact;
 }
 
 /// Identifiers for dashboard widget slots sourced from feature modules.

@@ -7,7 +7,8 @@ import 'multi_series_chart_data.dart';
 export 'multi_index_chart.dart'
     show
         kComparisonChartHeaderRowHeight,
-        kComparisonChartToolbarControlWidth;
+        kComparisonChartToolbarControlWidth,
+        kComparisonChartToolbarGap;
 
 /// Single public entry point for time-series comparison charts.
 class ComparisonChartView extends StatelessWidget {

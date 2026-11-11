@@ -6,7 +6,7 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/color_extensions.dart';
 import 'advanced_account_row.dart';
 
-/// Card grid layout for [AdvancedAccountsTemplate] — mock density.
+/// Card grid layout for [AdvancedAccountsTemplate].
 class AdvancedAccountsCards extends StatelessWidget {
   const AdvancedAccountsCards({
     required this.accounts,
@@ -25,8 +25,9 @@ class AdvancedAccountsCards extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        const spacing = 16.0;
         const maxCardWidth = 360.0;
+        final narrow = constraints.maxWidth < 720;
+        final spacing = narrow ? AppSpacing.sm : 12.0;
         final usable = constraints.maxWidth - 24;
         var crossAxisCount = (usable / (maxCardWidth + spacing)).floor();
         if (crossAxisCount < 1) crossAxisCount = 1;
@@ -34,7 +35,12 @@ class AdvancedAccountsCards extends StatelessWidget {
             (usable - spacing * (crossAxisCount - 1)) / crossAxisCount;
 
         return SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(12, 12, 12, 16),
+          padding: EdgeInsets.fromLTRB(
+            12,
+            narrow ? AppSpacing.sm : 12,
+            12,
+            narrow ? AppSpacing.sm : 16,
+          ),
           child: SizedBox(
             width: constraints.maxWidth,
             child: Wrap(
@@ -82,18 +88,17 @@ class _Card extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = context.colors;
     final muted = context.textSecondary;
-    final missing =
-        account.nomineeMissing || account.displayNominee == 'No nominee';
-    final nomineeColor =
-        missing ? context.statusError : context.statusSuccess;
+    final nomineeLabel = account.displayNominee;
+    final showNomineeChip = !account.nomineeMissing &&
+        nomineeLabel != '—' &&
+        nomineeLabel != 'No nominee';
+    final nomineeColor = context.statusSuccess;
     final statusDot = switch (account.statusKind) {
       AccountStatusKind.active => context.statusSuccess,
       AccountStatusKind.inactive => context.textTertiary,
       AccountStatusKind.frozen => context.statusWarning,
       AccountStatusKind.unknown => muted,
     };
-    final brokerTint =
-        AdvancedAccountRow.brokerTint(account.broker, accent);
 
     return Material(
       color: Colors.transparent,
@@ -107,36 +112,75 @@ class _Card extends StatelessWidget {
             border: Border.all(color: theme.border),
             boxShadow: [
               BoxShadow(
-                color: context.shadow(isDarkChrome ? 0.35 : 0.08),
-                blurRadius: isDarkChrome ? 12 : 8,
-                offset: const Offset(0, 4),
+                color: context.shadow(isDarkChrome ? 0.28 : 0.06),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
               ),
             ],
           ),
-          padding: const EdgeInsets.all(AppSpacing.md),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.md,
+            vertical: AppSpacing.sm,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              // Band 1: type + status | value + weight
               Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: accent.withValues(alpha: 0.14),
-                      borderRadius: BorderRadius.circular(6),
-                      border: Border.all(color: accent.withValues(alpha: 0.35)),
-                    ),
-                    child: Text(
-                      account.displayType,
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: accent,
-                      ),
+                  Flexible(
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: accent.withValues(alpha: 0.14),
+                            borderRadius: BorderRadius.circular(AppRadii.sm),
+                            border: Border.all(
+                              color: accent.withValues(alpha: 0.35),
+                            ),
+                          ),
+                          child: Text(
+                            account.displayType,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: accent,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          width: 7,
+                          height: 7,
+                          decoration: BoxDecoration(
+                            color: statusDot,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 5),
+                        Flexible(
+                          child: Text(
+                            account.displayStatus,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              height: 1.2,
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  const Spacer(),
+                  const SizedBox(width: 8),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
@@ -145,6 +189,7 @@ class _Card extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
+                          height: 1.2,
                           color: account.isInactive
                               ? muted
                               : Theme.of(context).colorScheme.onSurface,
@@ -156,6 +201,7 @@ class _Card extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
+                            height: 1.2,
                             color: muted,
                           ),
                         ),
@@ -163,14 +209,16 @@ class _Card extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: AppSpacing.sm),
+              const SizedBox(height: 6),
+              // Band 2: title + subtitle
               Text(
                 account.displayTitle,
-                maxLines: 2,
+                maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  fontSize: 14,
+                  fontSize: 13,
                   fontWeight: FontWeight.w700,
+                  height: 1.2,
                   color: accent.withValues(alpha: 0.95),
                 ),
               ),
@@ -180,96 +228,39 @@ class _Card extends StatelessWidget {
                   account.displaySubtitle,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: 11, color: muted),
+                  style: TextStyle(fontSize: 11, height: 1.2, color: muted),
                 ),
               ],
-              const SizedBox(height: 6),
-              Row(
-                children: [
-                  if (account.displayBroker != '—') ...[
-                    Container(
-                      width: 14,
-                      height: 14,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: brokerTint.withValues(alpha: 0.2),
-                        shape: BoxShape.circle,
+              // Band 3: named nominee only
+              if (showNomineeChip) ...[
+                const SizedBox(height: 6),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(AppRadii.sm),
+                      border: Border.all(
+                        color: nomineeColor.withValues(alpha: 0.7),
                       ),
-                      child: Text(
-                        account.displayBroker[0].toUpperCase(),
-                        style: TextStyle(
-                          fontSize: 8,
-                          fontWeight: FontWeight.w800,
-                          color: brokerTint,
-                        ),
+                      color: nomineeColor.withValues(alpha: 0.08),
+                    ),
+                    child: Text(
+                      nomineeLabel,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: nomineeColor,
                       ),
                     ),
-                    const SizedBox(width: 6),
-                    Flexible(
-                      child: Text(
-                        account.displayBroker,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              Wrap(
-                spacing: 8,
-                runSpacing: 6,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                children: [
-                  if (account.showNomineeBadge ||
-                      account.displayNominee != '—')
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 3,
-                      ),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(6),
-                        border: Border.all(
-                          color: nomineeColor.withValues(alpha: 0.7),
-                        ),
-                        color: nomineeColor.withValues(alpha: 0.08),
-                      ),
-                      child: Text(
-                        account.displayNominee,
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          color: nomineeColor,
-                        ),
-                      ),
-                    ),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: 7,
-                        height: 7,
-                        decoration: BoxDecoration(
-                          color: statusDot,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      const SizedBox(width: 5),
-                      Text(
-                        account.displayStatus,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ],
           ),
         ),

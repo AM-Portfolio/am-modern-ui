@@ -609,12 +609,15 @@ class _PortfolioXrayPanelState extends ConsumerState<PortfolioXrayPanel>
             : holdings.fold<double>(0, (s, h) => s + h.currentValue);
         final totalValue = xray?.totalValueInr ?? holdingsTotal;
         final useFill = widget.fillHeight;
-        final sideBySide = wide || useFill;
+        // Phone Chart/List must stay exclusive. fillHeight only stretches the
+        // active pane; do not force donut+list Row below the wide breakpoint.
+        final sideBySide = wide;
         final listVisible = sideBySide || _mobileShowList;
         final tabs = _Tabs(
           tab: _tab,
           onTab: _onTab,
           compact: true,
+          scrollable: !wide,
           accentColor: accent,
         );
         final active = _activeIndex(weights);
@@ -669,6 +672,8 @@ class _PortfolioXrayPanelState extends ConsumerState<PortfolioXrayPanel>
           padding: widget.padding,
           accentColor: accent,
           scrollable: false,
+          // Web: give Sector…By Portfolio room to sit fully in the header.
+          trailingRelaxed: wide,
           // Web: Sector…By Portfolio in the title row (one horizontal line).
           // Phone: Chart/List in header; dimension tabs stay in the body.
           trailing: wide
@@ -1089,34 +1094,44 @@ class _Tabs extends StatelessWidget {
     required this.tab,
     required this.onTab,
     this.compact = false,
+    this.scrollable = true,
     this.accentColor,
   });
 
   final int tab;
   final ValueChanged<int> onTab;
   final bool compact;
+  /// Phone body tabs may scroll; web header shows all chips without swipe.
+  final bool scrollable;
   final Color? accentColor;
 
   @override
   Widget build(BuildContext context) {
     final accent = accentColor ?? ModuleColors.portfolio;
-    // Keep Sector…By Portfolio on one row; scroll horizontally if needed.
+    final row = Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        for (var i = 0; i < xrayTabLabels.length; i++) ...[
+          if (i > 0) SizedBox(width: compact ? 4 : 6),
+          IntelligenceModeChip(
+            label: xrayTabLabels[i],
+            selected: tab == i,
+            accentColor: accent,
+            onTap: () => onTab(i),
+          ),
+        ],
+      ],
+    );
+    if (!scrollable) {
+      return FittedBox(
+        fit: BoxFit.scaleDown,
+        alignment: Alignment.centerRight,
+        child: row,
+      );
+    }
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          for (var i = 0; i < xrayTabLabels.length; i++) ...[
-            if (i > 0) SizedBox(width: compact ? 4 : 6),
-            IntelligenceModeChip(
-              label: xrayTabLabels[i],
-              selected: tab == i,
-              accentColor: accent,
-              onTap: () => onTab(i),
-            ),
-          ],
-        ],
-      ),
+      child: row,
     );
   }
 }
