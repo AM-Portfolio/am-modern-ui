@@ -32,7 +32,7 @@ class FuturesView extends ConsumerWidget {
             Icon(Icons.error_outline, color: marketTheme.negative, size: 36),
             const SizedBox(height: 12),
             Text(
-              'Failed to load Futures contracts from backend API',
+              'Unable to load futures contracts',
               style: TextStyle(
                 color: colors.textPrimary,
                 fontWeight: FontWeight.bold,
@@ -67,7 +67,7 @@ class FuturesView extends ConsumerWidget {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    'No Futures Contracts Found in Backend Database',
+                    'No futures contracts found',
                     style: TextStyle(
                       color: colors.textPrimary,
                       fontWeight: FontWeight.bold,
@@ -76,7 +76,7 @@ class FuturesView extends ConsumerWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'The backend API (/v1/instruments/search) returned 0 futures instruments. Run instrument sync on the backend.',
+                    'No futures contracts are available for this symbol right now. Please try again later or choose another symbol.',
                     textAlign: TextAlign.center,
                     style: TextStyle(color: colors.textSecondary, fontSize: 13),
                   ),

@@ -2,6 +2,7 @@ import 'package:am_design_system/am_design_system.dart';
 import 'package:am_market_ui/core/styles/market_theme_extension.dart';
 import 'package:am_market_ui/features/f_o/fo_lot_size_config.dart';
 import 'package:am_market_ui/features/f_o/presentation/pages/margin_calculator_view.dart';
+import 'package:am_market_ui/features/f_o/presentation/widgets/futures_contract_details_card.dart';
 import 'package:am_market_ui/features/f_o/presentation/widgets/futures_contracts_table_widget.dart';
 import 'package:am_market_ui/features/f_o/providers/fo_provider.dart';
 import 'package:am_market_ui/features/f_o/providers/futures_provider.dart';
@@ -35,6 +36,24 @@ Widget _wrapWithApp(Widget child, {List<dynamic> overrides = const []}) {
 
 void main() {
   group('FoLotSizeConfig Unit Tests', () {
+    test('Formats numeric expiry strings as user-facing dates', () {
+      expect(
+        FuturesContractDetailsCard.formatExpiry(
+          {'expiry': '1800901799000'},
+        ),
+        '25 Jan 2027',
+      );
+    });
+
+    test('Prefers the formatted expiry supplied with the contract', () {
+      expect(
+        FuturesContractDetailsCard.formatExpiry(
+          {'expiry': '1800901799000', 'expiry_display': '25 Jan 2027'},
+        ),
+        '25 Jan 2027',
+      );
+    });
+
     test('Expired futures are not restored when no active contract exists', () {
       final now = DateTime(2026, 11, 11).millisecondsSinceEpoch;
       final contracts = filterActiveFutureContracts(
