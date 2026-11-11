@@ -53,6 +53,22 @@ void main() {
     });
   });
 
+  group('resolveFamilyMemberIdAfterImport', () {
+    test('uses sync familyMemberId when already stamped', () async {
+      final id = await resolveFamilyMemberIdAfterImport(
+        sync: const ImportedPortfolioRef(
+          portfolioId: 'p1',
+          portfolioName: 'CAS',
+          familyMemberId: 'fm-new',
+        ),
+        familyIdsBefore: const {},
+        timeout: Duration.zero,
+        interval: Duration.zero,
+      );
+      expect(id, 'fm-new');
+    });
+  });
+
   group('importedPortfolioRefFromBrief', () {
     test('maps family fields onto ImportedPortfolioRef', () {
       final ref = importedPortfolioRefFromBrief({

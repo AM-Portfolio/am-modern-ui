@@ -164,26 +164,41 @@ Future<List<ImportedPortfolioRef>> snapshotPortfolios() async {
   }
 }
 
-Future<ImportedPortfolioRef?> _refreshFamilyStamp(
-  ImportedPortfolioRef sync, {
+Set<String> _familyIdsFromList(List<ImportedPortfolioRef> list) {
+  return {
+    for (final p in list)
+      if ((p.familyMemberId?.trim() ?? '').isNotEmpty) p.familyMemberId!.trim(),
+  };
+}
+
+/// Prefer the sync row's family stamp; else any newly stamped family member id.
+Future<String?> resolveFamilyMemberIdAfterImport({
+  required ImportedPortfolioRef sync,
+  required Set<String> familyIdsBefore,
   Duration timeout = const Duration(seconds: 15),
   Duration interval = const Duration(seconds: 2),
 }) async {
-  final id = sync.familyMemberId?.trim() ?? '';
-  if (id.isNotEmpty) return sync;
+  final direct = sync.familyMemberId?.trim() ?? '';
+  if (direct.isNotEmpty) return direct;
 
   final deadline = DateTime.now().add(timeout);
-  while (DateTime.now().isBefore(deadline)) {
-    await Future<void>.delayed(interval);
+  while (true) {
     final list = await snapshotPortfolios();
     for (final p in list) {
       if (p.portfolioId != sync.portfolioId) continue;
       final fid = p.familyMemberId?.trim() ?? '';
-      if (fid.isNotEmpty) return p;
-      return p;
+      if (fid.isNotEmpty) return fid;
+      break;
     }
+    final after = _familyIdsFromList(list);
+    final added = after.difference(familyIdsBefore);
+    if (added.isNotEmpty) return added.first;
+    // CAS often stamps a demat book other than the wait hit — any family stamp.
+    if (after.isNotEmpty && familyIdsBefore.isEmpty) return after.first;
+    if (!DateTime.now().isBefore(deadline)) break;
+    await Future<void>.delayed(interval);
   }
-  return sync;
+  return null;
 }
 
 Future<String?> _sessionUserId() async {
@@ -198,10 +213,20 @@ Future<String?> _sessionUserId() async {
   }
 }
 
-/// After import sync: persist and select You or the FAMILY member stamped on the book.
+/// Snapshot family member ids currently stamped on portfolio list rows.
+Future<Set<String>> snapshotFamilyMemberIds() async {
+  return _familyIdsFromList(await snapshotPortfolios());
+}
+
+/// After import sync: persist and select You or the FAMILY member stamped on books.
+///
+/// Pass [familyIdsBefore] from [snapshotFamilyMemberIds] taken before the wait
+/// so a newly stamped member can be detected even when the wait hit is primary.
 Future<void> applyPersonaFromImportedPortfolio({
   required BuildContext context,
   required ImportedPortfolioRef? sync,
+  String? identityMatch,
+  Set<String>? familyIdsBefore,
 }) async {
   if (sync == null) return;
 
@@ -211,8 +236,35 @@ Future<void> applyPersonaFromImportedPortfolio({
     return;
   }
 
-  final stamped = await _refreshFamilyStamp(sync);
-  final personaKey = personaKeyForImport(familyMemberId: stamped?.familyMemberId);
+  final match = (identityMatch ?? '').trim().toUpperCase();
+  if (match == 'SELF') {
+    final personaKey = FavoritePersonaStore.kYou;
+    await FavoritePersonaStore.instance.save(userId, personaKey);
+    if (!context.mounted) return;
+    try {
+      ProviderScope.containerOf(context)
+          .read(familyPortfolioFilterProvider.notifier)
+          .select(personaKey);
+    } catch (e, st) {
+      debugPrint('[import_portfolio_sync] filter select failed: $e\n$st');
+    }
+    return;
+  }
+
+  final before = familyIdsBefore ?? const <String>{};
+  var familyId = await resolveFamilyMemberIdAfterImport(
+    sync: sync,
+    familyIdsBefore: before,
+  );
+  // FAMILY extract whose wait hit stayed primary: still select a stamped member.
+  if ((familyId == null || familyId.isEmpty) && match == 'FAMILY') {
+    final after = await snapshotFamilyMemberIds();
+    final added = after.difference(before);
+    familyId = added.isNotEmpty
+        ? added.first
+        : (after.isNotEmpty ? after.first : null);
+  }
+  final personaKey = personaKeyForImport(familyMemberId: familyId);
 
   await FavoritePersonaStore.instance.save(userId, personaKey);
   if (!context.mounted) return;

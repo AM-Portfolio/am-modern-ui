@@ -331,6 +331,7 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
           'Parsed $holdingsHint — syncing to portfolio (up to ~60s)…';
     });
 
+    final familyIdsBefore = await snapshotFamilyMemberIds();
     final sync = await waitForImportedPortfolio(
       brokerKey: brokerKey ?? brokerCode ?? '',
       targetPortfolioName: targetName.isEmpty ? null : targetName,
@@ -340,7 +341,11 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
     if (sync != null) {
       PortfolioDataRefresh.instance
           .notifyImported(portfolioId: sync.portfolioId);
-      await applyPersonaFromImportedPortfolio(context: context, sync: sync);
+      await applyPersonaFromImportedPortfolio(
+        context: context,
+        sync: sync,
+        familyIdsBefore: familyIdsBefore,
+      );
       if (!mounted) return;
       setState(() {
         _processing = false;

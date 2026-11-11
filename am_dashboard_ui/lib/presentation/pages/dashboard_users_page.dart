@@ -34,6 +34,7 @@ class _DashboardUsersPageState extends ConsumerState<DashboardUsersPage> {
   String? _familyMemberId;
   String? _favoriteKey;
   bool _favoriteApplied = false;
+  bool _bootstrappedNamelessPrimary = false;
 
   @override
   void initState() {
@@ -52,6 +53,42 @@ class _DashboardUsersPageState extends ConsumerState<DashboardUsersPage> {
         ref.read(familyPortfolioFilterProvider.notifier).state =
             FavoritePersonaStore.keyFromSelection(_familyMemberId);
       }
+    });
+  }
+
+  /// When primary identity has no name but a named family member exists (typical
+  /// after CAS FAMILY import), select the largest family persona so the header
+  /// shows the document holder instead of a blank "You".
+  void _bootstrapNamelessPrimary(AccountsHub hub) {
+    if (_bootstrappedNamelessPrimary) return;
+    // Only auto-switch while on You (null), not Household / a chosen member.
+    if (_familyMemberId != null) return;
+    final identityName =
+        (hub.identity?.name ?? hub.nps?.subscriberName)?.trim() ?? '';
+    if (identityName.isNotEmpty) return;
+
+    final named = hub.familyMembers
+        .where(
+          (m) =>
+              (m.id?.trim().isNotEmpty ?? false) &&
+              (m.name?.trim().isNotEmpty ?? false),
+        )
+        .toList();
+    if (named.isEmpty) return;
+
+    named.sort(
+      (a, b) => (b.totalValue ?? 0).compareTo(a.totalValue ?? 0),
+    );
+    final pick = named.first;
+    final id = pick.id!.trim();
+    _bootstrappedNamelessPrimary = true;
+    _favoriteApplied = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      await _selectPersona(id);
+      await FavoritePersonaStore.instance.save(widget.userId, id);
+      if (!mounted) return;
+      setState(() => _favoriteKey = id);
     });
   }
 
@@ -186,6 +223,7 @@ class _DashboardUsersPageState extends ConsumerState<DashboardUsersPage> {
   }
 
   Widget _body(BuildContext context, AccountsHub hub) {
+    _bootstrapNamelessPrimary(hub);
     final name = hub.identity?.name ?? hub.nps?.subscriberName;
     final pran = hub.identity?.pran ?? hub.nps?.pran;
     final hasLinked = (hub.portfolios.isNotEmpty) ||

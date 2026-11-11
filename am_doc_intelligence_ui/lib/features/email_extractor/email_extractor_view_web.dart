@@ -858,6 +858,7 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
       final typedName = widget.portfolioNameController?.text.trim() ?? '';
       final targetName =
           typedName.isNotEmpty ? typedName : brokerDisplayName(brokerId);
+      final familyIdsBefore = await snapshotFamilyMemberIds();
       final sync = await waitForImportedPortfolio(
         brokerKey: normalizeBrokerKey(brokerId) ?? brokerId,
         targetPortfolioName: targetName,
@@ -869,7 +870,13 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
         _resolvedPortfolioName = sync.portfolioName;
         PortfolioDataRefresh.instance
             .notifyImported(portfolioId: sync.portfolioId);
-        await applyPersonaFromImportedPortfolio(context: context, sync: sync);
+        final match = result['identity_match']?.toString();
+        await applyPersonaFromImportedPortfolio(
+          context: context,
+          sync: sync,
+          identityMatch: match,
+          familyIdsBefore: familyIdsBefore,
+        );
         if (!mounted) return;
         setState(() {
           _setFeedback(
