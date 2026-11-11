@@ -342,23 +342,16 @@ class _PersonaCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final accent = ModuleColors.dashboard;
-    final positive = xirrPct != null && xirrPct! > 0;
-    final negative = xirrPct != null && xirrPct! < 0;
-    final glow = selected
-        ? accent
-        : positive
-            ? context.colors.statusSuccess
-            : negative
-                ? context.colors.statusError
-                : accent;
+    final colors = context.colors;
     final border = selected
-        ? accent
-        : context.colors.border.withValues(alpha: 0.45);
+        ? accent.withValues(alpha: 0.85)
+        : colors.border.withValues(alpha: 0.4);
+    final iconColor = selected ? accent : colors.textSecondary;
     final avatar = compact ? 24.0 : 28.0;
     final gap = compact ? 4.0 : 6.0;
     final starColor = favorited
-        ? context.colors.statusWarning
-        : context.colors.textSecondary;
+        ? colors.statusWarning
+        : colors.textSecondary;
 
     final avatarWidget = Container(
       width: avatar,
@@ -366,26 +359,22 @@ class _PersonaCard extends StatelessWidget {
       alignment: Alignment.center,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: glow.withValues(alpha: 0.16),
-        boxShadow: [
-          BoxShadow(
-            color: glow.withValues(alpha: 0.22),
-            blurRadius: 8,
-            spreadRadius: 0,
-          ),
-        ],
+        color: selected
+            ? accent.withValues(alpha: 0.1)
+            : colors.border.withValues(alpha: 0.12),
       ),
       child: Icon(
         _roleIcon,
         size: compact ? 13 : 15,
-        color: glow,
+        color: iconColor,
       ),
     );
 
     final nameStyle = context.text.label().copyWith(
-          fontWeight: FontWeight.w700,
+          fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
           fontSize: compact ? 10 : 12,
           height: 1.1,
+          color: selected ? accent : null,
         );
     final countStyle = context.text.caption().copyWith(
           color: context.colors.textSecondary,
@@ -423,7 +412,7 @@ class _PersonaCard extends StatelessWidget {
       width: 1,
       height: compact ? 28 : 34,
       margin: EdgeInsets.symmetric(horizontal: gap),
-      color: context.colors.border.withValues(alpha: 0.45),
+      color: colors.border.withValues(alpha: 0.35),
     );
 
     final metricsChild = Column(
@@ -501,9 +490,7 @@ class _PersonaCard extends StatelessWidget {
     );
 
     return Material(
-      color: selected
-          ? accent.withValues(alpha: 0.10)
-          : Theme.of(context).colorScheme.surface,
+      color: Theme.of(context).colorScheme.surface,
       borderRadius: BorderRadius.circular(AppRadii.sm),
       child: InkWell(
         onTap: onTap,
@@ -518,18 +505,12 @@ class _PersonaCard extends StatelessWidget {
           ),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(AppRadii.sm),
-            border: Border.all(color: border, width: selected ? 1.8 : 1),
+            border: Border.all(color: border, width: 1),
             boxShadow: [
-              if (selected)
-                BoxShadow(
-                  color: accent.withValues(alpha: 0.35),
-                  blurRadius: 10,
-                  spreadRadius: 0,
-                ),
               BoxShadow(
-                color: glow.withValues(alpha: 0.16),
-                blurRadius: 14,
-                offset: const Offset(0, 8),
+                color: Colors.black.withValues(alpha: selected ? 0.06 : 0.03),
+                blurRadius: selected ? 8 : 4,
+                offset: const Offset(0, 2),
               ),
             ],
           ),
@@ -582,9 +563,15 @@ class _AddFamilyCard extends StatelessWidget {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(AppRadii.sm),
             border: Border.all(
-              color: context.colors.border.withValues(alpha: 0.45),
-              style: BorderStyle.solid,
+              color: context.colors.border.withValues(alpha: 0.4),
             ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.03),
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
           child: Row(
             children: [
@@ -594,7 +581,7 @@ class _AddFamilyCard extends StatelessWidget {
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: accent.withValues(alpha: 0.12),
+                  color: context.colors.border.withValues(alpha: 0.12),
                 ),
                 child: Icon(
                   Icons.person_add_alt_1_rounded,
@@ -609,9 +596,9 @@ class _AddFamilyCard extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: context.text.label().copyWith(
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w600,
                         fontSize: compact ? 11 : 12,
-                        color: enabled ? null : muted,
+                        color: enabled ? muted : muted.withValues(alpha: 0.7),
                       ),
                 ),
               ),
@@ -662,8 +649,9 @@ class _XirrTrendPill extends StatelessWidget {
           vertical: compact ? 2 : 3,
         ),
         decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.12),
+          color: color.withValues(alpha: 0.08),
           borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: color.withValues(alpha: 0.22)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -673,7 +661,7 @@ class _XirrTrendPill extends StatelessWidget {
             Text(
               label,
               style: context.text.caption().copyWith(
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w600,
                     fontSize: compact ? 9 : 10,
                     color: color,
                   ),

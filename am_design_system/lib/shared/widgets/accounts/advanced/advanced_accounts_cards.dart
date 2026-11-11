@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 
 import '../../../../core/theme/app_radii.dart';
 import '../../../../core/theme/app_spacing.dart';
@@ -49,12 +48,12 @@ class AdvancedAccountsCards extends StatelessWidget {
               spacing: spacing,
               runSpacing: spacing,
               children: [
-                for (var i = 0; i < accounts.length; i++)
+                for (final account in accounts)
                   SizedBox(
+                    key: ValueKey(account.id),
                     width: cardWidth,
                     child: _Card(
-                      account: accounts[i],
-                      index: i,
+                      account: account,
                       isDarkChrome: isDarkChrome,
                       accent: accent,
                       onRowTap: onRowTap,
@@ -65,21 +64,19 @@ class AdvancedAccountsCards extends StatelessWidget {
           ),
         );
       },
-    ).animate().fadeIn(duration: 300.ms);
+    );
   }
 }
 
 class _Card extends StatelessWidget {
   const _Card({
     required this.account,
-    required this.index,
     required this.isDarkChrome,
     required this.accent,
     this.onRowTap,
   });
 
   final AdvancedAccountRow account;
-  final int index;
   final bool isDarkChrome;
   final Color accent;
   final ValueChanged<AdvancedAccountRow>? onRowTap;
