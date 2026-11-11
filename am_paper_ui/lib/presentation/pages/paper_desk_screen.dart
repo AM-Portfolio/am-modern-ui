@@ -39,6 +39,7 @@ class _PaperDeskScreenState extends State<PaperDeskScreen> {
   String _side = 'BUY';
   _MidTab _midTab = _MidTab.wallet;
   bool _orderOpen = false;
+  String? _ticketInitialQty;
   _TicketPlacement _placement = _TicketPlacement.floatTopRight;
   Offset _ticketOffset = Offset.zero;
   Size _deskSize = Size.zero;
@@ -74,7 +75,7 @@ class _PaperDeskScreenState extends State<PaperDeskScreen> {
     _narrowTabs.currentState?.showDesk();
   }
 
-  void _buySell(String symbol, String side) {
+  void _buySell(String symbol, String side, {String? quantity}) {
     final sym = symbol.trim().toUpperCase();
     if (sym.isEmpty) return;
     final nextSide = side.toUpperCase() == 'SELL' ? 'SELL' : 'BUY';
@@ -83,6 +84,7 @@ class _PaperDeskScreenState extends State<PaperDeskScreen> {
       setState(() {
         _symbol = sym;
         _side = nextSide;
+        _ticketInitialQty = quantity;
       });
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
@@ -90,6 +92,7 @@ class _PaperDeskScreenState extends State<PaperDeskScreen> {
           context: context,
           symbol: sym,
           side: nextSide,
+          initialQuantity: quantity,
           onSymbolChanged: (s) {
             final next = s.trim().toUpperCase();
             if (next.isEmpty) return;
@@ -105,6 +108,7 @@ class _PaperDeskScreenState extends State<PaperDeskScreen> {
     setState(() {
       _symbol = sym;
       _side = nextSide;
+      _ticketInitialQty = quantity;
       _orderOpen = true;
       if (_ticketOffset == Offset.zero && _deskSize != Size.zero) {
         _placement = _TicketPlacement.floatTopRight;
@@ -117,7 +121,7 @@ class _PaperDeskScreenState extends State<PaperDeskScreen> {
   }
 
   void _reorderOrder(OmsOrder order) {
-    _buySell(order.symbol, order.side);
+    _buySell(order.symbol, order.side, quantity: order.quantity);
   }
 
   void _closeOrderPopup() {
@@ -188,6 +192,7 @@ class _PaperDeskScreenState extends State<PaperDeskScreen> {
     return PaperOrderTicket(
       symbol: _symbol,
       side: _side,
+      initialQuantity: _ticketInitialQty,
       onSymbolChanged: (s) {
         final sym = s.trim().toUpperCase();
         if (sym.isEmpty) return;

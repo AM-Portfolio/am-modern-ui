@@ -6,6 +6,24 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+/// Keeps the futures table from offering contracts that are already outside
+/// the supported expiry window. The empty result is intentional: callers
+/// should show the unavailable state instead of resurrecting stale contracts.
+List<dynamic> filterActiveFutureContracts(
+  List<dynamic> contracts, {
+  required int nowMs,
+}) {
+  return contracts.where((contract) {
+    if (contract is Map) {
+      final rawExpiry = contract['expiry'];
+      if (rawExpiry is num && rawExpiry > 0) {
+        return rawExpiry.toInt() >= nowMs - 86400000 * 30;
+      }
+    }
+    return true;
+  }).toList();
+}
+
 class FuturesContractsTableWidget extends ConsumerWidget {
   const FuturesContractsTableWidget({
     required this.contracts,
@@ -34,17 +52,25 @@ class FuturesContractsTableWidget extends ConsumerWidget {
             );
           }).toList(growable: false);
 
-    // Filter out expired contracts (older than 30 days prior to current date)
-    final nowMs = DateTime.now().millisecondsSinceEpoch;
-    final validContracts = scopedContracts.where((c) {
+    final baseContracts = filterActiveFutureContracts(
+      List<dynamic>.from(scopedContracts),
+      nowMs: DateTime.now().millisecondsSinceEpoch,
+    );
+
+    // Deduplicate duplicate contracts from backend response
+    final seen = <String>{};
+    final validContracts = <dynamic>[];
+    for (final c in baseContracts) {
       if (c is Map) {
-        final rawExp = c['expiry'];
-        if (rawExp is num && rawExp > 0) {
-          return rawExp.toInt() >= (nowMs - 86400000 * 30);
-        }
+        final key = (c['trading_symbol'] ??
+                c['tradingSymbol'] ??
+                c['instrument_key'] ??
+                '')
+            .toString();
+        if (key.isNotEmpty && !seen.add(key)) continue;
       }
-      return true;
-    }).toList();
+      validContracts.add(c);
+    }
 
     // Sort active contracts chronologically by expiry date (near-month Sep 2026 first)
     validContracts.sort((a, b) {

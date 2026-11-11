@@ -1,204 +1,173 @@
 <mxfile host="app.diagrams.net" agent="am-architecture-drawio">
   <diagram id="context" name="Context">
-    <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" page="1" pageWidth="1400" pageHeight="900">
       <root>
-        <mxCell id="0" />
-        <mxCell id="1" parent="0" />
-        <mxCell id="n" value="Context (C4): actors + systems + external deps. Replace stubs." style="text;html=1;strokeColor=none;fillColor=none;align=left;fontStyle=2" vertex="1" parent="1">
-          <mxGeometry x="40" y="20" width="520" height="30" as="geometry" />
-        </mxCell>
-        <mxCell id="actor" value="User / Actor" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;" vertex="1" parent="1">
-          <mxGeometry x="80" y="200" width="40" height="80" as="geometry" />
-        </mxCell>
-        <mxCell id="sys" value="AM product&#10;(system boundary)" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
-          <mxGeometry x="280" y="180" width="200" height="100" as="geometry" />
-        </mxCell>
-        <mxCell id="ext" value="External dep&#10;(market / IdP / …)" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;" vertex="1" parent="1">
-          <mxGeometry x="580" y="180" width="180" height="100" as="geometry" />
-        </mxCell>
-        <mxCell id="e1" value="uses" style="endArrow=block;html=1;" edge="1" parent="1" source="actor" target="sys">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="e2" value="depends" style="endArrow=block;html=1;dashed=1;" edge="1" parent="1" source="sys" target="ext">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
+        <mxCell id="0"/><mxCell id="1" parent="0"/>
+        <mxCell id="title" value="Paper Trading Desk — Context" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#1A1A2E;strokeColor=#1A1A2E;fontColor=#FFFFFF;fontSize=20;fontStyle=1;" vertex="1" parent="1"><mxGeometry x="0" y="0" width="1400" height="55" as="geometry"/></mxCell>
+        <mxCell id="purpose" value="Purpose: show the user-visible Paper desk and its existing Market/OMS dependencies; no new service is proposed." style="text;html=1;strokeColor=none;fillColor=none;fontColor=#333333;fontStyle=2;" vertex="1" parent="1"><mxGeometry x="40" y="75" width="900" height="30" as="geometry"/></mxCell>
+        <mxCell id="user" value="User" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;fillColor=#08427B;strokeColor=#08427B;fontColor=#FFFFFF;" vertex="1" parent="1"><mxGeometry x="100" y="300" width="60" height="100" as="geometry"/></mxCell>
+        <mxCell id="product" value="AM App&#10;Paper Trading Desk" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1168BD;strokeColor=#0B4F8A;fontColor=#FFFFFF;fontStyle=1;" vertex="1" parent="1"><mxGeometry x="360" y="270" width="260" height="150" as="geometry"/></mxCell>
+        <mxCell id="oms" value="OMS API&#10;wallets / orders / positions / prefs" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#438DD5;strokeColor=#2E6DA4;fontColor=#FFFFFF;" vertex="1" parent="1"><mxGeometry x="850" y="190" width="250" height="105" as="geometry"/></mxCell>
+        <mxCell id="market" value="Market API + Gateway STOMP&#10;indices / shared watchlists / quotes / LTP&#10;visible-symbol subscribe / unsubscribe / ticks" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#438DD5;strokeColor=#2E6DA4;fontColor=#FFFFFF;" vertex="1" parent="1"><mxGeometry x="850" y="345" width="250" height="120" as="geometry"/></mxCell>
+        <mxCell id="provider" value="External market providers" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;dashed=1;fontColor=#333333;" vertex="1" parent="1"><mxGeometry x="1180" y="345" width="170" height="80" as="geometry"/></mxCell>
+        <mxCell id="e1" value="uses Paper desk" style="endArrow=block;html=1;strokeColor=#82B366;" edge="1" parent="1" source="user" target="product"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e2" value="OMS HTTP /v1/wallets, /v1/orders" style="endArrow=block;html=1;strokeColor=#82B366;" edge="1" parent="1" source="product" target="oms"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e3" value="HTTP snapshot + shared watchlist membership + STOMP visible-symbol interest/ticks" style="endArrow=block;html=1;strokeColor=#82B366;" edge="1" parent="1" source="product" target="market"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e4" value="provider/cache fallback" style="endArrow=block;html=1;dashed=1;strokeColor=#D79B00;" edge="1" parent="1" source="market" target="provider"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="legend" value="Legend: blue = AM system/service  |  green edge = synchronous happy path  |  amber dashed edge = async/external dependency  |  gray dashed = external/vendor" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontColor=#333333;" vertex="1" parent="1"><mxGeometry x="40" y="820" width="1320" height="38" as="geometry"/></mxCell>
       </root>
     </mxGraphModel>
   </diagram>
   <diagram id="business" name="BusinessFlow">
-    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="900" math="0" shadow="0">
+    <mxGraphModel dx="1500" dy="950" grid="1" gridSize="10" page="1" pageWidth="1500" pageHeight="950">
       <root>
-        <mxCell id="0" />
-        <mxCell id="1" parent="0" />
-        <mxCell id="n" value="Business / feature flow: USER-VISIBLE steps (screens → actions → outcomes). Not S2S. Match PLAN P0 journeys." style="text;html=1;strokeColor=none;fillColor=none;align=left;fontStyle=2" vertex="1" parent="1">
-          <mxGeometry x="40" y="20" width="720" height="30" as="geometry" />
-        </mxCell>
-        <mxCell id="s1" value="1. Entry screen&#10;(e.g. Create paper)" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
-          <mxGeometry x="60" y="120" width="160" height="80" as="geometry" />
-        </mxCell>
-        <mxCell id="s2" value="2. User action&#10;(submit / trade)" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
-          <mxGeometry x="280" y="120" width="160" height="80" as="geometry" />
-        </mxCell>
-        <mxCell id="s3" value="3. Feedback&#10;(banner / cash / holdings)" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
-          <mxGeometry x="500" y="120" width="180" height="80" as="geometry" />
-        </mxCell>
-        <mxCell id="s4" value="4. Reject UX&#10;(error toast / 400)" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;" vertex="1" parent="1">
-          <mxGeometry x="280" y="280" width="160" height="80" as="geometry" />
-        </mxCell>
-        <mxCell id="e1" value="continues" style="endArrow=block;html=1;" edge="1" parent="1" source="s1" target="s2">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="e2" value="success" style="endArrow=block;html=1;" edge="1" parent="1" source="s2" target="s3">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="e3" value="validation fail" style="endArrow=block;html=1;dashed=1;" edge="1" parent="1" source="s2" target="s4">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
+        <mxCell id="0"/><mxCell id="1" parent="0"/>
+        <mxCell id="title" value="Paper Trading Desk — Business Flow and Progressive Loading" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#1A1A2E;strokeColor=#1A1A2E;fontColor=#FFFFFF;fontSize=20;fontStyle=1;" vertex="1" parent="1"><mxGeometry x="0" y="0" width="1500" height="55" as="geometry"/></mxCell>
+        <mxCell id="purpose" value="Purpose: show what the user can see at each confirmed-data boundary; deferred data never becomes a false empty state." style="text;html=1;strokeColor=none;fillColor=none;fontColor=#333333;fontStyle=2;" vertex="1" parent="1"><mxGeometry x="40" y="75" width="1100" height="30" as="geometry"/></mxCell>
+        <mxCell id="laneUser" value="USER" style="swimlane;horizontal=0;startSize=28;fillColor=#08427B;strokeColor=#08427B;fontColor=#FFFFFF;fontStyle=1;" vertex="1" parent="1"><mxGeometry x="30" y="125" width="250" height="620" as="geometry"/></mxCell>
+        <mxCell id="laneUi" value="UI" style="swimlane;horizontal=0;startSize=28;fillColor=#1168BD;strokeColor=#0B4F8A;fontColor=#FFFFFF;fontStyle=1;" vertex="1" parent="1"><mxGeometry x="280" y="125" width="330" height="620" as="geometry"/></mxCell>
+        <mxCell id="laneOms" value="OMS / MARKET SERVICES" style="swimlane;horizontal=0;startSize=28;fillColor=#438DD5;strokeColor=#2E6DA4;fontColor=#FFFFFF;fontStyle=1;" vertex="1" parent="1"><mxGeometry x="610" y="125" width="440" height="620" as="geometry"/></mxCell>
+        <mxCell id="laneExt" value="EXTERNAL / CACHE" style="swimlane;horizontal=0;startSize=28;fillColor=#F5F5F5;strokeColor=#666666;dashed=1;fontColor=#333333;fontStyle=1;" vertex="1" parent="1"><mxGeometry x="1050" y="125" width="420" height="620" as="geometry"/></mxCell>
+        <mxCell id="u1" value="Open Paper" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#08427B;strokeColor=#08427B;fontColor=#FFFFFF;" vertex="1" parent="laneUser"><mxGeometry x="50" y="55" width="150" height="55" as="geometry"/></mxCell>
+        <mxCell id="ui1" value="Show loading shell&#10;wallet decision pending" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1168BD;strokeColor=#0B4F8A;fontColor=#FFFFFF;" vertex="1" parent="laneUi"><mxGeometry x="45" y="55" width="230" height="65" as="geometry"/></mxCell>
+        <mxCell id="svc1" value="GET /v1/wallets?kind=PAPER" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#438DD5;strokeColor=#2E6DA4;fontColor=#FFFFFF;" vertex="1" parent="laneOms"><mxGeometry x="65" y="55" width="300" height="65" as="geometry"/></mxCell>
+        <mxCell id="u2" value="Wait for confirmed result" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#08427B;strokeColor=#08427B;fontColor=#FFFFFF;" vertex="1" parent="laneUser"><mxGeometry x="50" y="205" width="150" height="55" as="geometry"/></mxCell>
+        <mxCell id="ui2" value="No wallet → Enable page&#10;Wallet → Paper desk shell" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1168BD;strokeColor=#0B4F8A;fontColor=#FFFFFF;" vertex="1" parent="laneUi"><mxGeometry x="45" y="205" width="230" height="70" as="geometry"/></mxCell>
+        <mxCell id="svc2" value="Background: Orders + Positions + Prefs&#10;independent resource states" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#438DD5;strokeColor=#2E6DA4;fontColor=#FFFFFF;" vertex="1" parent="laneOms"><mxGeometry x="65" y="205" width="300" height="70" as="geometry"/></mxCell>
+        <mxCell id="u3" value="Choose symbol / tab" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#08427B;strokeColor=#08427B;fontColor=#FFFFFF;" vertex="1" parent="laneUser"><mxGeometry x="50" y="365" width="150" height="55" as="geometry"/></mxCell>
+        <mxCell id="ui3" value="Symbols first; price cells show loading/—" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1168BD;strokeColor=#0B4F8A;fontColor=#FFFFFF;" vertex="1" parent="laneUi"><mxGeometry x="45" y="355" width="230" height="70" as="geometry"/></mxCell>
+        <mxCell id="svc3" value="POST /v1/indices/batch&#10;then batched GET /v1/market-data/live-ltp" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#438DD5;strokeColor=#2E6DA4;fontColor=#FFFFFF;" vertex="1" parent="laneOms"><mxGeometry x="65" y="355" width="300" height="70" as="geometry"/></mxCell>
+        <mxCell id="ext3" value="Market cache/provider&#10;real data or unavailable" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;dashed=1;fontColor=#333333;" vertex="1" parent="laneExt"><mxGeometry x="60" y="355" width="300" height="70" as="geometry"/></mxCell>
+        <mxCell id="u4" value="Open Overview / submit order" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#08427B;strokeColor=#08427B;fontColor=#FFFFFF;" vertex="1" parent="laneUser"><mxGeometry x="50" y="510" width="150" height="55" as="geometry"/></mxCell>
+        <mxCell id="ui4" value="Only then load analyser or validate ticket LTP" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1168BD;strokeColor=#0B4F8A;fontColor=#FFFFFF;" vertex="1" parent="laneUi"><mxGeometry x="45" y="500" width="230" height="70" as="geometry"/></mxCell>
+        <mxCell id="svc4" value="Historical/fundamental APIs or POST /v1/orders&#10;reject if price/ownership invalid" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8CECC;strokeColor=#B85450;fontColor=#333333;" vertex="1" parent="laneOms"><mxGeometry x="65" y="500" width="300" height="80" as="geometry"/></mxCell>
+        <mxCell id="e1" value="1 open" style="endArrow=block;html=1;strokeColor=#82B366;" edge="1" parent="1" source="u1" target="ui1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e2" value="2 wallet decision" style="endArrow=block;html=1;strokeColor=#82B366;" edge="1" parent="1" source="svc1" target="ui2"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e3" value="3 user sees shell" style="endArrow=block;html=1;strokeColor=#82B366;" edge="1" parent="1" source="ui2" target="u2"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e4" value="async prefetch" style="endArrow=block;html=1;dashed=1;strokeColor=#D79B00;" edge="1" parent="1" source="svc2" target="ui2"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e5" value="progressive data" style="endArrow=block;html=1;strokeColor=#82B366;" edge="1" parent="1" source="svc3" target="ui3"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e6" value="cache/provider" style="endArrow=block;html=1;dashed=1;strokeColor=#D79B00;" edge="1" parent="1" source="svc3" target="ext3"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="legend" value="Legend: first-paint gate = wallet only  |  amber dashed = background/deferred  |  red = reject/error path  |  no value is displayed until confirmed" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontColor=#333333;" vertex="1" parent="1"><mxGeometry x="40" y="800" width="1420" height="38" as="geometry"/></mxCell>
       </root>
     </mxGraphModel>
   </diagram>
   <diagram id="containers" name="Containers">
-    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="900" math="0" shadow="0">
+    <mxGraphModel dx="1450" dy="900" grid="1" gridSize="10" page="1" pageWidth="1450" pageHeight="900">
       <root>
-        <mxCell id="0" />
-        <mxCell id="1" parent="0" />
-        <mxCell id="n" value="Containers: label EVERY edge with METHOD /path or Kafka topic. Show stores." style="text;html=1;strokeColor=none;fillColor=none;align=left;fontStyle=2" vertex="1" parent="1">
-          <mxGeometry x="40" y="20" width="640" height="30" as="geometry" />
-        </mxCell>
-        <mxCell id="ui" value="UI" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
-          <mxGeometry x="60" y="180" width="120" height="70" as="geometry" />
-        </mxCell>
-        <mxCell id="svc_a" value="Service A&#10;+ store" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
-          <mxGeometry x="320" y="180" width="140" height="70" as="geometry" />
-        </mxCell>
-        <mxCell id="svc_b" value="Service B&#10;+ store" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
-          <mxGeometry x="580" y="180" width="140" height="70" as="geometry" />
-        </mxCell>
-        <mxCell id="e1" value="METHOD /v1/..." style="endArrow=block;html=1;" edge="1" parent="1" source="ui" target="svc_a">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="e2" value="topic or POST /sync" style="endArrow=block;html=1;" edge="1" parent="1" source="svc_a" target="svc_b">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
+        <mxCell id="0"/><mxCell id="1" parent="0"/>
+        <mxCell id="title" value="Paper Trading Desk — Containers and API Ownership" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#1A1A2E;strokeColor=#1A1A2E;fontColor=#FFFFFF;fontSize=20;fontStyle=1;" vertex="1" parent="1"><mxGeometry x="0" y="0" width="1450" height="55" as="geometry"/></mxCell>
+        <mxCell id="purpose" value="Purpose: identify the frontend orchestration boundaries and every existing API dependency involved in the desk." style="text;html=1;strokeColor=none;fillColor=none;fontColor=#333333;fontStyle=2;" vertex="1" parent="1"><mxGeometry x="40" y="75" width="1100" height="30" as="geometry"/></mxCell>
+        <mxCell id="boundary" value="AM Modern UI" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1168BD;strokeColor=#0B4F8A;fontColor=#FFFFFF;fontStyle=1;" vertex="1" parent="1"><mxGeometry x="35" y="140" width="770" height="560" as="geometry"/></mxCell>
+        <mxCell id="app" value="am_app&#10;route /app/market/paper&#10;deferred module loading" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#438DD5;strokeColor=#2E6DA4;fontColor=#FFFFFF;" vertex="1" parent="1"><mxGeometry x="80" y="230" width="180" height="100" as="geometry"/></mxCell>
+        <mxCell id="paper" value="am_paper_ui&#10;PaperGateScreen / Desk&#10;wallet gate + resource states" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#438DD5;strokeColor=#2E6DA4;fontColor=#FFFFFF;" vertex="1" parent="1"><mxGeometry x="320" y="210" width="220" height="130" as="geometry"/></mxCell>
+        <mxCell id="marketclient" value="Paper market controllers&#10;REST snapshot / shared star state&#10;watchlist + position scope union&#10;live tick/P&amp;L merge" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#438DD5;strokeColor=#2E6DA4;fontColor=#FFFFFF;" vertex="1" parent="1"><mxGeometry x="560" y="420" width="200" height="130" as="geometry"/></mxCell>
+        <mxCell id="omsclient" value="PaperOmsDataSource + PaperOmsCubit&#10;wallet / orders / positions / prefs" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#438DD5;strokeColor=#2E6DA4;fontColor=#FFFFFF;" vertex="1" parent="1"><mxGeometry x="320" y="420" width="220" height="130" as="geometry"/></mxCell>
+        <mxCell id="oms" value="OMS API&#10;GET /v1/wallets?kind=PAPER&#10;GET /v1/orders?walletId=…&#10;GET /v1/wallets/{id}/positions&#10;GET/PUT /v1/prefs&#10;POST /v1/orders" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#438DD5;strokeColor=#2E6DA4;fontColor=#FFFFFF;" vertex="1" parent="1"><mxGeometry x="930" y="180" width="280" height="180" as="geometry"/></mxCell>
+        <mxCell id="market" value="Market API&#10;POST /v1/indices/batch&#10;GET /v1/watchlists…&#10;GET /v1/market-data/live-ltp&#10;GET /v1/market-data/quotes&#10;GET /v1/securities/search&#10;GET /v1/fundamentals…&#10;GET /v1/analysis/historical-charts…" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#438DD5;strokeColor=#2E6DA4;fontColor=#FFFFFF;" vertex="1" parent="1"><mxGeometry x="930" y="420" width="280" height="210" as="geometry"/></mxCell>
+        <mxCell id="store" value="OMS / Market stores and caches" style="shape=cylinder;whiteSpace=wrap;html=1;fillColor=#2E7D32;strokeColor=#1B5E20;fontColor=#FFFFFF;" vertex="1" parent="1"><mxGeometry x="1260" y="330" width="150" height="90" as="geometry"/></mxCell>
+        <mxCell id="e1" value="route /app/market/paper" style="endArrow=block;html=1;strokeColor=#82B366;" edge="1" parent="1" source="app" target="paper"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e2" value="wallet gate + lazy resources" style="endArrow=block;html=1;strokeColor=#82B366;" edge="1" parent="1" source="paper" target="omsclient"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e3" value="OMS HTTP paths" style="endArrow=block;html=1;strokeColor=#82B366;" edge="1" parent="1" source="omsclient" target="oms"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e4" value="symbols + real prices" style="endArrow=block;html=1;strokeColor=#82B366;" edge="1" parent="1" source="paper" target="marketclient"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e5" value="Market HTTP paths" style="endArrow=block;html=1;strokeColor=#82B366;" edge="1" parent="1" source="marketclient" target="market"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e6" value="cache / DB / provider fallback" style="endArrow=block;html=1;dashed=1;strokeColor=#D79B00;" edge="1" parent="1" source="oms" target="store"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e7" value="cache / DB / provider fallback" style="endArrow=block;html=1;dashed=1;strokeColor=#D79B00;" edge="1" parent="1" source="market" target="store"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="legend" value="Legend: blue = UI/service container  |  green = happy synchronous call  |  amber dashed = cache/provider or deferred path  |  green cylinder = data/cache stores" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontColor=#333333;" vertex="1" parent="1"><mxGeometry x="40" y="800" width="1360" height="38" as="geometry"/></mxCell>
       </root>
     </mxGraphModel>
   </diagram>
   <diagram id="sequence" name="Sequence">
-    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="900" math="0" shadow="0">
+    <mxGraphModel dx="1600" dy="1000" grid="1" gridSize="10" page="1" pageWidth="1600" pageHeight="1000">
       <root>
-        <mxCell id="0" />
-        <mxCell id="1" parent="0" />
-        <mxCell id="n" value="Sequence: Create → Happy → Reject. Numbered steps; real APIs." style="text;html=1;strokeColor=none;fillColor=none;align=left;fontStyle=2" vertex="1" parent="1">
-          <mxGeometry x="40" y="20" width="560" height="30" as="geometry" />
-        </mxCell>
-        <mxCell id="a_ui" value="UI" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;" vertex="1" parent="1">
-          <mxGeometry x="80" y="80" width="30" height="60" as="geometry" />
-        </mxCell>
-        <mxCell id="a_a" value="Service A" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
-          <mxGeometry x="280" y="80" width="120" height="50" as="geometry" />
-        </mxCell>
-        <mxCell id="a_b" value="Service B" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
-          <mxGeometry x="520" y="80" width="120" height="50" as="geometry" />
-        </mxCell>
-        <mxCell id="s1" value="1 Create" style="endArrow=block;html=1;" edge="1" parent="1" source="a_ui" target="a_a">
-          <mxGeometry relative="1" as="geometry">
-            <mxPoint x="95" y="200" as="sourcePoint" />
-            <mxPoint x="340" y="200" as="targetPoint" />
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="s2" value="2 Happy path" style="endArrow=block;html=1;" edge="1" parent="1" source="a_ui" target="a_a">
-          <mxGeometry relative="1" as="geometry">
-            <mxPoint x="95" y="280" as="sourcePoint" />
-            <mxPoint x="340" y="280" as="targetPoint" />
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="s3" value="2b sync" style="endArrow=block;html=1;" edge="1" parent="1" source="a_a" target="a_b">
-          <mxGeometry relative="1" as="geometry">
-            <mxPoint x="400" y="320" as="sourcePoint" />
-            <mxPoint x="580" y="320" as="targetPoint" />
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="s4" value="3 Reject 4xx" style="endArrow=block;html=1;dashed=1;" edge="1" parent="1" source="a_ui" target="a_a">
-          <mxGeometry relative="1" as="geometry">
-            <mxPoint x="95" y="400" as="sourcePoint" />
-            <mxPoint x="340" y="400" as="targetPoint" />
-          </mxGeometry>
-        </mxCell>
+        <mxCell id="0"/><mxCell id="1" parent="0"/>
+        <mxCell id="title" value="Paper Trading Desk — Fast First-Paint Sequence" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#1A1A2E;strokeColor=#1A1A2E;fontColor=#FFFFFF;fontSize=20;fontStyle=1;" vertex="1" parent="1"><mxGeometry x="0" y="0" width="1600" height="55" as="geometry"/></mxCell>
+        <mxCell id="purpose" value="Purpose: compare the current blocking chain with the planned wallet-gated, progressive sequence." style="text;html=1;strokeColor=none;fillColor=none;fontColor=#333333;fontStyle=2;" vertex="1" parent="1"><mxGeometry x="40" y="75" width="1100" height="30" as="geometry"/></mxCell>
+        <mxCell id="user" value="User" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#08427B;strokeColor=#08427B;fontColor=#FFFFFF;" vertex="1" parent="1"><mxGeometry x="70" y="125" width="150" height="55" as="geometry"/></mxCell>
+        <mxCell id="ui" value="PaperGate / Desk UI" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1168BD;strokeColor=#0B4F8A;fontColor=#FFFFFF;" vertex="1" parent="1"><mxGeometry x="330" y="125" width="190" height="55" as="geometry"/></mxCell>
+        <mxCell id="oms" value="OMS API" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#438DD5;strokeColor=#2E6DA4;fontColor=#FFFFFF;" vertex="1" parent="1"><mxGeometry x="650" y="125" width="170" height="55" as="geometry"/></mxCell>
+        <mxCell id="market" value="Market API" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#438DD5;strokeColor=#2E6DA4;fontColor=#FFFFFF;" vertex="1" parent="1"><mxGeometry x="950" y="125" width="170" height="55" as="geometry"/></mxCell>
+        <mxCell id="data" value="Cache / provider" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;dashed=1;fontColor=#333333;" vertex="1" parent="1"><mxGeometry x="1260" y="125" width="170" height="55" as="geometry"/></mxCell>
+        <mxCell id="l1" style="shape=line;strokeWidth=2;dashed=1;strokeColor=#666666;" vertex="1" parent="1"><mxGeometry x="145" y="180" width="0" height="650" as="geometry"/></mxCell>
+        <mxCell id="l2" style="shape=line;strokeWidth=2;dashed=1;strokeColor=#666666;" vertex="1" parent="1"><mxGeometry x="425" y="180" width="0" height="650" as="geometry"/></mxCell>
+        <mxCell id="l3" style="shape=line;strokeWidth=2;dashed=1;strokeColor=#666666;" vertex="1" parent="1"><mxGeometry x="735" y="180" width="0" height="650" as="geometry"/></mxCell>
+        <mxCell id="l4" style="shape=line;strokeWidth=2;dashed=1;strokeColor=#666666;" vertex="1" parent="1"><mxGeometry x="1035" y="180" width="0" height="650" as="geometry"/></mxCell>
+        <mxCell id="l5" style="shape=line;strokeWidth=2;dashed=1;strokeColor=#666666;" vertex="1" parent="1"><mxGeometry x="1345" y="180" width="0" height="650" as="geometry"/></mxCell>
+        <mxCell id="s1" value="1. Open Paper" style="endArrow=block;html=1;strokeColor=#82B366;" edge="1" parent="1" source="user" target="ui"><mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="285" y="230"/></Array></mxGeometry></mxCell>
+        <mxCell id="s2" value="2. GET /v1/wallets?kind=PAPER" style="endArrow=block;html=1;strokeColor=#82B366;" edge="1" parent="1" source="ui" target="oms"><mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="580" y="300"/></Array></mxGeometry></mxCell>
+        <mxCell id="s3" value="3. wallet confirmed → render desk" style="endArrow=block;html=1;strokeColor=#82B366;" edge="1" parent="1" source="oms" target="ui"><mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="580" y="370"/></Array></mxGeometry></mxCell>
+        <mxCell id="s4" value="4a. background GET orders / positions / prefs" style="endArrow=block;html=1;dashed=1;strokeColor=#D79B00;" edge="1" parent="1" source="ui" target="oms"><mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="580" y="450"/></Array></mxGeometry></mxCell>
+        <mxCell id="s5" value="4b. POST /v1/indices/batch" style="endArrow=block;html=1;dashed=1;strokeColor=#D79B00;" edge="1" parent="1" source="ui" target="market"><mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="820" y="520"/></Array></mxGeometry></mxCell>
+        <mxCell id="s6" value="5. symbols render; price unavailable until real data" style="endArrow=block;html=1;strokeColor=#82B366;" edge="1" parent="1" source="market" target="ui"><mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="820" y="590"/></Array></mxGeometry></mxCell>
+        <mxCell id="s7" value="6. batched GET /v1/market-data/live-ltp" style="endArrow=block;html=1;dashed=1;strokeColor=#D79B00;" edge="1" parent="1" source="ui" target="market"><mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="820" y="660"/></Array></mxGeometry></mxCell>
+        <mxCell id="s8" value="7. cache/provider fallback; no fake value" style="endArrow=block;html=1;dashed=1;strokeColor=#D79B00;" edge="1" parent="1" source="market" target="data"><mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="1160" y="730"/></Array></mxGeometry></mxCell>
+        <mxCell id="current" value="Current issue: Orders → Positions → Prefs are before step 3, so the desk cannot render until the longest serial chain finishes." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8CECC;strokeColor=#B85450;fontColor=#333333;" vertex="1" parent="1"><mxGeometry x="80" y="850" width="700" height="55" as="geometry"/></mxCell>
+        <mxCell id="legend" value="Legend: solid green = confirmed synchronous response  |  amber dashed = deferred/background request  |  red = current blocking problem" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontColor=#333333;" vertex="1" parent="1"><mxGeometry x="820" y="850" width="650" height="55" as="geometry"/></mxCell>
       </root>
     </mxGraphModel>
   </diagram>
   <diagram id="data" name="DataIdentity">
-    <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" page="1" pageWidth="1400" pageHeight="900">
       <root>
-        <mxCell id="0" />
-        <mxCell id="1" parent="0" />
-        <mxCell id="n" value="Data / identity: owners, id fields, ledger, event payload keys." style="text;html=1;strokeColor=none;fillColor=none;align=left;fontStyle=2" vertex="1" parent="1">
-          <mxGeometry x="40" y="20" width="560" height="30" as="geometry" />
-        </mxCell>
-        <mxCell id="t" value="Service A store&#10;id=…&#10;ledger field=…" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=8;" vertex="1" parent="1">
-          <mxGeometry x="80" y="120" width="220" height="120" as="geometry" />
-        </mxCell>
-        <mxCell id="p" value="Service B store&#10;id=…&#10;name=…&#10;kind=…" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=8;" vertex="1" parent="1">
-          <mxGeometry x="420" y="120" width="220" height="120" as="geometry" />
-        </mxCell>
-        <mxCell id="ev" value="Event&#10;id=…&#10;portfolioId=…&#10;portfolioKind=…" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=8;" vertex="1" parent="1">
-          <mxGeometry x="250" y="320" width="220" height="110" as="geometry" />
-        </mxCell>
-        <mxCell id="e1" value="maps" style="endArrow=block;html=1;" edge="1" parent="1" source="t" target="ev">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="e2" value="maps" style="endArrow=block;html=1;" edge="1" parent="1" source="ev" target="p">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
+        <mxCell id="0"/><mxCell id="1" parent="0"/>
+        <mxCell id="title" value="Paper Trading Desk — Data, Identity, and Freshness" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#1A1A2E;strokeColor=#1A1A2E;fontColor=#FFFFFF;fontSize=20;fontStyle=1;" vertex="1" parent="1"><mxGeometry x="0" y="0" width="1400" height="55" as="geometry"/></mxCell>
+        <mxCell id="purpose" value="Purpose: define which confirmed identifier/value is safe to show and which data may be delayed." style="text;html=1;strokeColor=none;fillColor=none;fontColor=#333333;fontStyle=2;" vertex="1" parent="1"><mxGeometry x="40" y="75" width="1000" height="30" as="geometry"/></mxCell>
+        <mxCell id="wallet" value="Paper wallet&#10;walletId&#10;portfolioUuid&#10;available / reserved&#10;kind = PAPER" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=8;fillColor=#438DD5;strokeColor=#2E6DA4;fontColor=#FFFFFF;" vertex="1" parent="1"><mxGeometry x="80" y="190" width="230" height="145" as="geometry"/></mxCell>
+        <mxCell id="orders" value="Orders&#10;orderId&#10;status / side / qty&#10;fillPrice / rejectReason&#10;owner from JWT" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=8;fillColor=#438DD5;strokeColor=#2E6DA4;fontColor=#FFFFFF;" vertex="1" parent="1"><mxGeometry x="420" y="190" width="230" height="145" as="geometry"/></mxCell>
+        <mxCell id="positions" value="Positions&#10;symbol / qty / average = OMS truth&#10;LTP = REST snapshot then valid tick&#10;derived live P&amp;L&#10;Exit = confirmed opposite-side ticket" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=8;fillColor=#438DD5;strokeColor=#2E6DA4;fontColor=#FFFFFF;" vertex="1" parent="1"><mxGeometry x="760" y="190" width="230" height="145" as="geometry"/></mxCell>
+        <mxCell id="quotes" value="Market data&#10;symbol / exchange&#10;LTP / change / OHLC / depth&#10;timestamp or unavailable" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=8;fillColor=#2E7D32;strokeColor=#1B5E20;fontColor=#FFFFFF;" vertex="1" parent="1"><mxGeometry x="1080" y="190" width="230" height="145" as="geometry"/></mxCell>
+        <mxCell id="uiState" value="UI resource state&#10;loading ≠ empty&#10;ready-empty = confirmed zero&#10;error = retryable&#10;stale = labeled/never silently guessed" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=8;fillColor=#1168BD;strokeColor=#0B4F8A;fontColor=#FFFFFF;" vertex="1" parent="1"><mxGeometry x="420" y="470" width="310" height="155" as="geometry"/></mxCell>
+        <mxCell id="rule" value="Order safety rule&#10;No positive confirmed LTP → no order submission&#10;No fabricated symbol, balance, position, or price" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=8;fillColor=#F8CECC;strokeColor=#B85450;fontColor=#333333;" vertex="1" parent="1"><mxGeometry x="820" y="470" width="350" height="125" as="geometry"/></mxCell>
+        <mxCell id="e1" value="walletId/portfolioUuid" style="endArrow=block;html=1;strokeColor=#82B366;" edge="1" parent="1" source="wallet" target="orders"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e2" value="filled orders inform display" style="endArrow=block;html=1;strokeColor=#82B366;" edge="1" parent="1" source="orders" target="positions"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e3" value="symbol + LTP join" style="endArrow=block;html=1;dashed=1;strokeColor=#D79B00;" edge="1" parent="1" source="positions" target="quotes"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e4" value="all resources map to explicit state" style="endArrow=block;html=1;strokeColor=#82B366;" edge="1" parent="1" source="wallet" target="uiState"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e5" value="validated before submit" style="endArrow=block;html=1;dashed=1;strokeColor=#B85450;" edge="1" parent="1" source="quotes" target="rule"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="legend" value="Legend: blue = UI state  |  blue service boxes = OMS/Market-owned data  |  green = real-time market data  |  red = correctness guard" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontColor=#333333;" vertex="1" parent="1"><mxGeometry x="40" y="800" width="1320" height="38" as="geometry"/></mxCell>
       </root>
     </mxGraphModel>
   </diagram>
   <diagram id="security" name="SecurityTrust">
-    <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+    <mxGraphModel dx="1300" dy="850" grid="1" gridSize="10" page="1" pageWidth="1300" pageHeight="850">
       <root>
-        <mxCell id="0" />
-        <mxCell id="1" parent="0" />
-        <mxCell id="n" value="Security / trust: Bearer, owner checks, internal secret, isolation." style="text;html=1;strokeColor=none;fillColor=none;align=left;fontStyle=2" vertex="1" parent="1">
-          <mxGeometry x="40" y="20" width="560" height="30" as="geometry" />
-        </mxCell>
-        <mxCell id="idp" value="IdP / Keycloak" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
-          <mxGeometry x="80" y="100" width="140" height="60" as="geometry" />
-        </mxCell>
-        <mxCell id="api" value="Public APIs&#10;owner-scoped" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
-          <mxGeometry x="320" y="100" width="160" height="70" as="geometry" />
-        </mxCell>
-        <mxCell id="int" value="Internal /sync&#10;X-Internal-Secret" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;" vertex="1" parent="1">
-          <mxGeometry x="560" y="100" width="180" height="70" as="geometry" />
-        </mxCell>
-        <mxCell id="iso" value="Isolation boundary&#10;(e.g. PAPER vs BROKER)" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
-          <mxGeometry x="320" y="260" width="200" height="80" as="geometry" />
-        </mxCell>
-        <mxCell id="e1" value="Bearer" style="endArrow=block;html=1;" edge="1" parent="1" source="idp" target="api">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
+        <mxCell id="0"/><mxCell id="1" parent="0"/>
+        <mxCell id="title" value="Paper Trading Desk — Security and Trust Boundaries" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#1A1A2E;strokeColor=#1A1A2E;fontColor=#FFFFFF;fontSize=20;fontStyle=1;" vertex="1" parent="1"><mxGeometry x="0" y="0" width="1300" height="55" as="geometry"/></mxCell>
+        <mxCell id="purpose" value="Purpose: preserve owner-scoped Paper isolation while requests are made progressively." style="text;html=1;strokeColor=none;fillColor=none;fontColor=#333333;fontStyle=2;" vertex="1" parent="1"><mxGeometry x="40" y="75" width="950" height="30" as="geometry"/></mxCell>
+        <mxCell id="user" value="Authenticated user" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;fillColor=#08427B;strokeColor=#08427B;fontColor=#FFFFFF;" vertex="1" parent="1"><mxGeometry x="80" y="280" width="60" height="100" as="geometry"/></mxCell>
+        <mxCell id="ui" value="Paper UI&#10;SecureStorage Bearer token&#10;Idempotency-Key on order" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1168BD;strokeColor=#0B4F8A;fontColor=#FFFFFF;" vertex="1" parent="1"><mxGeometry x="300" y="250" width="250" height="145" as="geometry"/></mxCell>
+        <mxCell id="oms" value="OMS APIs&#10;owner from JWT subject&#10;PAPER venue only&#10;wallet/order authorization" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#438DD5;strokeColor=#2E6DA4;fontColor=#FFFFFF;" vertex="1" parent="1"><mxGeometry x="720" y="170" width="250" height="145" as="geometry"/></mxCell>
+        <mxCell id="market" value="Market APIs&#10;Bearer-authenticated reads&#10;requested-symbol scope" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#438DD5;strokeColor=#2E6DA4;fontColor=#FFFFFF;" vertex="1" parent="1"><mxGeometry x="720" y="390" width="250" height="115" as="geometry"/></mxCell>
+        <mxCell id="isolation" value="Trust rule&#10;PAPER wallet/order must not mutate LIVE or OPTION books" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8CECC;strokeColor=#B85450;fontColor=#333333;" vertex="1" parent="1"><mxGeometry x="300" y="560" width="360" height="90" as="geometry"/></mxCell>
+        <mxCell id="e1" value="Bearer" style="endArrow=block;html=1;strokeColor=#82B366;" edge="1" parent="1" source="user" target="ui"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e2" value="Bearer + owner-scoped request" style="endArrow=block;html=1;strokeColor=#82B366;" edge="1" parent="1" source="ui" target="oms"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e3" value="Bearer + requested symbols" style="endArrow=block;html=1;strokeColor=#82B366;" edge="1" parent="1" source="ui" target="market"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e4" value="reject mismatch" style="endArrow=block;html=1;dashed=1;strokeColor=#B85450;" edge="1" parent="1" source="oms" target="isolation"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="legend" value="Legend: blue = trusted AM boundary  |  green = authenticated happy path  |  red dashed = rejected trust/isolation violation  |  no secrets shown" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontColor=#333333;" vertex="1" parent="1"><mxGeometry x="40" y="760" width="1220" height="38" as="geometry"/></mxCell>
       </root>
     </mxGraphModel>
   </diagram>
   <diagram id="failures" name="Failures">
-    <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+    <mxGraphModel dx="1450" dy="950" grid="1" gridSize="10" page="1" pageWidth="1450" pageHeight="950">
       <root>
-        <mxCell id="0" />
-        <mxCell id="1" parent="0" />
-        <mxCell id="n" value="Failures: trigger → system behavior → user sees. Replace examples." style="text;html=1;strokeColor=none;fillColor=none;align=left;fontStyle=2" vertex="1" parent="1">
-          <mxGeometry x="40" y="20" width="560" height="30" as="geometry" />
-        </mxCell>
-        <mxCell id="f1" value="Trigger: dep miss&#10;→ 400&#10;→ cash unchanged" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=8;" vertex="1" parent="1">
-          <mxGeometry x="60" y="100" width="200" height="90" as="geometry" />
-        </mxCell>
-        <mxCell id="f2" value="Trigger: validation&#10;→ 400&#10;→ no write" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=8;" vertex="1" parent="1">
-          <mxGeometry x="320" y="100" width="200" height="90" as="geometry" />
-        </mxCell>
-        <mxCell id="f3" value="Trigger: async lag&#10;→ trade saved&#10;→ holdings may lag" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=8;" vertex="1" parent="1">
-          <mxGeometry x="580" y="100" width="200" height="90" as="geometry" />
-        </mxCell>
-        <mxCell id="f4" value="Trigger: kind mismatch&#10;→ reject/skip&#10;→ wrong book untouched" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=8;" vertex="1" parent="1">
-          <mxGeometry x="320" y="260" width="220" height="90" as="geometry" />
-        </mxCell>
+        <mxCell id="0"/><mxCell id="1" parent="0"/>
+        <mxCell id="title" value="Paper Trading Desk — Failure and Latency Outcomes" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#1A1A2E;strokeColor=#1A1A2E;fontColor=#FFFFFF;fontSize=20;fontStyle=1;" vertex="1" parent="1"><mxGeometry x="0" y="0" width="1450" height="55" as="geometry"/></mxCell>
+        <mxCell id="purpose" value="Purpose: every delayed or failed dependency produces an explicit user outcome rather than a guessed value." style="text;html=1;strokeColor=none;fillColor=none;fontColor=#333333;fontStyle=2;" vertex="1" parent="1"><mxGeometry x="40" y="75" width="1100" height="30" as="geometry"/></mxCell>
+        <mxCell id="f1" value="Wallet timeout / OMS unavailable" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8CECC;strokeColor=#B85450;fontColor=#333333;" vertex="1" parent="1"><mxGeometry x="60" y="160" width="260" height="70" as="geometry"/></mxCell>
+        <mxCell id="s1" value="Keep loading shell; emit OMS error/retry; do not choose desk/enable from assumptions" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#438DD5;strokeColor=#2E6DA4;fontColor=#FFFFFF;" vertex="1" parent="1"><mxGeometry x="430" y="150" width="330" height="90" as="geometry"/></mxCell>
+        <mxCell id="u1" value="User sees explicit OMS unavailable state" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1168BD;strokeColor=#0B4F8A;fontColor=#FFFFFF;" vertex="1" parent="1"><mxGeometry x="880" y="160" width="300" height="70" as="geometry"/></mxCell>
+        <mxCell id="f2" value="Orders/Positions delayed" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;dashed=1;fontColor=#333333;" vertex="1" parent="1"><mxGeometry x="60" y="300" width="260" height="70" as="geometry"/></mxCell>
+        <mxCell id="s2" value="Desk remains usable; resource state stays loading; no empty claim" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#438DD5;strokeColor=#2E6DA4;fontColor=#FFFFFF;" vertex="1" parent="1"><mxGeometry x="430" y="290" width="330" height="90" as="geometry"/></mxCell>
+        <mxCell id="u2" value="Orders/Positions tab shows loader then data/empty/error" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1168BD;strokeColor=#0B4F8A;fontColor=#FFFFFF;" vertex="1" parent="1"><mxGeometry x="880" y="300" width="300" height="70" as="geometry"/></mxCell>
+        <mxCell id="f3" value="LTP/quote miss or market closed" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;dashed=1;fontColor=#333333;" vertex="1" parent="1"><mxGeometry x="60" y="440" width="260" height="70" as="geometry"/></mxCell>
+        <mxCell id="s3" value="Keep symbol; mark price unavailable; retry/fallback only; block order if no valid LTP" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#438DD5;strokeColor=#2E6DA4;fontColor=#FFFFFF;" vertex="1" parent="1"><mxGeometry x="430" y="430" width="330" height="90" as="geometry"/></mxCell>
+        <mxCell id="u3" value="Watchlist shows —; ticket says live quote unavailable" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1168BD;strokeColor=#0B4F8A;fontColor=#FFFFFF;" vertex="1" parent="1"><mxGeometry x="880" y="440" width="300" height="70" as="geometry"/></mxCell>
+        <mxCell id="f4" value="Hidden analyser build / duplicate tab request" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;dashed=1;fontColor=#333333;" vertex="1" parent="1"><mxGeometry x="60" y="580" width="260" height="70" as="geometry"/></mxCell>
+        <mxCell id="s4" value="Gate by active surface; reuse one in-flight Future; cancel/ignore stale symbol generations" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#438DD5;strokeColor=#2E6DA4;fontColor=#FFFFFF;" vertex="1" parent="1"><mxGeometry x="430" y="570" width="330" height="90" as="geometry"/></mxCell>
+        <mxCell id="u4" value="No request storm; only selected/latest surface updates" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1168BD;strokeColor=#0B4F8A;fontColor=#FFFFFF;" vertex="1" parent="1"><mxGeometry x="880" y="580" width="300" height="70" as="geometry"/></mxCell>
+        <mxCell id="e1" value="trigger" style="endArrow=block;html=1;dashed=1;strokeColor=#B85450;" edge="1" parent="1" source="f1" target="s1"><mxGeometry relative="1" as="geometry"/></mxCell><mxCell id="e2" value="user outcome" style="endArrow=block;html=1;strokeColor=#82B366;" edge="1" parent="1" source="s1" target="u1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e3" value="trigger" style="endArrow=block;html=1;dashed=1;strokeColor=#D79B00;" edge="1" parent="1" source="f2" target="s2"><mxGeometry relative="1" as="geometry"/></mxCell><mxCell id="e4" value="user outcome" style="endArrow=block;html=1;strokeColor=#82B366;" edge="1" parent="1" source="s2" target="u2"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e5" value="trigger" style="endArrow=block;html=1;dashed=1;strokeColor=#D79B00;" edge="1" parent="1" source="f3" target="s3"><mxGeometry relative="1" as="geometry"/></mxCell><mxCell id="e6" value="user outcome" style="endArrow=block;html=1;strokeColor=#82B366;" edge="1" parent="1" source="s3" target="u3"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e7" value="trigger" style="endArrow=block;html=1;dashed=1;strokeColor=#D79B00;" edge="1" parent="1" source="f4" target="s4"><mxGeometry relative="1" as="geometry"/></mxCell><mxCell id="e8" value="user outcome" style="endArrow=block;html=1;strokeColor=#82B366;" edge="1" parent="1" source="s4" target="u4"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="legend" value="Legend: red dashed = failure/reject  |  amber dashed = delay/deferred trigger  |  green = safe user-visible outcome  |  explicit unavailable is preferred to guessed data" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontColor=#333333;" vertex="1" parent="1"><mxGeometry x="40" y="800" width="1360" height="38" as="geometry"/></mxCell>
       </root>
     </mxGraphModel>
   </diagram>

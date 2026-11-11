@@ -1,4 +1,5 @@
 import 'package:am_design_system/am_design_system.dart';
+import 'package:am_market_ui/features/watchlists/presentation/widgets/market_watchlist_star.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -16,12 +17,14 @@ class WatchlistSourceDropdown extends StatelessWidget {
     required this.sources,
     required this.onSelected,
     this.onBrowseAllIndices,
+    this.onCreateWatchlist,
   });
 
   final WatchlistSource selected;
   final List<WatchlistSource> sources;
   final ValueChanged<String> onSelected;
   final VoidCallback? onBrowseAllIndices;
+  final VoidCallback? onCreateWatchlist;
 
   @override
   Widget build(BuildContext context) {
@@ -33,6 +36,8 @@ class WatchlistSourceDropdown extends StatelessWidget {
       onSelected: (val) {
         if (val == '__all_indices__') {
           onBrowseAllIndices?.call();
+        } else if (val == '__create_watchlist__') {
+          onCreateWatchlist?.call();
         } else {
           onSelected(val);
         }
@@ -56,8 +61,9 @@ class WatchlistSourceDropdown extends StatelessWidget {
                   child: Text(
                     s.name,
                     style: TextStyle(
-                      fontWeight:
-                          s.id == selected.id ? FontWeight.w700 : FontWeight.w500,
+                      fontWeight: s.id == selected.id
+                          ? FontWeight.w700
+                          : FontWeight.w500,
                       color: s.id == selected.id ? accent : null,
                     ),
                   ),
@@ -71,13 +77,37 @@ class WatchlistSourceDropdown extends StatelessWidget {
             value: '__all_indices__',
             child: Row(
               children: [
-                Icon(Icons.dashboard_customize_outlined, size: 16, color: accent),
+                Icon(Icons.dashboard_customize_outlined,
+                    size: 16, color: accent),
                 const SizedBox(width: 8),
-                Text(
-                  'Browse All Indices…',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w700,
-                    color: accent,
+                Expanded(
+                  child: Text(
+                    'Browse All Indices…',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      color: accent,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+        if (onCreateWatchlist != null) ...[
+          const PopupMenuDivider(),
+          PopupMenuItem(
+            value: '__create_watchlist__',
+            child: Row(
+              children: [
+                Icon(Icons.add_circle_outline, size: 16, color: accent),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Create New Watchlist…',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      color: accent,
+                    ),
                   ),
                 ),
               ],
@@ -168,6 +198,97 @@ class WatchlistPageChips extends StatelessWidget {
   }
 }
 
+class WatchlistPaginationFooter extends StatelessWidget {
+  const WatchlistPaginationFooter({
+    super.key,
+    required this.controller,
+  });
+
+  final WatchlistController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    if (controller.allRows.isEmpty) return const SizedBox.shrink();
+    final colors = context.colors;
+    final totalItems = controller.allRows.length;
+    final totalPages = controller.pageCount;
+    final page = controller.pageIndex;
+    final accent = _watchlistAccent(context);
+    final labelStyle = Theme.of(context).textTheme.labelSmall?.copyWith(
+          color: colors.textSecondary,
+        );
+
+    return Container(
+      decoration: BoxDecoration(
+        color: colors.surface,
+        border: Border(top: BorderSide(color: colors.divider)),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      child: Row(
+        children: [
+          Text(
+            '${page + 1}/$totalPages · $totalItems',
+            style: labelStyle?.copyWith(fontWeight: FontWeight.w600),
+          ),
+          const Spacer(),
+          Text('Rows', style: labelStyle),
+          const SizedBox(width: 4),
+          for (final size in const [15, 25, 50]) ...[
+            InkWell(
+              onTap: () => controller.setPageSize(size),
+              borderRadius: BorderRadius.circular(4),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                margin: const EdgeInsets.symmetric(horizontal: 2),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(4),
+                  color: controller.pageSize == size
+                      ? accent.withValues(alpha: 0.15)
+                      : Colors.transparent,
+                  border: Border.all(
+                    color: controller.pageSize == size ? accent : colors.border,
+                  ),
+                ),
+                child: Text(
+                  '$size',
+                  style: TextStyle(
+                    fontSize: 10.5,
+                    fontWeight: controller.pageSize == size
+                        ? FontWeight.w700
+                        : FontWeight.normal,
+                    color: controller.pageSize == size
+                        ? accent
+                        : colors.textSecondary,
+                  ),
+                ),
+              ),
+            ),
+          ],
+          const SizedBox(width: 4),
+          IconButton(
+            iconSize: 18,
+            visualDensity: VisualDensity.compact,
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
+            icon: const Icon(Icons.chevron_left),
+            onPressed: page > 0 ? () => controller.setPage(page - 1) : null,
+          ),
+          IconButton(
+            iconSize: 18,
+            visualDensity: VisualDensity.compact,
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
+            icon: const Icon(Icons.chevron_right),
+            onPressed: page < totalPages - 1
+                ? () => controller.setPage(page + 1)
+                : null,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class WatchlistRow extends StatelessWidget {
   const WatchlistRow({
     super.key,
@@ -181,6 +302,7 @@ class WatchlistRow extends StatelessWidget {
     required this.onBuy,
     required this.onSell,
     required this.onFundamentals,
+    this.onAddToWatchlist,
     required this.onRemove,
   });
 
@@ -194,6 +316,7 @@ class WatchlistRow extends StatelessWidget {
   final VoidCallback onBuy;
   final VoidCallback onSell;
   final VoidCallback onFundamentals;
+  final VoidCallback? onAddToWatchlist;
   final VoidCallback onRemove;
 
   @override
@@ -238,11 +361,32 @@ class WatchlistRow extends StatelessWidget {
                   ],
                 ),
               ),
-              if (showActions) ...[
+              if (enableHover)
+                SizedBox(
+                  width: 144,
+                  child: AnimatedOpacity(
+                    opacity: showActions ? 1 : 0,
+                    duration: const Duration(milliseconds: 160),
+                    curve: Curves.easeOut,
+                    child: IgnorePointer(
+                      ignoring: !showActions,
+                      child: WatchlistActionToolbar(
+                        symbol: stock.symbol,
+                        onBuy: onBuy,
+                        onSell: onSell,
+                        onFundamentals: onFundamentals,
+                        onAddToWatchlist: onAddToWatchlist,
+                      ),
+                    ),
+                  ),
+                )
+              else if (showActions) ...[
                 WatchlistActionToolbar(
+                  symbol: stock.symbol,
                   onBuy: onBuy,
                   onSell: onSell,
                   onFundamentals: onFundamentals,
+                  onAddToWatchlist: onAddToWatchlist,
                 ),
                 const SizedBox(width: 8),
               ],
@@ -281,13 +425,38 @@ class WatchlistRow extends StatelessWidget {
                   ),
                 ],
               ),
-              if (showActions)
+              if (enableHover)
+                SizedBox(
+                  width: 28,
+                  child: AnimatedOpacity(
+                    opacity: showActions ? 1 : 0,
+                    duration: const Duration(milliseconds: 160),
+                    curve: Curves.easeOut,
+                    child: IgnorePointer(
+                      ignoring: !showActions,
+                      child: IconButton(
+                        tooltip: 'Remove',
+                        iconSize: 18,
+                        visualDensity: VisualDensity.compact,
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(
+                          minWidth: 28,
+                          minHeight: 28,
+                        ),
+                        onPressed: onRemove,
+                        icon: Icon(Icons.close, color: colors.textSecondary),
+                      ),
+                    ),
+                  ),
+                )
+              else if (showActions)
                 IconButton(
                   tooltip: 'Remove',
                   iconSize: 18,
                   visualDensity: VisualDensity.compact,
                   padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                  constraints:
+                      const BoxConstraints(minWidth: 28, minHeight: 28),
                   onPressed: onRemove,
                   icon: Icon(Icons.close, color: colors.textSecondary),
                 ),
@@ -309,14 +478,18 @@ class WatchlistRow extends StatelessWidget {
 class WatchlistActionToolbar extends StatelessWidget {
   const WatchlistActionToolbar({
     super.key,
+    required this.symbol,
     required this.onBuy,
     required this.onSell,
     required this.onFundamentals,
+    this.onAddToWatchlist,
   });
 
+  final String symbol;
   final VoidCallback onBuy;
   final VoidCallback onSell;
   final VoidCallback onFundamentals;
+  final VoidCallback? onAddToWatchlist;
 
   @override
   Widget build(BuildContext context) {
@@ -345,6 +518,11 @@ class WatchlistActionToolbar extends StatelessWidget {
             Icons.analytics_outlined,
             color: _watchlistAccent(context),
           ),
+        ),
+        const SizedBox(width: 2),
+        MarketWatchlistStar(
+          symbol: symbol,
+          onTap: onAddToWatchlist,
         ),
       ],
     );
@@ -418,7 +596,8 @@ class WatchlistDepthExpandPanel extends StatelessWidget {
                         [
                           WatchlistStat(
                             label: 'LTP',
-                            value: quote!.ltp > 0 ? fmt.format(quote!.ltp) : '—',
+                            value:
+                                quote!.ltp > 0 ? fmt.format(quote!.ltp) : '—',
                           ),
                           WatchlistStat(
                             label: 'Change',
@@ -909,10 +1088,10 @@ class _DepthQtyCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final frac = maxQuantity > 0 ? (quantity / maxQuantity).clamp(0.0, 1.0) : 0.0;
-    final label = orders != null && orders! > 0
-        ? '$quantity ($orders)'
-        : '$quantity';
+    final frac =
+        maxQuantity > 0 ? (quantity / maxQuantity).clamp(0.0, 1.0) : 0.0;
+    final label =
+        orders != null && orders! > 0 ? '$quantity ($orders)' : '$quantity';
 
     return SizedBox(
       height: 20,
@@ -932,8 +1111,7 @@ class _DepthQtyCell extends StatelessWidget {
             ),
           ),
           Align(
-            alignment:
-                alignEnd ? Alignment.centerRight : Alignment.centerLeft,
+            alignment: alignEnd ? Alignment.centerRight : Alignment.centerLeft,
             child: Text(
               label,
               style: Theme.of(context).textTheme.bodySmall,

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:am_design_system/am_design_system.dart';
+import 'package:am_market_ui/am_market_ui.dart';
 import 'package:flutter/material.dart';
 
 import '../watchlist_controller.dart';
@@ -147,6 +148,13 @@ class WatchlistListBody extends StatelessWidget {
                                     cb(stock.symbol);
                                   } else {
                                     onSelectSymbol(stock.symbol);
+                                  }
+                                },
+                                onAddToWatchlist: () async {
+                                  final saved = await AddToWatchlistPopup.show(context, stock.symbol);
+                                  if (saved == true) {
+                                    await controller.loadSources();
+                                    await controller.refreshVisibleQuotes();
                                   }
                                 },
                                 onRemove: () => controller.remove(stock.symbol),

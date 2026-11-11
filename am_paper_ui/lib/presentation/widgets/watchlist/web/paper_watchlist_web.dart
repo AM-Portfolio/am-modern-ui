@@ -1,4 +1,5 @@
 import 'package:am_design_system/am_design_system.dart';
+import 'package:am_market_ui/am_market_ui.dart';
 import 'package:flutter/material.dart';
 
 import '../common/watchlist_atoms.dart';
@@ -48,8 +49,7 @@ class _PaperWatchlistWebState extends State<PaperWatchlistWeb> {
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
                 const Spacer(),
-                if ((controller.refreshing && controller.pageNeedsQuoteSpinner) ||
-                    controller.loadingList)
+                if (controller.refreshing || controller.loadingList)
                   SizedBox(
                     width: 14,
                     height: 14,
@@ -63,8 +63,11 @@ class _PaperWatchlistWebState extends State<PaperWatchlistWeb> {
                     tooltip: 'Refresh quotes',
                     iconSize: 18,
                     visualDensity: VisualDensity.compact,
-                    onPressed:
-                        pageRows.isEmpty ? null : controller.refreshVisibleQuotes,
+                    onPressed: pageRows.isEmpty || controller.refreshing
+                        ? null
+                        : () => controller.refreshVisibleQuotes(
+                              forceRefresh: true,
+                            ),
                     icon: Icon(Icons.refresh, color: colors.textSecondary),
                   ),
               ],
@@ -76,6 +79,18 @@ class _PaperWatchlistWebState extends State<PaperWatchlistWeb> {
               selected: controller.selectedSource,
               sources: List.of(controller.sources),
               onSelected: (id) => controller.selectSource(id),
+              onCreateWatchlist: () async {
+                final sym = widget.selectedSymbol.isNotEmpty
+                    ? widget.selectedSymbol
+                    : (pageRows.isNotEmpty
+                        ? pageRows.first.symbol
+                        : 'NIFTY 50');
+                final saved = await AddToWatchlistPopup.show(context, sym);
+                if (saved == true) {
+                  await controller.loadSources();
+                  await controller.refreshVisibleQuotes();
+                }
+              },
             ),
           ),
           if (controller.pageCount > 1) ...[
@@ -113,6 +128,7 @@ class _PaperWatchlistWebState extends State<PaperWatchlistWeb> {
             onOpenFundamentals: widget.onOpenFundamentals,
             onSelectSymbol: widget.onSelectSymbol,
           ),
+          WatchlistPaginationFooter(controller: controller),
         ],
       ),
     );

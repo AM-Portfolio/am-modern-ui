@@ -1,8 +1,9 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 
 /// A reusable interactive popover capsule that opens when the [child] is clicked/tapped.
 /// When [triggerOnHover] is true, the popup opens on mouse-enter and closes on mouse-exit
-/// — giving users a natural discovery hint without requiring a click.
+/// giving users a natural discovery hint without requiring a click.
 /// The [popupContent] is rendered in a floating overlay above the child.
 class AmClickCapsule extends StatefulWidget {
   final Widget child;
@@ -26,46 +27,91 @@ class AmClickCapsule extends StatefulWidget {
   State<AmClickCapsule> createState() => _AmClickCapsuleState();
 }
 
-class _AmClickCapsuleState extends State<AmClickCapsule> {
+class _AmClickCapsuleState extends State<AmClickCapsule>
+    with SingleTickerProviderStateMixin {
   final OverlayPortalController _overlayController = OverlayPortalController();
   final LayerLink _layerLink = LayerLink();
+  late final AnimationController _animController;
+  late final Animation<double> _scaleAnimation;
+  late final Animation<double> _opacityAnimation;
+  Timer? _hideTimer;
 
-  // Hover debounce — prevents flicker when cursor briefly leaves between target and popup
   bool _isHoveringTarget = false;
   bool _isHoveringPopup = false;
 
+  @override
+  void initState() {
+    super.initState();
+    _animController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 150),
+    );
+    _scaleAnimation = Tween<double>(begin: 0.85, end: 1.0).animate(
+      CurvedAnimation(parent: _animController, curve: Curves.easeOutCubic),
+    );
+    _opacityAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _animController, curve: Curves.easeOutCubic),
+    );
+    _animController.addStatusListener((status) {
+      if (status == AnimationStatus.dismissed) {
+        if (_overlayController.isShowing) {
+          _overlayController.hide();
+        }
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _hideTimer?.cancel();
+    _animController.dispose();
+    super.dispose();
+  }
+
+  void _show() {
+    _hideTimer?.cancel();
+    if (!_overlayController.isShowing) {
+      _overlayController.show();
+    }
+    _animController.forward();
+  }
+
+  void _scheduleHide() {
+    _hideTimer?.cancel();
+    _hideTimer = Timer(const Duration(milliseconds: 80), () {
+      if (!mounted) return;
+      if (!_isHoveringTarget && !_isHoveringPopup) {
+        _animController.reverse();
+      }
+    });
+  }
+
   void _togglePopup() {
-    _overlayController.toggle();
+    if (_overlayController.isShowing) {
+      _animController.reverse();
+    } else {
+      _show();
+    }
   }
 
   void _onTargetEnter() {
     _isHoveringTarget = true;
-    if (!_overlayController.isShowing) {
-      _overlayController.show();
-    }
+    _show();
   }
 
   void _onTargetExit() {
     _isHoveringTarget = false;
-    // Small delay so moving into the popup doesn't close it
-    Future.delayed(const Duration(milliseconds: 80), () {
-      if (!_isHoveringTarget && !_isHoveringPopup && _overlayController.isShowing) {
-        _overlayController.hide();
-      }
-    });
+    _scheduleHide();
   }
 
   void _onPopupEnter() {
     _isHoveringPopup = true;
+    _hideTimer?.cancel();
   }
 
   void _onPopupExit() {
     _isHoveringPopup = false;
-    Future.delayed(const Duration(milliseconds: 80), () {
-      if (!_isHoveringTarget && !_isHoveringPopup && _overlayController.isShowing) {
-        _overlayController.hide();
-      }
-    });
+    _scheduleHide();
   }
 
   @override
@@ -84,46 +130,47 @@ class _AmClickCapsuleState extends State<AmClickCapsule> {
               offset: const Offset(0, -10),
               targetAnchor: Alignment.topCenter,
               followerAnchor: Alignment.bottomCenter,
-              child: TweenAnimationBuilder<double>(
-                tween: Tween<double>(begin: 0.0, end: 1.0),
-                duration: const Duration(milliseconds: 200),
-                curve: Curves.easeOutBack,
-                builder: (context, scale, child) {
-                  return Transform.scale(
-                    scale: scale,
-                    alignment: Alignment.bottomCenter,
-                    child: Opacity(
-                      opacity: scale.clamp(0.0, 1.0),
-                      child: Material(
-                        color: Colors.transparent,
-                        child: TapRegion(
-                          groupId: this,
-                          child: MouseRegion(
-                            onEnter: widget.triggerOnHover ? (_) => _onPopupEnter() : null,
-                            onExit: widget.triggerOnHover ? (_) => _onPopupExit() : null,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                              decoration: BoxDecoration(
-                                color: widget.backgroundColor,
-                                borderRadius: BorderRadius.circular(20),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.3),
-                                    blurRadius: 10,
-                                    spreadRadius: 2,
-                                    offset: const Offset(0, 4),
-                                  )
-                                ],
-                                border: Border.all(color: Colors.white.withOpacity(0.1)),
-                              ),
-                              child: widget.popupContent,
-                            ),
+              child: RepaintBoundary(
+                child: AnimatedBuilder(
+                  animation: _animController,
+                  builder: (context, child) {
+                    return Transform.scale(
+                      scale: _scaleAnimation.value,
+                      alignment: Alignment.bottomCenter,
+                      child: Opacity(
+                        opacity: _opacityAnimation.value,
+                        child: child,
+                      ),
+                    );
+                  },
+                  child: Material(
+                    color: Colors.transparent,
+                    child: TapRegion(
+                      groupId: this,
+                      child: MouseRegion(
+                        onEnter: widget.triggerOnHover ? (_) => _onPopupEnter() : null,
+                        onExit: widget.triggerOnHover ? (_) => _onPopupExit() : null,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: widget.backgroundColor,
+                            borderRadius: BorderRadius.circular(20),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.3),
+                                blurRadius: 10,
+                                spreadRadius: 2,
+                                offset: const Offset(0, 4),
+                              )
+                            ],
+                            border: Border.all(color: Colors.white.withOpacity(0.1)),
                           ),
+                          child: widget.popupContent,
                         ),
                       ),
                     ),
-                  );
-                },
+                  ),
+                ),
               ),
             ),
           );
@@ -147,7 +194,7 @@ class _AmClickCapsuleState extends State<AmClickCapsule> {
         groupId: this,
         onTapOutside: (event) {
           if (_overlayController.isShowing) {
-            _overlayController.hide();
+            _animController.reverse();
           }
         },
         child: targetChild,

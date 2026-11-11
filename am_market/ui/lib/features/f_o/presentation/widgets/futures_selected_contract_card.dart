@@ -1,5 +1,7 @@
 import 'package:am_design_system/am_design_system.dart';
 import 'package:am_market_ui/core/styles/market_theme_extension.dart';
+import 'package:am_market_ui/features/f_o/fo_lot_size_config.dart';
+import 'package:am_market_ui/features/f_o/presentation/widgets/futures_contract_details_card.dart';
 import 'package:am_market_ui/features/f_o/providers/fo_provider.dart';
 import 'package:am_market_ui/features/f_o/providers/futures_provider.dart';
 import 'package:flutter/material.dart';
@@ -16,16 +18,19 @@ class FuturesSelectedContractCard extends ConsumerWidget {
     final selectedContract = ref.watch(selectedFutureContractProvider);
 
     final tradingSymbol = selectedContract != null
-        ? (selectedContract['trading_symbol'] ?? selectedContract['tradingSymbol'] ?? '$activeSymbol FUT 24 SEP 26').toString()
-        : '$activeSymbol FUT 24 SEP 26';
+        ? (selectedContract['trading_symbol'] ?? selectedContract['tradingSymbol'] ?? '$activeSymbol FUT').toString()
+        : '$activeSymbol FUT';
 
-    final expiryStr = (selectedContract?['expiry'] ?? '24 Sep 2026').toString();
+    final expiryStr = FuturesContractDetailsCard.formatExpiry(selectedContract);
     final ltp = (selectedContract?['ltp'] as num?)?.toDouble() ?? 2203.50;
     final change = (selectedContract?['change'] as num?)?.toDouble() ?? -2.10;
     final pChange = (selectedContract?['pChange'] as num?)?.toDouble() ?? -0.10;
     final isPositive = change >= 0;
     final deltaColor = isPositive ? marketTheme.positive : marketTheme.negative;
-    final lotSize = (selectedContract?['lot_size'] as num?)?.toInt() ?? 65;
+    final lotSize = FoLotSizeConfig.resolveLotSize(
+      symbol: activeSymbol,
+      contract: selectedContract,
+    );
 
     final isIndex = tradingSymbol.contains('FUTIDX') ||
         tradingSymbol.startsWith('NIFTY') ||

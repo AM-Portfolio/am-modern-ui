@@ -9,8 +9,12 @@ class PaperOmsState extends Equatable {
     this.positions = const [],
     this.orderTypeFavorite = 'MARKET',
     this.loading = false,
+    this.loadingOrders = false,
+    this.loadingPositions = false,
     this.submitting = false,
     this.error,
+    this.ordersError,
+    this.positionsError,
     this.toast,
   });
 
@@ -19,8 +23,12 @@ class PaperOmsState extends Equatable {
   final List<OmsPosition> positions;
   final String orderTypeFavorite;
   final bool loading;
+  final bool loadingOrders;
+  final bool loadingPositions;
   final bool submitting;
   final String? error;
+  final String? ordersError;
+  final String? positionsError;
   final String? toast;
 
   PaperOmsState copyWith({
@@ -29,10 +37,16 @@ class PaperOmsState extends Equatable {
     List<OmsPosition>? positions,
     String? orderTypeFavorite,
     bool? loading,
+    bool? loadingOrders,
+    bool? loadingPositions,
     bool? submitting,
     String? error,
+    String? ordersError,
+    String? positionsError,
     String? toast,
     bool clearError = false,
+    bool clearOrdersError = false,
+    bool clearPositionsError = false,
     bool clearToast = false,
   }) {
     return PaperOmsState(
@@ -41,8 +55,13 @@ class PaperOmsState extends Equatable {
       positions: positions ?? this.positions,
       orderTypeFavorite: orderTypeFavorite ?? this.orderTypeFavorite,
       loading: loading ?? this.loading,
+      loadingOrders: loadingOrders ?? this.loadingOrders,
+      loadingPositions: loadingPositions ?? this.loadingPositions,
       submitting: submitting ?? this.submitting,
       error: clearError ? null : (error ?? this.error),
+      ordersError: clearOrdersError ? null : (ordersError ?? this.ordersError),
+      positionsError:
+          clearPositionsError ? null : (positionsError ?? this.positionsError),
       toast: clearToast ? null : (toast ?? this.toast),
     );
   }
@@ -54,8 +73,12 @@ class PaperOmsState extends Equatable {
         positions,
         orderTypeFavorite,
         loading,
+        loadingOrders,
+        loadingPositions,
         submitting,
         error,
+        ordersError,
+        positionsError,
         toast,
       ];
 }

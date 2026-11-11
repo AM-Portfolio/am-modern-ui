@@ -1,4 +1,5 @@
 import 'package:am_design_system/am_design_system.dart';
+import 'package:am_market_ui/features/f_o/fo_lot_size_config.dart';
 import 'package:am_market_ui/features/f_o/providers/fo_provider.dart';
 import 'package:am_market_ui/features/f_o/providers/futures_provider.dart';
 import 'package:flutter/material.dart';
@@ -27,8 +28,11 @@ class FuturesContractDetailsCard extends ConsumerWidget {
             .toString()
         : '$activeSymbol FUT';
 
-    final expiryStr = _formatExpiry(selectedContract);
-    final lotSize = (selectedContract?['lot_size'] as num?)?.toInt() ?? 65;
+    final expiryStr = formatExpiry(selectedContract);
+    final lotSize = FoLotSizeConfig.resolveLotSize(
+      symbol: activeSymbol,
+      contract: selectedContract,
+    );
     final exchange = (selectedContract?['exchange'] ?? 'NSE_FO').toString();
     final tickSize = (selectedContract?['tick_size'] as num?)?.toDouble() ??
         (selectedContract?['tickSize'] as num?)?.toDouble() ??
@@ -163,18 +167,26 @@ class FuturesContractDetailsCard extends ConsumerWidget {
     );
   }
 
-  static String _formatExpiry(Map<String, dynamic>? selectedContract) {
+  /// Formats the expiry value returned by the instruments service for display.
+  /// The service can send an epoch number, a numeric epoch string, or a
+  /// human-readable display value.
+  static String formatExpiry(Map<String, dynamic>? selectedContract) {
     if (selectedContract == null) return '—';
     final display = selectedContract['expiry_display'];
-    if (display != null && display.toString().isNotEmpty) {
-      return display.toString();
+    final displayText = display?.toString().trim() ?? '';
+    if (displayText.isNotEmpty && int.tryParse(displayText) == null) {
+      return displayText;
     }
+
     final raw = selectedContract['expiry_ms'] ?? selectedContract['expiry'];
-    if (raw is num && raw > 0) {
+    final rawText = raw?.toString().trim() ?? '';
+    final epoch = raw is num ? raw.toInt() : int.tryParse(rawText);
+    if (epoch != null && epoch > 0) {
+      final milliseconds = epoch < 100000000000 ? epoch * 1000 : epoch;
       return DateFormat('d MMM yyyy')
-          .format(DateTime.fromMillisecondsSinceEpoch(raw.toInt()));
+          .format(DateTime.fromMillisecondsSinceEpoch(milliseconds));
     }
-    return raw?.toString() ?? '—';
+    return rawText.isNotEmpty ? rawText : '—';
   }
 
   Widget _kv(String label, String value, AppColorsTheme colors) {

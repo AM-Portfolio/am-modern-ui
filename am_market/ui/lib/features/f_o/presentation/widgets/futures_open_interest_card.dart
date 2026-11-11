@@ -159,8 +159,8 @@ class _FuturesOpenInterestCardState extends ConsumerState<FuturesOpenInterestCar
     final changeValStr = '${isPositive ? '+' : ''}${_formatCompact(diffVal)}';
 
     final infoMessage = isOi
-        ? 'Open Interest (OI) represents total active unsettled derivative contracts for $tradingSymbol fetched from backend API.'
-        : 'Trading Volume represents total contracts traded during the session for $tradingSymbol fetched from backend API.';
+        ? 'Open Interest (OI) represents total active unsettled derivative contracts for $tradingSymbol.'
+        : 'Trading Volume represents total contracts traded during the session for $tradingSymbol.';
 
     final hoveredItem = _hoverIndex != null && _hoverIndex! < dataPoints.length
         ? dataPoints[_hoverIndex!]
@@ -386,7 +386,7 @@ class _OiDualAxisPainter extends CustomPainter {
 
     if (dataPoints.isEmpty) {
       final tp = TextPainter(
-        text: TextSpan(text: 'Loading dynamic backend OI data...', style: textStyle),
+        text: TextSpan(text: 'Loading open interest data...', style: textStyle),
         textDirection: ui.TextDirection.ltr,
       )..layout();
       tp.paint(canvas, Offset(size.width / 2 - tp.width / 2, size.height / 2 - tp.height / 2));

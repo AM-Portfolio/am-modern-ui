@@ -1,4 +1,5 @@
 import 'package:am_design_system/am_design_system.dart';
+import 'package:am_market_ui/am_market_ui.dart';
 import 'package:flutter/material.dart';
 
 import '../common/watchlist_atoms.dart';
@@ -55,6 +56,19 @@ class _PaperWatchlistMobileState extends State<PaperWatchlistMobile> {
                     sources: List.of(controller.sources),
                     onSelected: (id) => controller.selectSource(id),
                     onBrowseAllIndices: widget.onOpenAllIndices,
+                    onCreateWatchlist: () async {
+                      final sym = widget.selectedSymbol.isNotEmpty
+                          ? widget.selectedSymbol
+                          : (controller.pageRows.isNotEmpty
+                              ? controller.pageRows.first.symbol
+                              : 'NIFTY 50');
+                      final saved =
+                          await AddToWatchlistPopup.show(context, sym);
+                      if (saved == true) {
+                        await controller.loadSources();
+                        await controller.refreshVisibleQuotes();
+                      }
+                    },
                   ),
                 ),
                 if (widget.onOpenAllIndices != null) ...[
@@ -70,10 +84,16 @@ class _PaperWatchlistMobileState extends State<PaperWatchlistMobile> {
                           vertical: 9,
                         ),
                         decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                          color: Theme.of(context)
+                              .colorScheme
+                              .primary
+                              .withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(8),
                           border: Border.all(
-                            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.35),
+                            color: Theme.of(context)
+                                .colorScheme
+                                .primary
+                                .withValues(alpha: 0.35),
                           ),
                         ),
                         child: Row(
@@ -137,6 +157,7 @@ class _PaperWatchlistMobileState extends State<PaperWatchlistMobile> {
             onOpenFundamentals: widget.onOpenFundamentals,
             onSelectSymbol: widget.onSelectSymbol,
           ),
+          WatchlistPaginationFooter(controller: controller),
         ],
       ),
     );

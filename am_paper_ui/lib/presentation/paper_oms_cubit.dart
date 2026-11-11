@@ -12,7 +12,15 @@ class PaperOmsCubit extends Cubit<PaperOmsState> {
   final PaperOmsDataSource _source;
 
   Future<void> load() async {
-    emit(state.copyWith(loading: true, clearError: true, clearToast: true));
+    emit(state.copyWith(
+      loading: true,
+      loadingOrders: false,
+      loadingPositions: false,
+      clearError: true,
+      clearOrdersError: true,
+      clearPositionsError: true,
+      clearToast: true,
+    ));
     try {
       final wallets = await _source.listWallets();
       OmsWallet? paper;
@@ -22,25 +30,75 @@ class PaperOmsCubit extends Cubit<PaperOmsState> {
           break;
         }
       }
-      List<OmsOrder> orders = const [];
-      List<OmsPosition> positions = const [];
-      if (paper != null) {
-        // No from/to — client filters "today"; avoids empty books on TZ edge cases.
-        orders = await _source.listOrders(walletId: paper.walletId);
-        positions = await _source.listPositions(paper.walletId);
+      if (paper == null) {
+        emit(state.copyWith(
+          wallet: null,
+          orders: const [],
+          positions: const [],
+          loading: false,
+          loadingOrders: false,
+          loadingPositions: false,
+          clearError: true,
+          clearOrdersError: true,
+          clearPositionsError: true,
+        ));
+        return;
       }
-      final favorite = await _source.getOrderTypeFavorite();
+
+      // Fast first paint: emit wallet immediately so desk shell renders.
       emit(state.copyWith(
         wallet: paper,
-        orders: orders,
-        positions: positions,
-        orderTypeFavorite: favorite,
         loading: false,
+        loadingOrders: true,
+        loadingPositions: true,
         clearError: true,
+        clearOrdersError: true,
+        clearPositionsError: true,
       ));
+
+      // Lazy-load orders, positions, and preferences in parallel.
+      unawaited(_loadOrders(paper.walletId));
+      unawaited(_loadPositions(paper.walletId));
+      unawaited(_loadFavorite());
     } catch (e) {
-      emit(state.copyWith(loading: false, error: e.toString()));
+      emit(state.copyWith(
+        loading: false,
+        loadingOrders: false,
+        loadingPositions: false,
+        error: e.toString(),
+      ));
     }
+  }
+
+  Future<void> _loadOrders(String walletId) async {
+    try {
+      final orders = await _source.listOrders(walletId: walletId);
+      emit(state.copyWith(orders: orders, loadingOrders: false));
+    } catch (_) {
+      emit(state.copyWith(
+        loadingOrders: false,
+        ordersError: 'Unable to load orders. Tap refresh to retry.',
+      ));
+    }
+  }
+
+  Future<void> _loadPositions(String walletId) async {
+    try {
+      final positions = await _source.listPositions(walletId);
+      emit(state.copyWith(positions: positions, loadingPositions: false));
+    } catch (_) {
+      emit(state.copyWith(
+        loadingPositions: false,
+        positionsError: 'Unable to load positions. Tap refresh to retry.',
+      ));
+    }
+  }
+
+  Future<void> _loadFavorite() async {
+    try {
+      final favorite = await _source.getOrderTypeFavorite();
+      emit(state.copyWith(orderTypeFavorite: favorite));
+    } catch (_) {}
   }
 
   Future<void> enablePaper() async {
@@ -63,12 +121,33 @@ class PaperOmsCubit extends Cubit<PaperOmsState> {
   Future<void> refreshBooks() async {
     final wallet = state.wallet;
     if (wallet == null) return;
+    emit(state.copyWith(
+      loadingOrders: true,
+      loadingPositions: true,
+      clearOrdersError: true,
+      clearPositionsError: true,
+    ));
     try {
       final fresh = await _source.getWallet(wallet.walletId);
       final orders = await _source.listOrders(walletId: wallet.walletId);
       final positions = await _source.listPositions(wallet.walletId);
-      emit(state.copyWith(wallet: fresh, orders: orders, positions: positions));
-    } catch (_) {}
+      emit(state.copyWith(
+        wallet: fresh,
+        orders: orders,
+        positions: positions,
+        loadingOrders: false,
+        loadingPositions: false,
+        clearOrdersError: true,
+        clearPositionsError: true,
+      ));
+    } catch (_) {
+      emit(state.copyWith(
+        loadingOrders: false,
+        loadingPositions: false,
+        ordersError: 'Unable to refresh paper trading books.',
+        positionsError: 'Unable to refresh paper trading books.',
+      ));
+    }
   }
 
   Future<void> saveOrderTypeFavorite(String orderType) async {
@@ -163,7 +242,9 @@ class PaperOmsCubit extends Cubit<PaperOmsState> {
       final n = await _source.cancelAllOrders(walletId: wallet.walletId);
       emit(state.copyWith(
         submitting: false,
-        toast: n == 0 ? 'No pending orders to cancel' : 'Cancelled $n pending order(s)',
+        toast: n == 0
+            ? 'No pending orders to cancel'
+            : 'Cancelled $n pending order(s)',
       ));
       await refreshBooks();
     } catch (e) {

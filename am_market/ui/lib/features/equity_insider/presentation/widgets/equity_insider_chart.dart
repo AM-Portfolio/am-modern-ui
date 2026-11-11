@@ -130,19 +130,19 @@ class _EquityInsiderChartState extends ConsumerState<EquityInsiderChart> {
     );
   }
 
-  Widget _timeFrameDropdown(List<TimeFrame> timeFrames) {
+  Widget _timeFrameDropdown(List<TimeFrame> timeFrames, {bool isMobile = false}) {
     return SizedBox(
       width: kComparisonChartToolbarControlWidth,
       child: CustomDropdown<TimeFrame>(
         value: timeFrames.contains(_selectedTimeFrame)
             ? _selectedTimeFrame
             : TimeFrame.oneYear,
-        height: kComparisonChartHeaderRowHeight,
+        height: isMobile ? 32.0 : kComparisonChartHeaderRowHeight,
         isExpanded: true,
         fontSize: 12,
         iconSize: 16,
         borderRadius: 10,
-        menuMaxHeight: 148,
+        menuMaxHeight: 220,
         primaryColor: ModuleColors.market,
         contentPadding: const EdgeInsets.symmetric(horizontal: 8),
         items: timeFrames
@@ -239,7 +239,7 @@ class _EquityInsiderChartState extends ConsumerState<EquityInsiderChart> {
                         ],
                       ),
                     ),
-                    _timeFrameDropdown(timeFrames),
+                    _timeFrameDropdown(timeFrames, isMobile: isMobile),
                   ],
                 ),
               ),

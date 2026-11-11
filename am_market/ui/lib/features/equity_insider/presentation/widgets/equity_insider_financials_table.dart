@@ -135,13 +135,18 @@ class FinancialComparisonSection extends StatelessWidget {
             ],
           ),
           SizedBox(height: dense ? 6 : 10),
-          _buildComparisonTable(context),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              return _buildComparisonTable(context, constraints: constraints);
+            },
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildComparisonTable(BuildContext context) {
+  Widget _buildComparisonTable(BuildContext context,
+      {BoxConstraints? constraints}) {
     final recent = statements.take(periodCount).toList();
     if (recent.isEmpty) {
       return Padding(
@@ -155,6 +160,14 @@ class FinancialComparisonSection extends StatelessWidget {
       );
     }
 
+    final isMobile = (constraints?.maxWidth ?? 800) < 600;
+    final metricWidth = isMobile ? 86.0 : (dense ? 110.0 : 120.0);
+    const metricRowHeight = 26.0;
+    const subRowHeight = 22.0;
+    final subSpacing = isMobile ? 4.0 : 2.0;
+    final groupSpacing = isMobile ? 8.0 : 6.0;
+    final rightPadding = isMobile ? 8.0 : 0.0;
+
     final periods = recent.map((s) => (s['period'] ?? '').toString()).toList();
 
     return Row(
@@ -162,25 +175,36 @@ class FinancialComparisonSection extends StatelessWidget {
       children: [
         // Sticky Metric Column
         SizedBox(
-          width: 120,
+          width: metricWidth,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _tableHeaderCell(context, 'Metric', isFirst: true),
+              _tableHeaderCell(context, 'Metric', isFirst: true, isMobile: isMobile),
               if (showRevenue) ...[
-                _tableMetricCell(context, 'Revenue'),
+                _tableMetricCell(context, 'Revenue',
+                    height: metricRowHeight, isMobile: isMobile),
+                SizedBox(height: subSpacing),
                 _tableMetricCell(
                     context, isQuarterly ? 'QoQ Rev %' : 'YoY Rev %',
-                    isSub: true),
+                    isSub: true, height: subRowHeight, isMobile: isMobile),
               ],
               if (showPAT) ...[
-                _tableMetricCell(context, 'PAT'),
+                SizedBox(height: groupSpacing),
+                _tableMetricCell(context, 'PAT',
+                    height: metricRowHeight, isMobile: isMobile),
+                SizedBox(height: subSpacing),
                 _tableMetricCell(
                     context, isQuarterly ? 'QoQ PAT %' : 'YoY PAT %',
-                    isSub: true),
+                    isSub: true, height: subRowHeight, isMobile: isMobile),
               ],
-              if (showPatMargin) _tableMetricCell(context, 'PAT Margin %'),
-              _tableMetricCell(context, 'Operating Profit'),
+              if (showPatMargin) ...[
+                SizedBox(height: groupSpacing),
+                _tableMetricCell(context, 'PAT Margin %',
+                    height: metricRowHeight, isMobile: isMobile),
+              ],
+              SizedBox(height: groupSpacing),
+              _tableMetricCell(context, 'Operating Profit',
+                  height: metricRowHeight, isMobile: isMobile),
             ],
           ),
         ),
@@ -218,36 +242,55 @@ class FinancialComparisonSection extends StatelessWidget {
                       : null);
 
               return Expanded(
-                child: Column(
-                  children: [
-                    _tableHeaderCell(context, _formatPeriod(periods[colIdx])),
-                    if (showRevenue) ...[
-                      _tableDataCell(
-                          context, rev != null ? '₹${rev.toInt()}' : '---'),
-                      _tableDeltaCell(context, revGrowth),
-                    ],
-                    if (showPAT) ...[
-                      _tableDataCell(
-                          context, pat != null ? '₹${pat.toInt()}' : '---'),
-                      _tableDeltaCell(context, patGrowth),
-                    ],
-                    if (showPatMargin)
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 2),
+                  child: Column(
+                    children: [
+                      _tableHeaderCell(context, _formatPeriod(periods[colIdx]),
+                          isMobile: isMobile),
+                      if (showRevenue) ...[
+                        _tableDataCell(
+                            context, rev != null ? '₹${rev.toInt()}' : '---',
+                            height: metricRowHeight, isMobile: isMobile),
+                        SizedBox(height: subSpacing),
+                        _tableDeltaCell(context, revGrowth,
+                            height: subRowHeight, isMobile: isMobile),
+                      ],
+                      if (showPAT) ...[
+                        SizedBox(height: groupSpacing),
+                        _tableDataCell(
+                            context, pat != null ? '₹${pat.toInt()}' : '---',
+                            height: metricRowHeight, isMobile: isMobile),
+                        SizedBox(height: subSpacing),
+                        _tableDeltaCell(context, patGrowth,
+                            height: subRowHeight, isMobile: isMobile),
+                      ],
+                      if (showPatMargin) ...[
+                        SizedBox(height: groupSpacing),
+                        _tableDataCell(
+                          context,
+                          patMargin != null
+                              ? '${patMargin.toStringAsFixed(1)}%'
+                              : '---',
+                          height: metricRowHeight,
+                          isMobile: isMobile,
+                        ),
+                      ],
+                      SizedBox(height: groupSpacing),
                       _tableDataCell(
                         context,
-                        patMargin != null
-                            ? '${patMargin.toStringAsFixed(1)}%'
-                            : '---',
+                        opProfit != null ? '₹${opProfit.toInt()}' : '---',
+                        height: metricRowHeight,
+                        isMobile: isMobile,
                       ),
-                    _tableDataCell(
-                      context,
-                      opProfit != null ? '₹${opProfit.toInt()}' : '---',
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               );
             }),
           ),
         ),
+        if (rightPadding > 0) SizedBox(width: rightPadding),
       ],
     );
   }
@@ -335,94 +378,124 @@ class FinancialComparisonSection extends StatelessWidget {
               style: TextStyle(color: context.textTertiary, fontSize: 12),
             )
           else
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                SizedBox(
-                  width: dense ? 120 : 130,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _tableHeaderCell(context, 'Metric', isFirst: true),
-                      ...visibleRows.map(
-                        (r) => _tableMetricCell(context, r.$1),
-                      ),
-                    ],
-                  ),
-                ),
-                Expanded(
-                  child: Row(
-                    children: List.generate(recent.length, (colIdx) {
-                      final sheet = recent[colIdx];
-                      final prev = colIdx + 1 < recent.length
-                          ? recent[colIdx + 1]
-                          : null;
-                      return Expanded(
-                        child: Column(
-                          children: [
-                            _tableHeaderCell(context, periods[colIdx]),
-                            ...visibleRows.map((row) {
-                              final val = _numFromKeys(sheet, row.$2);
-                              final prevVal = prev != null
-                                  ? _numFromKeys(prev, row.$2)
-                                  : null;
-                              if (val == null) {
-                                return _tableDataCell(context, '—');
-                              }
-                              double? growth;
-                              if (prevVal != null && prevVal != 0) {
-                                growth =
-                                    ((val - prevVal) / prevVal.abs()) * 100;
-                              }
-                              if (growth == null) {
-                                return _tableDataCell(
-                                  context,
-                                  '₹${val.toInt()}',
-                                );
-                              }
-                              final isPos = growth >= 0;
-                              return Container(
-                                height: 26,
-                                alignment: Alignment.center,
-                                child: FittedBox(
-                                  fit: BoxFit.scaleDown,
-                                  child: Text.rich(
-                                    TextSpan(
-                                      children: [
-                                        TextSpan(
-                                          text: '₹${val.toInt()} ',
-                                          style: TextStyle(
-                                            fontSize: 11,
-                                            color: context.textPrimary,
-                                            fontWeight: FontWeight.w500,
-                                          ),
-                                        ),
-                                        TextSpan(
-                                          text:
-                                              '${isPos ? '+' : ''}${growth.toStringAsFixed(0)}%',
-                                          style: TextStyle(
-                                            fontSize: 9,
-                                            fontWeight: FontWeight.w700,
-                                            color: isPos
-                                                ? context.marketTheme.positive
-                                                : context.marketTheme.negative,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              );
-                            }),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final isMobile = constraints.maxWidth < 600;
+                final metricWidth = isMobile ? 86.0 : (dense ? 120.0 : 130.0);
+                final rowSpacing = isMobile ? 4.0 : 2.0;
+                final rightPadding = isMobile ? 8.0 : 0.0;
+
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SizedBox(
+                      width: metricWidth,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _tableHeaderCell(context, 'Metric',
+                              isFirst: true, isMobile: isMobile),
+                          for (var i = 0; i < visibleRows.length; i++) ...[
+                            SizedBox(height: rowSpacing),
+                            _tableMetricCell(context, visibleRows[i].$1,
+                                isMobile: isMobile),
                           ],
-                        ),
-                      );
-                    }),
-                  ),
-                ),
-              ],
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      child: Row(
+                        children: List.generate(recent.length, (colIdx) {
+                          final sheet = recent[colIdx];
+                          final prev = colIdx + 1 < recent.length
+                              ? recent[colIdx + 1]
+                              : null;
+                          return Expanded(
+                            child: Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 2),
+                              child: Column(
+                                children: [
+                                  _tableHeaderCell(context, periods[colIdx],
+                                      isMobile: isMobile),
+                                  for (var i = 0;
+                                      i < visibleRows.length;
+                                      i++) ...[
+                                    SizedBox(height: rowSpacing),
+                                    _buildBalanceRowCell(
+                                      context,
+                                      sheet: sheet,
+                                      prev: prev,
+                                      row: visibleRows[i],
+                                      isMobile: isMobile,
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                          );
+                        }),
+                      ),
+                    ),
+                    if (rightPadding > 0) SizedBox(width: rightPadding),
+                  ],
+                );
+              },
             ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildBalanceRowCell(
+    BuildContext context, {
+    required Map<String, dynamic> sheet,
+    required Map<String, dynamic>? prev,
+    required (String label, List<String> keys) row,
+    required bool isMobile,
+  }) {
+    final val = _numFromKeys(sheet, row.$2);
+    final prevVal = prev != null ? _numFromKeys(prev, row.$2) : null;
+    if (val == null) {
+      return _tableDataCell(context, '—', isMobile: isMobile);
+    }
+    double? growth;
+    if (prevVal != null && prevVal != 0) {
+      growth = ((val - prevVal) / prevVal.abs()) * 100;
+    }
+    if (growth == null) {
+      return _tableDataCell(context, '₹${val.toInt()}', isMobile: isMobile);
+    }
+    final isPos = growth >= 0;
+    return Container(
+      height: 26,
+      alignment: Alignment.center,
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Text.rich(
+          TextSpan(
+            children: [
+              TextSpan(
+                text: '₹${val.toInt()} ',
+                style: TextStyle(
+                  fontSize: isMobile ? 10.5 : 11,
+                  color: context.textPrimary,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              TextSpan(
+                text: '${isPos ? '+' : ''}${growth.toStringAsFixed(0)}%',
+                style: TextStyle(
+                  fontSize: isMobile ? 8.5 : 9,
+                  fontWeight: FontWeight.w700,
+                  color: isPos
+                      ? context.marketTheme.positive
+                      : context.marketTheme.negative,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -813,17 +886,18 @@ class FinancialComparisonSection extends StatelessWidget {
   }
 
   Widget _tableHeaderCell(BuildContext context, String text,
-      {bool isFirst = false}) {
+      {bool isFirst = false, double height = 28, bool isMobile = false}) {
     return Container(
-      height: 28,
+      height: height,
       alignment: isFirst ? Alignment.centerLeft : Alignment.center,
       decoration: BoxDecoration(
         border: Border(bottom: BorderSide(color: context.borderColor)),
       ),
       child: Text(
         text,
+        maxLines: 1,
         style: TextStyle(
-          fontSize: 10,
+          fontSize: isMobile ? 9.5 : 10,
           fontWeight: FontWeight.w600,
           color: context.textTertiary,
         ),
@@ -832,41 +906,53 @@ class FinancialComparisonSection extends StatelessWidget {
   }
 
   Widget _tableMetricCell(BuildContext context, String text,
-      {bool isSub = false}) {
+      {bool isSub = false, double height = 26, bool isMobile = false}) {
     return Container(
-      height: 26,
+      height: height,
       alignment: Alignment.centerLeft,
-      child: Text(
-        text,
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: isSub ? FontWeight.w400 : FontWeight.w500,
-          color: isSub ? context.textTertiary : context.textPrimary,
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        alignment: Alignment.centerLeft,
+        child: Text(
+          text,
+          style: TextStyle(
+            fontSize: isMobile ? (isSub ? 9.5 : 10.5) : (isSub ? 10 : 11),
+            fontWeight: isSub ? FontWeight.w400 : FontWeight.w500,
+            color: isSub ? context.textTertiary : context.textPrimary,
+          ),
+          maxLines: 1,
         ),
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
       ),
     );
   }
 
-  Widget _tableDataCell(BuildContext context, String text) {
+  Widget _tableDataCell(BuildContext context, String text,
+      {double height = 26, bool isMobile = false}) {
     return Container(
-      height: 26,
+      height: height,
       alignment: Alignment.center,
-      child: Text(
-        text,
-        style: TextStyle(
-          fontSize: 11,
-          color: context.textPrimary,
-          fontWeight: FontWeight.w500,
+      padding: const EdgeInsets.symmetric(horizontal: 2),
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        alignment: Alignment.center,
+        child: Text(
+          text,
+          maxLines: 1,
+          softWrap: false,
+          style: TextStyle(
+            fontSize: isMobile ? 10.5 : 11,
+            color: context.textPrimary,
+            fontWeight: FontWeight.w500,
+          ),
         ),
       ),
     );
   }
 
-  Widget _tableDeltaCell(BuildContext context, double? growth) {
+  Widget _tableDeltaCell(BuildContext context, double? growth,
+      {double height = 22, bool isMobile = false}) {
     if (growth == null) {
-      return _tableDataCell(context, '---');
+      return _tableDataCell(context, '---', height: height, isMobile: isMobile);
     }
     final isPos = growth >= 0;
     final color =
@@ -874,14 +960,21 @@ class FinancialComparisonSection extends StatelessWidget {
     final text = '${isPos ? '+' : ''}${growth.toStringAsFixed(1)}%';
 
     return Container(
-      height: 26,
+      height: height,
       alignment: Alignment.center,
-      child: Text(
-        text,
-        style: TextStyle(
-          fontSize: 10,
-          color: color,
-          fontWeight: FontWeight.w600,
+      padding: const EdgeInsets.symmetric(horizontal: 2),
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        alignment: Alignment.center,
+        child: Text(
+          text,
+          maxLines: 1,
+          softWrap: false,
+          style: TextStyle(
+            fontSize: isMobile ? 9.5 : 10,
+            color: color,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ),
     );

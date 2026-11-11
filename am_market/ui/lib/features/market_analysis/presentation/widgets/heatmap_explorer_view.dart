@@ -13,7 +13,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:am_common/am_common.dart';
 
 class HeatmapExplorerView extends ConsumerStatefulWidget {
-  const HeatmapExplorerView({super.key});
+  const HeatmapExplorerView({super.key, this.onStockSelected});
+
+  final ValueChanged<String>? onStockSelected;
 
   @override
   ConsumerState<HeatmapExplorerView> createState() => _HeatmapExplorerViewState();
@@ -676,6 +678,10 @@ class _HeatmapExplorerViewState extends ConsumerState<HeatmapExplorerView> {
           });
           _fetchData();
       } else {
+          if (widget.onStockSelected != null) {
+              widget.onStockSelected!(symbol);
+              return;
+          }
           // Select stock but don't drill further (unless we have stock details)
           // Just update generalized view
           setState(() {
