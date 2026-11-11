@@ -59,7 +59,7 @@ class _FuturesOpenInterestCardState
     final marketTheme = context.marketTheme;
 
     final activeSymbol = ref.watch(foActiveSymbolProvider) ?? 'NIFTY';
-    final activeContract = ref.watch(activeFutureContractProvider);
+    final activeContract = ref.watch(activeFutureContractWithQuoteProvider);
 
     final tradingSymbol = activeContract != null
         ? (activeContract['trading_symbol'] ??

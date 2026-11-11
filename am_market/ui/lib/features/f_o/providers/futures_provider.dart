@@ -63,6 +63,102 @@ final selectedFutureQuoteProvider = FutureProvider.autoDispose
   return response.cast<String, dynamic>();
 });
 
+String? futureContractQuoteKey(Map<String, dynamic>? contract) {
+  if (contract == null) return null;
+  final raw = contract['instrument_key'] ??
+      contract['instrumentKey'] ??
+      contract['trading_symbol'] ??
+      contract['tradingSymbol'];
+  final key = raw?.toString().trim();
+  return key == null || key.isEmpty ? null : key;
+}
+
+double? _quoteNumber(Map<String, dynamic> quote, List<String> keys) {
+  for (final key in keys) {
+    final value = quote[key];
+    if (value is num && value.isFinite) return value.toDouble();
+    final parsed = double.tryParse(value?.toString() ?? '');
+    if (parsed != null && parsed.isFinite) return parsed;
+  }
+  return null;
+}
+
+/// Merges only confirmed quote fields into the authoritative contract metadata.
+/// Missing quotes stay missing; callers must render a loading/unavailable state
+/// instead of inventing a price or market-depth value.
+Map<String, dynamic> mergeFutureContractQuote(
+  Map<String, dynamic> contract,
+  Map<String, dynamic>? quote,
+) {
+  if (quote == null || quote.isEmpty) {
+    return Map<String, dynamic>.from(contract);
+  }
+
+  final merged = Map<String, dynamic>.from(contract);
+  final ltp = _quoteNumber(quote, const ['lastPrice', 'last_price', 'ltp']);
+  final change =
+      _quoteNumber(quote, const ['netChange', 'change', 'net_change']);
+  final previousClose = _quoteNumber(
+      quote, const ['previousClose', 'prevClose', 'previous_close']);
+  final pChange = _quoteNumber(quote, const [
+    'pChange',
+    'percentageChange',
+    'changePercent',
+    'netChangePercentage',
+  ]);
+
+  if (ltp != null && ltp > 0) merged['ltp'] = ltp;
+  if (change != null) merged['change'] = change;
+  if (pChange != null) {
+    merged['pChange'] = pChange;
+  } else if (change != null && previousClose != null && previousClose > 0) {
+    merged['pChange'] = (change / previousClose) * 100;
+  }
+  if (previousClose != null && previousClose > 0) {
+    merged['previousClose'] = previousClose;
+  }
+
+  const quoteFields = <String>[
+    'open',
+    'high',
+    'low',
+    'close',
+    'avgPrice',
+    'lowerCircuit',
+    'upperCircuit',
+    'oi',
+    'openInterest',
+    'open_interest',
+    'volume',
+    'totalTradedVolume',
+    'depth',
+    'quoteTimestamp',
+    'timestamp',
+    'updatedAt',
+  ];
+  for (final field in quoteFields) {
+    if (quote[field] != null) merged[field] = quote[field];
+  }
+  return merged;
+}
+
+String formatFutureQuoteTimestamp(Map<String, dynamic>? contract) {
+  final raw = contract?['quoteTimestamp'] ??
+      contract?['timestamp'] ??
+      contract?['updatedAt'];
+  DateTime? timestamp;
+  if (raw is num) {
+    final millis = raw > 100000000000 ? raw.toInt() : raw.toInt() * 1000;
+    timestamp =
+        DateTime.fromMillisecondsSinceEpoch(millis, isUtc: true).toLocal();
+  } else if (raw != null) {
+    timestamp = DateTime.tryParse(raw.toString())?.toLocal();
+  }
+  return timestamp == null
+      ? '—'
+      : DateFormat('d MMM yyyy, hh:mm a').format(timestamp);
+}
+
 class SelectedFutureContractNotifier extends Notifier<Map<String, dynamic>?> {
   @override
   Map<String, dynamic>? build() => null;
@@ -108,6 +204,30 @@ bool isActiveFutureContract(Map<String, dynamic> contract, {DateTime? now}) {
       _futureExpiryMillis(contract['expiry'] ?? contract['expiry_ms']);
   if (expiry == null || expiry <= 0) return true;
   return expiry >= (now ?? DateTime.now()).millisecondsSinceEpoch;
+}
+
+String futureContractIdentity(Map<String, dynamic> contract) {
+  final raw = contract['instrument_key'] ??
+      contract['instrumentKey'] ??
+      contract['trading_symbol'] ??
+      contract['tradingSymbol'] ??
+      contract['name'];
+  return raw?.toString().trim().toUpperCase() ?? '';
+}
+
+Map<String, dynamic> normalizeFutureContract(Map<String, dynamic> contract) {
+  final normalized = Map<String, dynamic>.from(contract);
+  final tradingSymbol = (normalized['trading_symbol'] ??
+          normalized['tradingSymbol'] ??
+          normalized['name'] ??
+          'FUT')
+      .toString();
+  normalized['trading_symbol'] = tradingSymbol;
+  final rawExpiry = normalized['expiry'];
+  if (rawExpiry is num) {
+    normalized['expiry_ms'] = rawExpiry.toInt();
+  }
+  return normalized;
 }
 
 /// Single contract identity resolver shared by Futures and Margin surfaces.
@@ -163,6 +283,23 @@ final activeFutureContractProvider =
     selectedContract: selected,
     contracts: contracts,
   );
+});
+
+/// Shared active contract with the selected contract quote merged in. The
+/// metadata provider remains fast and independent; quote loading is shared by
+/// every visible Futures card through this provider.
+final activeFutureContractWithQuoteProvider =
+    Provider.autoDispose<Map<String, dynamic>?>((ref) {
+  final contract = ref.watch(activeFutureContractProvider);
+  final quoteKey = futureContractQuoteKey(contract);
+  if (contract == null || quoteKey == null) return contract;
+
+  final quoteAsync = ref.watch(selectedFutureQuoteProvider(quoteKey));
+  final quote = quoteAsync.maybeWhen(
+    data: (value) => value,
+    orElse: () => null,
+  );
+  return mergeFutureContractQuote(contract, quote);
 });
 
 class FuturesExpiryFilterNotifier extends Notifier<String> {

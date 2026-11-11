@@ -1,4 +1,3 @@
-import 'dart:math';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:am_market_ui/core/styles/market_theme_extension.dart';
 import 'package:am_market_ui/features/f_o/providers/fo_provider.dart';
@@ -21,28 +20,33 @@ class FuturesMarketDepthMetricsCard extends ConsumerWidget {
     final marketTheme = context.marketTheme;
 
     final activeSymbol = ref.watch(foActiveSymbolProvider) ?? 'NIFTY';
-    final activeContract = ref.watch(activeFutureContractProvider);
+    final activeContract = ref.watch(activeFutureContractWithQuoteProvider);
+    final quoteKey = futureContractQuoteKey(activeContract);
+    final quoteAsync = quoteKey == null
+        ? null
+        : ref.watch(selectedFutureQuoteProvider(quoteKey));
 
-    final ltp = (activeContract?['ltp'] as num?)?.toDouble() ?? 2203.50;
-    final rawVolume = (activeContract?['volume'] as num?)?.toInt() ?? 1872300;
-    final rawOi = (activeContract?['oi'] as num?)?.toInt() ?? 5131200;
-    final openPrice = (activeContract?['open'] as num?)?.toDouble() ??
-        (ltp > 0 ? ltp * 1.003 : 2210.00);
-    final highPrice = (activeContract?['high'] as num?)?.toDouble() ??
-        (ltp > 0 ? ltp * 1.012 : 2232.60);
-    final lowPrice = (activeContract?['low'] as num?)?.toDouble() ??
-        (ltp > 0 ? ltp * 0.992 : 2185.50);
-    final closePrice = (activeContract?['close'] as num?)?.toDouble() ?? ltp;
+    final ltp = (activeContract?['ltp'] as num?)?.toDouble();
+    if (activeContract == null ||
+        (quoteAsync?.isLoading == true && ltp == null)) {
+      return _buildDataState(context, loading: activeContract != null);
+    }
+    if (ltp == null || ltp <= 0) {
+      return _buildDataState(context);
+    }
 
-    final avgPrice = (activeContract?['avgPrice'] as num?)?.toDouble() ??
-        ((highPrice + lowPrice) / 2);
-    final lowerCircuit =
-        (activeContract?['lowerCircuit'] as num?)?.toDouble() ?? (ltp * 0.90);
-    final upperCircuit =
-        (activeContract?['upperCircuit'] as num?)?.toDouble() ?? (ltp * 1.10);
-    final lotSize = (activeContract?['lot_size'] as num?)?.toInt() ?? 65;
+    final rawVolume = (activeContract['volume'] as num?)?.toInt();
+    final rawOi = (activeContract['oi'] as num?)?.toInt() ??
+        (activeContract['openInterest'] as num?)?.toInt();
+    final openPrice = (activeContract['open'] as num?)?.toDouble();
+    final highPrice = (activeContract['high'] as num?)?.toDouble();
+    final lowPrice = (activeContract['low'] as num?)?.toDouble();
+    final closePrice = (activeContract['close'] as num?)?.toDouble();
+    final avgPrice = (activeContract['avgPrice'] as num?)?.toDouble();
+    final lowerCircuit = (activeContract['lowerCircuit'] as num?)?.toDouble();
+    final upperCircuit = (activeContract['upperCircuit'] as num?)?.toDouble();
 
-    final rawDepth = activeContract?['depth'] as Map?;
+    final rawDepth = activeContract['depth'] as Map?;
     final rawBuyList = rawDepth?['buy'] as List?;
     final rawSellList = rawDepth?['sell'] as List?;
 
@@ -64,20 +68,6 @@ class FuturesMarketDepthMetricsCard extends ConsumerWidget {
       }
     }
 
-    if (buyOrders.isEmpty) {
-      final baseLtp = ltp > 0 ? ltp : 2203.50;
-      for (int i = 0; i < 5; i++) {
-        final stepPrice = baseLtp - (0.15 * (i + 1));
-        final qty = lotSize * (75 - i * 10);
-        final ordersCount = max(1, 3 - (i ~/ 2));
-        buyOrders.add({
-          'price': stepPrice.toStringAsFixed(2),
-          'qty': _formatNum(qty),
-          'orders': '$ordersCount',
-        });
-      }
-    }
-
     if (rawSellList != null && rawSellList.isNotEmpty) {
       for (final item in rawSellList.take(5)) {
         if (item is Map) {
@@ -93,20 +83,6 @@ class FuturesMarketDepthMetricsCard extends ConsumerWidget {
       }
     }
 
-    if (sellOrders.isEmpty) {
-      final baseLtp = ltp > 0 ? ltp : 2203.50;
-      for (int i = 0; i < 5; i++) {
-        final stepPrice = baseLtp + (0.15 * (i + 1));
-        final qty = lotSize * (70 - i * 9);
-        final ordersCount = max(1, 3 - (i ~/ 2));
-        sellOrders.add({
-          'price': stepPrice.toStringAsFixed(2),
-          'qty': _formatNum(qty),
-          'orders': '$ordersCount',
-        });
-      }
-    }
-
     final totalBuyQty = buyOrders.fold(0, (sum, o) {
       final qStr = o['qty']!.replaceAll(',', '');
       return sum + (int.tryParse(qStr) ?? 0);
@@ -117,15 +93,18 @@ class FuturesMarketDepthMetricsCard extends ConsumerWidget {
     });
 
     final metrics = [
-      {'label': 'Volume', 'val': _formatNum(rawVolume)},
-      {'label': 'Open', 'val': '₹${openPrice.toStringAsFixed(2)}'},
-      {'label': 'High', 'val': '₹${highPrice.toStringAsFixed(2)}'},
-      {'label': 'Low', 'val': '₹${lowPrice.toStringAsFixed(2)}'},
-      {'label': 'Close', 'val': '₹${closePrice.toStringAsFixed(2)}'},
-      {'label': 'Prev. OI', 'val': _formatNum(rawOi)},
-      {'label': 'Avg Price', 'val': '₹${avgPrice.toStringAsFixed(2)}'},
-      {'label': 'Lower Circuit', 'val': '₹${lowerCircuit.toStringAsFixed(2)}'},
-      {'label': 'Upper Circuit', 'val': '₹${upperCircuit.toStringAsFixed(2)}'},
+      {
+        'label': 'Volume',
+        'val': rawVolume == null ? '—' : _formatNum(rawVolume)
+      },
+      {'label': 'Open', 'val': _formatCurrency(openPrice)},
+      {'label': 'High', 'val': _formatCurrency(highPrice)},
+      {'label': 'Low', 'val': _formatCurrency(lowPrice)},
+      {'label': 'Close', 'val': _formatCurrency(closePrice)},
+      {'label': 'Prev. OI', 'val': rawOi == null ? '—' : _formatNum(rawOi)},
+      {'label': 'Avg Price', 'val': _formatCurrency(avgPrice)},
+      {'label': 'Lower Circuit', 'val': _formatCurrency(lowerCircuit)},
+      {'label': 'Upper Circuit', 'val': _formatCurrency(upperCircuit)},
     ];
 
     return Container(
@@ -167,8 +146,15 @@ class FuturesMarketDepthMetricsCard extends ConsumerWidget {
                     const SizedBox(height: 6),
                     _buildDepthHeader('Price (₹)', 'Qty', 'Orders', colors),
                     const Divider(height: 8),
-                    ...buyOrders.map((o) => _buildDepthRow(o['price']!,
-                        o['qty']!, o['orders']!, marketTheme.positive, colors)),
+                    if (buyOrders.isEmpty)
+                      _buildNoDepthRow(colors)
+                    else
+                      ...buyOrders.map((o) => _buildDepthRow(
+                          o['price']!,
+                          o['qty']!,
+                          o['orders']!,
+                          marketTheme.positive,
+                          colors)),
                   ],
                 ),
               ),
@@ -191,8 +177,15 @@ class FuturesMarketDepthMetricsCard extends ConsumerWidget {
                     const SizedBox(height: 6),
                     _buildDepthHeader('Price (₹)', 'Qty', 'Orders', colors),
                     const Divider(height: 8),
-                    ...sellOrders.map((o) => _buildDepthRow(o['price']!,
-                        o['qty']!, o['orders']!, marketTheme.negative, colors)),
+                    if (sellOrders.isEmpty)
+                      _buildNoDepthRow(colors)
+                    else
+                      ...sellOrders.map((o) => _buildDepthRow(
+                          o['price']!,
+                          o['qty']!,
+                          o['orders']!,
+                          marketTheme.negative,
+                          colors)),
                   ],
                 ),
               ),
@@ -254,6 +247,44 @@ class FuturesMarketDepthMetricsCard extends ConsumerWidget {
     );
   }
 
+  static String _formatCurrency(double? value) {
+    return value == null || value <= 0 ? '—' : '₹${value.toStringAsFixed(2)}';
+  }
+
+  Widget _buildDataState(BuildContext context, {bool loading = false}) {
+    final colors = context.colors;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: colors.surface.withValues(alpha: 0.5),
+        border: Border.all(color: colors.border.withValues(alpha: 0.5)),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          if (loading) ...[
+            SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: ModuleColors.market,
+              ),
+            ),
+            const SizedBox(width: 10),
+          ],
+          Text(
+            loading
+                ? 'Loading live market depth…'
+                : 'Live market depth is unavailable',
+            style: TextStyle(color: colors.textSecondary, fontSize: 12),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildDepthHeader(
       String col1, String col2, String col3, AppColorsTheme colors) {
     return Row(
@@ -305,6 +336,17 @@ class FuturesMarketDepthMetricsCard extends ConsumerWidget {
                   style: TextStyle(color: colors.textSecondary, fontSize: 10),
                   textAlign: TextAlign.right)),
         ],
+      ),
+    );
+  }
+
+  Widget _buildNoDepthRow(AppColorsTheme colors) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: Text(
+        'No live depth data',
+        style: TextStyle(color: colors.textTertiary, fontSize: 10),
+        textAlign: TextAlign.center,
       ),
     );
   }

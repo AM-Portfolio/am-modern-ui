@@ -15,7 +15,7 @@ class FuturesSelectedContractCard extends ConsumerWidget {
     final colors = context.colors;
     final marketTheme = context.marketTheme;
     final activeSymbol = ref.watch(foActiveSymbolProvider) ?? 'TCS';
-    final selectedContract = ref.watch(activeFutureContractProvider);
+    final selectedContract = ref.watch(activeFutureContractWithQuoteProvider);
 
     final tradingSymbol = selectedContract != null
         ? (selectedContract['trading_symbol'] ??
@@ -25,10 +25,10 @@ class FuturesSelectedContractCard extends ConsumerWidget {
         : '$activeSymbol FUT';
 
     final expiryStr = FuturesContractDetailsCard.formatExpiry(selectedContract);
-    final ltp = (selectedContract?['ltp'] as num?)?.toDouble() ?? 2203.50;
-    final change = (selectedContract?['change'] as num?)?.toDouble() ?? -2.10;
-    final pChange = (selectedContract?['pChange'] as num?)?.toDouble() ?? -0.10;
-    final isPositive = change >= 0;
+    final ltp = (selectedContract?['ltp'] as num?)?.toDouble();
+    final change = (selectedContract?['change'] as num?)?.toDouble();
+    final pChange = (selectedContract?['pChange'] as num?)?.toDouble();
+    final isPositive = (change ?? 0) >= 0;
     final deltaColor = isPositive ? marketTheme.positive : marketTheme.negative;
     final lotSize = FoLotSizeConfig.resolveLotSize(
       symbol: activeSymbol,
@@ -93,26 +93,31 @@ class FuturesSelectedContractCard extends ConsumerWidget {
             textBaseline: TextBaseline.alphabetic,
             children: [
               Text(
-                '₹${ltp.toStringAsFixed(2)}',
+                ltp == null ? '—' : '₹${ltp.toStringAsFixed(2)}',
                 style: TextStyle(
                     color: colors.textPrimary,
                     fontWeight: FontWeight.bold,
                     fontSize: 24),
               ),
-              const SizedBox(width: 10),
-              Icon(isPositive ? Icons.arrow_drop_up : Icons.arrow_drop_down,
-                  color: deltaColor, size: 20),
-              Text(
-                '${change.toStringAsFixed(2)} (${pChange.toStringAsFixed(2)}%)',
-                style: TextStyle(
-                    color: deltaColor,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14),
-              ),
+              if (change != null) ...[
+                const SizedBox(width: 10),
+                Icon(
+                  isPositive ? Icons.arrow_drop_up : Icons.arrow_drop_down,
+                  color: deltaColor,
+                  size: 20,
+                ),
+                Text(
+                  '${change.toStringAsFixed(2)}${pChange == null ? '' : ' (${pChange.toStringAsFixed(2)}%)'}',
+                  style: TextStyle(
+                      color: deltaColor,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14),
+                ),
+              ],
             ],
           ),
           const SizedBox(height: 4),
-          Text('14 Sep 2026, 03:30 PM',
+          Text(formatFutureQuoteTimestamp(selectedContract),
               style: TextStyle(color: colors.textSecondary, fontSize: 11)),
           const SizedBox(height: 14),
 

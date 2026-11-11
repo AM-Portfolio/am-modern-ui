@@ -76,26 +76,13 @@ class _MarginCalculatorViewState extends ConsumerState<MarginCalculatorView> {
       data: (d) => d,
       orElse: () => <dynamic>[],
     );
-    final activeContract = ref.watch(activeFutureContractProvider);
-    final quoteKey = activeContract?['instrument_key'] ??
-        activeContract?['instrumentKey'] ??
-        activeContract?['trading_symbol'] ??
-        activeContract?['tradingSymbol'];
-    final selectedQuoteAsync = quoteKey == null
-        ? null
-        : ref.watch(selectedFutureQuoteProvider(quoteKey.toString()));
-    final selectedQuote =
-        quoteKey == null ? null : selectedQuoteAsync?.asData?.value;
+    final activeContract = ref.watch(activeFutureContractWithQuoteProvider);
 
     final lotSize = FoLotSizeConfig.resolveLotSize(
       symbol: activeSymbol,
       contract: activeContract,
     );
-    final rawLtp = selectedQuote?['lastPrice'] ??
-        selectedQuote?['last_price'] ??
-        selectedQuote?['ltp'] ??
-        activeContract?['ltp'] ??
-        activeContract?['last_price'];
+    final rawLtp = activeContract?['ltp'] ?? activeContract?['last_price'];
     final ltp = rawLtp is num ? rawLtp.toDouble() : double.tryParse('$rawLtp');
 
     final contractId = activeContract?['trading_symbol'] ??

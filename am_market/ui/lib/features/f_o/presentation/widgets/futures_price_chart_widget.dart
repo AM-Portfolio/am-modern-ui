@@ -1,5 +1,4 @@
 import 'package:am_design_system/am_design_system.dart';
-import 'package:am_design_system/shared/widgets/charts/candle_chart.dart';
 import 'package:am_market_ui/core/styles/market_theme_extension.dart';
 import 'package:am_market_ui/features/f_o/providers/fo_provider.dart';
 import 'package:am_market_ui/features/f_o/providers/futures_provider.dart';
@@ -24,7 +23,7 @@ class _FuturesPriceChartWidgetState
     final colors = context.colors;
     final marketTheme = context.marketTheme;
     final activeSymbol = ref.watch(foActiveSymbolProvider) ?? 'NIFTY';
-    final activeContract = ref.watch(activeFutureContractProvider);
+    final activeContract = ref.watch(activeFutureContractWithQuoteProvider);
     final tradingSymbol = activeContract != null
         ? (activeContract['trading_symbol'] ??
                 activeContract['tradingSymbol'] ??

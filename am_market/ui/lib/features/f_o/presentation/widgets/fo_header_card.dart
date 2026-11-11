@@ -51,7 +51,7 @@ class _FoHeaderCardState extends ConsumerState<FoHeaderCard> {
     // Use the same symbol-validated contract identity as Futures and Margin.
     // Metadata remains independent from quote enrichment, so the header can
     // still render its option-chain summary without waiting for every future.
-    final activeContract = ref.watch(activeFutureContractProvider);
+    final activeContract = ref.watch(activeFutureContractWithQuoteProvider);
 
     final chainLtp = _positiveNum(chainData?['underlyingLtp']);
     final contractLtp = _positiveNum(activeContract?['ltp']);

@@ -172,25 +172,34 @@ class FuturesView extends ConsumerWidget {
   static void _ensureDefaultSelection(
       WidgetRef ref, String activeSymbol, List<dynamic> contracts) {
     final selected = ref.read(selectedFutureContractProvider);
-    if (selected != null) return;
     final pick = resolveActiveFutureContract(
       activeSymbol: activeSymbol,
+      selectedContract: selected,
       contracts: contracts,
     );
     if (pick == null) return;
+
+    final selectedIdentity =
+        selected == null ? null : futureContractIdentity(selected);
+    final resolvedIdentity = futureContractIdentity(pick);
+    if (selectedIdentity != null && selectedIdentity == resolvedIdentity) {
+      return;
+    }
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (ref.read(selectedFutureContractProvider) != null) return;
-      final tradingSymbol = (pick['trading_symbol'] ??
-              pick['tradingSymbol'] ??
-              pick['name'] ??
-              'FUT')
-          .toString();
-      final rawExpiry = pick['expiry'];
-      ref.read(selectedFutureContractProvider.notifier).state = {
-        ...pick,
-        'trading_symbol': tradingSymbol,
-        if (rawExpiry is num) 'expiry_ms': rawExpiry.toInt(),
-      };
+      final current = ref.read(selectedFutureContractProvider);
+      final latest = resolveActiveFutureContract(
+        activeSymbol: activeSymbol,
+        selectedContract: current,
+        contracts: contracts,
+      );
+      if (latest == null) return;
+      if (current != null &&
+          futureContractIdentity(current) == futureContractIdentity(latest)) {
+        return;
+      }
+      ref.read(selectedFutureContractProvider.notifier).state =
+          normalizeFutureContract(latest);
     });
   }
 }

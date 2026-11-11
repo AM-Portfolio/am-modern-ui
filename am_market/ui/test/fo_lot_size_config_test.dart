@@ -42,6 +42,38 @@ void main() {
       expect(canonicalFutureUnderlying('FINNIFTY'), 'FINNIFTY');
     });
 
+    test('Merges selected contract quote without changing contract identity',
+        () {
+      final merged = mergeFutureContractQuote(
+        {
+          'instrument_key': 'NSE_FO|123',
+          'trading_symbol': 'NIFTY FUT 23 NOV 26',
+          'lot_size': 65,
+        },
+        {
+          'lastPrice': 25215.90,
+          'netChange': 375.0,
+          'previousClose': 24840.90,
+          'quoteTimestamp': '2026-11-11T09:45:00Z',
+        },
+      );
+
+      expect(merged['trading_symbol'], 'NIFTY FUT 23 NOV 26');
+      expect(merged['lot_size'], 65);
+      expect(merged['ltp'], 25215.90);
+      expect(merged['pChange'], closeTo(1.51, 0.01));
+    });
+
+    test('Formats the live quote timestamp instead of using a demo timestamp',
+        () {
+      expect(
+        formatFutureQuoteTimestamp({
+          'quoteTimestamp': '2026-11-11T09:45:00Z',
+        }),
+        isNot('14 Sep 2026, 03:30 PM'),
+      );
+    });
+
     test('Resolves the active underlying instead of the first broad-search row',
         () {
       final contracts = [

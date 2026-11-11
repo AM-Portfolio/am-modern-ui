@@ -19,7 +19,7 @@ class FuturesContractDetailsCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final colors = context.colors;
     final activeSymbol = ref.watch(foActiveSymbolProvider) ?? 'NIFTY';
-    final selectedContract = ref.watch(activeFutureContractProvider);
+    final selectedContract = ref.watch(activeFutureContractWithQuoteProvider);
 
     final tradingSymbol = selectedContract != null
         ? (selectedContract['trading_symbol'] ??
