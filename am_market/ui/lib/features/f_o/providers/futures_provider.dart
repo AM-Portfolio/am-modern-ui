@@ -100,6 +100,9 @@ int? _futureExpiryMillis(dynamic value) {
   return parsed?.millisecondsSinceEpoch;
 }
 
+// Keep the fallback within JavaScript's exact-integer range for Web builds.
+const _unknownFutureExpiryMillis = 8640000000000000;
+
 bool isActiveFutureContract(Map<String, dynamic> contract, {DateTime? now}) {
   final expiry =
       _futureExpiryMillis(contract['expiry'] ?? contract['expiry_ms']);
@@ -131,9 +134,9 @@ Map<String, dynamic>? resolveActiveFutureContract({
 
   eligible.sort((a, b) {
     final aExpiry = _futureExpiryMillis(a['expiry'] ?? a['expiry_ms']) ??
-        9223372036854775807;
+        _unknownFutureExpiryMillis;
     final bExpiry = _futureExpiryMillis(b['expiry'] ?? b['expiry_ms']) ??
-        9223372036854775807;
+        _unknownFutureExpiryMillis;
     final byExpiry = aExpiry.compareTo(bExpiry);
     if (byExpiry != 0) return byExpiry;
     final aSymbol =
