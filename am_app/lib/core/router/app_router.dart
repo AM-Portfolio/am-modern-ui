@@ -281,6 +281,8 @@ GoRouter createAppRouter({
                 onOpenDocIntel: () =>
                     context.go(AppRoutes.docIntelPath('mailbox')),
                 onOpenPaper: () => context.go(AppRoutes.marketPath('paper')),
+                onOpenUsers: () => context.go(AppRoutes.users),
+                onProfileTap: () => context.go(AppRoutes.profile),
                 onQuickAdd: (kind) {
                   requestGlobalAddAction(
                     context,
@@ -290,6 +292,21 @@ GoRouter createAppRouter({
                         context.go(AppRoutes.docIntelPath('mailbox')),
                   );
                 },
+              );
+            },
+          ),
+          GoRoute(
+            path: AppRoutes.users,
+            builder: (context, state) {
+              final userId = _userId(context);
+              return dashboard.DashboardPortfolioRefreshBinder(
+                userId: userId,
+                child: dashboard.DashboardUsersPage(
+                  userId: userId,
+                  onOpenDocIntel: () =>
+                      context.go(AppRoutes.docIntelPath('mailbox')),
+                  onBack: () => context.go(AppRoutes.dashboard),
+                ),
               );
             },
           ),

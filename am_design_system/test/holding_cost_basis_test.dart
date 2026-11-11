@@ -91,15 +91,19 @@ void main() {
       expect(row.hasCostBasis, isFalse);
       expect(row.displayAvgPrice, '—');
       expect(row.displayInvestedAmount, '—');
+      expect(row.displayProfitLoss, '—');
+      expect(row.displayProfitLossPercentage, '—');
       expect(row.displayQuantity, isNot(contains('—')));
     });
 
-    test('formats avg and invested when cost exists', () {
+    test('formats avg invested and pnl when cost exists', () {
       final row = _row(symbol: 'TCS', investedAmount: 1000, avgPrice: 100);
       expect(row.hasCostBasis, isTrue);
       expect(row.displayAvgPrice, isNot('—'));
       expect(row.displayInvestedAmount, isNot('—'));
       expect(row.displayAvgPrice, contains('100'));
+      expect(row.displayProfitLoss, isNot('—'));
+      expect(row.displayProfitLossPercentage, isNot('—'));
     });
   });
 

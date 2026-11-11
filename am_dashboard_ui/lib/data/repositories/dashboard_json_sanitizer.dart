@@ -26,6 +26,9 @@ class DashboardJsonSanitizer {
       json['dayChangePercentage'] ?? json['todayGainLossPercentage'],
     );
     json['totalPortfolios'] = _intOrZero(json['totalPortfolios']);
+    json['totalHoldings'] = _intOrZero(
+      json['totalHoldings'] ?? json['totalAssets'] ?? json['holdingsCount'],
+    );
     return json;
   }
 

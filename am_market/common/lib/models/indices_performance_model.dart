@@ -9,7 +9,8 @@ class IndicesHistoricalPerformanceResponse {
     required this.monthlyPerformance,
   });
 
-  factory IndicesHistoricalPerformanceResponse.fromJson(Map<String, dynamic> json) {
+  factory IndicesHistoricalPerformanceResponse.fromJson(
+      Map<String, dynamic> json) {
     return IndicesHistoricalPerformanceResponse(
       startYear: json['startYear'] ?? 0,
       endYear: json['endYear'] ?? 0,
@@ -53,6 +54,15 @@ class MonthlyIndicesPerformance {
               ?.map((e) => IndexPerformance.fromJson(e))
               .toList() ??
           [],
+    );
+  }
+
+  /// Prefer the existing ranked list when a cached topPerformer is stale.
+  IndexPerformance? get resolvedTopPerformer {
+    if (allIndices.isEmpty) return topPerformer;
+    return allIndices.reduce(
+      (best, candidate) =>
+          candidate.returnPercentage > best.returnPercentage ? candidate : best,
     );
   }
 }

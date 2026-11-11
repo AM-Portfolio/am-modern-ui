@@ -13,6 +13,7 @@ abstract class DashboardSummary with _$DashboardSummary {
     required double dayChange,
     required double dayChangePercentage,
     required int totalPortfolios,
+    @Default(0) int totalHoldings,
   }) = _DashboardSummary;
 
   factory DashboardSummary.fromJson(Map<String, dynamic> json) =>

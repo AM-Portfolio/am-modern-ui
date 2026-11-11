@@ -129,7 +129,7 @@ void main() {
     );
   });
 
-  test('visibleHoldingsForCostPolicy drops zero-cost only in mixed books', () {
+  test('visibleHoldingsForCostPolicy keeps all rows including zero-cost', () {
     final mailOnly = [
       _holding(symbol: 'MAIL', investedAmount: 0, avgPrice: 0, quantity: 5),
       _holding(symbol: 'ZERO', investedAmount: 0, avgPrice: 0, quantity: 2),
@@ -147,7 +147,7 @@ void main() {
     expect(showHoldingsCostColumns(mixed), isTrue);
     expect(
       visibleHoldingsForCostPolicy(mixed).map((h) => h.symbol).toList(),
-      ['TCS'],
+      ['TCS', 'MAIL'],
     );
   });
 

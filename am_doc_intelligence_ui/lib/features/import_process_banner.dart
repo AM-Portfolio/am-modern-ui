@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:am_doc_intelligence_ui/services/api_service.dart';
 
 enum ImportProcessPhase { idle, busy, syncing, success, error }
 
@@ -265,6 +266,14 @@ void showImportSnackBar(
 }
 
 String shortImportError(Object e) {
+  if (e is ExtractUploadException) {
+    final code = (e.code ?? '').trim();
+    final msg = e.message.trim();
+    if (code.isNotEmpty) {
+      return msg.isEmpty ? code : '$msg ($code)';
+    }
+    return msg;
+  }
   final s = e.toString();
   return s
       .replaceFirst(RegExp(r'^Exception:\s*'), '')

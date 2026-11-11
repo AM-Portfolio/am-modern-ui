@@ -9,7 +9,6 @@ import 'package:am_design_system/am_design_system.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'dart:ui';
 
 bool _dashboardDataMarkedMobile = false;
 
@@ -18,14 +17,22 @@ class DashboardMobileScreen extends ConsumerStatefulWidget {
   final String userId;
   final VoidCallback? onOpenDocIntel;
   final VoidCallback? onOpenPaper;
+  final VoidCallback? onOpenUsers;
   final ValueChanged<GlobalAddActionKind>? onQuickAdd;
+  final VoidCallback? onProfileTap;
+  final Widget? profileLeading;
+  final String brandLabel;
 
   const DashboardMobileScreen({
     super.key,
     required this.userId,
     this.onOpenDocIntel,
     this.onOpenPaper,
+    this.onOpenUsers,
     this.onQuickAdd,
+    this.onProfileTap,
+    this.profileLeading,
+    this.brandLabel = 'AM Investment',
   });
 
   @override
@@ -56,6 +63,7 @@ class _DashboardMobileScreenState
     if (!mounted) return;
     final id = widget.userId;
     if (id.isEmpty) return;
+    ref.invalidate(accountsHubProvider(id));
     ref.invalidate(portfolioOverviewsProvider(id));
     ref.invalidate(hasDemoPortfolioProvider);
     ref.invalidate(dashboardStreamProvider(id));
@@ -101,7 +109,11 @@ class _DashboardMobileScreenState
       userId: widget.userId,
       onSurface: onSurface,
       showDemoBadge: showDemoBadge,
+      brandLabel: widget.brandLabel,
+      profileLeading: widget.profileLeading,
+      onProfileTap: widget.onProfileTap,
       onOpenPaper: widget.onOpenPaper,
+      onOpenUsers: widget.onOpenUsers,
       onQuickAdd: widget.onQuickAdd,
       onSearch: () {
         if (MobileSearchScope.tryOpenGlobalSearch(context)) return;
@@ -135,6 +147,7 @@ class _DashboardMobileScreenState
 
     Future<void> refresh() async {
       retryDashboardSummary(ref, userId);
+      ref.invalidate(accountsHubProvider(userId));
       ref.invalidate(portfolioOverviewsProvider(userId));
       ref.invalidate(hasDemoPortfolioProvider);
     }
@@ -181,12 +194,6 @@ class _DashboardMobileScreenState
                 ),
               ),
             ),
-            Positioned.fill(
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 50, sigmaY: 50),
-                child: Container(color: Colors.transparent),
-              ),
-            ),
           ],
           SafeArea(
             child: Column(
@@ -220,6 +227,7 @@ class _DashboardMobileScreenState
                             timeFrameCode: tfCode,
                             onOpenDocIntel: widget.onOpenDocIntel,
                             onOpenPaper: widget.onOpenPaper,
+                            onOpenUsers: widget.onOpenUsers,
                             compactBreakpoint: 99999,
                             chartHeight: 350,
                             mobileChartHeight: 350,

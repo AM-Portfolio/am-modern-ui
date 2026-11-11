@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:am_doc_intelligence_ui/features/document_processor/document_processor_view.dart';
+import 'package:am_doc_intelligence_ui/features/email_discover_models.dart';
 import 'package:am_doc_intelligence_ui/features/email_extractor/email_extractor_view.dart';
 import 'package:am_doc_intelligence_ui/features/import_holdings_info_rail.dart';
 import 'package:am_doc_intelligence_ui/features/import_holdings_shared_controls.dart';
@@ -25,7 +26,8 @@ class DocIntelligenceScreen extends StatefulWidget {
   final String userId;
   final String initialTab;
   final ValueChanged<String>? onTabChanged;
-  final void Function(String portfolioId, String portfolioName)? onOpenPortfolio;
+  final void Function(String portfolioId, String portfolioName)?
+      onOpenPortfolio;
   final void Function(String portfolioId, String portfolioName)? onOpenTrade;
 
   @override
@@ -34,17 +36,24 @@ class DocIntelligenceScreen extends StatefulWidget {
 
 class _DocIntelligenceScreenState extends State<DocIntelligenceScreen> {
   List<RecentImportEntry> _recentEntries = const [];
+
+  /// Local-only hides until next full page reload (no server delete API).
+  final Set<String> _hiddenRecentIds = {};
+
   /// Bumped on refresh / userId change so a stale [_loadRecent] cannot clobber.
   int _recentLoadGen = 0;
-  String? _selectedBrokerKey;
+  Set<String> _selectedSourceKeys = Set<String>.from(kDefaultImportSourceKeys);
   String? _documentType;
   late _ImportSource _source;
   final TextEditingController _portfolioNameController =
       TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _npsPasswordController = TextEditingController();
   String? _autoPortfolioName;
+  EmailDiscoverSnapshot _emailDiscover = const EmailDiscoverSnapshot();
 
-  static const double _mobileShellMax = 1100;
+  /// Match [AmBreakpoints.tablet] — phones + tablets use single-column shell.
+  static const double _mobileShellMax = AmBreakpoints.tablet;
   static const int _recentCap = 25;
 
   static _ImportSource _sourceFromSlug(String slug) {
@@ -67,13 +76,32 @@ class _DocIntelligenceScreenState extends State<DocIntelligenceScreen> {
   void initState() {
     super.initState();
     _source = _sourceFromSlug(widget.initialTab);
+    _applyDefaultSourceSelection();
     _loadRecent();
+  }
+
+  /// Highlight CDSL and seed portfolio name on first paint.
+  void _applyDefaultSourceSelection() {
+    final keys = Set<String>.from(kDefaultImportSourceKeys);
+    final ordered = orderedImportSources(keys);
+    final label = ordered.isEmpty
+        ? ''
+        : ordered.length == 1
+            ? brokerKeyDisplayName(ordered.first)
+            : '${ordered.length} sources';
+    _selectedSourceKeys = keys;
+    _documentType = defaultDocTypeForSourceKeys(keys);
+    if (label.isNotEmpty) {
+      _portfolioNameController.text = label;
+      _autoPortfolioName = label;
+    }
   }
 
   @override
   void dispose() {
     _portfolioNameController.dispose();
     _passwordController.dispose();
+    _npsPasswordController.dispose();
     super.dispose();
   }
 
@@ -84,16 +112,14 @@ class _DocIntelligenceScreenState extends State<DocIntelligenceScreen> {
     List<RecentImportEntry> mailboxRows = const [];
 
     try {
-      final history =
-          await apiProvider.listBatchSyncHistory(limit: _recentCap);
+      final history = await apiProvider.listBatchSyncHistory(limit: _recentCap);
       uploadRows = _entriesFromBatchHistory(history.items);
     } catch (e) {
       debugPrint('[ImportHoldings] batch history failed: $e');
     }
 
     try {
-      final extracts =
-          await apiProvider.listExtractHistory(limit: _recentCap);
+      final extracts = await apiProvider.listExtractHistory(limit: _recentCap);
       mailboxRows = _entriesFromExtractHistory(extracts);
     } catch (e) {
       debugPrint('[ImportHoldings] extract history failed: $e');
@@ -101,7 +127,10 @@ class _DocIntelligenceScreenState extends State<DocIntelligenceScreen> {
 
     final merged = <RecentImportEntry>[...uploadRows, ...mailboxRows]
       ..sort((a, b) => b.at.compareTo(a.at));
-    final capped = merged.take(_recentCap).toList();
+    final capped = merged
+        .where((e) => !_hiddenRecentIds.contains(e.id))
+        .take(_recentCap)
+        .toList();
 
     // Best-effort local cache for offline display; server is SoT.
     try {
@@ -113,49 +142,53 @@ class _DocIntelligenceScreenState extends State<DocIntelligenceScreen> {
   }
 
   static List<RecentImportEntry> _entriesFromBatchHistory(
-      List<BatchSyncStatus> batches) {
+    List<BatchSyncStatus> batches,
+  ) {
     final out = <RecentImportEntry>[];
     for (final batch in batches) {
       final batchAt = batch.updatedAt ?? batch.createdAt ?? DateTime.now();
       if (batch.files.isEmpty) {
-        out.add(RecentImportEntry(
-          id: 'up-${batch.batchId}',
-          source: 'upload',
-          title: 'Batch ${batch.batchId}',
-          status: _mapOverallStatus(batch.overallStatus),
-          at: batchAt.toLocal(),
-          files: const [],
-          detail: batch.overallStatus,
-        ));
+        out.add(
+          RecentImportEntry(
+            id: 'up-${batch.batchId}',
+            source: 'upload',
+            title: 'Batch ${batch.batchId}',
+            status: _mapOverallStatus(batch.overallStatus),
+            at: batchAt.toLocal(),
+            files: const [],
+            detail: batch.overallStatus,
+          ),
+        );
         continue;
       }
       for (final file in batch.files) {
-        final at =
-            (file.completedAt ?? file.startedAt ?? batchAt).toLocal();
-        out.add(RecentImportEntry(
-          id: 'up-${batch.batchId}-${file.fileId}',
-          source: 'upload',
-          title: file.fileName.isNotEmpty ? file.fileName : 'Upload',
-          status: _mapFileStatus(file.status),
-          at: at,
-          files: [file.fileName],
-          detail: file.errorMessage ??
-              (file.detectedBroker != null
-                  ? file.detectedBroker
-                  : file.status),
-        ));
+        final at = (file.completedAt ?? file.startedAt ?? batchAt).toLocal();
+        out.add(
+          RecentImportEntry(
+            id: 'up-${batch.batchId}-${file.fileId}',
+            source: 'upload',
+            title: file.fileName.isNotEmpty ? file.fileName : 'Upload',
+            status: _mapFileStatus(file.status),
+            at: at,
+            files: [file.fileName],
+            detail: file.errorMessage ??
+                (file.detectedBroker != null
+                    ? file.detectedBroker
+                    : file.status),
+          ),
+        );
       }
     }
     return out;
   }
 
   static List<RecentImportEntry> _entriesFromExtractHistory(
-      List<ExtractHistoryItem> items) {
+    List<ExtractHistoryItem> items,
+  ) {
     return items.map((e) {
       final label = e.broker.isNotEmpty ? e.broker : 'Gmail';
-      final title = e.filename?.isNotEmpty == true
-          ? e.filename!
-          : 'Gmail · $label';
+      final title =
+          e.filename?.isNotEmpty == true ? e.filename! : 'Gmail · $label';
       return RecentImportEntry(
         id: 'mb-${e.id}',
         source: 'mailbox',
@@ -222,30 +255,50 @@ class _DocIntelligenceScreenState extends State<DocIntelligenceScreen> {
     await _loadRecent();
   }
 
+  Future<void> _onDeleteRecent(RecentImportEntry entry) async {
+    _hiddenRecentIds.add(entry.id);
+    try {
+      await RecentImportsStore.instance.remove(widget.userId, entry.id);
+    } catch (_) {}
+    if (!mounted) return;
+    setState(() {
+      _recentEntries = _recentEntries.where((e) => e.id != entry.id).toList();
+    });
+  }
+
   void _setSource(_ImportSource source) {
     if (_source == source) return;
     setState(() => _source = source);
     widget.onTabChanged?.call(_slugForSource(source));
   }
 
-  void _onBrokerSelected(String key) {
-    final brokerDefault = brokerKeyDisplayName(key);
+  void _onSourcesChanged(Set<String> keys) {
+    final ordered = orderedImportSources(keys);
+    final label = ordered.isEmpty
+        ? ''
+        : ordered.length == 1
+            ? brokerKeyDisplayName(ordered.first)
+            : '${ordered.length} sources';
     final current = _portfolioNameController.text.trim();
     final shouldReplaceName = current.isEmpty ||
         current == (_autoPortfolioName ?? '') ||
-        (_selectedBrokerKey != null &&
-            current == brokerKeyDisplayName(_selectedBrokerKey));
+        (_autoPortfolioName != null && current == _autoPortfolioName);
     setState(() {
-      _selectedBrokerKey = key;
-      _documentType = null;
-      if (shouldReplaceName) {
-        _portfolioNameController.text = brokerDefault;
-        _autoPortfolioName = brokerDefault;
+      _selectedSourceKeys = keys;
+      // CDSL/NPS auto-pick the matching doc type; other brokers clear for chips.
+      _documentType = defaultDocTypeForSourceKeys(keys);
+      // Hide passwords until Email view finishes discover for the new set.
+      if (_source == _ImportSource.email) {
+        _emailDiscover = const EmailDiscoverSnapshot(discovering: true);
+      }
+      if (shouldReplaceName && label.isNotEmpty) {
+        _portfolioNameController.text = label;
+        _autoPortfolioName = label;
       }
     });
   }
 
-  Widget _sourceTabs() {
+  Widget _sourceTabs({bool isCompact = false}) {
     final accent = Theme.of(context).colorScheme.primary;
     final border = Theme.of(context).colorScheme.outlineVariant;
     final fill = Theme.of(context).brightness == Brightness.dark
@@ -254,6 +307,7 @@ class _DocIntelligenceScreenState extends State<DocIntelligenceScreen> {
 
     Widget tab({
       required String label,
+      required String shortLabel,
       required IconData icon,
       required _ImportSource source,
     }) {
@@ -271,18 +325,23 @@ class _DocIntelligenceScreenState extends State<DocIntelligenceScreen> {
             onTap: () => _setSource(source),
             borderRadius: BorderRadius.circular(8),
             child: SizedBox(
-              height: 40,
+              height: isCompact ? 44 : 40,
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(icon, size: 17, color: selected ? onAccent : muted),
-                  const SizedBox(width: 8),
-                  Text(
-                    label,
-                    style: TextStyle(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 13,
-                      color: selected ? onAccent : muted,
+                  const SizedBox(width: 6),
+                  Flexible(
+                    child: Text(
+                      isCompact ? shortLabel : label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: isCompact ? 12 : 13,
+                        color: selected ? onAccent : muted,
+                      ),
                     ),
                   ),
                 ],
@@ -308,12 +367,14 @@ class _DocIntelligenceScreenState extends State<DocIntelligenceScreen> {
             children: [
               tab(
                 label: 'Email',
+                shortLabel: 'Email',
                 icon: Icons.mail_outline,
                 source: _ImportSource.email,
               ),
               const SizedBox(width: 4),
               tab(
                 label: 'Document upload',
+                shortLabel: 'Upload',
                 icon: Icons.cloud_upload_outlined,
                 source: _ImportSource.upload,
               ),
@@ -325,28 +386,46 @@ class _DocIntelligenceScreenState extends State<DocIntelligenceScreen> {
   }
 
   Widget _sharedControls() {
-    final brokerHint = _selectedBrokerKey != null
-        ? brokerKeyDisplayName(_selectedBrokerKey)
-        : null;
+    final ordered = orderedImportSources(_selectedSourceKeys);
+    final brokerHint = ordered.isEmpty
+        ? null
+        : ordered.length == 1
+            ? brokerKeyDisplayName(ordered.first)
+            : '${ordered.length} sources';
     final isEmail = _source == _ImportSource.email;
+    // Email: passwords only after Gmail discover finds a statement.
+    final showEmailPassword = isEmail && _emailDiscover.showPasswordFields;
     return ImportHoldingsSharedControls(
-      selectedBrokerKey: _selectedBrokerKey,
-      onBrokerSelected: _onBrokerSelected,
+      selectedSourceKeys: _selectedSourceKeys,
+      onSourcesChanged: _onSourcesChanged,
       portfolioNameController: _portfolioNameController,
       passwordController: _passwordController,
+      npsPasswordController: _npsPasswordController,
       documentType: _documentType,
       onDocumentTypeChanged: (v) => setState(() {
         _documentType =
             (v == null || v.isEmpty || v == kImportDocTypeAuto) ? null : v;
+        // Doc-type chips can seed the matching source when none selected yet.
+        if (_selectedSourceKeys.isEmpty) {
+          if (_documentType == 'MUTUAL_FUND') {
+            _selectedSourceKeys = {'cdsl'};
+          } else if (_documentType == 'NPS_STATEMENT') {
+            _selectedSourceKeys = {'nps'};
+          }
+        }
       }),
       portfolioNameHint: brokerHint != null
           ? 'Optional — defaults to $brokerHint'
           : 'Optional — defaults to broker name',
-      showPassword: true,
-      passwordRequiredHint: isEmail,
+      showPassword: isEmail ? showEmailPassword : true,
+      passwordRequiredHint: isEmail || showEmailPassword,
       showDocumentType: !isEmail,
       documentTypeOptional: false,
       useSimpleDocTypePicker: true,
+      // NPS field only when NPS was found (not merely selected).
+      showNpsPassword: !isEmail
+          ? null
+          : _emailDiscover.found.any((h) => h.brokerId == 'nps'),
     );
   }
 
@@ -367,12 +446,19 @@ class _DocIntelligenceScreenState extends State<DocIntelligenceScreen> {
           child: EmailExtractorView(
             compactImportMode: true,
             useSharedImportControls: true,
-            sharedBrokerEmailId: brokerKeyToEmailId(_selectedBrokerKey),
+            sharedSourceEmailIds: orderedImportSources(
+              _selectedSourceKeys,
+            ).map(brokerKeyToEmailId).whereType<String>().toList(),
             passwordController: _passwordController,
+            npsPasswordController: _npsPasswordController,
             portfolioNameController: _portfolioNameController,
             onImportCompleted: _onImportCompleted,
             onOpenPortfolio: widget.onOpenPortfolio,
             onOpenTrade: widget.onOpenTrade,
+            onDiscoverChanged: (snap) {
+              if (!mounted) return;
+              setState(() => _emailDiscover = snap);
+            },
           ),
         ),
         Visibility(
@@ -383,10 +469,13 @@ class _DocIntelligenceScreenState extends State<DocIntelligenceScreen> {
           child: DocumentProcessorView(
             embeddedInImportShell: true,
             useSharedImportControls: true,
-            sharedBrokerDocCode: brokerKeyToDocCode(_selectedBrokerKey),
+            sharedSourceDocCodes: orderedImportSources(
+              _selectedSourceKeys,
+            ).map(brokerKeyToDocCode).whereType<String>().toList(),
             sharedDocumentType: _documentType,
             portfolioNameController: _portfolioNameController,
             passwordController: _passwordController,
+            npsPasswordController: _npsPasswordController,
             onImportCompleted: _onImportCompleted,
             onOpenPortfolio: widget.onOpenPortfolio,
             onOpenTrade: widget.onOpenTrade,
@@ -401,7 +490,7 @@ class _DocIntelligenceScreenState extends State<DocIntelligenceScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _sourceTabs(),
+        _sourceTabs(isCompact: isCompact),
         SizedBox(height: gap),
         _sharedControls(),
         SizedBox(height: gap),
@@ -439,6 +528,8 @@ class _DocIntelligenceScreenState extends State<DocIntelligenceScreen> {
         ImportRecentCard(
           isCompact: true,
           entries: _recentEntries,
+          onDelete: _onDeleteRecent,
+          onOpenPortfolio: widget.onOpenPortfolio,
         ),
         const SizedBox(height: gap),
         const ImportCapabilitiesCard(isCompact: true),
@@ -457,22 +548,23 @@ class _DocIntelligenceScreenState extends State<DocIntelligenceScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _webHeader(),
+          _webHeader(isCompact: true),
           Expanded(child: _mobileBody()),
         ],
       ),
     );
   }
 
-  Widget _webHeader() {
+  Widget _webHeader({bool isCompact = false}) {
+    final hPad = isCompact ? 16.0 : 24.0;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 14, 24, 10),
+      padding: EdgeInsets.fromLTRB(hPad, isCompact ? 10 : 14, hPad, 10),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Container(
             width: 4,
-            height: 28,
+            height: isCompact ? 24 : 28,
             decoration: BoxDecoration(
               color: Theme.of(context).colorScheme.primary,
               borderRadius: BorderRadius.circular(4),
@@ -490,15 +582,15 @@ class _DocIntelligenceScreenState extends State<DocIntelligenceScreen> {
                         fontWeight: FontWeight.w800,
                         letterSpacing: -0.5,
                         height: 1.1,
+                        fontSize: isCompact ? 20 : null,
                       ),
                 ),
                 Text(
                   'Import from file or broker',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .onSurface
-                            .withValues(alpha: 0.65),
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withValues(alpha: 0.65),
                       ),
                 ),
               ],
@@ -547,6 +639,8 @@ class _DocIntelligenceScreenState extends State<DocIntelligenceScreen> {
                       isCompact: false,
                       showPrivacy: false,
                       recentEntries: _recentEntries,
+                      onDeleteRecent: _onDeleteRecent,
+                      onOpenPortfolio: widget.onOpenPortfolio,
                     ),
                   ),
                 ),
@@ -578,7 +672,14 @@ class _DocIntelligenceScreenState extends State<DocIntelligenceScreen> {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final mobile = constraints.maxWidth < _mobileShellMax;
+        // Prefer the tighter of parent constraints vs viewport (nested shells).
+        final viewportW = MediaQuery.sizeOf(context).width;
+        final width = constraints.maxWidth.isFinite
+            ? (constraints.maxWidth < viewportW
+                ? constraints.maxWidth
+                : viewportW)
+            : viewportW;
+        final mobile = width < _mobileShellMax;
         if (mobile) return _buildMobileShell();
         return _buildWebShell();
       },

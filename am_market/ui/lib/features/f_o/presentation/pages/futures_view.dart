@@ -32,7 +32,7 @@ class FuturesView extends ConsumerWidget {
             Icon(Icons.error_outline, color: marketTheme.negative, size: 36),
             const SizedBox(height: 12),
             Text(
-              'Failed to load Futures contracts from backend API',
+              'Unable to load futures contracts',
               style: TextStyle(
                 color: colors.textPrimary,
                 fontWeight: FontWeight.bold,
@@ -67,7 +67,7 @@ class FuturesView extends ConsumerWidget {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    'No Futures Contracts Found in Backend Database',
+                    'No futures contracts found',
                     style: TextStyle(
                       color: colors.textPrimary,
                       fontWeight: FontWeight.bold,
@@ -76,7 +76,7 @@ class FuturesView extends ConsumerWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'The backend API (/v1/instruments/search) returned 0 futures instruments. Run instrument sync on the backend.',
+                    'No futures contracts are available for this symbol right now. Please try again later or choose another symbol.',
                     textAlign: TextAlign.center,
                     style: TextStyle(color: colors.textSecondary, fontSize: 13),
                   ),
@@ -86,7 +86,7 @@ class FuturesView extends ConsumerWidget {
           );
         }
 
-        _ensureDefaultSelection(ref, contracts);
+        _ensureDefaultSelection(ref, activeSymbol, contracts);
 
         return LayoutBuilder(
           builder: (context, constraints) {
@@ -169,38 +169,37 @@ class FuturesView extends ConsumerWidget {
     );
   }
 
-  static void _ensureDefaultSelection(WidgetRef ref, List<dynamic> contracts) {
+  static void _ensureDefaultSelection(
+      WidgetRef ref, String activeSymbol, List<dynamic> contracts) {
     final selected = ref.read(selectedFutureContractProvider);
-    if (selected != null) return;
-    final nowMs = DateTime.now().millisecondsSinceEpoch;
-    Map<String, dynamic>? pick;
-    for (final c in contracts) {
-      if (c is! Map) continue;
-      final map = Map<String, dynamic>.from(c);
-      final rawExp = map['expiry'];
-      if (rawExp is num && rawExp > 0 && rawExp.toInt() < nowMs - 86400000) {
-        continue;
-      }
-      pick = map;
-      break;
-    }
-    if (pick == null && contracts.isNotEmpty && contracts.first is Map) {
-      pick = Map<String, dynamic>.from(contracts.first as Map);
-    }
+    final pick = resolveActiveFutureContract(
+      activeSymbol: activeSymbol,
+      selectedContract: selected,
+      contracts: contracts,
+    );
     if (pick == null) return;
+
+    final selectedIdentity =
+        selected == null ? null : futureContractIdentity(selected);
+    final resolvedIdentity = futureContractIdentity(pick);
+    if (selectedIdentity != null && selectedIdentity == resolvedIdentity) {
+      return;
+    }
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (ref.read(selectedFutureContractProvider) != null) return;
-      final tradingSymbol = (pick!['trading_symbol'] ??
-              pick['tradingSymbol'] ??
-              pick['name'] ??
-              'FUT')
-          .toString();
-      final rawExpiry = pick['expiry'];
-      ref.read(selectedFutureContractProvider.notifier).state = {
-        ...pick,
-        'trading_symbol': tradingSymbol,
-        if (rawExpiry is num) 'expiry_ms': rawExpiry.toInt(),
-      };
+      final current = ref.read(selectedFutureContractProvider);
+      final latest = resolveActiveFutureContract(
+        activeSymbol: activeSymbol,
+        selectedContract: current,
+        contracts: contracts,
+      );
+      if (latest == null) return;
+      if (current != null &&
+          futureContractIdentity(current) == futureContractIdentity(latest)) {
+        return;
+      }
+      ref.read(selectedFutureContractProvider.notifier).state =
+          normalizeFutureContract(latest);
     });
   }
 }

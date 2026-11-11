@@ -2,6 +2,10 @@ import 'dart:math' as math;
 
 import 'package:am_common/am_common.dart';
 import 'package:am_design_system/core/theme/app_colors.dart';
+import 'package:am_design_system/core/theme/app_radii.dart';
+import 'package:am_design_system/core/theme/color_extensions.dart';
+import 'package:am_design_system/shared/widgets/charts/comparison_toolbar_control.dart'
+    show kComparisonChartHeaderRowHeight;
 import 'package:am_design_system/shared/widgets/inputs/custom_dropdown.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -12,7 +16,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 class MobileTimeFrameDropdown extends ConsumerWidget {
   const MobileTimeFrameDropdown({
     super.key,
-    this.width = 72,
+    this.width = 64,
     this.availableTimeFrames,
     this.primaryColor,
     this.leading,
@@ -32,30 +36,31 @@ class MobileTimeFrameDropdown extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final timeFrame = ref.watch(appTimeFrameProvider);
     final options = availableTimeFrames ?? TimeFrame.appTimeFrames;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colors = context.colors;
+    final accent = primaryColor ?? AppColors.primary;
 
     final selected = options.contains(timeFrame) ? timeFrame : options.first;
 
     return SizedBox(
       width: width,
+      height: kComparisonChartHeaderRowHeight,
       child: CustomDropdown<TimeFrame>(
         value: selected,
-        height: 36,
+        height: kComparisonChartHeaderRowHeight,
         isExpanded: true,
-        fontSize: 12,
-        iconSize: 16,
-        borderRadius: 10,
+        fontSize: 11,
+        iconSize: 14,
+        borderRadius: AppRadii.xs,
         menuMaxHeight: menuMaxHeightForThreeItems,
         menuMaxWidth: math.max(width, 120),
-        primaryColor: primaryColor ?? AppColors.primary,
-        backgroundColor:
-            isDark ? Colors.white.withValues(alpha: 0.06) : null,
-        borderColor: isDark ? Colors.white.withValues(alpha: 0.1) : null,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+        primaryColor: accent,
+        backgroundColor: colors.cardSurface,
+        borderColor: accent.withValues(alpha: 0.35),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 6),
         leading: leading,
         trailingDivider: trailingDivider,
         items: options
-            .map((tf) => tf.toSimpleDropdownItem(text: tf.code, fontSize: 12))
+            .map((tf) => tf.toSimpleDropdownItem(text: tf.code, fontSize: 11))
             .toList(),
         onChanged: (tf) {
           if (tf != null) {

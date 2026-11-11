@@ -1,5 +1,6 @@
 import 'package:am_design_system/am_design_system.dart';
 import 'package:am_market_ui/core/styles/market_theme_extension.dart';
+import 'package:am_market_ui/features/f_o/fo_lot_size_config.dart';
 import 'package:am_market_ui/features/f_o/providers/fo_provider.dart';
 import 'package:am_market_ui/features/f_o/providers/futures_provider.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -19,12 +20,27 @@ class _MarginCalculatorViewState extends ConsumerState<MarginCalculatorView> {
   static final NumberFormat _webCurrencyFormat =
       NumberFormat('#,##,##0.00', 'en_IN');
 
-  final TextEditingController _quantityController =
-      TextEditingController(text: '50');
-  final TextEditingController _priceController =
-      TextEditingController(text: '2203.50');
+  final TextEditingController _quantityController = TextEditingController();
+  final TextEditingController _priceController = TextEditingController();
   String _selectedType = 'Buy';
   String _selectedProduct = 'NRML';
+  String? _lastBoundSymbol;
+  dynamic _lastBoundContractId;
+  int? _lastResolvedLotSize;
+  double? _lastResolvedLtp;
+  bool _userEditedQuantity = false;
+  bool _isSynchronizingControllers = false;
+
+  void _updateControllerSilently(
+      TextEditingController controller, String text) {
+    if (controller.text == text) return;
+    _isSynchronizingControllers = true;
+    try {
+      controller.text = text;
+    } finally {
+      _isSynchronizingControllers = false;
+    }
+  }
 
   @override
   void initState() {
@@ -34,7 +50,9 @@ class _MarginCalculatorViewState extends ConsumerState<MarginCalculatorView> {
   }
 
   void _onInputChanged() {
-    if (mounted) setState(() {});
+    if (mounted && !_isSynchronizingControllers) {
+      setState(() {});
+    }
   }
 
   @override
@@ -53,21 +71,74 @@ class _MarginCalculatorViewState extends ConsumerState<MarginCalculatorView> {
     final colors = context.colors;
     final marketTheme = context.marketTheme;
     final activeSymbol = ref.watch(foActiveSymbolProvider) ?? 'NIFTY';
-    final selectedContract = ref.watch(selectedFutureContractProvider);
-    final contracts = ref.watch(futuresContractsProvider).maybeWhen(
-          data: (d) => d,
-          orElse: () => <dynamic>[],
-        );
+    final contractsAsync = ref.watch(futuresContractsMetadataProvider);
+    final contracts = contractsAsync.maybeWhen(
+      data: (d) => d,
+      orElse: () => <dynamic>[],
+    );
+    final activeContract = ref.watch(activeFutureContractWithQuoteProvider);
 
-    final contractTitle = selectedContract != null
-        ? (selectedContract['trading_symbol'] ??
-                selectedContract['tradingSymbol'] ??
+    final lotSize = FoLotSizeConfig.resolveLotSize(
+      symbol: activeSymbol,
+      contract: activeContract,
+    );
+    final rawLtp = activeContract?['ltp'] ?? activeContract?['last_price'];
+    final ltp = rawLtp is num ? rawLtp.toDouble() : double.tryParse('$rawLtp');
+
+    final contractId = activeContract?['trading_symbol'] ??
+        activeContract?['tradingSymbol'] ??
+        activeSymbol;
+
+    if (_lastBoundSymbol != activeSymbol) {
+      _lastBoundSymbol = activeSymbol;
+      _lastBoundContractId = contractId;
+      _userEditedQuantity = false;
+      _lastResolvedLotSize = lotSize;
+      _lastResolvedLtp = null;
+      _updateControllerSilently(_quantityController, '$lotSize');
+      _updateControllerSilently(_priceController, '');
+      if (ltp != null && ltp > 0) {
+        _lastResolvedLtp = ltp;
+        _updateControllerSilently(_priceController, ltp.toStringAsFixed(2));
+      }
+    } else if (_lastBoundContractId != contractId) {
+      _lastBoundContractId = contractId;
+      _lastResolvedLtp = null;
+      _updateControllerSilently(_priceController, '');
+      if (!_userEditedQuantity) {
+        _lastResolvedLotSize = lotSize;
+        _updateControllerSilently(_quantityController, '$lotSize');
+      }
+      if (ltp != null && ltp > 0) {
+        _lastResolvedLtp = ltp;
+        _updateControllerSilently(_priceController, ltp.toStringAsFixed(2));
+      }
+    } else {
+      // Actively listen to asynchronous data response updates for the same symbol
+      if (!_userEditedQuantity &&
+          lotSize > 0 &&
+          lotSize != _lastResolvedLotSize) {
+        _lastResolvedLotSize = lotSize;
+        _updateControllerSilently(_quantityController, '$lotSize');
+      }
+      if (ltp != null &&
+          ltp > 0 &&
+          (_lastResolvedLtp == null || _priceController.text.isEmpty)) {
+        _lastResolvedLtp = ltp;
+        _updateControllerSilently(_priceController, ltp.toStringAsFixed(2));
+      }
+    }
+
+    final contractTitle = activeContract != null
+        ? (activeContract['trading_symbol'] ??
+                activeContract['tradingSymbol'] ??
                 '$activeSymbol FUT')
             .toString()
         : '$activeSymbol FUT';
 
-    final qty = int.tryParse(_quantityController.text) ?? 50;
-    final price = double.tryParse(_priceController.text) ?? 2203.50;
+    final qty = int.tryParse(_quantityController.text) ?? lotSize;
+    final price = double.tryParse(_priceController.text) ?? (ltp ?? 0.0);
+    final canCalculate = lotSize > 0 && price > 0;
     final notionalValue = qty * price;
 
     final spanMargin = notionalValue * 0.15;
@@ -80,10 +151,36 @@ class _MarginCalculatorViewState extends ConsumerState<MarginCalculatorView> {
     final isNarrowMobile = width < 400;
     final viewInsets = MediaQuery.viewInsetsOf(context);
 
+    if (contractsAsync.isLoading && contracts.isEmpty) {
+      return _buildAsyncState(
+        colors,
+        icon: Icons.sync_rounded,
+        title: 'Loading margin inputs',
+        message: 'Fetching the available futures contracts…',
+        showProgress: true,
+      );
+    }
+    if (contractsAsync.hasError && contracts.isEmpty) {
+      return _buildAsyncState(
+        colors,
+        icon: Icons.error_outline_rounded,
+        title: 'Unable to load margin inputs',
+        message: 'The futures contract service did not return metadata.',
+      );
+    }
+    if (contracts.isEmpty) {
+      return _buildAsyncState(
+        colors,
+        icon: Icons.inventory_2_outlined,
+        title: 'No futures contract available',
+        message: 'Select another F&O symbol and try again.',
+      );
+    }
+
     if (kIsWeb && !isMobile) {
       return _buildWebDashboard(
         contractTitle: contractTitle,
-        selectedContract: selectedContract,
+        selectedContract: activeContract,
         contracts: contracts,
         activeSymbol: activeSymbol,
         colors: colors,
@@ -92,6 +189,7 @@ class _MarginCalculatorViewState extends ConsumerState<MarginCalculatorView> {
         exposureMargin: exposureMargin,
         additionalMargin: additionalMargin,
         totalMargin: totalMargin,
+        canCalculate: canCalculate,
       );
     }
 
@@ -180,6 +278,7 @@ class _MarginCalculatorViewState extends ConsumerState<MarginCalculatorView> {
                               fontSize: 13,
                             ),
                             keyboardType: TextInputType.number,
+                            onChanged: (_) => _userEditedQuantity = true,
                             decoration: _fieldDecoration(colors, compact: true),
                           ),
                           colors,
@@ -190,17 +289,7 @@ class _MarginCalculatorViewState extends ConsumerState<MarginCalculatorView> {
                       Expanded(
                         child: _buildInputGroup(
                           'Price (₹)',
-                          TextField(
-                            controller: _priceController,
-                            style: TextStyle(
-                              color: colors.textPrimary,
-                              fontSize: 13,
-                            ),
-                            keyboardType: const TextInputType.numberWithOptions(
-                              decimal: true,
-                            ),
-                            decoration: _fieldDecoration(colors, compact: true),
-                          ),
+                          _buildReadOnlyPrice(colors, compact: true),
                           colors,
                           compact: true,
                         ),
@@ -214,6 +303,7 @@ class _MarginCalculatorViewState extends ConsumerState<MarginCalculatorView> {
                       controller: _quantityController,
                       style: TextStyle(color: colors.textPrimary),
                       keyboardType: TextInputType.number,
+                      onChanged: (_) => _userEditedQuantity = true,
                       decoration: _fieldDecoration(colors, compact: isMobile),
                     ),
                     colors,
@@ -281,14 +371,7 @@ class _MarginCalculatorViewState extends ConsumerState<MarginCalculatorView> {
                   SizedBox(height: isMobile ? 8 : 12),
                   _buildInputGroup(
                     'Price (₹)',
-                    TextField(
-                      controller: _priceController,
-                      style: TextStyle(color: colors.textPrimary),
-                      keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true,
-                      ),
-                      decoration: _fieldDecoration(colors, compact: isMobile),
-                    ),
+                    _buildReadOnlyPrice(colors, compact: isMobile),
                     colors,
                     compact: isMobile,
                   ),
@@ -350,6 +433,52 @@ class _MarginCalculatorViewState extends ConsumerState<MarginCalculatorView> {
     );
   }
 
+  Widget _buildAsyncState(
+    AppColorsTheme colors, {
+    required IconData icon,
+    required String title,
+    required String message,
+    bool showProgress = false,
+  }) {
+    return Center(
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 520),
+        margin: const EdgeInsets.all(AppSpacing.lg),
+        padding: const EdgeInsets.all(AppSpacing.xl),
+        decoration: BoxDecoration(
+          color: colors.cardSurface,
+          border: Border.all(color: colors.border),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (showProgress)
+              CircularProgressIndicator(color: ModuleColors.market)
+            else
+              Icon(icon, color: ModuleColors.market, size: 36),
+            const SizedBox(height: AppSpacing.md),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: colors.textPrimary,
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: TextStyle(color: colors.textSecondary),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildWebDashboard({
     required String contractTitle,
     required dynamic selectedContract,
@@ -361,6 +490,7 @@ class _MarginCalculatorViewState extends ConsumerState<MarginCalculatorView> {
     required double exposureMargin,
     required double additionalMargin,
     required double totalMargin,
+    required bool canCalculate,
   }) {
     return LayoutBuilder(
       builder: (context, viewport) {
@@ -389,7 +519,9 @@ class _MarginCalculatorViewState extends ConsumerState<MarginCalculatorView> {
             children: [
               if (isWide)
                 Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  // The vertical scroll view provides unbounded height.
+                  // Stretching this row would force infinite child height.
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Expanded(flex: 11, child: positionPanel),
                     const SizedBox(width: AppSpacing.lg),
@@ -405,6 +537,7 @@ class _MarginCalculatorViewState extends ConsumerState<MarginCalculatorView> {
               _buildWebActionPanel(
                 colors: colors,
                 marketTheme: marketTheme,
+                canCalculate: canCalculate,
               ),
             ],
           ),
@@ -422,9 +555,10 @@ class _MarginCalculatorViewState extends ConsumerState<MarginCalculatorView> {
     required MarketThemeExtension marketTheme,
     required double labelWidth,
   }) {
-    final rawLtp = selectedContract?['ltp'];
-    final ltp = rawLtp is num ? rawLtp.toDouble() : double.tryParse('$rawLtp');
-    final hasLtp = ltp != null && ltp > 0;
+    final lotSize = FoLotSizeConfig.resolveLotSize(
+      symbol: activeSymbol,
+      contract: selectedContract,
+    );
 
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
@@ -477,7 +611,7 @@ class _MarginCalculatorViewState extends ConsumerState<MarginCalculatorView> {
           const SizedBox(height: AppSpacing.sm),
           _buildWebLabeledRow(
             'Quantity',
-            _buildWebQuantityField(colors),
+            _buildWebQuantityField(colors, lotSize),
             colors: colors,
             labelWidth: labelWidth,
           ),
@@ -538,30 +672,7 @@ class _MarginCalculatorViewState extends ConsumerState<MarginCalculatorView> {
           const SizedBox(height: AppSpacing.sm),
           _buildWebLabeledRow(
             'Price (₹)',
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _priceController,
-                    style: TextStyle(
-                      color: colors.textPrimary,
-                      fontSize: 15,
-                    ),
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
-                    ),
-                    decoration: _fieldDecoration(colors),
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.sm),
-                TextButton(
-                  onPressed: hasLtp
-                      ? () => _priceController.text = ltp.toStringAsFixed(2)
-                      : null,
-                  child: const Text('Use LTP'),
-                ),
-              ],
-            ),
+            _buildReadOnlyPrice(colors),
             colors: colors,
             labelWidth: labelWidth,
           ),
@@ -592,7 +703,34 @@ class _MarginCalculatorViewState extends ConsumerState<MarginCalculatorView> {
     );
   }
 
-  Widget _buildWebQuantityField(AppColorsTheme colors) {
+  Widget _buildReadOnlyPrice(
+    AppColorsTheme colors, {
+    bool compact = false,
+  }) {
+    final value = _priceController.text.trim();
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(
+        horizontal: 12,
+        vertical: compact ? 10 : 12,
+      ),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        border: Border.all(color: colors.border),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        value.isEmpty ? '—' : '₹$value',
+        style: TextStyle(
+          color: value.isEmpty ? colors.textSecondary : colors.textPrimary,
+          fontSize: compact ? 13 : 15,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildWebQuantityField(AppColorsTheme colors, int lotSize) {
     return Container(
       constraints: const BoxConstraints(minHeight: 54),
       decoration: BoxDecoration(
@@ -604,7 +742,7 @@ class _MarginCalculatorViewState extends ConsumerState<MarginCalculatorView> {
         children: [
           IconButton(
             tooltip: 'Decrease quantity',
-            onPressed: () => _adjustQuantity(-1),
+            onPressed: () => _adjustQuantity(-1, lotSize),
             color: colors.textSecondary,
             icon: const Icon(Icons.remove),
           ),
@@ -615,6 +753,7 @@ class _MarginCalculatorViewState extends ConsumerState<MarginCalculatorView> {
               textAlign: TextAlign.center,
               style: TextStyle(color: colors.textPrimary, fontSize: 15),
               keyboardType: TextInputType.number,
+              onChanged: (_) => _userEditedQuantity = true,
               decoration: const InputDecoration(
                 isDense: true,
                 border: InputBorder.none,
@@ -628,7 +767,7 @@ class _MarginCalculatorViewState extends ConsumerState<MarginCalculatorView> {
           Container(width: 1, height: 30, color: colors.divider),
           IconButton(
             tooltip: 'Increase quantity',
-            onPressed: () => _adjustQuantity(1),
+            onPressed: () => _adjustQuantity(1, lotSize),
             color: colors.textSecondary,
             icon: const Icon(Icons.add),
           ),
@@ -637,10 +776,13 @@ class _MarginCalculatorViewState extends ConsumerState<MarginCalculatorView> {
     );
   }
 
-  void _adjustQuantity(int delta) {
-    final current = int.tryParse(_quantityController.text) ?? 0;
-    final next = (current + delta).clamp(0, 1 << 31).toInt();
-    _quantityController.text = '$next';
+  void _adjustQuantity(int step, int lotSize) {
+    _userEditedQuantity = true;
+    final current = int.tryParse(_quantityController.text) ?? lotSize;
+    final delta = step * lotSize;
+    final next = (current + delta).clamp(lotSize, 1 << 31).toInt();
+    _lastResolvedLotSize = next;
+    _updateControllerSilently(_quantityController, '$next');
   }
 
   Widget _buildWebMarginPanel({
@@ -814,6 +956,7 @@ class _MarginCalculatorViewState extends ConsumerState<MarginCalculatorView> {
   Widget _buildWebActionPanel({
     required AppColorsTheme colors,
     required MarketThemeExtension marketTheme,
+    required bool canCalculate,
   }) {
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -864,7 +1007,7 @@ class _MarginCalculatorViewState extends ConsumerState<MarginCalculatorView> {
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                onPressed: _calculateMargin,
+                onPressed: canCalculate ? _calculateMargin : null,
                 child: const Text('Calculate Margin'),
               ),
             ),
@@ -921,7 +1064,7 @@ class _MarginCalculatorViewState extends ConsumerState<MarginCalculatorView> {
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                onPressed: _calculateMargin,
+                onPressed: canCalculate ? _calculateMargin : null,
                 child: const Text('Calculate Margin'),
               ),
             ),
@@ -945,6 +1088,8 @@ class _MarginCalculatorViewState extends ConsumerState<MarginCalculatorView> {
 
   void _calculateMargin() {
     FocusScope.of(context).unfocus();
+    final price = double.tryParse(_priceController.text) ?? 0;
+    if (price <= 0) return;
     // The estimate is derived directly from the current controllers in build;
     // this rebuild commits the latest field values without changing the math.
     if (mounted) setState(() {});
@@ -994,13 +1139,25 @@ class _MarginCalculatorViewState extends ConsumerState<MarginCalculatorView> {
                   ),
                 ),
                 onTap: () {
-                  ref.read(selectedFutureContractProvider.notifier).state = {
+                  final contractMap = {
                     ...map,
                     'trading_symbol': title,
                   };
+                  ref.read(selectedFutureContractProvider.notifier).state =
+                      contractMap;
+                  _lastBoundContractId = title;
+                  _userEditedQuantity = false;
+                  final newLot = FoLotSizeConfig.resolveLotSize(
+                    symbol: activeSymbol,
+                    contract: contractMap,
+                  );
+                  _lastResolvedLotSize = newLot;
+                  _updateControllerSilently(_quantityController, '$newLot');
                   final ltp = (map['ltp'] as num?)?.toDouble();
                   if (ltp != null && ltp > 0) {
-                    _priceController.text = ltp.toStringAsFixed(2);
+                    _lastResolvedLtp = ltp;
+                    _updateControllerSilently(
+                        _priceController, ltp.toStringAsFixed(2));
                   }
                   Navigator.of(ctx).pop();
                 },

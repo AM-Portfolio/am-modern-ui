@@ -12,7 +12,7 @@ import '../../../providers/trade_internal_providers.dart';
 import '../../models/trade_holding_view_model.dart';
 import '../../trades/pages/trade_detail_view_page.dart';
 import '../../widgets/filter_panel.dart';
-import '../components/trade_holdings_advanced_template.dart';
+import '../mappers/advanced_holding_row_mapper.dart';
 
 class TradeHoldingsDashboardWebPage extends ConsumerStatefulWidget {
   const TradeHoldingsDashboardWebPage({
@@ -120,33 +120,52 @@ class _TradeHoldingsDashboardWebPageState
               final allSymbols =
                   tradeHoldings.holdings.map((h) => h.symbol).toList();
 
-              return TradeHoldingsAdvancedTemplate(
-                holdings: filteredHoldings,
-                isLoading: false,
-                embedded: widget.embedded,
-                accentColor: _accent,
-                priceFreshnessLabel: priceFreshnessLabel,
-                onHoldingSelected: widget.embedded
-                    ? null
-                    : (holding) => _showHoldingDetails(context, holding),
-                onJournalThis: widget.embedded ? null : widget.onJournalThis,
-                onSymbolTap: widget.onNavigateToChart,
-                onRefresh: () {
-                  ref.invalidate(tradeHoldingsStreamProvider(portfolioId));
-                  ref.invalidate(portfolioHoldingsProvider(portfolioId));
-                },
-                listFooter: HoldingsNewsSection(
-                  symbols: allSymbols,
-                  surface: NewsUiSurface.tradeHoldings,
-                  embedInScroll: true,
-                ),
+              final byId = {
+                for (final h in filteredHoldings) h.tradeId: h,
+              };
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Expanded(
+                    child: AdvancedHoldingsTemplate(
+                      holdings:
+                          mapTradeHoldingsToAdvancedRows(filteredHoldings),
+                      isLoading: false,
+                      viewOnly: widget.embedded,
+                      accentColor: _accent,
+                      priceFreshnessLabel: priceFreshnessLabel,
+                      onRowTap: widget.embedded
+                          ? null
+                          : (row) {
+                              final h = byId[row.id];
+                              if (h != null) {
+                                _showHoldingDetails(context, h);
+                              }
+                            },
+                      onSymbolTap: widget.onNavigateToChart,
+                      onRefresh: () {
+                        ref.invalidate(
+                          tradeHoldingsStreamProvider(portfolioId),
+                        );
+                        ref.invalidate(
+                          portfolioHoldingsProvider(portfolioId),
+                        );
+                      },
+                    ),
+                  ),
+                  HoldingsNewsSection(
+                    symbols: allSymbols,
+                    surface: NewsUiSurface.tradeHoldings,
+                    embedInScroll: true,
+                  ),
+                ],
               );
             },
             loading: () => const Center(child: CircularProgressIndicator()),
-            error: (error, stack) => TradeHoldingsAdvancedTemplate(
+            error: (error, stack) => AdvancedHoldingsTemplate(
               holdings: const [],
               isLoading: false,
-              embedded: widget.embedded,
+              viewOnly: widget.embedded,
               accentColor: _accent,
               priceFreshnessLabel: priceFreshnessLabel,
               errorMessage: error.toString(),

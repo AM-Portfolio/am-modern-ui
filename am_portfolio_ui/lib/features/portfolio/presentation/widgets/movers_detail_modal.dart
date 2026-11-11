@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:am_design_system/am_design_system.dart' as ds;
 import '../../internal/domain/entities/portfolio_analytics.dart';
@@ -70,12 +69,11 @@ class _ModalContainerState extends State<_ModalContainer> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final isMobile = MediaQuery.of(context).size.width < 600;
 
-    return ClipRRect(
-      borderRadius: const BorderRadius.vertical(
+    return ds.webGlass(
+      sigma: 16,
+      clip: const BorderRadius.vertical(
           top: Radius.circular(24), bottom: Radius.circular(24)),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-        child: Container(
+      child: Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
@@ -187,7 +185,6 @@ class _ModalContainerState extends State<_ModalContainer> {
             ],
           ),
         ),
-      ),
     );
   }
 }

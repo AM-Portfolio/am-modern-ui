@@ -130,7 +130,11 @@ class _PortfolioChartSectionState extends ConsumerState<PortfolioChartSection> {
                   final id = _effectivePortfolioId(context);
                   final cubit = context.read<PortfolioCubit>();
                   if (id == 'all') {
-                    cubit.loadAllPortfolios();
+                    cubit.loadAllPortfolios(
+                      persona: holdingsPersonaParam(
+                        ref.read(familyPortfolioFilterProvider),
+                      ),
+                    );
                   } else {
                     cubit.loadPortfolioById(id);
                   }

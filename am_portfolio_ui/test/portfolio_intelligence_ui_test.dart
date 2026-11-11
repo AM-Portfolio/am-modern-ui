@@ -176,11 +176,16 @@ void main() {
     expect(find.text('Industry'), findsOneWidget);
     expect(find.text('Cap'), findsOneWidget);
     expect(find.text('Class'), findsOneWidget);
+    expect(find.text('By Portfolio'), findsOneWidget);
+    // Web: chips share the title row with "Portfolio X-Ray".
+    final titleY = tester.getTopLeft(find.text('Portfolio X-Ray')).dy;
+    final sectorY = tester.getTopLeft(find.text('Sector')).dy;
+    final byPortfolioY = tester.getTopLeft(find.text('By Portfolio')).dy;
+    expect((sectorY - byPortfolioY).abs(), lessThan(4.0));
+    expect((titleY - sectorY).abs(), lessThan(28.0));
     // Default tab is Sector(0).
     expect(find.text('Financial Services'), findsWidgets);
     expect(find.text('31.4%'), findsWidgets);
-    expect(find.text('Add'), findsNothing);
-    expect(find.text('+ Add'), findsNothing);
     expect(find.text('Tap tabs'), findsNothing);
     expect(find.text('Total Exposure'), findsOneWidget);
 
@@ -188,14 +193,12 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));
     expect(find.text('Banks'), findsWidgets);
-    expect(find.text('+ Add'), findsNothing);
 
     await tester.tap(find.text('Class'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));
     expect(find.text('Equity'), findsWidgets);
     expect(find.text('100%'), findsWidgets);
-    expect(find.text('+ Add'), findsOneWidget);
   });
 
   test('xrayDisplayName maps Cap keys, asset classes and Unknown', () {
@@ -365,6 +368,41 @@ void main() {
     await tester.pump(const Duration(milliseconds: 50));
     expect(find.text('Healthcare'), findsNothing);
 
+    // Dashboard path: fillHeight must not force donut+list side-by-side on phone.
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          portfolioIntelligenceProvider('p1').overrideWith(
+            (ref) async => intel,
+          ),
+        ],
+        child: MaterialApp(
+          home: Scaffold(
+            body: SizedBox(
+              height: 420,
+              child: PortfolioXrayPanel(
+                portfolioId: 'p1',
+                fillHeight: true,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+    expect(find.text('Chart'), findsOneWidget);
+    expect(find.text('List'), findsOneWidget);
+    expect(find.text('Healthcare'), findsNothing);
+    await tester.tap(find.text('List'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+    expect(find.text('Healthcare'), findsOneWidget);
+    await tester.tap(find.text('Chart'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+    expect(find.text('Healthcare'), findsNothing);
+
     // Wide viewport: side-by-side, no Chart/List swap chrome.
     tester.view.physicalSize = const Size(900, 800);
     await tester.pumpWidget(
@@ -390,13 +428,15 @@ void main() {
     expect(find.text('Chart'), findsNothing);
     expect(find.text('List'), findsNothing);
     expect(find.text('Healthcare'), findsOneWidget);
-    expect(find.text('Add'), findsNothing);
-    expect(find.text('+ Add'), findsNothing);
+    expect(find.text('By Portfolio'), findsOneWidget);
+    final wideSectorY = tester.getTopLeft(find.text('Sector')).dy;
+    final wideByPortfolioY = tester.getTopLeft(find.text('By Portfolio')).dy;
+    expect((wideSectorY - wideByPortfolioY).abs(), lessThan(4.0));
 
     await tester.tap(find.text('Class'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));
-    expect(find.text('+ Add'), findsOneWidget);
+    expect(find.textContaining('No asset-class'), findsOneWidget);
   });
 
   testWidgets('X-Ray +N more opens full holdings sheet', (tester) async {

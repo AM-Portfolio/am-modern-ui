@@ -227,21 +227,6 @@ class _HeatmapTabState extends State<_HeatmapTab>
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    if (widget.currentPortfolioId == 'all') {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.info_outline, size: 48, color: context.textTertiary),
-            const SizedBox(height: 16),
-            Text(
-              'Select a specific portfolio to view the Heatmap',
-              style: TextStyle(color: context.textTertiary, fontSize: 16),
-            ),
-          ],
-        ),
-      );
-    }
     return BlocProvider<PortfolioHeatmapCubit>.value(
       value: _heatmapCubit,
       child: PortfolioHeatmapMobilePage(

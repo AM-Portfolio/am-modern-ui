@@ -33,6 +33,14 @@ dependencies:
 
 TODO
 
+## Generation source
+
+This package is generated from the Market Data service OpenAPI contract. The
+`InstrumentSearchCriteria.underlyingSymbols` field mirrors the backend
+`com.am.marketdata.common.dto.InstrumentSearchCriteria` DTO and is optional for
+backward compatibility. Before regenerating this SDK, update and publish the
+backend OpenAPI schema first; otherwise regeneration may remove this field.
+
 ## Getting Started
 
 Please follow the [installation procedure](#installation--usage) and then run the following:

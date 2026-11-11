@@ -17,6 +17,8 @@ class IntelligenceGlassCard extends StatelessWidget {
     this.minHeight,
     this.scrollable = false,
     this.fillHeight = false,
+    this.trailingRelaxed = false,
+    this.accentColor,
     super.key,
   });
 
@@ -32,66 +34,86 @@ class IntelligenceGlassCard extends StatelessWidget {
   final bool scrollable;
   /// When true (peer stretch rows), expand to parent height and pin [footer].
   final bool fillHeight;
+  /// When true, trailing uses most of the header width (web tab rows).
+  final bool trailingRelaxed;
+
+  /// Module chrome (defaults to portfolio pink). Dashboard hosts pass blue.
+  final Color? accentColor;
 
   @override
   Widget build(BuildContext context) {
+    final accent = accentColor ?? ModuleColors.portfolio;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final header = Row(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(7),
-          decoration: BoxDecoration(
-            color: ModuleColors.portfolio.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Icon(
-            icon,
-            color: ModuleColors.portfolio,
-            size: 18,
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                title,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
+    // Title keeps leftover width; trailing is capped on compact chrome so
+    // mobile names are not crushed. Web X-Ray relaxes the cap so all tabs fit.
+    final header = LayoutBuilder(
+      builder: (context, constraints) {
+        final trailMax = trailing == null
+            ? 0.0
+            : trailingRelaxed
+                ? (constraints.maxWidth * 0.72).clamp(220.0, 640.0)
+                : (constraints.maxWidth * 0.48).clamp(120.0, 420.0);
+        return Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(7),
+              decoration: BoxDecoration(
+                color: accent.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(8),
               ),
-              if (subtitle != null && subtitle!.trim().isNotEmpty) ...[
-                const SizedBox(height: 2),
-                Text(
-                  subtitle!,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w500,
-                        color: Theme.of(context)
-                            .colorScheme
-                            .onSurfaceVariant
-                            .withValues(alpha: 0.8),
-                      ),
-                ),
-              ],
-            ],
-          ),
-        ),
-        if (trailing != null)
-          Flexible(
-            child: Align(
-              alignment: Alignment.centerRight,
-              child: trailing,
+              child: Icon(
+                icon,
+                color: accent,
+                size: 18,
+              ),
             ),
-          ),
-      ],
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                  ),
+                  if (subtitle != null && subtitle!.trim().isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle!,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurfaceVariant
+                                .withValues(alpha: 0.8),
+                          ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            if (trailing != null) ...[
+              const SizedBox(width: 8),
+              ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: trailMax),
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: trailing,
+                ),
+              ),
+            ],
+          ],
+        );
+      },
     );
 
     Widget bodyChild = child;
@@ -134,7 +156,7 @@ class IntelligenceGlassCard extends StatelessWidget {
                   context.colors.cardSurface.withValues(alpha: 0.95),
                   Color.lerp(
                         context.colors.cardSurface,
-                        ModuleColors.portfolio,
+                        accent,
                         ModuleColors.isBrandSynced ? 0.12 : 0.04,
                       )!
                       .withValues(alpha: 0.85),
@@ -147,7 +169,7 @@ class IntelligenceGlassCard extends StatelessWidget {
         ),
         border: Border.all(
           color: ModuleColors.isBrandSynced
-              ? ModuleColors.portfolio.withValues(alpha: 0.28)
+              ? accent.withValues(alpha: 0.28)
               : context.glassOverlay(0.07),
         ),
         borderRadius: BorderRadius.circular(18),
@@ -206,20 +228,23 @@ class IntelligenceTextLink extends StatelessWidget {
   const IntelligenceTextLink({
     required this.label,
     required this.onPressed,
+    this.accentColor,
     super.key,
   });
 
   final String label;
   final VoidCallback onPressed;
+  final Color? accentColor;
 
   @override
   Widget build(BuildContext context) {
+    final accent = accentColor ?? ModuleColors.portfolio;
     return Align(
       alignment: Alignment.centerLeft,
       child: TextButton(
         onPressed: onPressed,
         style: TextButton.styleFrom(
-          foregroundColor: ModuleColors.portfolio,
+          foregroundColor: accent,
           padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
           minimumSize: Size.zero,
           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -241,7 +266,9 @@ InputDecoration intelligenceFieldDecoration(
   required String label,
   String? hint,
   bool compact = false,
+  Color? accentColor,
 }) {
+  final accent = accentColor ?? ModuleColors.portfolio;
   final isDark = Theme.of(context).brightness == Brightness.dark;
   final hintStyle = TextStyle(
     color: context.colors.textTertiary,
@@ -264,7 +291,7 @@ InputDecoration intelligenceFieldDecoration(
     border: OutlineInputBorder(
       borderRadius: BorderRadius.circular(compact ? 8 : 10),
       borderSide: BorderSide(
-        color: ModuleColors.portfolio.withValues(alpha: 0.25),
+        color: accent.withValues(alpha: 0.25),
       ),
     ),
     enabledBorder: OutlineInputBorder(
@@ -275,7 +302,7 @@ InputDecoration intelligenceFieldDecoration(
     ),
     focusedBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(compact ? 8 : 10),
-      borderSide: BorderSide(color: ModuleColors.portfolio, width: 1.4),
+      borderSide: BorderSide(color: accent, width: 1.4),
     ),
   );
 }
@@ -389,11 +416,10 @@ void showIntelligenceSheet({
           )
         ]
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-          child: Padding(
+      child: webGlass(
+        sigma: 20,
+        clip: BorderRadius.circular(24),
+        child: Padding(
             padding: const EdgeInsets.fromLTRB(24, 20, 24, 20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -466,7 +492,6 @@ void showIntelligenceSheet({
             ),
           ),
         ),
-      ),
     );
   }
 

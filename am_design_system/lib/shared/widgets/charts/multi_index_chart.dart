@@ -8,13 +8,17 @@ import 'package:go_router/go_router.dart';
 import '../../../core/module/module_config.dart';
 import '../../../core/navigation/app_web_navigation.dart';
 import '../am_click_capsule.dart';
+import 'chart_series_legend_chip.dart';
 import 'chart_series_window.dart';
 import 'comparison_chart_colors.dart';
+import 'comparison_toolbar_control.dart';
 import 'multi_series_chart_data.dart';
 import '../zoom/app_zoom_scroll_guard.dart';
 
-const double kComparisonChartHeaderRowHeight = 36.0;
-const double kComparisonChartToolbarControlWidth = 72.0;
+export 'comparison_toolbar_control.dart'
+    show kComparisonChartHeaderRowHeight, kComparisonChartToolbarGap;
+
+const double kComparisonChartToolbarControlWidth = 64.0;
 
 /// Wins the gesture arena against parent [PageView] / scroll navigators so
 /// vertical drags on the chart do not switch Market Data pages.
@@ -75,6 +79,9 @@ class MultiIndexChart extends StatefulWidget {
   final VoidCallback? onOpenExpanded;
   final String? expandedChartPath;
   final bool showEndValuePills;
+
+  /// Animate left-to-right clip reveal when data/timeframe loads.
+  final bool streamDrawOnLoad;
   final bool preNormalizedPercent;
   final bool initialShowAbsoluteValues;
 
@@ -105,6 +112,7 @@ class MultiIndexChart extends StatefulWidget {
     this.onOpenExpanded,
     this.expandedChartPath,
     this.showEndValuePills = true,
+    this.streamDrawOnLoad = false,
     this.preNormalizedPercent = false,
     this.initialShowAbsoluteValues = false,
     this.accentColor,
@@ -132,6 +140,7 @@ class MultiIndexChart extends StatefulWidget {
     VoidCallback? onOpenExpanded,
     String? expandedChartPath,
     bool showEndValuePills = true,
+    bool streamDrawOnLoad = false,
     bool initialShowAbsoluteValues = false,
     double? Function(String symbol)? priceLookup,
     double? Function(String symbol)? changePctLookup,
@@ -152,6 +161,7 @@ class MultiIndexChart extends StatefulWidget {
       onOpenExpanded: onOpenExpanded,
       expandedChartPath: expandedChartPath,
       showEndValuePills: showEndValuePills,
+      streamDrawOnLoad: streamDrawOnLoad,
       initialShowAbsoluteValues: initialShowAbsoluteValues,
       priceLookup: priceLookup,
       changePctLookup: changePctLookup,
@@ -177,8 +187,10 @@ extension on MultiIndexChart {
   }
 }
 
-class _MultiIndexChartState extends State<MultiIndexChart> {
+class _MultiIndexChartState extends State<MultiIndexChart>
+    with SingleTickerProviderStateMixin {
   late ScrollController _scrollController;
+  late AnimationController _streamController;
   double _zoomScale = 1.0;
   double _pinchBaseScale = 1.0;
   double _lastChartViewportWidth = 300;
@@ -489,6 +501,16 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
     _showAbsoluteValues = widget.initialShowAbsoluteValues;
     _scrollController = ScrollController();
     _scrollController.addListener(_onScroll);
+    _streamController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1000),
+    );
+    if (widget.streamDrawOnLoad) {
+      _streamController.value = 0;
+      _streamController.forward();
+    } else {
+      _streamController.value = 1;
+    }
     _prepareDataAndRecalculate(isInitial: true);
   }
 
@@ -496,7 +518,25 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
   void dispose() {
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
+    _streamController.dispose();
     super.dispose();
+  }
+
+  void _restartStreamDraw() {
+    if (!widget.streamDrawOnLoad) {
+      _streamController.value = 1;
+      return;
+    }
+    _streamController
+      ..stop()
+      ..value = 0
+      ..forward();
+  }
+
+  void _completeStreamDraw() {
+    if (_streamController.value < 1) {
+      _streamController.value = 1;
+    }
   }
 
   @override
@@ -521,10 +561,14 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
 
     if (dataChanged || absoluteChanged) {
       _prepareDataAndRecalculate(resetViewport: true);
+      if (dataChanged) _restartStreamDraw();
+    } else if (!widget.streamDrawOnLoad && oldWidget.streamDrawOnLoad) {
+      _streamController.value = 1;
     }
   }
 
   void _onScroll() {
+    _completeStreamDraw();
     if (mounted) {
       setState(() {});
     }
@@ -917,6 +961,7 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
 
   /// 🔍 Center-Anchored Zooming
   void _zoom(double newScale, [double? viewportWidth]) {
+    _completeStreamDraw();
     final vw = viewportWidth ?? _lastChartViewportWidth;
     if (newScale < kChartFitZoomFloor) newScale = kChartFitZoomFloor;
     if (newScale > kChartFitZoomCeil) newScale = kChartFitZoomCeil;
@@ -950,6 +995,7 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
   }
 
   void _panBy(double dx) {
+    _completeStreamDraw();
     if (!_scrollController.hasClients) return;
     final maxScroll = _scrollController.position.maxScrollExtent;
     // Nothing to pan until zoomed in enough for overflow.
@@ -1118,15 +1164,15 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
               children: [
                 Expanded(child: _buildLegend(context)),
                 if (widget.legendTrailing != null) ...[
-                  const SizedBox(width: 8),
+                  const SizedBox(width: kComparisonChartToolbarGap),
                   widget.legendTrailing!,
                 ],
                 if (_showBuiltInUnitToggle) ...[
-                  const SizedBox(width: 8),
+                  const SizedBox(width: kComparisonChartToolbarGap),
                   _buildUnitToggle(context),
                 ],
                 if (widget.showExpandButton) ...[
-                  const SizedBox(width: 8),
+                  const SizedBox(width: kComparisonChartToolbarGap),
                   _buildExpandButton(context),
                 ],
               ],
@@ -1183,15 +1229,15 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
             child: _buildLegend(context, scrollable: true),
           ),
           if (_showBuiltInUnitToggle) ...[
-            const SizedBox(width: 6),
+            const SizedBox(width: kComparisonChartToolbarGap),
             _buildUnitToggle(context, compact: true),
           ],
           if (widget.legendTrailing != null) ...[
-            const SizedBox(width: 4),
+            const SizedBox(width: kComparisonChartToolbarGap),
             widget.legendTrailing!,
           ],
           if (widget.showExpandButton) ...[
-            const SizedBox(width: 2),
+            const SizedBox(width: kComparisonChartToolbarGap),
             _buildExpandButton(context, compact: true),
           ],
         ],
@@ -1264,7 +1310,6 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
 
   Widget _buildExpandButton(BuildContext context, {bool compact = false}) {
     final path = _resolveChartPath();
-    final min = compact ? 34.0 : 32.0;
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final iconColor = widget.accentColor ??
@@ -1272,27 +1317,11 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
 
     return Tooltip(
       message: 'Open Market Chart in new tab',
-      child: IconButton(
-        visualDensity: VisualDensity.compact,
-        padding: EdgeInsets.zero,
-        constraints: BoxConstraints(minWidth: min, minHeight: min),
-        icon: Container(
-          padding: const EdgeInsets.all(4),
-          decoration: BoxDecoration(
-            color: iconColor.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(6),
-            border: Border.all(
-              color: iconColor.withValues(alpha: 0.3),
-              width: 1,
-            ),
-          ),
-          child: Icon(
-            Icons.candlestick_chart_rounded,
-            size: compact ? 16 : 18,
-            color: iconColor,
-          ),
-        ),
-        onPressed: () {
+      child: ComparisonToolbarControl(
+        accentColor: iconColor,
+        square: true,
+        height: compact ? 26 : kComparisonChartHeaderRowHeight,
+        onTap: () {
           if (widget.onOpenExpanded != null) {
             widget.onOpenExpanded!();
           } else if (kIsWeb) {
@@ -1301,6 +1330,11 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
             context.go(path);
           }
         },
+        child: Icon(
+          Icons.candlestick_chart_rounded,
+          size: compact ? 14 : 15,
+          color: iconColor,
+        ),
       ),
     );
   }
@@ -1358,8 +1392,6 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
   }
 
   Widget _buildLegend(BuildContext context, {bool scrollable = false}) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
     final isCompact = _isCompact(context);
 
     final chips = _activeIndices.asMap().entries.map((entry) {
@@ -1373,6 +1405,7 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
       final priceStr = price != null ? _formatIndexPrice(price) : '';
 
       return AmClickCapsule(
+        key: ValueKey('capsule_$symbol'),
         triggerOnHover: true,
         popupContent: Row(
           mainAxisSize: MainAxisSize.min,
@@ -1408,81 +1441,13 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
             ),
           ],
         ),
-        child: Container(
-          padding: EdgeInsets.symmetric(
-            horizontal: isCompact ? 6 : 8,
-            vertical: isCompact ? 3 : 4,
-          ),
-          decoration: BoxDecoration(
-            color: isDark
-                ? Colors.white.withValues(alpha: 0.04)
-                : Colors.black.withValues(alpha: 0.04),
-            borderRadius: BorderRadius.circular(6),
-            border: Border.all(
-              color: isHidden
-                  ? Colors.grey.withValues(alpha: 0.3)
-                  : color.withValues(alpha: 0.4),
-              width: 1,
-            ),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Container(
-                width: isCompact ? 10 : 14,
-                height: 3,
-                decoration: BoxDecoration(
-                  color: isHidden ? Colors.grey : color,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const SizedBox(width: 5),
-              Text(
-                symbol,
-                style: TextStyle(
-                  color: isHidden
-                      ? Colors.grey
-                      : (isDark ? Colors.white70 : Colors.black87),
-                  decoration: isHidden ? TextDecoration.lineThrough : null,
-                  fontSize: isCompact ? 10 : 12,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              if (priceStr.isNotEmpty) ...[
-                const SizedBox(width: 5),
-                Text(
-                  priceStr,
-                  style: TextStyle(
-                    color: isHidden
-                        ? Colors.grey
-                        : (isDark ? Colors.white : Colors.black),
-                    fontSize: isCompact ? 10 : 12,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ],
-              if (pctChange != null) ...[
-                const SizedBox(width: 4),
-                Text(
-                  '${pctChange >= 0 ? '+' : ''}${pctChange.toStringAsFixed(2)}%',
-                  style: TextStyle(
-                    color: isHidden
-                        ? Colors.grey
-                        : (pctChange >= 0
-                            ? (isDark
-                                ? const Color(0xFF00FF9D)
-                                : Colors.green.shade700)
-                            : (isDark
-                                ? const Color(0xFFFF5252)
-                                : Colors.red.shade700)),
-                    fontSize: isCompact ? 9 : 11,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
-            ],
-          ),
+        child: ChartSeriesLegendChip(
+          label: symbol,
+          seriesColor: color,
+          priceLabel: priceStr,
+          changePct: pctChange,
+          hidden: isHidden,
+          compact: isCompact,
         ),
       );
     }).toList();
@@ -1813,7 +1778,20 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
                   return _wrapChartGestures(
                     viewportWidth:
                         constraints.maxWidth - _leftAxisReserve(context),
-                    child: LineChart(
+                    child: AnimatedBuilder(
+                      animation: _streamController,
+                      builder: (context, child) {
+                        final t = Curves.easeOutCubic
+                            .transform(_streamController.value.clamp(0.0, 1.0));
+                        return ClipRect(
+                          child: Align(
+                            alignment: Alignment.centerLeft,
+                            widthFactor: t <= 0 ? 0.001 : t,
+                            child: child,
+                          ),
+                        );
+                      },
+                      child: LineChart(
                       key: ValueKey(
                           '${_activeIndices.join('-')}_line_${visibleData.length}'),
                       LineChartData(
@@ -2137,18 +2115,28 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
                         ),
                       ),
                     ),
+                    ),
                   );
                 },
               ),
             ),
             _buildDummyScrollView(chartWidth),
-            _buildPricePills(
-              context,
-              chartData,
-              constraints,
-              cleanMin,
-              cleanMax,
-              widget.showEndValuePills && endIndex == chartData.length - 1,
+            AnimatedBuilder(
+              animation: _streamController,
+              builder: (context, child) {
+                if (_streamController.value < 0.98) {
+                  return const SizedBox.shrink();
+                }
+                return child!;
+              },
+              child: _buildPricePills(
+                context,
+                chartData,
+                constraints,
+                cleanMin,
+                cleanMax,
+                widget.showEndValuePills && endIndex == chartData.length - 1,
+              ),
             ),
           ],
         );

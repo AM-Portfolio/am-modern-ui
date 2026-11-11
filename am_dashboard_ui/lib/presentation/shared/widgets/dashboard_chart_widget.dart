@@ -25,13 +25,19 @@ class DashboardChartWidget extends ConsumerWidget {
     final overlay = ref.watch(dashboardOverlayProvider(userId).notifier);
     final state = ref.watch(dashboardOverlayProvider(userId));
     final tfCode = dashboardTimeFrameCode(ref);
+    final accent = accentColor ?? ModuleColors.dashboard;
+    final trailing = _ChartTrailingControls(
+      overlay: overlay,
+      state: state,
+      accent: accent,
+    );
 
     return LayoutBuilder(
       builder: (context, constraints) {
         final height =
             constraints.maxHeight.isFinite && constraints.maxHeight > 0
-            ? constraints.maxHeight
-            : 420.0;
+                ? constraints.maxHeight
+                : 420.0;
         return SizedBox(
           width: double.infinity,
           height: height,
@@ -42,7 +48,7 @@ class DashboardChartWidget extends ConsumerWidget {
               overlay: overlay,
               tfCode: tfCode,
               accentColor: accentColor,
-              legendTrailing: _AddSeriesButton(overlay: overlay, state: state),
+              legendTrailing: trailing,
             ),
           ),
         );
@@ -51,15 +57,54 @@ class DashboardChartWidget extends ConsumerWidget {
   }
 }
 
-class _AddSeriesButton extends StatelessWidget {
-  const _AddSeriesButton({required this.overlay, required this.state});
+class _ChartTrailingControls extends StatelessWidget {
+  const _ChartTrailingControls({
+    required this.overlay,
+    required this.state,
+    required this.accent,
+  });
 
   final DashboardOverlayNotifier overlay;
   final OverlayChartState state;
+  final Color accent;
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.colors;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        GlobalTimeFrameBar(
+          key: const Key('dashboard-chart-timeframe'),
+          variant: GlobalTimeFrameVariant.dropdown,
+          dropdownWidth: 64,
+          primaryColor: accent,
+          dropdownTrailingDivider: false,
+          dropdownLeading: Icon(
+            Icons.calendar_today_outlined,
+            size: 12,
+            color: accent,
+          ),
+        ),
+        const SizedBox(width: kComparisonChartToolbarGap),
+        _AddSeriesButton(overlay: overlay, state: state, accent: accent),
+      ],
+    );
+  }
+}
+
+class _AddSeriesButton extends StatelessWidget {
+  const _AddSeriesButton({
+    required this.overlay,
+    required this.state,
+    required this.accent,
+  });
+
+  final DashboardOverlayNotifier overlay;
+  final OverlayChartState state;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
     final selected = state.selectedIds.toSet();
     final remainingOverall = !selected.contains(OverlayChartIds.overall);
     final remainingPortfolios = state.availablePortfolios
@@ -68,46 +113,70 @@ class _AddSeriesButton extends StatelessWidget {
     final remainingIndices = OverlayChartIds.addableIndices
         .where((id) => !selected.contains(id))
         .toList();
-    final canAdd =
-        !state.atCap &&
+    final canAdd = !state.atCap &&
         (remainingOverall ||
             remainingPortfolios.isNotEmpty ||
             remainingIndices.isNotEmpty);
 
     if (!canAdd) return const SizedBox.shrink();
 
-    return PopupMenuButton<String>(
-      tooltip: 'Add series',
-      onSelected: overlay.addSeries,
-      itemBuilder: (context) {
-        final items = <PopupMenuEntry<String>>[
-          if (remainingOverall)
-            const PopupMenuItem(
-              value: OverlayChartIds.overall,
-              child: Text(OverlayChartIds.overall),
-            ),
-          for (final p in remainingPortfolios)
-            PopupMenuItem(value: p.id, child: Text(p.label)),
-        ];
-        if (items.isNotEmpty && remainingIndices.isNotEmpty) {
-          items.add(const PopupMenuDivider());
-        }
-        for (final id in remainingIndices) {
-          items.add(PopupMenuItem(value: id, child: Text(id)));
-        }
-        return items;
-      },
-      child: Chip(
-        visualDensity: VisualDensity.compact,
-        label: Text(
-          '+',
-          style: TextStyle(
-            color: ModuleColors.dashboard,
-            fontWeight: FontWeight.w600,
-          ),
+    final colors = context.colors;
+    final portfolioItems = <DropdownMenuItem<String>>[
+      if (remainingOverall)
+        OverlayChartIds.overall.toSimpleDropdownItem(
+          text: OverlayChartIds.overall,
+          fontSize: 12,
         ),
-        backgroundColor: colors.cardSurface.withValues(alpha: 0.55),
-        side: BorderSide(color: ModuleColors.dashboard.withValues(alpha: 0.35)),
+      for (final p in remainingPortfolios)
+        p.id.toSimpleDropdownItem(text: p.label, fontSize: 12),
+    ];
+    final indexItems = [
+      for (final id in remainingIndices)
+        id.toSimpleDropdownItem(text: id, fontSize: 12),
+    ];
+    final items = <DropdownMenuItem<String>>[
+      ...portfolioItems,
+      if (portfolioItems.isNotEmpty && indexItems.isNotEmpty)
+        const DropdownMenuItem<String>(
+          enabled: false,
+          value: null,
+          child: Divider(height: 1),
+        ),
+      ...indexItems,
+    ];
+
+    return SizedBox(
+      width: kComparisonChartHeaderRowHeight,
+      height: kComparisonChartHeaderRowHeight,
+      child: Tooltip(
+        message: 'Add series',
+        child: CustomDropdown<String>(
+          value: null,
+          height: kComparisonChartHeaderRowHeight,
+          isExpanded: true,
+          fontSize: 12,
+          borderRadius: AppRadii.xs,
+          showTrailingIcon: false,
+          menuMaxHeight: 280,
+          menuMaxWidth: 200,
+          primaryColor: accent,
+          backgroundColor: colors.cardSurface,
+          borderColor: accent.withValues(alpha: 0.35),
+          contentPadding: EdgeInsets.zero,
+          selectedItemBuilder: (_, __) => Text(
+            '+',
+            style: TextStyle(
+              color: accent,
+              fontWeight: FontWeight.w700,
+              fontSize: 14,
+              height: 1,
+            ),
+          ),
+          items: items,
+          onChanged: (id) {
+            if (id != null) overlay.addSeries(id);
+          },
+        ),
       ),
     );
   }
@@ -132,22 +201,47 @@ class _ChartBody extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final colors = context.colors;
     if (state.isBootstrapping) {
-      return _ChartBootstrapSkeleton(
-        accent: accentColor ?? ModuleColors.dashboard,
+      return Column(
+        children: [
+          Row(
+            children: [
+              const Spacer(),
+              legendTrailing,
+            ],
+          ),
+          const SizedBox(height: 12),
+          Expanded(
+            child: _ChartBootstrapSkeleton(
+              accent: accentColor ?? ModuleColors.dashboard,
+            ),
+          ),
+        ],
       );
     }
 
     final selectedLabels = overlaySelectedLabels(state);
     if (selectedLabels.isEmpty) {
-      return Center(
-        child: Text(
-          'No overlay data for ${state.timeFrame}',
-          style: TextStyle(
-            color: colors.textSecondary,
-            fontSize: 14,
-            fontFamily: 'Inter',
+      return Column(
+        children: [
+          Row(
+            children: [
+              const Spacer(),
+              legendTrailing,
+            ],
           ),
-        ),
+          Expanded(
+            child: Center(
+              child: Text(
+                'No overlay data for ${state.timeFrame}',
+                style: TextStyle(
+                  color: colors.textSecondary,
+                  fontSize: 14,
+                  fontFamily: 'Inter',
+                ),
+              ),
+            ),
+          ),
+        ],
       );
     }
 
@@ -160,7 +254,8 @@ class _ChartBody extends ConsumerWidget {
         preferredSeriesOrder: selectedLabels,
         embedMode: true,
         timeFrameCode: tfCode,
-        showEndValuePills: false,
+        showEndValuePills: true,
+        streamDrawOnLoad: true,
         showExpandButton: true,
         expandedChartPath:
             '/app/market/chart?symbol=${Uri.encodeComponent(primarySymbol)}&tf=${Uri.encodeComponent(tfCode)}',
@@ -228,14 +323,6 @@ class _ChartBootstrapSkeleton extends StatelessWidget {
                     ),
                   ),
                   const Spacer(),
-                  Container(
-                    width: 120,
-                    height: 22,
-                    decoration: BoxDecoration(
-                      color: base,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
                 ],
               ),
               const SizedBox(height: 16),

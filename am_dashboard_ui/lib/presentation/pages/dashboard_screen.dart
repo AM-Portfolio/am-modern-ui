@@ -11,14 +11,22 @@ class DashboardScreen extends ConsumerWidget {
   final String userId;
   final VoidCallback? onOpenDocIntel;
   final VoidCallback? onOpenPaper;
+  final VoidCallback? onOpenUsers;
   final ValueChanged<GlobalAddActionKind>? onQuickAdd;
+  final VoidCallback? onProfileTap;
+  final Widget? profileLeading;
+  final String brandLabel;
 
   const DashboardScreen({
     super.key,
     required this.userId,
     this.onOpenDocIntel,
     this.onOpenPaper,
+    this.onOpenUsers,
     this.onQuickAdd,
+    this.onProfileTap,
+    this.profileLeading,
+    this.brandLabel = 'AM Investment',
   });
 
   @override
@@ -32,12 +40,17 @@ class DashboardScreen extends ConsumerWidget {
                 userId: resolvedUserId,
                 onOpenDocIntel: onOpenDocIntel,
                 onOpenPaper: onOpenPaper,
+                onOpenUsers: onOpenUsers,
                 onQuickAdd: onQuickAdd,
+                onProfileTap: onProfileTap,
+                profileLeading: profileLeading,
+                brandLabel: brandLabel,
               )
             : DashboardWebScreen(
                 userId: resolvedUserId,
                 onOpenDocIntel: onOpenDocIntel,
                 onOpenPaper: onOpenPaper,
+                onOpenUsers: onOpenUsers,
                 onQuickAdd: onQuickAdd,
               ),
       ),

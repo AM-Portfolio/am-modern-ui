@@ -138,10 +138,12 @@ class DashboardOverlayNotifier extends Notifier<OverlayChartState> {
     try {
       final repo = await ref.read(dashboardRepositoryProvider.future);
       final client = await ref.read(portfolioApiClientProvider.future);
+      final persona = holdingsPersonaParam(ref.read(familyPortfolioFilterProvider));
       final history = await repo.getPortfolioHistory(
         client,
         timeFrame: timeFrame,
         portfolioId: _preferredPortfolioId,
+        persona: persona,
       );
       if (gen != _generation) return;
 

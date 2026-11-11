@@ -174,14 +174,14 @@ bool holdingsHaveCostBasis(Iterable<PortfolioHolding> holdings) =>
 bool showHoldingsCostColumns(Iterable<PortfolioHolding> holdings) =>
     holdingsHaveCostBasis(holdings);
 
-/// Mixed books: drop zero-cost rows. All-zero-cost (mail) books: keep all rows.
+/// Keep every position row. Missing cost is shown as dash / hidden columns,
+/// never by dropping the holding from the table.
 List<PortfolioHolding> visibleHoldingsForCostPolicy(
   Iterable<PortfolioHolding> holdings,
 ) {
   final list = holdings.toList(growable: false);
   if (list.isEmpty) return const [];
-  if (!holdingsHaveCostBasis(list)) return list;
-  return list.where((h) => h.hasCostBasis).toList(growable: false);
+  return list;
 }
 
 /// Hide Invested / Total Return when the summary principal is zero and

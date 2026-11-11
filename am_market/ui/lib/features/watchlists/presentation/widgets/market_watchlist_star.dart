@@ -7,9 +7,10 @@ import 'add_to_watchlist_popup.dart';
 
 /// Compact star used by Equity Insider and F&O header cards.
 class MarketWatchlistStar extends ConsumerWidget {
-  const MarketWatchlistStar({required this.symbol, super.key});
+  const MarketWatchlistStar({required this.symbol, this.onTap, super.key});
 
   final String symbol;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -18,26 +19,10 @@ class MarketWatchlistStar extends ConsumerWidget {
       data: (statuses) {
         final isAdded = statuses.any((s) => s.containsSymbol);
         return IconButton(
-          tooltip: isAdded ? 'Remove from watchlist' : 'Add to watchlist',
-          onPressed: () async {
-            if (isAdded) {
-              final name = statuses.firstWhere((s) => s.containsSymbol).name;
-              final confirm = await ConfirmationDialog.show(
-                context: context,
-                title: 'Remove Stock',
-                subtitle: 'Watchlist Management',
-                message:
-                    'Are you sure you want to remove $symbol from $name?',
-                icon: Icons.star_rounded,
-                confirmText: 'Remove',
-                isDestructive: true,
-              );
-              if (confirm) {
-                final wid =
-                    statuses.firstWhere((s) => s.containsSymbol).watchlistId;
-                ref.read(watchlistsProvider.notifier).removeStock(wid, symbol);
-                ref.invalidate(watchlistCheckStatusProvider(symbol));
-              }
+          tooltip: isAdded ? 'Watchlists ($symbol added)' : 'Add to watchlist',
+          onPressed: () {
+            if (onTap != null) {
+              onTap!();
             } else {
               AddToWatchlistPopup.show(context, symbol);
             }

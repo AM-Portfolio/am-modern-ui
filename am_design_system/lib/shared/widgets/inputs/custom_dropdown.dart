@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
 import 'dropdown_styles.dart';
@@ -21,6 +22,7 @@ class CustomDropdown<T> extends StatefulWidget {
     this.fontSize = 14,
     this.iconSize = 18,
     this.borderRadius = 12,
+    this.menuBorderRadius,
     this.contentPadding = const EdgeInsets.symmetric(horizontal: 12),
     this.backgroundColor,
     this.menuBackgroundColor,
@@ -32,6 +34,7 @@ class CustomDropdown<T> extends StatefulWidget {
     this.menuMaxWidth,
     this.leading,
     this.trailingDivider = false,
+    this.showTrailingIcon = true,
     this.selectedItemBuilder,
   });
 
@@ -68,8 +71,12 @@ class CustomDropdown<T> extends StatefulWidget {
   /// Size of the dropdown icon
   final double iconSize;
 
-  /// Border radius for the container
+  /// Border radius for the closed trigger
   final double borderRadius;
+
+  /// Open-menu corner radius. Defaults to [borderRadius], capped at 12 when
+  /// the trigger is a pill so the panel stays a normal rounded rect.
+  final double? menuBorderRadius;
 
   /// Padding inside the container
   final EdgeInsets contentPadding;
@@ -105,6 +112,10 @@ class CustomDropdown<T> extends StatefulWidget {
   /// Hairline before the chevron on the closed trigger.
   final bool trailingDivider;
 
+  /// When false, hides the trailing expand / custom [icon] on the closed trigger
+  /// (e.g. icon-only "+" action menus that use [selectedItemBuilder]).
+  final bool showTrailingIcon;
+
   /// Optional closed-trigger content. When set, replaces the selected item’s
   /// [DropdownMenuItem.child] on the trigger only (menu rows unchanged).
   final Widget Function(BuildContext context, T? value)? selectedItemBuilder;
@@ -117,6 +128,13 @@ class _CustomDropdownState<T> extends State<CustomDropdown<T>> {
   final LayerLink _layerLink = LayerLink();
   OverlayEntry? _overlayEntry;
   bool _isOpen = false;
+
+  double get _menuRadius {
+    final override = widget.menuBorderRadius;
+    if (override != null) return override;
+    // Pill triggers (radius >= height) keep a normal rounded menu panel.
+    return widget.borderRadius > 24 ? 12.0 : widget.borderRadius;
+  }
 
   void _toggleDropdown() {
     if (!widget.enabled) return;
@@ -134,11 +152,11 @@ class _CustomDropdownState<T> extends State<CustomDropdown<T>> {
   }
 
   void _closeDropdown() {
-    _overlayEntry?.remove();
+    final entry = _overlayEntry;
     _overlayEntry = null;
-    if (mounted) {
-      setState(() => _isOpen = false);
-    }
+    _isOpen = false;
+    entry?.remove();
+    if (mounted) setState(() {});
   }
 
   OverlayEntry _createOverlayEntry() {
@@ -171,11 +189,14 @@ class _CustomDropdownState<T> extends State<CustomDropdown<T>> {
       builder: (context) => Stack(
         children: [
           Positioned.fill(
-            // pointerDown — onTap can lose the arena while the overlay still
-            // blocks the whole app (Flutter web).
             child: Listener(
-              behavior: HitTestBehavior.opaque,
+              behavior: HitTestBehavior.translucent,
               onPointerDown: (_) => _closeDropdown(),
+              onPointerSignal: (event) {
+                if (event is PointerScrollEvent) {
+                  _closeDropdown();
+                }
+              },
             ),
           ),
           CompositedTransformFollower(
@@ -188,7 +209,7 @@ class _CustomDropdownState<T> extends State<CustomDropdown<T>> {
             child: Material(
               elevation: widget.enableGlass ? 0 : 8,
               color: Colors.transparent,
-              borderRadius: BorderRadius.circular(widget.borderRadius),
+              borderRadius: BorderRadius.circular(_menuRadius),
               child: ConstrainedBox(
                 constraints: BoxConstraints(
                   maxHeight: widget.menuMaxHeight,
@@ -198,15 +219,13 @@ class _CustomDropdownState<T> extends State<CustomDropdown<T>> {
                 child: Container(
                   decoration: widget.enableGlass
                       ? AppGlassmorphism.dropdownDecoration(context).copyWith(
-                          borderRadius:
-                              BorderRadius.circular(widget.borderRadius),
+                          borderRadius: BorderRadius.circular(_menuRadius),
                         )
                       : BoxDecoration(
                           color: widget.menuBackgroundColor ??
                               widget.backgroundColor ??
                               theme.colorScheme.surface,
-                          borderRadius:
-                              BorderRadius.circular(widget.borderRadius),
+                          borderRadius: BorderRadius.circular(_menuRadius),
                           border: Border.all(
                             color: theme.colorScheme.outlineVariant
                                 .withValues(alpha: 0.3),
@@ -222,13 +241,20 @@ class _CustomDropdownState<T> extends State<CustomDropdown<T>> {
                           ],
                         ),
                   child: ClipRRect(
-                    borderRadius: BorderRadius.circular(widget.borderRadius),
+                    borderRadius: BorderRadius.circular(_menuRadius),
                     child: SingleChildScrollView(
                       padding: const EdgeInsets.all(8),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         mainAxisSize: MainAxisSize.min,
                         children: widget.items.map((item) {
+                          if (!item.enabled) {
+                            return Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(vertical: 4),
+                              child: item.child,
+                            );
+                          }
                           final isSelected = item.value == widget.value;
                           return InkWell(
                             onTap: () {
@@ -290,9 +316,10 @@ class _CustomDropdownState<T> extends State<CustomDropdown<T>> {
 
   @override
   void dispose() {
-    if (_isOpen) {
-      _overlayEntry?.remove();
-    }
+    final entry = _overlayEntry;
+    _overlayEntry = null;
+    _isOpen = false;
+    entry?.remove();
     super.dispose();
   }
 
@@ -355,9 +382,16 @@ class _CustomDropdownState<T> extends State<CustomDropdown<T>> {
           const SizedBox(width: 4),
         ],
         if (displayWidget != null)
-          widget.isExpanded ? Expanded(child: displayWidget) : displayWidget,
-        if (!widget.isExpanded) const SizedBox(width: 4),
-        if (widget.trailingDivider) ...[
+          widget.isExpanded
+              ? Expanded(
+                  child: widget.showTrailingIcon
+                      ? displayWidget
+                      : Center(child: displayWidget),
+                )
+              : displayWidget,
+        if (!widget.isExpanded && widget.showTrailingIcon)
+          const SizedBox(width: 4),
+        if (widget.showTrailingIcon && widget.trailingDivider) ...[
           Container(
             width: 1,
             height: widget.iconSize,
@@ -365,11 +399,12 @@ class _CustomDropdownState<T> extends State<CustomDropdown<T>> {
             color: (widget.borderColor ?? chevronColor).withValues(alpha: 0.45),
           ),
         ],
-        Icon(
-          widget.icon ?? (_isOpen ? Icons.expand_less : Icons.expand_more),
-          color: chevronColor,
-          size: widget.iconSize,
-        ),
+        if (widget.showTrailingIcon)
+          Icon(
+            widget.icon ?? (_isOpen ? Icons.expand_less : Icons.expand_more),
+            color: chevronColor,
+            size: widget.iconSize,
+          ),
       ],
     );
 

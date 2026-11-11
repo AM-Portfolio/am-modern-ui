@@ -31,7 +31,18 @@ class PaperPositionsPanel extends StatelessWidget {
                     ),
                   ],
                 ),
-                if (state.positions.isEmpty)
+                if (state.loadingPositions)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 16),
+                    child: Center(
+                      child: SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    ),
+                  )
+                else if (state.positions.isEmpty)
                   Text(
                     'No open positions yet.',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -49,7 +60,18 @@ class PaperPositionsPanel extends StatelessWidget {
                   ),
                 const Divider(),
                 Text('Working orders', style: Theme.of(context).textTheme.titleSmall),
-                if (working.isEmpty)
+                if (state.loadingOrders)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 16),
+                    child: Center(
+                      child: SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    ),
+                  )
+                else if (working.isEmpty)
                   Text(
                     'No working Limit / Super / Trail orders.',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(

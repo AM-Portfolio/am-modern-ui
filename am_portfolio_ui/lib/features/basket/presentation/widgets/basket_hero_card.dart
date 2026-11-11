@@ -1,7 +1,6 @@
 
 import 'package:flutter/material.dart';
 import 'package:am_design_system/am_design_system.dart';
-import 'dart:ui';
 import 'basket_gauge_painter.dart';
 
 class BasketHeroCard extends StatelessWidget {
@@ -20,11 +19,10 @@ class BasketHeroCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.all(16),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-          child: Container(
+      child: webGlass(
+        sigma: 10,
+        clip: BorderRadius.circular(24),
+        child: Container(
             padding: const EdgeInsets.all(32),
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -104,7 +102,6 @@ class BasketHeroCard extends StatelessWidget {
             ),
           ),
         ),
-      ),
     );
   }
 

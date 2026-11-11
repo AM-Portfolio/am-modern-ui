@@ -50,6 +50,14 @@ class PortfolioHeatmapCubit extends Cubit<PortfolioHeatmapState> {
         final analyticsState = usedAnalyticsCubit.state;
 
         if (analyticsState is PortfolioAnalyticsLoaded &&
+            analyticsState.portfolioId != null &&
+            analyticsState.portfolioId != portfolioId) {
+          if (isClosed) return;
+          emit(const PortfolioHeatmapLoading(message: 'Loading portfolio heatmap...'));
+          return;
+        }
+
+        if (analyticsState is PortfolioAnalyticsLoaded &&
             (analyticsState.heatmap != null ||
                 (analyticsState.sectorAllocation?.sectorWeights.isNotEmpty ??
                     false))) {

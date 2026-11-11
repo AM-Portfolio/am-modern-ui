@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:am_design_system/am_design_system.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../../../internal/domain/entities/portfolio_intelligence.dart';
@@ -63,7 +64,7 @@ class _RiskRadarLiveViewState extends State<RiskRadarLiveView>
   void _syncSweep() {
     if (!mounted) return;
     final ticking = TickerMode.of(context);
-    if (_reduceMotion || !ticking) {
+    if (kIsWeb || _reduceMotion || !ticking) {
       if (_sweep.isAnimating) _sweep.stop();
       return;
     }

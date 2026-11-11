@@ -1,8 +1,9 @@
 import 'package:am_common/am_common.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:am_market_common/providers/market_provider.dart';
-import 'package:am_market_ui/features/f_o/providers/futures_provider.dart';
 import 'package:am_market_ui/features/f_o/providers/option_chain_provider.dart';
+import 'package:am_market_ui/features/f_o/providers/futures_provider.dart';
+import 'package:am_market_ui/features/f_o/fo_lot_size_config.dart';
 import 'package:am_market_ui/features/market/widgets/market_colors.dart';
 import 'package:am_market_ui/features/watchlists/presentation/widgets/market_watchlist_star.dart';
 import 'package:flutter/material.dart';
@@ -47,15 +48,10 @@ class _FoHeaderCardState extends ConsumerState<FoHeaderCard> {
     final chainAsync = ref.watch(optionChainProvider);
     final chainData = chainAsync.maybeWhen(data: (d) => d, orElse: () => null);
 
-    final selectedContract = ref.watch(selectedFutureContractProvider);
-    final contracts = ref.watch(futuresContractsProvider).maybeWhen(
-          data: (d) => d,
-          orElse: () => <dynamic>[],
-        );
-    final firstContract = contracts.isNotEmpty && contracts.first is Map
-        ? Map<String, dynamic>.from(contracts.first as Map)
-        : null;
-    final activeContract = selectedContract ?? firstContract;
+    // Use the same symbol-validated contract identity as Futures and Margin.
+    // Metadata remains independent from quote enrichment, so the header can
+    // still render its option-chain summary without waiting for every future.
+    final activeContract = ref.watch(activeFutureContractWithQuoteProvider);
 
     final chainLtp = _positiveNum(chainData?['underlyingLtp']);
     final contractLtp = _positiveNum(activeContract?['ltp']);
@@ -137,11 +133,15 @@ class _FoHeaderCardState extends ConsumerState<FoHeaderCard> {
       firstStrikeLot = (call?['lotSize'] as num?)?.toInt() ??
           (put?['lotSize'] as num?)?.toInt();
     }
-    final lotSizeStr = (apiLotSize != null && apiLotSize > 0)
-        ? '$apiLotSize'
-        : ((firstStrikeLot != null && firstStrikeLot > 0)
-            ? '$firstStrikeLot'
-            : _missing);
+    final resolvedLot = FoLotSizeConfig.resolveLotSize(
+      symbol: widget.symbol,
+      contract: activeContract,
+      chainData: chainData,
+    );
+    final hasExplicitApiLot = (apiLotSize != null && apiLotSize > 0) ||
+        (firstStrikeLot != null && firstStrikeLot > 0);
+    final lotSizeStr =
+        (resolvedLot > 1 || hasExplicitApiLot) ? '$resolvedLot' : _missing;
 
     final sparkKey = _sparklineIndexKey(widget.symbol);
     MarketProvider? market;

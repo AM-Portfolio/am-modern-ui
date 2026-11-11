@@ -98,6 +98,49 @@ void main() {
     });
   });
 
+  group('heatmapForPortfolio', () {
+    Heatmap map(String name, double value) => Heatmap(
+          sectors: [
+            Sector(
+              sectorName: name,
+              performanceRank: 1,
+              performance: 1,
+              changePercent: 1,
+              weightage: 10,
+              color: '',
+              stockCount: 1,
+              totalValue: value,
+              totalReturnAmount: 0,
+              stocks: const [],
+            ),
+          ],
+        );
+
+    test('smaller book replaces the previous portfolio', () {
+      final groww = map('IT', 1800);
+      final finwizard = map('ETF', 17);
+      final next = PortfolioAnalyticsCubit.heatmapForPortfolio(
+        portfolioId: 'finwizard',
+        priorPortfolioId: 'groww',
+        incoming: finwizard,
+        prior: groww,
+      );
+      expect(next, same(finwizard));
+    });
+
+    test('same portfolio may keep a richer map', () {
+      final rich = map('IT', 1800);
+      final thin = map('ETF', 17);
+      final next = PortfolioAnalyticsCubit.heatmapForPortfolio(
+        portfolioId: 'groww',
+        priorPortfolioId: 'groww',
+        incoming: thin,
+        prior: rich,
+      );
+      expect(next!.sectors.first.sectorName, 'IT');
+    });
+  });
+
   group('preferQualityHeatmap', () {
     test('keeps live when hist sectors empty', () {
       final live = Heatmap(

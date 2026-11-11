@@ -71,6 +71,21 @@ void main() {
       expect(parsed.totalInvested, 854184.61);
       expect(parsed.dayChange, -120.5);
       expect(parsed.totalPortfolios, 0);
+      expect(parsed.totalHoldings, 0);
+    });
+
+    test('maps totalAssets onto totalHoldings', () {
+      final parsed = DashboardSummary.fromJson(
+        DashboardJsonSanitizer.summary({
+          'totalValue': 1000,
+          'totalInvested': 800,
+          'totalAssets': 24,
+          'dayChange': 1,
+          'dayChangePercentage': 0.1,
+          'totalPortfolios': 1,
+        }),
+      );
+      expect(parsed.totalHoldings, 24);
     });
 
     test('accepts Map<dynamic, dynamic> payloads from jsonDecode', () {

@@ -16,6 +16,7 @@ class PortfolioAnalyticsCubit extends Cubit<PortfolioAnalyticsState> {
 
   Future<void>? _loadingFuture;
   String? _currentPortfolioId;
+  String? _loadedPersona;
   TimeFrame? _lastLoadedTimeFrame;
   TimeFrame? _inFlightTimeFrame;
   int _loadGeneration = 0;
@@ -32,6 +33,18 @@ class PortfolioAnalyticsCubit extends Cubit<PortfolioAnalyticsState> {
 
   static Heatmap? preferNonEmptyHeatmap(Heatmap? hist, Heatmap? live) {
     return preferQualityHeatmap(hist, live);
+  }
+
+  /// Same book may keep a richer map. A different portfolio always takes [incoming],
+  /// including a 1-stock or lower-value book.
+  static Heatmap? heatmapForPortfolio({
+    required String portfolioId,
+    required String? priorPortfolioId,
+    Heatmap? incoming,
+    Heatmap? prior,
+  }) {
+    if (priorPortfolioId != portfolioId) return incoming;
+    return preferQualityHeatmap(incoming, prior);
   }
 
   /// Accept [candidate] only when its non-zero sector mass is comparable to [prior].
@@ -104,10 +117,12 @@ class PortfolioAnalyticsCubit extends Cubit<PortfolioAnalyticsState> {
     String portfolioId, {
     TimeFrame? timeFrame,
     FeatureToggles? featureToggles,
+    String? persona,
   }) async {
     // Coalesce only when the same portfolio AND timeframe are already loading.
     if (_loadingFuture != null &&
         _currentPortfolioId == portfolioId &&
+        _loadedPersona == persona &&
         _inFlightTimeFrame == timeFrame) {
       CommonLogger.debug(
         '🔍 PortfolioAnalyticsCubit: loadAnalytics already in progress for portfolioId: $portfolioId tf: ${timeFrame?.name}',
@@ -118,6 +133,7 @@ class PortfolioAnalyticsCubit extends Cubit<PortfolioAnalyticsState> {
 
     if (state is PortfolioAnalyticsLoaded &&
         _currentPortfolioId == portfolioId &&
+        _loadedPersona == persona &&
         _lastLoadedTimeFrame == timeFrame) {
       CommonLogger.debug(
         '🔍 PortfolioAnalyticsCubit: Data already loaded for $portfolioId and timeFrame: ${timeFrame?.name}',
@@ -127,12 +143,14 @@ class PortfolioAnalyticsCubit extends Cubit<PortfolioAnalyticsState> {
     }
 
     _currentPortfolioId = portfolioId;
+    _loadedPersona = persona;
     _inFlightTimeFrame = timeFrame;
     final gen = ++_loadGeneration;
     _loadingFuture = _doLoadAnalytics(
       portfolioId,
       timeFrame: timeFrame,
       featureToggles: featureToggles,
+      persona: persona,
       gen: gen,
     );
 
@@ -150,8 +168,12 @@ class PortfolioAnalyticsCubit extends Cubit<PortfolioAnalyticsState> {
     String portfolioId, {
     TimeFrame? timeFrame,
     FeatureToggles? featureToggles,
+    String? persona,
     required int gen,
   }) async {
+    final requestId = portfolioId == 'all' && persona != null && persona.isNotEmpty
+        ? 'all|$persona'
+        : portfolioId;
     CommonLogger.debug(
       '🔍 PortfolioAnalyticsCubit: loadAnalytics called with portfolioId: $portfolioId, timeFrame: ${timeFrame?.name}',
       tag: 'PortfolioAnalyticsCubit',
@@ -169,8 +191,12 @@ class PortfolioAnalyticsCubit extends Cubit<PortfolioAnalyticsState> {
       AnalyticsDataType.movers,
     };
 
-    if (state is PortfolioAnalyticsLoaded) {
-      emit((state as PortfolioAnalyticsLoaded).copyWith(loadingTypes: loadingTypes));
+    final priorLoaded = state is PortfolioAnalyticsLoaded
+        ? state as PortfolioAnalyticsLoaded
+        : null;
+    final sameBook = priorLoaded?.portfolioId == portfolioId;
+    if (sameBook) {
+      emit(priorLoaded!.copyWith(loadingTypes: loadingTypes));
     } else {
       emit(PortfolioAnalyticsLoading(loadingTypes: loadingTypes));
     }
@@ -181,14 +207,14 @@ class PortfolioAnalyticsCubit extends Cubit<PortfolioAnalyticsState> {
 
     // Start full analytics fetch (takes ~58s due to live market data for Movers/Heatmap)
     final fullAnalyticsFuture = _analyticsService.getPortfolioAnalyticsWithDefaults(
-      portfolioId, 
+      requestId, 
       timeFrame: timeFrame,
       featureToggles: featureToggles,
     );
 
     // Fast fetch for allocations (uses MongoDB / fast current market data, ~100ms)
     try {
-      final allocations = await _analyticsService.getPortfolioAllocations(portfolioId);
+      final allocations = await _analyticsService.getPortfolioAllocations(requestId);
       fastSectorAllocation = allocations.sectorAllocation;
       fastMarketCapAllocation = allocations.marketCapAllocation;
       
@@ -197,27 +223,19 @@ class PortfolioAnalyticsCubit extends Cubit<PortfolioAnalyticsState> {
           '🔍 Fast allocations loaded, emitting partial state',
           tag: 'PortfolioAnalyticsCubit',
         );
-        if (state is PortfolioAnalyticsLoaded) {
-          emit((state as PortfolioAnalyticsLoaded).copyWith(
+        emit(
+          PortfolioAnalyticsLoaded(
+            portfolioId: portfolioId,
             sectorAllocation: fastSectorAllocation,
             marketCapAllocation: fastMarketCapAllocation,
+            heatmap: sameBook ? priorLoaded?.heatmap : null,
+            movers: sameBook ? priorLoaded?.movers : null,
             loadingTypes: const {
-              AnalyticsDataType.heatmap, 
+              AnalyticsDataType.heatmap,
               AnalyticsDataType.movers,
             },
-          ));
-        } else {
-          emit(
-            PortfolioAnalyticsLoaded(
-              sectorAllocation: fastSectorAllocation,
-              marketCapAllocation: fastMarketCapAllocation,
-              loadingTypes: const {
-                AnalyticsDataType.heatmap, 
-                AnalyticsDataType.movers,
-              },
-            ),
-          );
-        }
+          ),
+        );
       }
     } catch (e) {
       CommonLogger.warning(
@@ -300,12 +318,12 @@ class PortfolioAnalyticsCubit extends Cubit<PortfolioAnalyticsState> {
           );
         }
       }
-      final priorHeatmap = state is PortfolioAnalyticsLoaded
-          ? (state as PortfolioAnalyticsLoaded).heatmap
-          : null;
-      final mergedHeatmap = preferNonEmptyHeatmap(
-        analytics.analytics.heatmap,
-        priorHeatmap,
+      final priorHeatmap = sameBook ? priorLoaded?.heatmap : null;
+      final mergedHeatmap = heatmapForPortfolio(
+        portfolioId: portfolioId,
+        priorPortfolioId: sameBook ? portfolioId : null,
+        incoming: analytics.analytics.heatmap,
+        prior: priorHeatmap,
       );
       if (mergedHeatmap == null || mergedHeatmap.sectors.isEmpty) {
         ProductTelemetry.instance.emptyState('heatmap_empty');
@@ -314,6 +332,7 @@ class PortfolioAnalyticsCubit extends Cubit<PortfolioAnalyticsState> {
       _lastLoadedTimeFrame = timeFrame;
       emit(
         PortfolioAnalyticsLoaded(
+          portfolioId: portfolioId,
           sectorAllocation: preferNonEmptyAllocation(
             analytics.analytics.sectorAllocation,
             fastSectorAllocation,
@@ -352,6 +371,7 @@ class PortfolioAnalyticsCubit extends Cubit<PortfolioAnalyticsState> {
         _lastLoadedTimeFrame = timeFrame;
         emit(
           PortfolioAnalyticsLoaded(
+            portfolioId: portfolioId,
             sectorAllocation: fastSectorAllocation,
             marketCapAllocation: fastMarketCapAllocation,
             errors: {
@@ -470,13 +490,14 @@ class PortfolioAnalyticsCubit extends Cubit<PortfolioAnalyticsState> {
   /// Refresh all analytics data
   Future<void> refreshAnalytics(String portfolioId) async {
     final currentState = state;
-    if (currentState is PortfolioAnalyticsLoaded) {
+    if (currentState is PortfolioAnalyticsLoaded &&
+        currentState.portfolioId == portfolioId) {
       CommonLogger.info(
         'Refreshing portfolio analytics',
         tag: 'PortfolioAnalyticsCubit',
       );
 
-      emit(currentState.copyWith(isRefreshing: true));
+      emit(currentState.copyWith(isRefreshing: true, portfolioId: portfolioId));
 
       try {
         final analytics = await _analyticsService

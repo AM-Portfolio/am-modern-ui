@@ -9,6 +9,7 @@ export 'data/repositories/dashboard_repository.dart';
 
 // Providers
 export 'presentation/providers/dashboard_provider.dart';
+export 'presentation/providers/dashboard_portfolio_refresh_binder.dart';
 export 'presentation/providers/dashboard_timeframe_provider.dart';
 export 'presentation/layout/dashboard_layout_provider.dart';
 
@@ -21,6 +22,8 @@ export 'presentation/layout/dashboard_customize_sheet.dart';
 
 // Pages (Router)
 export 'presentation/pages/dashboard_screen.dart';
+export 'presentation/pages/dashboard_users_page.dart';
+export 'presentation/shared/widgets/dashboard_accounts_hub_widget.dart';
 
 // Shared Widgets (used by both mobile and web screens)
 export 'presentation/shared/widgets/dashboard_summary_widget.dart';

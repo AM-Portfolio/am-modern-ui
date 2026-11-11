@@ -15,8 +15,8 @@ class AddToWatchlistPopup extends ConsumerStatefulWidget {
     this.sourceWatchlistId,
   });
 
-  static Future<void> show(BuildContext context, String symbol, {String? sourceWatchlistId}) {
-    return showDialog(
+  static Future<bool?> show(BuildContext context, String symbol, {String? sourceWatchlistId}) {
+    return showDialog<bool>(
       context: context,
       builder: (context) => AddToWatchlistPopup(symbol: symbol, sourceWatchlistId: sourceWatchlistId),
     );
@@ -64,8 +64,15 @@ class _AddToWatchlistPopupState extends ConsumerState<AddToWatchlistPopup> {
       }
 
       if (mounted) {
-        Navigator.of(context).pop();
+        Navigator.of(context).pop(true);
         ref.invalidate(watchlistCheckStatusProvider(widget.symbol));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Added ${widget.symbol} to watchlist'),
+            backgroundColor: context.colors.statusSuccess,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
       }
     } catch (e) {
       if (mounted) {
@@ -101,14 +108,15 @@ class _AddToWatchlistPopupState extends ConsumerState<AddToWatchlistPopup> {
                 children: [
                   Text(
                     isMoveMode ? 'Move to Watchlist' : 'Add to Watchlist',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
+                      color: colors.textPrimary,
                     ),
                   ),
                   IconButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.close),
+                    icon: Icon(Icons.close, color: colors.textSecondary),
                   ),
                 ],
               ),
@@ -137,18 +145,23 @@ class _AddToWatchlistPopupState extends ConsumerState<AddToWatchlistPopup> {
                   Expanded(
                     child: Text(
                       widget.symbol,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
+                        color: colors.textPrimary,
                       ),
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 24),
-              const Text(
+              Text(
                 'Choose a Watchlist',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: colors.textPrimary,
+                ),
               ),
               const SizedBox(height: 12),
               Flexible(
@@ -162,7 +175,7 @@ class _AddToWatchlistPopupState extends ConsumerState<AddToWatchlistPopup> {
                 children: [
                   TextButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    child: const Text('Cancel'),
+                    child: Text('Cancel', style: TextStyle(color: colors.textSecondary)),
                   ),
                   const SizedBox(width: 12),
                   ElevatedButton(
@@ -171,10 +184,17 @@ class _AddToWatchlistPopupState extends ConsumerState<AddToWatchlistPopup> {
                         : null,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: colors.actionPrimaryBg,
-                      foregroundColor: Colors.white,
+                      foregroundColor: colors.actionPrimaryFg,
                     ),
                     child: _isLoading
-                        ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                        ? SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: colors.actionPrimaryFg,
+                            ),
+                          )
                         : const Text('Save'),
                   ),
                 ],
@@ -195,7 +215,13 @@ class _AddToWatchlistPopupState extends ConsumerState<AddToWatchlistPopup> {
     return watchlistsAsync.when(
       data: (watchlists) {
         if (watchlists.isEmpty) {
-          return const Text('No watchlists found. Create one below.');
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8.0),
+            child: Text(
+              'No watchlists found. Create one below.',
+              style: TextStyle(color: context.colors.textSecondary, fontSize: 13),
+            ),
+          );
         }
 
         return checkStatusAsync.when(
@@ -205,9 +231,18 @@ class _AddToWatchlistPopupState extends ConsumerState<AddToWatchlistPopup> {
               itemCount: watchlists.length,
               itemBuilder: (context, index) {
                 final list = watchlists[index];
-                final status = statuses.firstWhere((s) => s.watchlistId == list.id, orElse: () => WatchlistCheckStatus(watchlistId: list.id, name: list.name, containsSymbol: false, itemCount: 0));
-                
-                final isAlreadyAdded = status.containsSymbol && list.id != widget.sourceWatchlistId;
+                final status = statuses.firstWhere(
+                  (s) => s.watchlistId == list.id,
+                  orElse: () => WatchlistCheckStatus(
+                    watchlistId: list.id,
+                    name: list.name,
+                    containsSymbol: false,
+                    itemCount: 0,
+                  ),
+                );
+
+                final isAlreadyAdded =
+                    status.containsSymbol && list.id != widget.sourceWatchlistId;
 
                 return RadioListTile<String>(
                   title: Row(
@@ -216,11 +251,13 @@ class _AddToWatchlistPopupState extends ConsumerState<AddToWatchlistPopup> {
                         child: Text(
                           list.name,
                           style: TextStyle(
-                            color: isAlreadyAdded ? context.colors.textDisabled : context.colors.textPrimary,
+                            color: isAlreadyAdded
+                                ? context.colors.textDisabled
+                                : context.colors.textPrimary,
                           ),
                         ),
                       ),
-                      if (isAlreadyAdded)
+                      if (isAlreadyAdded) ...[
                         Text(
                           '(already added)',
                           style: TextStyle(
@@ -228,6 +265,39 @@ class _AddToWatchlistPopupState extends ConsumerState<AddToWatchlistPopup> {
                             color: context.colors.textDisabled,
                           ),
                         ),
+                        const SizedBox(width: 4),
+                        IconButton(
+                          tooltip: 'Remove from ${list.name}',
+                          iconSize: 18,
+                          visualDensity: VisualDensity.compact,
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+                          icon: Icon(
+                            Icons.delete_outline_rounded,
+                            size: 16,
+                            color: context.colors.statusError,
+                          ),
+                          onPressed: () async {
+                            final confirm = await ConfirmationDialog.show(
+                              context: context,
+                              title: 'Remove Stock',
+                              subtitle: 'Watchlist Management',
+                              message:
+                                  'Are you sure you want to remove ${widget.symbol} from ${list.name}?',
+                              icon: Icons.star_rounded,
+                              confirmText: 'Remove',
+                              isDestructive: true,
+                            );
+                            if (confirm == true) {
+                              await ref
+                                  .read(watchlistsProvider.notifier)
+                                  .removeStock(list.id, widget.symbol);
+                              ref.invalidate(watchlistCheckStatusProvider(widget.symbol));
+                            }
+                          },
+                        ),
+                      ],
+                      const SizedBox(width: 4),
                       Text(
                         '${status.itemCount} stocks',
                         style: TextStyle(
@@ -274,9 +344,11 @@ class _AddToWatchlistPopupState extends ConsumerState<AddToWatchlistPopup> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        ListTile(
+        RadioListTile<String>(
+          value: '__new__',
+          groupValue: _isCreatingNew ? '__new__' : _selectedWatchlistId,
           contentPadding: EdgeInsets.zero,
-          leading: Icon(Icons.add_box_rounded, color: ModuleColors.market),
+          activeColor: ModuleColors.market,
           title: Text(
             'Create New Watchlist',
             style: TextStyle(
@@ -284,25 +356,38 @@ class _AddToWatchlistPopupState extends ConsumerState<AddToWatchlistPopup> {
               fontWeight: FontWeight.w600,
             ),
           ),
-          onTap: () {
+          secondary: Icon(Icons.add_circle_outline, color: ModuleColors.market),
+          onChanged: (_) {
             setState(() {
               _isCreatingNew = true;
               _selectedWatchlistId = null;
             });
           },
         ),
-        if (_isCreatingNew)
+        if (_isCreatingNew) ...[
+          const SizedBox(height: 8),
           TextField(
             controller: _newWatchlistController,
+            autofocus: true,
+            style: TextStyle(color: context.colors.textPrimary, fontSize: 14),
             decoration: InputDecoration(
               hintText: 'Enter watchlist name...',
-              border: OutlineInputBorder(
+              hintStyle: TextStyle(color: context.colors.textTertiary, fontSize: 14),
+              filled: true,
+              fillColor: context.colors.surface,
+              enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: context.colors.border),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: ModuleColors.market),
               ),
               contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             ),
             onChanged: (val) => setState(() {}),
           ),
+        ],
       ],
     );
   }

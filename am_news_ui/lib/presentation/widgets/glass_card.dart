@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:am_design_system/am_design_system.dart';
 
@@ -42,11 +41,10 @@ class AmGlassCard extends StatelessWidget {
       );
     }
 
-    return ClipRRect(
-      borderRadius: AppRadii.dialog,
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-        child: Container(
+    return webGlass(
+      sigma: 12,
+      clip: AppRadii.dialog,
+      child: Container(
           decoration: BoxDecoration(
             color: colors.cardSurface.withValues(alpha: surfaceAlpha),
             borderRadius: AppRadii.dialog,
@@ -67,7 +65,6 @@ class AmGlassCard extends StatelessWidget {
           ),
           padding: padding,
           child: child,
-        ),
       ),
     );
   }

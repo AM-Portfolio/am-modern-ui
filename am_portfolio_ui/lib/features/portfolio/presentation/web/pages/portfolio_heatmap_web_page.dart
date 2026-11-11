@@ -23,27 +23,11 @@ class PortfolioHeatmapWebPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final activePortfolioId = context.selectedPortfolioId ?? portfolioId;
-    final activePortfolioName = context.selectedPortfolioName ?? portfolioName;
+    final activePortfolioId = portfolioId ?? context.selectedPortfolioId;
+    final activePortfolioName = portfolioName ?? context.selectedPortfolioName;
 
     if (activePortfolioId == null) {
       return const Center(child: Text('Please select a portfolio'));
-    }
-
-    if (activePortfolioId == 'all') {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.info_outline, size: 48, color: context.statusNeutral),
-            const SizedBox(height: 16),
-            Text(
-              'Select a specific portfolio to view the Heatmap',
-              style: TextStyle(color: context.textTertiary, fontSize: 16),
-            ),
-          ],
-        ),
-      );
     }
 
     return BlocProvider(

@@ -75,7 +75,8 @@ class PaperMarketClient {
   }
 
   /// Fetch constituents for any index (e.g. NIFTY 50, NIFTY BANK, NIFTY IT, NIFTY 100).
-  Future<List<WatchlistStock>> fetchIndexConstituents(String indexSymbol) async {
+  Future<List<WatchlistStock>> fetchIndexConstituents(
+      String indexSymbol) async {
     await _ensureAuth();
     final cleanSym = indexSymbol.replaceAll('index:', '').trim();
     final effectiveSym = cleanSym.isEmpty ? 'NIFTY 50' : cleanSym;
@@ -104,13 +105,15 @@ class PaperMarketClient {
       if (decoded is! List || decoded.isEmpty) return const [];
       final first = decoded.first;
       if (first is! Map) return const [];
-      final list = first['data'] as List? ?? first['stocks'] as List? ?? const [];
+      final list =
+          first['data'] as List? ?? first['stocks'] as List? ?? const [];
       final out = <WatchlistStock>[];
       for (final row in list) {
         if (row is! Map) continue;
         final sym = (row['symbol'] ?? '').toString().trim().toUpperCase();
         if (sym.isEmpty) continue;
-        final name = (row['companyName'] ?? row['name'] ?? sym).toString().trim();
+        final name =
+            (row['companyName'] ?? row['name'] ?? sym).toString().trim();
         out.add(stockFromSymbol(sym, name: name.isEmpty ? sym : name));
       }
       return out;
@@ -177,7 +180,10 @@ class PaperMarketClient {
   }
 
   /// Refresh LTP / change via live-ltp, falling back to quotes when empty/miss.
-  Future<List<WatchlistStock>> enrichQuotes(List<WatchlistStock> rows) async {
+  Future<List<WatchlistStock>> enrichQuotes(
+    List<WatchlistStock> rows, {
+    bool forceRefresh = false,
+  }) async {
     if (rows.isEmpty) return rows;
     await _ensureAuth();
 
@@ -208,6 +214,7 @@ class PaperMarketClient {
         futures.add(_fetchLiveLtpMap(
           equity,
           isIndexSymbol: false,
+          refresh: forceRefresh,
           exchange: exchange,
         ));
       }
@@ -215,6 +222,7 @@ class PaperMarketClient {
         futures.add(_fetchLiveLtpMap(
           indices,
           isIndexSymbol: true,
+          refresh: forceRefresh,
           exchange: exchange,
         ));
       }
@@ -246,6 +254,7 @@ class PaperMarketClient {
       final fromQuotes = await _fetchQuotesPriceMap(
         symbols,
         exchange: entry.key,
+        forceRefresh: forceRefresh,
       );
       dataMap.addAll(fromQuotes);
     }
@@ -273,15 +282,17 @@ class PaperMarketClient {
   Future<Map<String, Map<String, dynamic>>> _fetchQuotesPriceMap(
     List<String> symbols, {
     required String exchange,
+    bool forceRefresh = false,
   }) async {
     if (symbols.isEmpty) return {};
     final ex = _normalizeExchange(exchange);
-    final joined = symbols.map(_bareSymbol).where((s) => s.isNotEmpty).join(',');
+    final joined =
+        symbols.map(_bareSymbol).where((s) => s.isNotEmpty).join(',');
     if (joined.isEmpty) return {};
     final root = await _fetchQuotesHttp(
       joined,
       exchange: ex,
-      forceRefresh: false,
+      forceRefresh: forceRefresh,
     );
     if (root == null) return {};
 
@@ -331,10 +342,8 @@ class PaperMarketClient {
   }) async {
     if (symbols.isEmpty) return {};
     final ex = _normalizeExchange(exchange);
-    final normalized = symbols
-        .map(_bareSymbol)
-        .where((s) => s.isNotEmpty)
-        .toList();
+    final normalized =
+        symbols.map(_bareSymbol).where((s) => s.isNotEmpty).toList();
     if (normalized.isEmpty) return {};
     normalized.sort();
     final cacheKey = '$ex|$isIndexSymbol|$refresh|${normalized.join(',')}';
@@ -570,17 +579,13 @@ class PaperMarketClient {
 
     final prices = _parsePriceFields(item);
     final ohlc = item['ohlc'] is Map ? item['ohlc'] as Map : null;
-    final openRaw = _asDouble(item['open'] ??
-            item['openPrice'] ??
-            ohlc?['open']) ??
-        prices.open;
-    final highRaw = _asDouble(item['high'] ??
-            item['highPrice'] ??
-            ohlc?['high']) ??
-        prices.high;
-    final lowRaw = _asDouble(item['low'] ??
-            item['lowPrice'] ??
-            ohlc?['low']) ??
+    final openRaw =
+        _asDouble(item['open'] ?? item['openPrice'] ?? ohlc?['open']) ??
+            prices.open;
+    final highRaw =
+        _asDouble(item['high'] ?? item['highPrice'] ?? ohlc?['high']) ??
+            prices.high;
+    final lowRaw = _asDouble(item['low'] ?? item['lowPrice'] ?? ohlc?['low']) ??
         prices.low;
     final prev = _asDouble(item['previousClose'] ??
             item['previous_close'] ??

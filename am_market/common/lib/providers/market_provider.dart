@@ -760,6 +760,10 @@ class MarketProvider with ChangeNotifier {
   @override
   void dispose() {
     _priceUpdateSub?.cancel();
+    final service = _priceService;
+    if (service != null) {
+      unawaited(service.releaseScope(_priceScopeOwner));
+    }
     _livePriceController.close();
     super.dispose();
   }

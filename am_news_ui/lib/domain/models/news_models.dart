@@ -9,12 +9,13 @@ class NewsCard {
   });
 
   factory NewsCard.fromJson(Map<String, dynamic> json) {
+    String str(dynamic v) => v == null ? '' : v.toString();
     return NewsCard(
-      heading: json['heading'] as String? ?? '',
-      summary: json['summary'] as String? ?? '',
-      thumbnail: json['thumbnail'] as String?,
-      articleLink: json['article_link'] as String? ?? '',
-      publishedAt: json['published_at'] as String?,
+      heading: str(json['heading']),
+      summary: str(json['summary']),
+      thumbnail: json['thumbnail']?.toString(),
+      articleLink: str(json['article_link'] ?? json['articleLink']),
+      publishedAt: (json['published_at'] ?? json['publishedAt'])?.toString(),
       symbols: (json['symbols'] as List?)?.map((e) => e.toString()).toList() ??
           const [],
     );
@@ -39,8 +40,8 @@ class InsightNews {
   });
 
   factory InsightNews.fromJson(Map<String, dynamic> json) {
-    List<NewsCard> parse(String key) {
-      final raw = json[key];
+    List<NewsCard> parse(String snake, [String? camel]) {
+      final raw = json[snake] ?? (camel == null ? null : json[camel]);
       if (raw is! List) return const [];
       return sortNewsNewestFirst(
         raw
@@ -49,16 +50,19 @@ class InsightNews {
       );
     }
 
-    final missing = (json['missing_symbols'] as List?)
-            ?.map((e) => e.toString().trim().toUpperCase())
-            .where((s) => s.isNotEmpty)
-            .toList() ??
+    final missing = (json['missing_symbols'] as List? ??
+            json['missingSymbols'] as List?)
+        ?.map((e) => e.toString().trim().toUpperCase())
+        .where((s) => s.isNotEmpty)
+        .toList() ??
         const <String>[];
 
     return InsightNews(
-      currentAffairs: parse('current_affairs'),
+      currentAffairs: parse('current_affairs', 'currentAffairs'),
       holdings: parse('holdings'),
-      pendingIngest: json['pending_ingest'] as bool? ?? false,
+      pendingIngest: json['pending_ingest'] as bool? ??
+          json['pendingIngest'] as bool? ??
+          false,
       missingSymbols: missing,
     );
   }

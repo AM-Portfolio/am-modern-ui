@@ -110,13 +110,19 @@ class _GlobalBottomNavigationState extends State<GlobalBottomNavigation> {
           child: LayoutBuilder(
             builder: (context, constraints) {
               final hasSearch = widget.onSearchTap != null;
+              final hasProfile = widget.onProfileTap != null;
               final searchSlot = hasSearch ? 48.0 : 0.0;
-              final viewportWidth =
-                  constraints.maxWidth - (_horizontalPadding * 2) - searchSlot;
+              final profileSlot = hasProfile ? 44.0 : 0.0;
+              final viewportWidth = constraints.maxWidth -
+                  (_horizontalPadding * 2) -
+                  searchSlot -
+                  profileSlot;
               final itemWidth = viewportWidth / visibleCount;
               final accent = widget.accentColor ??
                   _getIconColor(widget.activeNavItem) ??
                   AppColors.primary;
+              final profileSelected =
+                  widget.activeNavItem.toLowerCase() == 'profile';
 
               return Row(
                 children: [
@@ -189,6 +195,36 @@ class _GlobalBottomNavigationState extends State<GlobalBottomNavigation> {
                       },
                     ),
                   ),
+                  if (hasProfile)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 4),
+                      child: IconButton(
+                        key: const Key('bottom-nav-profile'),
+                        tooltip: 'Profile',
+                        onPressed: widget.onProfileTap,
+                        icon: Container(
+                          padding: const EdgeInsets.all(2),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: profileSelected
+                                  ? accent
+                                  : accent.withValues(alpha: 0.55),
+                              width: profileSelected ? 1.8 : 1.2,
+                            ),
+                          ),
+                          child: Icon(
+                            Icons.person_rounded,
+                            size: 20,
+                            color: profileSelected
+                                ? accent
+                                : (widget.isDarkMode
+                                    ? Colors.white.withValues(alpha: 0.7)
+                                    : Colors.grey.shade600),
+                          ),
+                        ),
+                      ),
+                    ),
                 ],
               );
             },

@@ -45,11 +45,18 @@ class PaperEnablePage extends StatelessWidget {
                     onPressed: state.submitting
                         ? null
                         : () => context.read<PaperOmsCubit>().enablePaper(),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: ModuleColors.market,
+                      foregroundColor: colors.actionPrimaryFg,
+                    ),
                     child: state.submitting
-                        ? const SizedBox(
+                        ? SizedBox(
                             height: 20,
                             width: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: colors.actionPrimaryFg,
+                            ),
                           )
                         : const Text('Enable paper trading'),
                   ),

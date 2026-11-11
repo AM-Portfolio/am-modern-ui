@@ -5,6 +5,7 @@ import 'package:am_auth_ui/am_auth_ui.dart' as auth_ui;
 import 'package:am_dashboard_ui/am_dashboard_ui.dart' as dashboard_ui;
 import 'package:am_common/am_common.dart' as common;
 import 'package:am_library/am_library.dart';
+import 'package:am_portfolio_ui/features/portfolio/presentation/widgets/intelligence/register_dashboard_intel.dart';
 import 'package:am_subscription_ui/am_subscription_ui.dart' as subscription_ui;
 
 final getIt = GetIt.instance;
@@ -193,6 +194,7 @@ void _registerDashboardDependencies() {
       getIt<common.AmStompClient>(),
     );
   });
+  registerDashboardIntelWidgets();
 }
 
 Future<void> _registerSubscriptionDependencies() async {

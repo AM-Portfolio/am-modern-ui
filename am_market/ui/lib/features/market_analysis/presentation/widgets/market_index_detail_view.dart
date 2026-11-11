@@ -8,11 +8,13 @@ class MarketIndexDetailView extends StatefulWidget {
   const MarketIndexDetailView({
     required this.provider,
     required this.indexSymbol,
+    this.onStockSelected,
     super.key,
   });
 
   final MarketProvider provider;
   final String indexSymbol;
+  final ValueChanged<String>? onStockSelected;
 
   @override
   State<MarketIndexDetailView> createState() => _MarketIndexDetailViewState();
@@ -20,23 +22,6 @@ class MarketIndexDetailView extends StatefulWidget {
 
 class _MarketIndexDetailViewState extends State<MarketIndexDetailView> {
   int _viewMode = 0; // 0: Table, 1: Heatmap, 2: Analytics
-
-  String _getValidIndexSymbol(String? index) {
-    if (index == null ||
-        index.isEmpty ||
-        index == 'All Indices' ||
-        index == 'Streamer' ||
-        index == 'Instrument Explorer' ||
-        index == 'Security Explorer' ||
-        index == 'ETF Explorer' ||
-        index == 'Price Test' ||
-        index == 'Market Analysis' ||
-        index == 'Heatmap' ||
-        index == 'Admin Dashboard') {
-      return 'NIFTY 50';
-    }
-    return index;
-  }
 
   @override
   Widget build(BuildContext context) => Stack(
@@ -64,7 +49,7 @@ class _MarketIndexDetailViewState extends State<MarketIndexDetailView> {
       case 0:
         return const ConstituentsTable();
       case 1:
-        return const HeatmapView();
+        return HeatmapView(onSelectStock: widget.onStockSelected);
       case 2:
         return const AnalysisPage();
       default:

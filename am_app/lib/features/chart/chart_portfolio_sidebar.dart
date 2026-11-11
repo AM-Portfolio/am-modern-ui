@@ -99,13 +99,29 @@ class _ChartPortfolioSidebarState extends ConsumerState<ChartPortfolioSidebar> {
       if (kind == 'DELETED') continue;
       final id =
           (map['portfolioId'] as String?) ?? (map['id'] as String?) ?? '';
-      final name =
+      final rawName =
           (map['portfolioName'] as String?) ?? (map['name'] as String?) ?? '';
-      if (id.isEmpty || name.isEmpty) continue;
-      if (name.trim().toLowerCase() == 'paper' ||
+      if (id.isEmpty || rawName.isEmpty) continue;
+      if (rawName.trim().toLowerCase() == 'paper' ||
           id.trim().toLowerCase() == 'paper') {
         continue;
       }
+      final brokerType = (map['brokerType'] ?? map['broker'])?.toString();
+      final familyMemberId = (map['familyMemberId'] as String?)?.trim();
+      final familyMemberName = (map['familyMemberName'] as String?)?.trim();
+      final baseName = (rawName.isEmpty || rawName == id) &&
+              brokerType != null &&
+              brokerType.isNotEmpty
+          ? brokerType
+          : rawName;
+      final name = () {
+        final fid = familyMemberId;
+        if (fid == null || fid.isEmpty) return baseName;
+        final member = familyMemberName;
+        if (member == null || member.isEmpty) return baseName;
+        final short = member.split(RegExp(r'\s+')).first;
+        return '$baseName ($short)';
+      }();
       final isBasket = kind == 'BASKET' || map['isBasket'] == true;
       final isDummy = kind == 'DUMMY' ||
           kind == 'DEMO' ||

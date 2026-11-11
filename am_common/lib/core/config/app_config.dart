@@ -102,7 +102,7 @@ class NewsApiConfig {
     required this.baseUrl,
     this.insightResource = '/v1/insight',
     this.currentAffairsResource = '/v1/current-affairs',
-    this.connectTimeoutMs = 3000,
+    this.connectTimeoutMs = 20000,
   });
   final String baseUrl;
   final String insightResource;

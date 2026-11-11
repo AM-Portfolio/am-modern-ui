@@ -21,6 +21,7 @@ export 'core/theme/app_typography.dart';
 export 'core/theme/app_animations.dart';
 export 'core/theme/app_glassmorphism.dart';
 export 'core/theme/app_glassmorphism_v2.dart';
+export 'core/theme/web_glass.dart';
 export 'core/theme/cubit/theme_cubit.dart';
 export 'core/theme/theme_repository.dart';
 export 'core/config/design_system_config.dart';
@@ -167,8 +168,10 @@ export 'shared/widgets/charts/chart_types.dart';
 export 'shared/widgets/charts/chart_axis_scale.dart';
 export 'shared/widgets/charts/multi_series_chart_data.dart';
 export 'shared/widgets/charts/multi_series_chart_config.dart';
+export 'shared/widgets/charts/chart_series_legend_chip.dart';
 export 'shared/widgets/charts/comparison_chart_colors.dart';
 export 'shared/widgets/charts/comparison_chart_view.dart';
+export 'shared/widgets/charts/comparison_toolbar_control.dart';
 export 'shared/widgets/charts/chart_series_window.dart';
 export 'shared/widgets/charts/candle_chart.dart';
 export 'shared/widgets/charts/indicators/chart_indicators.dart';
@@ -182,6 +185,8 @@ export 'shared/widgets/portfolio_overview/charts/market_cap_allocation/animated_
 // --- Selectors ---
 export 'shared/widgets/selectors/selectors.dart';
 export 'shared/widgets/selectors/shared_portfolio_selector.dart';
+export 'shared/widgets/selectors/shared_family_filter_dropdown.dart';
+export 'shared/widgets/selectors/family_aware_portfolio_picker.dart';
 
 // --- Feedback & Loading ---
 export 'shared/widgets/feedback/shimmer_loading.dart';
@@ -207,6 +212,10 @@ export 'shared/models/am_mover_item.dart'; // Generic mover tile data model
 export 'shared/widgets/holdings/universal_holdings.dart';
 export 'shared/widgets/holdings/advanced/advanced_holding_row.dart';
 export 'shared/widgets/holdings/advanced/advanced_holdings_template.dart';
+export 'shared/widgets/accounts/advanced/advanced_account_row.dart';
+export 'shared/widgets/accounts/advanced/advanced_accounts_cards.dart';
+export 'shared/widgets/accounts/advanced/advanced_accounts_template.dart';
+
 // export 'shared/models/file_upload_models.dart';\n// export 'models/investment_card/investment_data.dart'; // Missing model
 
 // --- Movers Panel ---

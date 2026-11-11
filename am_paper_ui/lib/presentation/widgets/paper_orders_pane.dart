@@ -10,7 +10,14 @@ import 'paper_order_mobile_card.dart';
 
 enum _OrdersFilter { all, pending, executed, failed }
 
-const _typeOptions = <String>['ALL', 'MARKET', 'LIMIT', 'SUPER', 'TRAIL', 'STOP'];
+const _typeOptions = <String>[
+  'ALL',
+  'MARKET',
+  'LIMIT',
+  'SUPER',
+  'TRAIL',
+  'STOP'
+];
 
 class _OrderRow {
   const _OrderRow({
@@ -119,9 +126,7 @@ class _PaperOrdersPaneState extends State<PaperOrdersPane> {
           ),
           IconButton(
             icon: const Icon(Icons.chevron_left, size: 20),
-            onPressed: page > 0
-                ? () => setState(() => _page = page - 1)
-                : null,
+            onPressed: page > 0 ? () => setState(() => _page = page - 1) : null,
           ),
           IconButton(
             icon: const Icon(Icons.chevron_right, size: 20),
@@ -300,7 +305,8 @@ class _PaperOrdersPaneState extends State<PaperOrdersPane> {
     );
   }
 
-  Widget _statChip(BuildContext context, String label, int n, {Color? valueColor}) {
+  Widget _statChip(BuildContext context, String label, int n,
+      {Color? valueColor}) {
     final colors = context.colors;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -357,7 +363,8 @@ class _PaperOrdersPaneState extends State<PaperOrdersPane> {
               Container(
                 width: 6,
                 height: 6,
-                decoration: BoxDecoration(color: countColor, shape: BoxShape.circle),
+                decoration:
+                    BoxDecoration(color: countColor, shape: BoxShape.circle),
               ),
               const SizedBox(width: 6),
             ],
@@ -388,7 +395,8 @@ class _PaperOrdersPaneState extends State<PaperOrdersPane> {
     final busy = state.submitting;
     if (o.isWorking) {
       return TextButton(
-        onPressed: busy ? null : () => context.read<PaperOmsCubit>().cancel(o.orderId),
+        onPressed:
+            busy ? null : () => context.read<PaperOmsCubit>().cancel(o.orderId),
         style: TextButton.styleFrom(
           foregroundColor: context.colors.statusError,
           padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -423,7 +431,8 @@ class _PaperOrdersPaneState extends State<PaperOrdersPane> {
             child: const Text('Details'),
           ),
           TextButton(
-            onPressed: widget.onReorder == null ? null : () => widget.onReorder!(o),
+            onPressed:
+                widget.onReorder == null ? null : () => widget.onReorder!(o),
             style: TextButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 6),
               minimumSize: Size.zero,
@@ -457,7 +466,8 @@ class _PaperOrdersPaneState extends State<PaperOrdersPane> {
     );
   }
 
-  Widget _buildTable(BuildContext context, PaperOmsState state, List<_OrderRow> items) {
+  Widget _buildTable(
+      BuildContext context, PaperOmsState state, List<_OrderRow> items) {
     final fmt = NumberFormat('#,##0.00');
     return PaginatedSortableTable<_OrderRow>(
       items: items,
@@ -580,8 +590,10 @@ class _PaperOrdersPaneState extends State<PaperOrdersPane> {
           hintText: 'Search symbol',
           isDense: true,
           prefixIcon: Icon(Icons.search, size: 18, color: colors.textSecondary),
-          prefixIconConstraints: const BoxConstraints(minWidth: 36, minHeight: 34),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+          prefixIconConstraints:
+              const BoxConstraints(minWidth: 36, minHeight: 34),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(6),
@@ -606,7 +618,8 @@ class _PaperOrdersPaneState extends State<PaperOrdersPane> {
         final all = _todayRows(state);
         final pending = all.where((r) => r.order.isWorking).length;
         final filled = all.where((r) => r.order.isFilled).length;
-        final failed = all.where((r) => r.order.isRejected || r.order.isCancelled).length;
+        final failed =
+            all.where((r) => r.order.isRejected || r.order.isCancelled).length;
         final filtered = _applyFilters(all);
         final pageItems = _pageSlice(filtered);
 
@@ -625,9 +638,10 @@ class _PaperOrdersPaneState extends State<PaperOrdersPane> {
                       children: [
                         Text(
                           "Today's orders",
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.w700,
-                              ),
+                          style:
+                              Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.w700,
+                                  ),
                         ),
                         IconButton(
                           tooltip: 'Refresh',
@@ -682,7 +696,8 @@ class _PaperOrdersPaneState extends State<PaperOrdersPane> {
                   runSpacing: 8,
                   crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
-                    ..._filterChips(context, all.length, pending, filled, failed),
+                    ..._filterChips(
+                        context, all.length, pending, filled, failed),
                     _searchField(context),
                     _typeDropdown(context),
                   ],
@@ -708,14 +723,28 @@ class _PaperOrdersPaneState extends State<PaperOrdersPane> {
         );
 
         final empty = Center(
-          child: Text(
-            filtered.isEmpty && all.isNotEmpty
-                ? 'No orders match filters.'
-                : 'No orders today.',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: colors.textSecondary,
-                ),
-          ),
+          child: state.loadingOrders
+              ? const SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : state.ordersError != null
+                  ? Text(
+                      state.ordersError!,
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: colors.statusError,
+                          ),
+                    )
+                  : Text(
+                      filtered.isEmpty && all.isNotEmpty
+                          ? 'No orders match filters.'
+                          : 'No orders today.',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: colors.textSecondary,
+                          ),
+                    ),
         );
 
         if (isMobile) {
