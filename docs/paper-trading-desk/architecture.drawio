@@ -171,4 +171,26 @@
       </root>
     </mxGraphModel>
   </diagram>
+  <diagram id="fo-contract-resolution" name="FOContractResolution">
+    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" page="1" pageWidth="1400" pageHeight="900">
+      <root>
+        <mxCell id="0"/><mxCell id="1" parent="0"/>
+        <mxCell id="fo-title" value="F&amp;O Contract Resolution — Underlying and Lot Size" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#1A1A2E;strokeColor=#1A1A2E;fontColor=#FFFFFF;fontSize=20;fontStyle=1;" vertex="1" parent="1"><mxGeometry x="0" y="0" width="1400" height="55" as="geometry"/></mxCell>
+        <mxCell id="fo-purpose" value="Purpose: prevent a broad NIFTY search result such as FINNIFTY from becoming the active contract or margin quantity." style="text;html=1;strokeColor=none;fillColor=none;fontColor=#333333;fontStyle=2;" vertex="1" parent="1"><mxGeometry x="40" y="75" width="1100" height="30" as="geometry"/></mxCell>
+        <mxCell id="fo-user" value="User&#10;opens NIFTY F&amp;O" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;fillColor=#08427B;strokeColor=#08427B;fontColor=#FFFFFF;" vertex="1" parent="1"><mxGeometry x="70" y="280" width="80" height="110" as="geometry"/></mxCell>
+        <mxCell id="fo-ui" value="F&amp;O UI&#10;canonical active-contract resolver" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1168BD;strokeColor=#0B4F8A;fontColor=#FFFFFF;fontStyle=1;" vertex="1" parent="1"><mxGeometry x="260" y="245" width="250" height="150" as="geometry"/></mxCell>
+        <mxCell id="fo-api" value="Existing Instrument API&#10;POST /v1/instruments/search&#10;underlyingSymbols=[NIFTY]" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#438DD5;strokeColor=#2E6DA4;fontColor=#FFFFFF;" vertex="1" parent="1"><mxGeometry x="650" y="210" width="280" height="170" as="geometry"/></mxCell>
+        <mxCell id="fo-store" value="Instrument store&#10;underlying_symbol / asset_symbol&#10;lot_size / expiry" style="shape=cylinder;whiteSpace=wrap;html=1;fillColor=#2E7D32;strokeColor=#1B5E20;fontColor=#FFFFFF;" vertex="1" parent="1"><mxGeometry x="1080" y="220" width="220" height="145" as="geometry"/></mxCell>
+        <mxCell id="fo-consumers" value="Shared resolved contract&#10;Header • Futures • Chart/Depth • Margin&#10;Quantity = selected lot_size" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1168BD;strokeColor=#0B4F8A;fontColor=#FFFFFF;" vertex="1" parent="1"><mxGeometry x="260" y="500" width="360" height="150" as="geometry"/></mxCell>
+        <mxCell id="fo-failure" value="Reject / unavailable&#10;Cross-underlying or missing lot size&#10;Show explicit state; no guessed quantity" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8CECC;strokeColor=#B85450;fontColor=#333333;" vertex="1" parent="1"><mxGeometry x="820" y="500" width="330" height="150" as="geometry"/></mxCell>
+        <mxCell id="fo-e1" value="select underlying" style="endArrow=block;html=1;strokeColor=#82B366;" edge="1" parent="1" source="fo-user" target="fo-ui"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="fo-e2" value="HTTP search + structured filter" style="endArrow=block;html=1;strokeColor=#82B366;" edge="1" parent="1" source="fo-ui" target="fo-api"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="fo-e3" value="exact underlying query" style="endArrow=block;html=1;strokeColor=#82B366;" edge="1" parent="1" source="fo-api" target="fo-store"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="fo-e4" value="filtered metadata" style="endArrow=block;html=1;strokeColor=#82B366;" edge="1" parent="1" source="fo-api" target="fo-ui"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="fo-e5" value="same resolved identity + lot_size" style="endArrow=block;html=1;strokeColor=#82B366;" edge="1" parent="1" source="fo-ui" target="fo-consumers"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="fo-e6" value="wrong symbol / missing metadata" style="endArrow=block;html=1;dashed=1;strokeColor=#B85450;" edge="1" parent="1" source="fo-ui" target="fo-failure"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="fo-legend" value="Legend: blue = UI/system  |  green = confirmed data path  |  red dashed = rejected or unavailable data  |  store = authoritative instrument metadata" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontColor=#333333;" vertex="1" parent="1"><mxGeometry x="40" y="800" width="1320" height="38" as="geometry"/></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
 </mxfile>

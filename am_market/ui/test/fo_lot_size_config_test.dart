@@ -36,6 +36,61 @@ Widget _wrapWithApp(Widget child, {List<dynamic> overrides = const []}) {
 
 void main() {
   group('FoLotSizeConfig Unit Tests', () {
+    test('Canonicalizes display labels to instrument-master underlyings', () {
+      expect(canonicalFutureUnderlying('NIFTY 50'), 'NIFTY');
+      expect(canonicalFutureUnderlying('NIFTY BANK'), 'BANKNIFTY');
+      expect(canonicalFutureUnderlying('FINNIFTY'), 'FINNIFTY');
+    });
+
+    test('Resolves the active underlying instead of the first broad-search row',
+        () {
+      final contracts = [
+        {
+          'trading_symbol': 'FINNIFTY FUT 23 NOV 26',
+          'underlying_symbol': 'FINNIFTY',
+          'expiry': 4102444800000,
+          'lot_size': 60,
+        },
+        {
+          'trading_symbol': 'NIFTY FUT 23 NOV 26',
+          'underlying_symbol': 'NIFTY',
+          'expiry': 4102444800000,
+          'lot_size': 65,
+        },
+      ];
+
+      final active = resolveActiveFutureContract(
+        activeSymbol: 'NIFTY 50',
+        contracts: contracts,
+      );
+
+      expect(active?['underlying_symbol'], 'NIFTY');
+      expect(active?['lot_size'], 65);
+    });
+
+    test('Rejects a selected contract from another underlying', () {
+      final active = resolveActiveFutureContract(
+        activeSymbol: 'NIFTY 50',
+        selectedContract: {
+          'trading_symbol': 'FINNIFTY FUT 23 NOV 26',
+          'underlying_symbol': 'FINNIFTY',
+          'expiry': 4102444800000,
+          'lot_size': 60,
+        },
+        contracts: [
+          {
+            'trading_symbol': 'NIFTY FUT 23 NOV 26',
+            'underlying_symbol': 'NIFTY',
+            'expiry': 4102444800000,
+            'lot_size': 65,
+          },
+        ],
+      );
+
+      expect(active?['underlying_symbol'], 'NIFTY');
+      expect(active?['lot_size'], 65);
+    });
+
     test('Formats numeric expiry strings as user-facing dates', () {
       expect(
         FuturesContractDetailsCard.formatExpiry(
@@ -194,6 +249,13 @@ void main() {
         'lot_size': 225,
         'ltp': 3450.0,
       };
+      expect(
+        resolveActiveFutureContract(
+          activeSymbol: 'TCS',
+          contracts: [tcsContract],
+        ),
+        isNotNull,
+      );
 
       await tester.pumpWidget(
         _wrapWithApp(

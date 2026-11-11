@@ -32,5 +32,14 @@
 | 28 | Remove synthetic/demo/fallback prices from the production margin-calculation path | planned |
 | 29 | Clear stale contract values on symbol/contract change and disable calculation until lot size and LTP are confirmed | planned |
 | 30 | Add F&O widget/provider tests for missing metadata, zero LTP, contract switching, lot multiples, and live price updates | planned |
+| 31 | User reviews and approves the backend/frontend lot-size and contract-resolution addendum | **done** |
+| 32 | Extend `InstrumentSearchCriteria` with optional `underlyingSymbols` and preserve backward-compatible broad search | **done** |
+| 33 | Add exact underlying filtering to the existing backend provider path and cover Upstox response ordering/lot-size tests | **done** |
+| 34 | Update the existing generated Flutter SDK request model for `underlyingSymbols` | **done** |
+| 35 | Send the canonical active underlying from F&O and retain client-side filtering as defense-in-depth | **done** |
+| 36 | Introduce one shared active-contract resolver and route header, Futures, chart/depth, and Margin through it | **done** |
+| 37 | Remove cross-underlying default selection and synchronize quantity with the selected contract lot size | **done** |
+| 38 | Add API/provider/widget regressions for NIFTY 65, FINNIFTY 60, async arrival, stale selection, and missing data | **done** |
+| 39 | Run local backend/UI tests, curl regression, and before/after response verification; update the report only after all tests pass | **done** |
 
-No implementation, Postman execution, or deployment is authorized yet.
+The lot-size/contract-resolution implementation is complete locally. Deployment, commit, and push remain separate actions.

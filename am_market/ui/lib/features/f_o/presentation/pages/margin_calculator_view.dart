@@ -71,16 +71,12 @@ class _MarginCalculatorViewState extends ConsumerState<MarginCalculatorView> {
     final colors = context.colors;
     final marketTheme = context.marketTheme;
     final activeSymbol = ref.watch(foActiveSymbolProvider) ?? 'NIFTY';
-    final selectedContract = ref.watch(selectedFutureContractProvider);
     final contractsAsync = ref.watch(futuresContractsMetadataProvider);
     final contracts = contractsAsync.maybeWhen(
       data: (d) => d,
       orElse: () => <dynamic>[],
     );
-    final firstContract = contracts.isNotEmpty && contracts.first is Map
-        ? Map<String, dynamic>.from(contracts.first as Map)
-        : null;
-    final activeContract = selectedContract ?? firstContract;
+    final activeContract = ref.watch(activeFutureContractProvider);
     final quoteKey = activeContract?['instrument_key'] ??
         activeContract?['instrumentKey'] ??
         activeContract?['trading_symbol'] ??

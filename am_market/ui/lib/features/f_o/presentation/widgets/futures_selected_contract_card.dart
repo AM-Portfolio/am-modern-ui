@@ -15,10 +15,13 @@ class FuturesSelectedContractCard extends ConsumerWidget {
     final colors = context.colors;
     final marketTheme = context.marketTheme;
     final activeSymbol = ref.watch(foActiveSymbolProvider) ?? 'TCS';
-    final selectedContract = ref.watch(selectedFutureContractProvider);
+    final selectedContract = ref.watch(activeFutureContractProvider);
 
     final tradingSymbol = selectedContract != null
-        ? (selectedContract['trading_symbol'] ?? selectedContract['tradingSymbol'] ?? '$activeSymbol FUT').toString()
+        ? (selectedContract['trading_symbol'] ??
+                selectedContract['tradingSymbol'] ??
+                '$activeSymbol FUT')
+            .toString()
         : '$activeSymbol FUT';
 
     final expiryStr = FuturesContractDetailsCard.formatExpiry(selectedContract);
@@ -39,7 +42,9 @@ class FuturesSelectedContractCard extends ConsumerWidget {
         tradingSymbol.startsWith('MIDCPNIFTY');
 
     final instType = isIndex ? 'FUTIDX' : 'FUTSTK';
-    final instDesc = isIndex ? 'Instrument Type: Index Futures Contract' : 'Instrument Type: Stock Futures Contract';
+    final instDesc = isIndex
+        ? 'Instrument Type: Index Futures Contract'
+        : 'Instrument Type: Stock Futures Contract';
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -51,19 +56,28 @@ class FuturesSelectedContractCard extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Selected Contract', style: TextStyle(color: colors.textSecondary, fontSize: 12, fontWeight: FontWeight.w500)),
+          Text('Selected Contract',
+              style: TextStyle(
+                  color: colors.textSecondary,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500)),
           const SizedBox(height: 10),
           Row(
             children: [
               Expanded(
                 child: Text(
                   tradingSymbol,
-                  style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 18),
+                  style: TextStyle(
+                      color: colors.textPrimary,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18),
                 ),
               ),
-              _buildReadOnlyBadge(context, instType, ModuleColors.market, instDesc),
+              _buildReadOnlyBadge(
+                  context, instType, ModuleColors.market, instDesc),
               const SizedBox(width: 6),
-              _buildReadOnlyBadge(context, 'NSE_FO', colors.textSecondary, 'Exchange Segment: National Stock Exchange F&O'),
+              _buildReadOnlyBadge(context, 'NSE_FO', colors.textSecondary,
+                  'Exchange Segment: National Stock Exchange F&O'),
             ],
           ),
           const SizedBox(height: 4),
@@ -80,18 +94,26 @@ class FuturesSelectedContractCard extends ConsumerWidget {
             children: [
               Text(
                 '₹${ltp.toStringAsFixed(2)}',
-                style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 24),
+                style: TextStyle(
+                    color: colors.textPrimary,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 24),
               ),
               const SizedBox(width: 10),
-              Icon(isPositive ? Icons.arrow_drop_up : Icons.arrow_drop_down, color: deltaColor, size: 20),
+              Icon(isPositive ? Icons.arrow_drop_up : Icons.arrow_drop_down,
+                  color: deltaColor, size: 20),
               Text(
                 '${change.toStringAsFixed(2)} (${pChange.toStringAsFixed(2)}%)',
-                style: TextStyle(color: deltaColor, fontWeight: FontWeight.bold, fontSize: 14),
+                style: TextStyle(
+                    color: deltaColor,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14),
               ),
             ],
           ),
           const SizedBox(height: 4),
-          Text('14 Sep 2026, 03:30 PM', style: TextStyle(color: colors.textSecondary, fontSize: 11)),
+          Text('14 Sep 2026, 03:30 PM',
+              style: TextStyle(color: colors.textSecondary, fontSize: 11)),
           const SizedBox(height: 14),
 
           // Expiry & Lot Size Footer
@@ -107,17 +129,29 @@ class FuturesSelectedContractCard extends ConsumerWidget {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Expiry', style: TextStyle(color: colors.textSecondary, fontSize: 11)),
+                    Text('Expiry',
+                        style: TextStyle(
+                            color: colors.textSecondary, fontSize: 11)),
                     const SizedBox(height: 2),
-                    Text(expiryStr, style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 13)),
+                    Text(expiryStr,
+                        style: TextStyle(
+                            color: colors.textPrimary,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13)),
                   ],
                 ),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    Text('Lot Size', style: TextStyle(color: colors.textSecondary, fontSize: 11)),
+                    Text('Lot Size',
+                        style: TextStyle(
+                            color: colors.textSecondary, fontSize: 11)),
                     const SizedBox(height: 2),
-                    Text('$lotSize', style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 13)),
+                    Text('$lotSize',
+                        style: TextStyle(
+                            color: colors.textPrimary,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13)),
                   ],
                 ),
               ],
@@ -128,7 +162,8 @@ class FuturesSelectedContractCard extends ConsumerWidget {
     );
   }
 
-  Widget _buildReadOnlyBadge(BuildContext context, String label, Color color, String tooltipText) {
+  Widget _buildReadOnlyBadge(
+      BuildContext context, String label, Color color, String tooltipText) {
     final colors = context.colors;
     return Tooltip(
       message: tooltipText,
@@ -148,7 +183,8 @@ class FuturesSelectedContractCard extends ConsumerWidget {
         ),
         child: Text(
           label,
-          style: TextStyle(color: color, fontWeight: FontWeight.w600, fontSize: 10),
+          style: TextStyle(
+              color: color, fontWeight: FontWeight.w600, fontSize: 10),
         ),
       ),
     );

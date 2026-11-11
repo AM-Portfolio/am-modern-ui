@@ -86,7 +86,7 @@ class FuturesView extends ConsumerWidget {
           );
         }
 
-        _ensureDefaultSelection(ref, contracts);
+        _ensureDefaultSelection(ref, activeSymbol, contracts);
 
         return LayoutBuilder(
           builder: (context, constraints) {
@@ -169,28 +169,18 @@ class FuturesView extends ConsumerWidget {
     );
   }
 
-  static void _ensureDefaultSelection(WidgetRef ref, List<dynamic> contracts) {
+  static void _ensureDefaultSelection(
+      WidgetRef ref, String activeSymbol, List<dynamic> contracts) {
     final selected = ref.read(selectedFutureContractProvider);
     if (selected != null) return;
-    final nowMs = DateTime.now().millisecondsSinceEpoch;
-    Map<String, dynamic>? pick;
-    for (final c in contracts) {
-      if (c is! Map) continue;
-      final map = Map<String, dynamic>.from(c);
-      final rawExp = map['expiry'];
-      if (rawExp is num && rawExp > 0 && rawExp.toInt() < nowMs - 86400000) {
-        continue;
-      }
-      pick = map;
-      break;
-    }
-    if (pick == null && contracts.isNotEmpty && contracts.first is Map) {
-      pick = Map<String, dynamic>.from(contracts.first as Map);
-    }
+    final pick = resolveActiveFutureContract(
+      activeSymbol: activeSymbol,
+      contracts: contracts,
+    );
     if (pick == null) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (ref.read(selectedFutureContractProvider) != null) return;
-      final tradingSymbol = (pick!['trading_symbol'] ??
+      final tradingSymbol = (pick['trading_symbol'] ??
               pick['tradingSymbol'] ??
               pick['name'] ??
               'FUT')

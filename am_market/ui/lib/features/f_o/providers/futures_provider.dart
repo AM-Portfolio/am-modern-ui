@@ -13,17 +13,28 @@ final futuresContractsMetadataProvider =
   if (symbol == null || symbol.trim().isEmpty) return [];
 
   final clean = symbol.toUpperCase().trim();
+  final canonical = canonicalFutureUnderlying(clean);
   final sdkService = MarketDataSdkService();
 
   final criteria = InstrumentSearchCriteria(
-    queries: [clean],
+    queries: [canonical],
+    underlyingSymbols: [canonical],
     segments: ['NSE_FO', 'NFO'],
     exchanges: ['NSE', 'NSE_FO'],
     instrumentTypes: ['FUT', 'FUTIDX', 'FUTSTK'],
   );
 
   final results = await sdkService.instrumentApi.searchInstruments(criteria);
-  return results ?? const <dynamic>[];
+  // Keep the client-side guard for mixed/older backend deployments while the
+  // structured backend filter rolls out.
+  return (results ?? const <dynamic>[])
+      .where((contract) =>
+          contract is Map &&
+          matchesFutureUnderlying(
+            Map<String, dynamic>.from(contract),
+            clean,
+          ))
+      .toList(growable: false);
 });
 
 /// Full futures table data. Quote enrichment remains here for the Futures tab,
@@ -62,6 +73,94 @@ class SelectedFutureContractNotifier extends Notifier<Map<String, dynamic>?> {
 final selectedFutureContractProvider =
     NotifierProvider<SelectedFutureContractNotifier, Map<String, dynamic>?>(
         SelectedFutureContractNotifier.new);
+
+/// Returns the canonical underlying symbol expected by the instrument master.
+/// UI labels such as "NIFTY 50" are intentionally not sent as broad text
+/// searches because they also match FINNIFTY/NIFTYNXT50.
+String canonicalFutureUnderlying(String symbol) {
+  switch (_normalizeUnderlying(symbol)) {
+    case 'NIFTY50':
+      return 'NIFTY';
+    case 'NIFTYBANK':
+      return 'BANKNIFTY';
+    case 'NIFTYNEXT50':
+      return 'NIFTYNXT50';
+    case 'NIFTYFINANCIALSERVICES':
+      return 'FINNIFTY';
+    case 'NIFTYMIDCAPSELECT':
+      return 'MIDCPNIFTY';
+    default:
+      return symbol.trim().toUpperCase();
+  }
+}
+
+int? _futureExpiryMillis(dynamic value) {
+  if (value is num) return value.toInt();
+  final parsed = DateTime.tryParse(value?.toString() ?? '');
+  return parsed?.millisecondsSinceEpoch;
+}
+
+bool isActiveFutureContract(Map<String, dynamic> contract, {DateTime? now}) {
+  final expiry =
+      _futureExpiryMillis(contract['expiry'] ?? contract['expiry_ms']);
+  if (expiry == null || expiry <= 0) return true;
+  return expiry >= (now ?? DateTime.now()).millisecondsSinceEpoch;
+}
+
+/// Single contract identity resolver shared by Futures and Margin surfaces.
+/// It never accepts a selected contract belonging to another underlying.
+Map<String, dynamic>? resolveActiveFutureContract({
+  required String activeSymbol,
+  Map<String, dynamic>? selectedContract,
+  required Iterable<dynamic> contracts,
+}) {
+  if (selectedContract != null &&
+      matchesFutureUnderlying(selectedContract, activeSymbol) &&
+      isActiveFutureContract(selectedContract)) {
+    return selectedContract;
+  }
+
+  final eligible = contracts
+      .whereType<Map>()
+      .map((contract) => Map<String, dynamic>.from(contract))
+      .where((contract) =>
+          matchesFutureUnderlying(contract, activeSymbol) &&
+          isActiveFutureContract(contract))
+      .toList();
+  if (eligible.isEmpty) return null;
+
+  eligible.sort((a, b) {
+    final aExpiry = _futureExpiryMillis(a['expiry'] ?? a['expiry_ms']) ??
+        9223372036854775807;
+    final bExpiry = _futureExpiryMillis(b['expiry'] ?? b['expiry_ms']) ??
+        9223372036854775807;
+    final byExpiry = aExpiry.compareTo(bExpiry);
+    if (byExpiry != 0) return byExpiry;
+    final aSymbol =
+        (a['trading_symbol'] ?? a['tradingSymbol'] ?? '').toString();
+    final bSymbol =
+        (b['trading_symbol'] ?? b['tradingSymbol'] ?? '').toString();
+    return aSymbol.compareTo(bSymbol);
+  });
+  return eligible.first;
+}
+
+final activeFutureContractProvider =
+    Provider.autoDispose<Map<String, dynamic>?>((ref) {
+  final activeSymbol = ref.watch(foActiveSymbolProvider);
+  if (activeSymbol == null || activeSymbol.trim().isEmpty) return null;
+
+  final selected = ref.watch(selectedFutureContractProvider);
+  final contracts = ref.watch(futuresContractsMetadataProvider).maybeWhen(
+        data: (data) => data,
+        orElse: () => const <dynamic>[],
+      );
+  return resolveActiveFutureContract(
+    activeSymbol: activeSymbol,
+    selectedContract: selected,
+    contracts: contracts,
+  );
+});
 
 class FuturesExpiryFilterNotifier extends Notifier<String> {
   @override
@@ -105,7 +204,7 @@ bool matchesFutureUnderlying(Map<String, dynamic> contract, String symbol) {
     contract['asset_symbol'],
     contract['assetSymbol'],
   ]
-      .whereType<Object?>()
+      .where((value) => value != null)
       .map((value) => value.toString())
       .where((value) => value.trim().isNotEmpty);
   final metadataValues = metadata.toList(growable: false);
