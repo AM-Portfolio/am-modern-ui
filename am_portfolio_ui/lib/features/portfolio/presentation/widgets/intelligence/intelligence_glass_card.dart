@@ -17,6 +17,7 @@ class IntelligenceGlassCard extends StatelessWidget {
     this.minHeight,
     this.scrollable = false,
     this.fillHeight = false,
+    this.trailingRelaxed = false,
     this.accentColor,
     super.key,
   });
@@ -33,6 +34,8 @@ class IntelligenceGlassCard extends StatelessWidget {
   final bool scrollable;
   /// When true (peer stretch rows), expand to parent height and pin [footer].
   final bool fillHeight;
+  /// When true, trailing uses most of the header width (web tab rows).
+  final bool trailingRelaxed;
 
   /// Module chrome (defaults to portfolio pink). Dashboard hosts pass blue.
   final Color? accentColor;
@@ -41,13 +44,15 @@ class IntelligenceGlassCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final accent = accentColor ?? ModuleColors.portfolio;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    // Title keeps leftover width; trailing is capped so mobile names
-    // (e.g. Portfolio X-Ray) are not crushed by Chart/List or tab chips.
+    // Title keeps leftover width; trailing is capped on compact chrome so
+    // mobile names are not crushed. Web X-Ray relaxes the cap so all tabs fit.
     final header = LayoutBuilder(
       builder: (context, constraints) {
         final trailMax = trailing == null
             ? 0.0
-            : (constraints.maxWidth * 0.48).clamp(120.0, 420.0);
+            : trailingRelaxed
+                ? (constraints.maxWidth * 0.72).clamp(220.0, 640.0)
+                : (constraints.maxWidth * 0.48).clamp(120.0, 420.0);
         return Row(
           children: [
             Container(

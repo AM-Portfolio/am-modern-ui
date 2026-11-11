@@ -321,7 +321,7 @@ class _DashboardUsersPageState extends ConsumerState<DashboardUsersPage> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -344,7 +344,7 @@ class _DashboardUsersPageState extends ConsumerState<DashboardUsersPage> {
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 8),
               _ProfileHeader(
                 name: () {
                   if (_familyMemberId == FavoritePersonaStore.kAll) {
@@ -374,7 +374,7 @@ class _DashboardUsersPageState extends ConsumerState<DashboardUsersPage> {
                 xirrPct: selectedXirr,
                 activeAccountCount: activeAccountCount,
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 8),
               Builder(
                 builder: (context) {
                   final compact = MediaQuery.sizeOf(context).width < 720;
@@ -436,7 +436,7 @@ class _DashboardUsersPageState extends ConsumerState<DashboardUsersPage> {
               ),
               if ((_tab == _UsersPageTab.demat || _tab == _UsersPageTab.mf) &&
                   personaDemat.isEmpty) ...[
-                const SizedBox(height: 10),
+                const SizedBox(height: 8),
                 Text(
                   'No CDSL CAS demat/MF directory yet.',
                   style: context.text.caption(),
@@ -450,7 +450,7 @@ class _DashboardUsersPageState extends ConsumerState<DashboardUsersPage> {
                     ),
                   ),
               ],
-              const SizedBox(height: 12),
+              const SizedBox(height: 8),
             ],
           ),
         ),

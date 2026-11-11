@@ -414,4 +414,115 @@ void main() {
     expect(find.text('Previous'), findsOneWidget);
     expect(find.text('Next'), findsOneWidget);
   });
+
+  testWidgets('AdvancedAccountsTemplate narrow keeps search and refresh in one row',
+      (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SizedBox(
+            height: 600,
+            child: AdvancedAccountsTemplate(
+              accounts: const [],
+              isLoading: false,
+              allowViewModeToggle: false,
+              emptyTitle: 'No rows for this view',
+              searchHint: 'Search accounts, broker, DP ID…',
+              onRefresh: () {},
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final search = find.byType(TextField);
+    final refresh = find.byTooltip('Refresh');
+    expect(search, findsOneWidget);
+    expect(refresh, findsOneWidget);
+
+    final searchBox = tester.getRect(search);
+    final refreshBox = tester.getRect(refresh);
+    expect(
+      (searchBox.center.dy - refreshBox.center.dy).abs(),
+      lessThan(8),
+      reason: 'search and refresh must share one toolbar row on narrow',
+    );
+    expect(refreshBox.left, greaterThan(searchBox.right - 1));
+  });
+
+  testWidgets('AdvancedAccountsCards puts status beside type without broker avatar',
+      (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    const groww = AdvancedAccountRow(
+      id: 'broker-groww',
+      type: 'broker',
+      title: 'Groww',
+      broker: 'GROWW',
+      status: 'Active',
+      statusKind: AccountStatusKind.active,
+      value: 1831,
+      hasValue: true,
+      weightPct: 98,
+      subtitle: 'GROWW · 5 assets',
+    );
+    const demat = AdvancedAccountRow(
+      id: 'demat-angel',
+      type: 'demat',
+      title: 'ANGEL ONE LIMITED',
+      broker: 'ANGEL_ONE',
+      nomineeMissing: true,
+      status: 'Active',
+      statusKind: AccountStatusKind.active,
+      value: 0,
+      hasValue: true,
+      subtitle: 'Depository: CDSL · DP 12033203',
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SizedBox(
+            width: 390,
+            height: 700,
+            child: AdvancedAccountsCards(
+              accounts: const [groww, demat],
+              isDarkChrome: true,
+              accent: const Color(0xFF3B82F6),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Broker'), findsOneWidget);
+    expect(find.text('Demat'), findsOneWidget);
+    expect(find.text('Groww'), findsOneWidget);
+    expect(find.text('GROWW · 5 assets'), findsOneWidget);
+    expect(find.text('No nominee'), findsNothing);
+    expect(find.text('Active'), findsNWidgets(2));
+    expect(find.text('GROWW'), findsNothing);
+    expect(find.text('G'), findsNothing);
+
+    final typeRect = tester.getRect(find.text('Broker'));
+    final statusRect = tester.getRect(find.text('Active').first);
+    final valueRect = tester.getRect(find.textContaining('1,831'));
+    expect(statusRect.left, greaterThan(typeRect.right - 1));
+    expect(valueRect.left, greaterThan(statusRect.right - 1));
+    expect(
+      (typeRect.center.dy - statusRect.center.dy).abs(),
+      lessThan(16),
+      reason: 'status sits beside type in the header band',
+    );
+  });
 }

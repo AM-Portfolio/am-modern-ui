@@ -368,6 +368,41 @@ void main() {
     await tester.pump(const Duration(milliseconds: 50));
     expect(find.text('Healthcare'), findsNothing);
 
+    // Dashboard path: fillHeight must not force donut+list side-by-side on phone.
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          portfolioIntelligenceProvider('p1').overrideWith(
+            (ref) async => intel,
+          ),
+        ],
+        child: MaterialApp(
+          home: Scaffold(
+            body: SizedBox(
+              height: 420,
+              child: PortfolioXrayPanel(
+                portfolioId: 'p1',
+                fillHeight: true,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+    expect(find.text('Chart'), findsOneWidget);
+    expect(find.text('List'), findsOneWidget);
+    expect(find.text('Healthcare'), findsNothing);
+    await tester.tap(find.text('List'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+    expect(find.text('Healthcare'), findsOneWidget);
+    await tester.tap(find.text('Chart'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+    expect(find.text('Healthcare'), findsNothing);
+
     // Wide viewport: side-by-side, no Chart/List swap chrome.
     tester.view.physicalSize = const Size(900, 800);
     await tester.pumpWidget(
