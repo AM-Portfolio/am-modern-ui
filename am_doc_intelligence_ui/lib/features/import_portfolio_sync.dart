@@ -1,15 +1,43 @@
+import 'package:am_common/am_common.dart';
 import 'package:am_doc_intelligence_ui/features/import_holdings_shared_controls.dart';
 import 'package:am_doc_intelligence_ui/services/api_service.dart';
+import 'package:am_library/am_library.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:get_it/get_it.dart';
 
 class ImportedPortfolioRef {
   const ImportedPortfolioRef({
     required this.portfolioId,
     required this.portfolioName,
+    this.familyMemberId,
+    this.familyMemberName,
   });
 
   final String portfolioId;
   final String portfolioName;
+  final String? familyMemberId;
+  final String? familyMemberName;
+}
+
+/// Maps a synced import row to a [FavoritePersonaStore] key.
+String personaKeyForImport({String? familyMemberId}) {
+  final id = familyMemberId?.trim() ?? '';
+  if (id.isEmpty) return FavoritePersonaStore.kYou;
+  return id;
+}
+
+ImportedPortfolioRef importedPortfolioRefFromBrief(Map<String, String> e) {
+  final familyId = e['familyMemberId']?.trim();
+  final familyName = e['familyMemberName']?.trim();
+  return ImportedPortfolioRef(
+    portfolioId: e['portfolioId'] ?? '',
+    portfolioName: e['portfolioName'] ?? '',
+    familyMemberId: (familyId == null || familyId.isEmpty) ? null : familyId,
+    familyMemberName:
+        (familyName == null || familyName.isEmpty) ? null : familyName,
+  );
 }
 
 /// Poll portfolio list until a broker/name match appears or [timeout] elapses.
@@ -127,16 +155,73 @@ Future<List<ImportedPortfolioRef>> snapshotPortfolios() async {
   try {
     final raw = await apiProvider.listPortfoliosBrief();
     return raw
-        .map(
-          (e) => ImportedPortfolioRef(
-            portfolioId: e['portfolioId'] ?? '',
-            portfolioName: e['portfolioName'] ?? '',
-          ),
-        )
+        .map(importedPortfolioRefFromBrief)
         .where((p) => p.portfolioId.isNotEmpty)
         .toList();
   } catch (e, st) {
     debugPrint('[import_portfolio_sync] list failed: $e\n$st');
     return const [];
+  }
+}
+
+Future<ImportedPortfolioRef?> _refreshFamilyStamp(
+  ImportedPortfolioRef sync, {
+  Duration timeout = const Duration(seconds: 15),
+  Duration interval = const Duration(seconds: 2),
+}) async {
+  final id = sync.familyMemberId?.trim() ?? '';
+  if (id.isNotEmpty) return sync;
+
+  final deadline = DateTime.now().add(timeout);
+  while (DateTime.now().isBefore(deadline)) {
+    await Future<void>.delayed(interval);
+    final list = await snapshotPortfolios();
+    for (final p in list) {
+      if (p.portfolioId != sync.portfolioId) continue;
+      final fid = p.familyMemberId?.trim() ?? '';
+      if (fid.isNotEmpty) return p;
+      return p;
+    }
+  }
+  return sync;
+}
+
+Future<String?> _sessionUserId() async {
+  try {
+    if (GetIt.I.isRegistered<SecureStorageService>()) {
+      return GetIt.I<SecureStorageService>().getUserId();
+    }
+    return SecureStorageService().getUserId();
+  } catch (e, st) {
+    debugPrint('[import_portfolio_sync] userId read failed: $e\n$st');
+    return null;
+  }
+}
+
+/// After import sync: persist and select You or the FAMILY member stamped on the book.
+Future<void> applyPersonaFromImportedPortfolio({
+  required BuildContext context,
+  required ImportedPortfolioRef? sync,
+}) async {
+  if (sync == null) return;
+
+  final userId = (await _sessionUserId())?.trim() ?? '';
+  if (userId.isEmpty) {
+    debugPrint('[import_portfolio_sync] skip persona: empty userId');
+    return;
+  }
+
+  final stamped = await _refreshFamilyStamp(sync);
+  final personaKey = personaKeyForImport(familyMemberId: stamped?.familyMemberId);
+
+  await FavoritePersonaStore.instance.save(userId, personaKey);
+  if (!context.mounted) return;
+
+  try {
+    ProviderScope.containerOf(context)
+        .read(familyPortfolioFilterProvider.notifier)
+        .select(personaKey);
+  } catch (e, st) {
+    debugPrint('[import_portfolio_sync] filter select failed: $e\n$st');
   }
 }

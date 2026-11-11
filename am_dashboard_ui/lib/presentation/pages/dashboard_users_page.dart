@@ -151,6 +151,12 @@ class _DashboardUsersPageState extends ConsumerState<DashboardUsersPage> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<String>(familyPortfolioFilterProvider, (prev, next) {
+      final mapped = FavoritePersonaStore.selectionFromKey(next);
+      if (mapped == _familyMemberId) return;
+      setState(() => _familyMemberId = mapped);
+    });
+
     final async = ref.watch(accountsHubProvider(widget.userId));
 
     return Scaffold(

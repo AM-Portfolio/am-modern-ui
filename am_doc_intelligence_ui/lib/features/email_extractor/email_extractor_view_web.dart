@@ -869,6 +869,8 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
         _resolvedPortfolioName = sync.portfolioName;
         PortfolioDataRefresh.instance
             .notifyImported(portfolioId: sync.portfolioId);
+        await applyPersonaFromImportedPortfolio(context: context, sync: sync);
+        if (!mounted) return;
         setState(() {
           _setFeedback(
             count != null
