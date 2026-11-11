@@ -636,7 +636,7 @@ class ApiService {
     );
   }
 
-  /// Brief portfolio list for post-import sync polling (id + name only).
+  /// Brief portfolio list for post-import sync polling.
   Future<List<Map<String, String>>> listPortfoliosBrief() async {
     final base = EnvDomains.portfolio;
     final url = '$base/v1/portfolios/list';
@@ -654,19 +654,30 @@ class ApiService {
         final out = <Map<String, String>>[];
         for (final item in data) {
           if (item is! Map) continue;
-          final id = item['portfolioId']?.toString() ??
-              item['id']?.toString() ??
-              '';
-          final name = item['portfolioName']?.toString() ??
-              item['name']?.toString() ??
-              '';
-          if (id.isEmpty) continue;
-          out.add({'portfolioId': id, 'portfolioName': name});
+          final parsed = parsePortfolioBriefMap(item);
+          if (parsed == null) continue;
+          out.add(parsed);
         }
         return out;
       },
     );
   }
+}
+
+/// Pure parser for [ApiService.listPortfoliosBrief] rows (testable).
+Map<String, String>? parsePortfolioBriefMap(Map<dynamic, dynamic> item) {
+  final id = item['portfolioId']?.toString() ?? item['id']?.toString() ?? '';
+  final name =
+      item['portfolioName']?.toString() ?? item['name']?.toString() ?? '';
+  if (id.isEmpty) return null;
+  final familyMemberId = item['familyMemberId']?.toString().trim() ?? '';
+  final familyMemberName = item['familyMemberName']?.toString().trim() ?? '';
+  return {
+    'portfolioId': id,
+    'portfolioName': name,
+    if (familyMemberId.isNotEmpty) 'familyMemberId': familyMemberId,
+    if (familyMemberName.isNotEmpty) 'familyMemberName': familyMemberName,
+  };
 }
 
 final apiProvider = ApiService();

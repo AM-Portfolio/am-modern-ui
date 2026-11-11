@@ -314,8 +314,10 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
 
   Future<void> _waitForPortfolioSyncAfterParse({
     required String holdingsHint,
+    String? brokerOverride,
   }) async {
-    final brokerCode = _selectedBrokerType ?? widget.sharedBrokerDocCode;
+    final brokerCode =
+        brokerOverride ?? _selectedBrokerType ?? widget.sharedBrokerDocCode;
     final brokerKey = normalizeBrokerKey(brokerCode);
     final targetName = _effectivePortfolioController.text.trim();
 
@@ -329,6 +331,7 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
           'Parsed $holdingsHint — syncing to portfolio (up to ~60s)…';
     });
 
+    final familyIdsBefore = await snapshotFamilyMemberIds();
     final sync = await waitForImportedPortfolio(
       brokerKey: brokerKey ?? brokerCode ?? '',
       targetPortfolioName: targetName.isEmpty ? null : targetName,
@@ -338,6 +341,12 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
     if (sync != null) {
       PortfolioDataRefresh.instance
           .notifyImported(portfolioId: sync.portfolioId);
+      await applyPersonaFromImportedPortfolio(
+        context: context,
+        sync: sync,
+        familyIdsBefore: familyIdsBefore,
+      );
+      if (!mounted) return;
       setState(() {
         _processing = false;
         _phaseOverride = ImportProcessPhase.success;
@@ -833,13 +842,6 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
         f.dispose();
       }
       final names = files.map((f) => f.filename).toList();
-      setState(() {
-        _endBusy(
-          message:
-              'Imported $okCount CDSL/NPS file${okCount == 1 ? '' : 's'}. Holdings will appear shortly.',
-          phase: ImportProcessPhase.success,
-        );
-      });
       widget.onImportCompleted?.call(RecentImportEntry(
         id: 'up-extractor-${DateTime.now().millisecondsSinceEpoch}',
         source: 'upload',
@@ -850,6 +852,17 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
         detail: 'Parsed via email-extractor',
       ));
       _scrollResultsToTop();
+      final brokerHint = files
+          .map((f) => f.brokerType)
+          .whereType<String>()
+          .map((b) => b.trim())
+          .where((b) => b.isNotEmpty)
+          .fold<String?>(null, (prev, b) => b);
+      await _waitForPortfolioSyncAfterParse(
+        holdingsHint:
+            '$okCount CDSL/NPS file${okCount == 1 ? '' : 's'}',
+        brokerOverride: brokerHint,
+      );
     } else if (lastError != null && okCount == 0) {
       throw ExtractUploadException(message: lastError);
     }
