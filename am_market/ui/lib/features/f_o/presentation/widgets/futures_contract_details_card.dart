@@ -19,7 +19,7 @@ class FuturesContractDetailsCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final colors = context.colors;
     final activeSymbol = ref.watch(foActiveSymbolProvider) ?? 'NIFTY';
-    final selectedContract = ref.watch(selectedFutureContractProvider);
+    final selectedContract = ref.watch(activeFutureContractWithQuoteProvider);
 
     final tradingSymbol = selectedContract != null
         ? (selectedContract['trading_symbol'] ??
@@ -216,7 +216,8 @@ class FuturesContractDetailsCard extends ConsumerWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label, style: TextStyle(color: colors.textSecondary, fontSize: 13)),
+        Text(label,
+            style: TextStyle(color: colors.textSecondary, fontSize: 13)),
         Flexible(
           child: Text(
             value,

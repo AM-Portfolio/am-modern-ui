@@ -1,8 +1,8 @@
 # Market and Paper Trading Plan
 
-Status: **implementation in progress; first scoped slice applied**
-Scope: `am-modern-ui` Market UI, Market common, and the centralized `am_design_system`, including Paper Trading, Market F&O, and Market Analytics.
-Out of scope: Portfolio, Trade, backend services, generated SDK contracts, and unrelated modules.
+Status: **implementation in progress; F&O contract-resolution fix awaiting approval**
+Scope: `am-modern-ui` Market UI, Market common, the centralized `am_design_system`, and the existing `am-market` instrument-search backend contract/provider path, including Paper Trading, Market F&O, and Market Analytics.
+Out of scope: Portfolio, Trade, unrelated backend services, new services, and unrelated modules.
 
 ## Implementation TODO
 
@@ -31,8 +31,59 @@ Before changing or adding code:
 5. Do not implement the same endpoint call, state, subscription handling, validation, animation, or theme behavior twice.
 6. Use the centralized design system and existing Market components before creating a new widget or style.
 7. Every changed widget must actively listen to global theme and Market theme changes through the approved design-system tokens; no raw colors, duplicate theme constants, or module-local visual replacements.
-8. Restrict code changes to `am_paper_ui`, `am_market`, and `am_design_system` within this workspace.
+8. Restrict code changes to the market-data instrument-search DTO/provider plus `am_market` and `am_design_system`; do not touch Portfolio, Trade, or unrelated modules.
 9. Document the reuse decision or the reason new logic was necessary before implementation.
+
+## Verified root cause: NIFTY lot-size/quantity mismatch
+
+The live development request was reproduced with the exact body used by the UI:
+
+`POST https://am-dev.asrax.in/market/v1/instruments/search`
+
+Request filters were `queries=["NIFTY"]`, exchanges `NSE/NSE_FO`, segments `NSE_FO/NFO`, and instrument types `FUT/FUTIDX/FUTSTK`. The response was `200 OK`, about `1.19s`, `9.3 KB`, and `18` contracts. The first result was `FINNIFTY FUT 23 NOV 26` with `lot_size=60`; NIFTY contracts appeared later with `lot_size=65`.
+
+The backend is returning valid records, but its `queries` field is intentionally broad text matching. `UpstoxInstrumentService` matches `NIFTY` against `name`, `asset_symbol`, `trading_symbol`, `underlying_key`, and `underlying_symbol`, so related underlyings are included. The controller returns that ordered list unchanged.
+
+The frontend then compounds the ambiguity:
+
+- `futuresContractsMetadataProvider` sends only the broad text query and returns the raw ordered list.
+- `MarginCalculatorView` uses `selectedContract ?? contracts.first`, so it can initialize from FINNIFTY and set quantity to 60.
+- `FuturesView._ensureDefaultSelection` also chooses the first non-expired raw result before applying the visible table's underlying filter.
+- The header/details cards resolve the lot size from `selectedContract`, but before selection arrives they fall back to the NIFTY static mapping of 65. When the cross-underlying contract arrives, the display changes to 60.
+
+This is why the screenshots show NIFTY 50 in the page header, FINNIFTY in the margin contract, lot size 65 in one widget, and quantity 60 in another. It is a contract identity race/mismatch, not an exchange lot-size change.
+
+## Backend + frontend permanent fix plan
+
+### Backend: narrow the existing search contract
+
+1. Extend the existing `InstrumentSearchCriteria` with an optional structured `underlyingSymbols` list. Do not add a second endpoint or alter the meaning of the existing broad `queries` search.
+2. In the existing Upstox provider query, when `underlyingSymbols` is present, add an exact `underlying_symbol`/`asset_symbol` match alongside the existing exchange, segment, and instrument-type filters. Preserve current behavior when the list is absent.
+3. Apply the same optional filter semantics to the existing Zerodha provider using the fields available in its instrument model; if that provider lacks normalized underlying metadata, keep its existing behavior and document the limitation rather than guessing from arbitrary text.
+4. Update the generated/OpenAPI-backed SDK request model and the existing Postman request documentation if the public request schema is generated from this DTO. Keep the field optional for backward compatibility.
+5. Add backend tests proving: broad `queries=[NIFTY]` remains backward compatible; `underlyingSymbols=[NIFTY]` excludes FINNIFTY/BANKNIFTY/NIFTYNXT50; NIFTY futures retain their response `lot_size=65`; empty/unknown filters do not widen results unexpectedly.
+
+### Frontend: one authoritative contract identity
+
+1. Reuse the existing `matchesFutureUnderlying` alias logic and extract/share it rather than creating a second symbol-matching implementation.
+2. Send the canonical active underlying through the new structured backend filter. Keep client-side exact filtering as defense-in-depth for stale or mixed backend data.
+3. Add one pure resolver/provider for the active futures contract: accept the selected contract only when it belongs to the current underlying; otherwise choose the nearest non-expired contract from the filtered metadata deterministically.
+4. Make the header/details cards, Futures table default selection, chart/depth cards, and Margin Calculator consume that same resolved contract. Remove their separate `selectedContract ?? firstContract` and static lot-size paths where confirmed metadata exists.
+5. Initialize and update quantity from the resolved contract's authoritative `lot_size`; reset it only when the contract identity changes, and preserve intentional user edits without allowing a cross-underlying contract to remain.
+6. Keep static lot-size mappings only as a loading/unavailable fallback; never show them over confirmed contract metadata. Do not display a FINNIFTY contract while the active symbol is NIFTY.
+7. Keep quote enrichment asynchronous: metadata filtering/selection must not wait for every contract quote. Fetch the selected contract quote independently and leave calculation disabled until the selected contract and valid LTP are confirmed.
+
+### Regression and verification
+
+- Curl/API regression: broad NIFTY search and structured NIFTY underlying search; record status, latency, result count, first contract, and lot-size fields.
+- Flutter provider tests: NIFTY response containing FINNIFTY first resolves to NIFTY; NIFTY lot size is 65; BANKNIFTY and FINNIFTY resolve to their own lot sizes.
+- Widget tests: header lot size, selected contract, margin contract, and quantity always agree before and after asynchronous metadata/quote arrival and after repeated tab switches.
+- Edge cases: no matching contract, expired-only results, stale selected contract after symbol change, missing/zero lot size, missing LTP, user-edited quantity, duplicate response rows, and backend filter unavailable/older deployment.
+- Verify the response contract remains compatible for existing equity/security-search callers.
+
+### No-duplicate-logic decision
+
+The fix extends the existing `/v1/instruments/search` endpoint, `InstrumentSearchCriteria`, `matchesFutureUnderlying`, `FoLotSizeConfig`, `selectedFutureContractProvider`, and existing metadata/quote providers. No new endpoint, API client, independent cache, or parallel lot-size resolver is planned.
 
 ## Problems and solutions
 
@@ -182,8 +233,8 @@ No new endpoint or backend change is part of this plan. The existing historical-
 - Historical monthly cards display the actual ranked index name, not a generic `NIFTY` label.
 - All monthly cells have uniform dimensions; wide layout initially shows about September and sidebar-open layout about July.
 - October–December remain available through horizontal scrolling.
-- Only `am_paper_ui`, `am_market`, and `am_design_system` are changed; no backend, Portfolio, Trade, or unrelated module is changed.
+- Only the market-data instrument-search DTO/provider, `am_market`, and `am_design_system` are changed; no Portfolio, Trade, or unrelated module is changed.
 
-## Review gate
+## Implementation status
 
-Implementation, API changes, Postman execution, and deployment remain blocked until the user approves this consolidated plan.
+The lot-size/contract-resolution fix is implemented locally and verified with focused UI and backend regression tests. Deployment, commit, and push are not included in this implementation step.

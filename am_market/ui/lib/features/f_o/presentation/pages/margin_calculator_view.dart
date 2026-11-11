@@ -71,35 +71,18 @@ class _MarginCalculatorViewState extends ConsumerState<MarginCalculatorView> {
     final colors = context.colors;
     final marketTheme = context.marketTheme;
     final activeSymbol = ref.watch(foActiveSymbolProvider) ?? 'NIFTY';
-    final selectedContract = ref.watch(selectedFutureContractProvider);
     final contractsAsync = ref.watch(futuresContractsMetadataProvider);
     final contracts = contractsAsync.maybeWhen(
       data: (d) => d,
       orElse: () => <dynamic>[],
     );
-    final firstContract = contracts.isNotEmpty && contracts.first is Map
-        ? Map<String, dynamic>.from(contracts.first as Map)
-        : null;
-    final activeContract = selectedContract ?? firstContract;
-    final quoteKey = activeContract?['instrument_key'] ??
-        activeContract?['instrumentKey'] ??
-        activeContract?['trading_symbol'] ??
-        activeContract?['tradingSymbol'];
-    final selectedQuoteAsync = quoteKey == null
-        ? null
-        : ref.watch(selectedFutureQuoteProvider(quoteKey.toString()));
-    final selectedQuote =
-        quoteKey == null ? null : selectedQuoteAsync?.asData?.value;
+    final activeContract = ref.watch(activeFutureContractWithQuoteProvider);
 
     final lotSize = FoLotSizeConfig.resolveLotSize(
       symbol: activeSymbol,
       contract: activeContract,
     );
-    final rawLtp = selectedQuote?['lastPrice'] ??
-        selectedQuote?['last_price'] ??
-        selectedQuote?['ltp'] ??
-        activeContract?['ltp'] ??
-        activeContract?['last_price'];
+    final rawLtp = activeContract?['ltp'] ?? activeContract?['last_price'];
     final ltp = rawLtp is num ? rawLtp.toDouble() : double.tryParse('$rawLtp');
 
     final contractId = activeContract?['trading_symbol'] ??

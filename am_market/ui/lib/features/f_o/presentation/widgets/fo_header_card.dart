@@ -48,11 +48,10 @@ class _FoHeaderCardState extends ConsumerState<FoHeaderCard> {
     final chainAsync = ref.watch(optionChainProvider);
     final chainData = chainAsync.maybeWhen(data: (d) => d, orElse: () => null);
 
-    final selectedContract = ref.watch(selectedFutureContractProvider);
-    // The header must not trigger full futures-table search and quote
-    // enrichment. It can use the selected contract when one already exists;
-    // the active option-chain response remains the underlying summary source.
-    final activeContract = selectedContract;
+    // Use the same symbol-validated contract identity as Futures and Margin.
+    // Metadata remains independent from quote enrichment, so the header can
+    // still render its option-chain summary without waiting for every future.
+    final activeContract = ref.watch(activeFutureContractWithQuoteProvider);
 
     final chainLtp = _positiveNum(chainData?['underlyingLtp']);
     final contractLtp = _positiveNum(activeContract?['ltp']);

@@ -1,5 +1,4 @@
 import 'package:am_design_system/am_design_system.dart';
-import 'package:am_design_system/shared/widgets/charts/candle_chart.dart';
 import 'package:am_market_ui/core/styles/market_theme_extension.dart';
 import 'package:am_market_ui/features/f_o/providers/fo_provider.dart';
 import 'package:am_market_ui/features/f_o/providers/futures_provider.dart';
@@ -10,10 +9,12 @@ class FuturesPriceChartWidget extends ConsumerStatefulWidget {
   const FuturesPriceChartWidget({super.key});
 
   @override
-  ConsumerState<FuturesPriceChartWidget> createState() => _FuturesPriceChartWidgetState();
+  ConsumerState<FuturesPriceChartWidget> createState() =>
+      _FuturesPriceChartWidgetState();
 }
 
-class _FuturesPriceChartWidgetState extends ConsumerState<FuturesPriceChartWidget> {
+class _FuturesPriceChartWidgetState
+    extends ConsumerState<FuturesPriceChartWidget> {
   TimeFrame _selectedTimeframe = TimeFrame.oneMonth;
   String _selectedChartType = 'Candle';
 
@@ -22,13 +23,13 @@ class _FuturesPriceChartWidgetState extends ConsumerState<FuturesPriceChartWidge
     final colors = context.colors;
     final marketTheme = context.marketTheme;
     final activeSymbol = ref.watch(foActiveSymbolProvider) ?? 'NIFTY';
-    final selectedContract = ref.watch(selectedFutureContractProvider);
-    final contracts = ref.watch(futuresContractsProvider).maybeWhen(data: (d) => d, orElse: () => <dynamic>[]);
-
-    final firstContract = contracts.isNotEmpty && contracts.first is Map ? Map<String, dynamic>.from(contracts.first) : null;
-    final activeContract = selectedContract ?? firstContract;
+    final activeContract = ref.watch(activeFutureContractWithQuoteProvider);
     final tradingSymbol = activeContract != null
-        ? (activeContract['trading_symbol'] ?? activeContract['tradingSymbol'] ?? activeContract['name'] ?? '$activeSymbol FUT').toString()
+        ? (activeContract['trading_symbol'] ??
+                activeContract['tradingSymbol'] ??
+                activeContract['name'] ??
+                '$activeSymbol FUT')
+            .toString()
         : '$activeSymbol FUT';
 
     final currentLtp = activeContract != null && activeContract['ltp'] is num
@@ -171,12 +172,13 @@ class _FuturesPriceChartWidgetState extends ConsumerState<FuturesPriceChartWidge
             },
           ),
           const SizedBox(height: 12),
-
           if (candles.isEmpty)
             SizedBox(
               height: 270,
               child: Center(
-                child: Text('No OHLC chart data available', style: TextStyle(color: colors.textSecondary, fontSize: 12)),
+                child: Text('No OHLC chart data available',
+                    style:
+                        TextStyle(color: colors.textSecondary, fontSize: 12)),
               ),
             )
           else
@@ -184,9 +186,12 @@ class _FuturesPriceChartWidgetState extends ConsumerState<FuturesPriceChartWidge
               builder: (context) {
                 final latest = candles.last;
                 final change = latest.close - candles.first.close;
-                final pChange = candles.first.close > 0 ? (change / candles.first.close) * 100 : 0.0;
+                final pChange = candles.first.close > 0
+                    ? (change / candles.first.close) * 100
+                    : 0.0;
                 final isPos = change >= 0;
-                final deltaColor = isPos ? marketTheme.positive : marketTheme.negative;
+                final deltaColor =
+                    isPos ? marketTheme.positive : marketTheme.negative;
 
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -197,10 +202,14 @@ class _FuturesPriceChartWidgetState extends ConsumerState<FuturesPriceChartWidge
                       runSpacing: 4,
                       crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
-                        _buildOhlcItem('O', latest.open.toStringAsFixed(2), colors),
-                        _buildOhlcItem('H', latest.high.toStringAsFixed(2), colors),
-                        _buildOhlcItem('L', latest.low.toStringAsFixed(2), colors),
-                        _buildOhlcItem('C', latest.close.toStringAsFixed(2), colors),
+                        _buildOhlcItem(
+                            'O', latest.open.toStringAsFixed(2), colors),
+                        _buildOhlcItem(
+                            'H', latest.high.toStringAsFixed(2), colors),
+                        _buildOhlcItem(
+                            'L', latest.low.toStringAsFixed(2), colors),
+                        _buildOhlcItem(
+                            'C', latest.close.toStringAsFixed(2), colors),
                         Text(
                           '${isPos ? '+' : ''}${change.toStringAsFixed(2)} (${isPos ? '+' : ''}${pChange.toStringAsFixed(2)}%)',
                           style: TextStyle(
@@ -218,7 +227,8 @@ class _FuturesPriceChartWidgetState extends ConsumerState<FuturesPriceChartWidge
                       height: 220,
                       child: _selectedChartType == 'Candle'
                           ? CandleChartView(
-                              key: ValueKey('candle_${_selectedTimeframe.code}_$tradingSymbol'),
+                              key: ValueKey(
+                                  'candle_${_selectedTimeframe.code}_$tradingSymbol'),
                               candles: candles,
                               config: const CommonChartConfig(
                                 showGrid: true,
@@ -260,7 +270,11 @@ class _FuturesPriceChartWidgetState extends ConsumerState<FuturesPriceChartWidge
       padding: const EdgeInsets.only(right: 12.0),
       child: Row(
         children: [
-          Text('$label ', style: TextStyle(color: colors.textSecondary, fontWeight: FontWeight.bold, fontSize: 11)),
+          Text('$label ',
+              style: TextStyle(
+                  color: colors.textSecondary,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 11)),
           Text(val, style: TextStyle(color: colors.textPrimary, fontSize: 11)),
         ],
       ),
