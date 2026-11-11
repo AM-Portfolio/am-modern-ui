@@ -17,7 +17,8 @@ void registerDashboardIntelWidgets() {
     return PortfolioHealthCard(
       key: ValueKey('dash_health_$portfolioId'),
       portfolioId: portfolioId,
-      fillHeight: true,
+      compact: ctx.compact,
+      fillHeight: ctx.fillHeight,
       padding: const EdgeInsets.all(14),
       accentColor: ModuleColors.dashboard,
     );

@@ -34,6 +34,7 @@ class CustomDropdown<T> extends StatefulWidget {
     this.menuMaxWidth,
     this.leading,
     this.trailingDivider = false,
+    this.showTrailingIcon = true,
     this.selectedItemBuilder,
   });
 
@@ -110,6 +111,10 @@ class CustomDropdown<T> extends StatefulWidget {
 
   /// Hairline before the chevron on the closed trigger.
   final bool trailingDivider;
+
+  /// When false, hides the trailing expand / custom [icon] on the closed trigger
+  /// (e.g. icon-only "+" action menus that use [selectedItemBuilder]).
+  final bool showTrailingIcon;
 
   /// Optional closed-trigger content. When set, replaces the selected item’s
   /// [DropdownMenuItem.child] on the trigger only (menu rows unchanged).
@@ -243,6 +248,13 @@ class _CustomDropdownState<T> extends State<CustomDropdown<T>> {
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         mainAxisSize: MainAxisSize.min,
                         children: widget.items.map((item) {
+                          if (!item.enabled) {
+                            return Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(vertical: 4),
+                              child: item.child,
+                            );
+                          }
                           final isSelected = item.value == widget.value;
                           return InkWell(
                             onTap: () {
@@ -369,9 +381,16 @@ class _CustomDropdownState<T> extends State<CustomDropdown<T>> {
           const SizedBox(width: 4),
         ],
         if (displayWidget != null)
-          widget.isExpanded ? Expanded(child: displayWidget) : displayWidget,
-        if (!widget.isExpanded) const SizedBox(width: 4),
-        if (widget.trailingDivider) ...[
+          widget.isExpanded
+              ? Expanded(
+                  child: widget.showTrailingIcon
+                      ? displayWidget
+                      : Center(child: displayWidget),
+                )
+              : displayWidget,
+        if (!widget.isExpanded && widget.showTrailingIcon)
+          const SizedBox(width: 4),
+        if (widget.showTrailingIcon && widget.trailingDivider) ...[
           Container(
             width: 1,
             height: widget.iconSize,
@@ -379,11 +398,12 @@ class _CustomDropdownState<T> extends State<CustomDropdown<T>> {
             color: (widget.borderColor ?? chevronColor).withValues(alpha: 0.45),
           ),
         ],
-        Icon(
-          widget.icon ?? (_isOpen ? Icons.expand_less : Icons.expand_more),
-          color: chevronColor,
-          size: widget.iconSize,
-        ),
+        if (widget.showTrailingIcon)
+          Icon(
+            widget.icon ?? (_isOpen ? Icons.expand_less : Icons.expand_more),
+            color: chevronColor,
+            size: widget.iconSize,
+          ),
       ],
     );
 

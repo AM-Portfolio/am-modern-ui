@@ -45,7 +45,12 @@ class DashboardLayoutRenderer extends ConsumerWidget {
       id == DashboardWidgetId.portfolioXray ||
       id == DashboardWidgetId.accountsHub;
 
-  DashboardWidgetContext _ctx(BuildContext context, {double? height}) {
+  DashboardWidgetContext _ctx(
+    BuildContext context, {
+    double? height,
+    bool fillHeight = true,
+    bool compact = false,
+  }) {
     return DashboardWidgetContext(
       userId: userId,
       timeFrameCode: timeFrameCode,
@@ -53,6 +58,8 @@ class DashboardLayoutRenderer extends ConsumerWidget {
       onOpenPaper: onOpenPaper,
       onOpenUsers: onOpenUsers,
       chartHeight: height,
+      fillHeight: fillHeight,
+      compact: compact,
     );
   }
 
@@ -61,6 +68,8 @@ class DashboardLayoutRenderer extends ConsumerWidget {
     WidgetRef ref,
     DashboardWidgetId id, {
     double? chartHeightOverride,
+    bool fillHeight = true,
+    bool compact = false,
   }) {
     final resolvedId = _isComparisonChartSlot(id)
         ? DashboardWidgetId.benchmarkComparison
@@ -69,7 +78,12 @@ class DashboardLayoutRenderer extends ConsumerWidget {
     return descriptor.build(
       context,
       ref,
-      _ctx(context, height: chartHeightOverride),
+      _ctx(
+        context,
+        height: chartHeightOverride,
+        fillHeight: fillHeight,
+        compact: compact,
+      ),
     );
   }
 
@@ -160,6 +174,18 @@ class DashboardLayoutRenderer extends ConsumerWidget {
                 slot.id,
                 chartHeightOverride: mobileChartHeight - 32,
               ),
+            ),
+          );
+        } else if (slot.id == DashboardWidgetId.portfolioHealth) {
+          // Match Portfolio phone: content-sized stack, not Chart peer band height.
+          _appendSlot(
+            children,
+            _buildSlot(
+              context,
+              ref,
+              slot.id,
+              fillHeight: false,
+              compact: true,
             ),
           );
         } else if (_isChartPeerSlot(slot.id) || _isXrayPeerSlot(slot.id)) {

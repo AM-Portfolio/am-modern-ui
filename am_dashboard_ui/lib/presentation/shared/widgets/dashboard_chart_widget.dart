@@ -1,4 +1,3 @@
-import 'package:am_common/am_common.dart';
 import 'package:am_dashboard_ui/domain/models/overlay_chart_models.dart';
 import 'package:am_dashboard_ui/domain/models/overlay_series_adapter.dart';
 import 'package:am_dashboard_ui/presentation/providers/dashboard_overlay_provider.dart';
@@ -77,31 +76,35 @@ class _ChartTrailingControls extends StatelessWidget {
         GlobalTimeFrameBar(
           key: const Key('dashboard-chart-timeframe'),
           variant: GlobalTimeFrameVariant.dropdown,
-          dropdownWidth: 72,
+          dropdownWidth: 64,
           primaryColor: accent,
           dropdownTrailingDivider: false,
           dropdownLeading: Icon(
             Icons.calendar_today_outlined,
-            size: AppTypeScale.sm,
+            size: 12,
             color: accent,
           ),
         ),
-        const SizedBox(width: 6),
-        _AddSeriesButton(overlay: overlay, state: state),
+        const SizedBox(width: kComparisonChartToolbarGap),
+        _AddSeriesButton(overlay: overlay, state: state, accent: accent),
       ],
     );
   }
 }
 
 class _AddSeriesButton extends StatelessWidget {
-  const _AddSeriesButton({required this.overlay, required this.state});
+  const _AddSeriesButton({
+    required this.overlay,
+    required this.state,
+    required this.accent,
+  });
 
   final DashboardOverlayNotifier overlay;
   final OverlayChartState state;
+  final Color accent;
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.colors;
     final selected = state.selectedIds.toSet();
     final remainingOverall = !selected.contains(OverlayChartIds.overall);
     final remainingPortfolios = state.availablePortfolios
@@ -117,38 +120,63 @@ class _AddSeriesButton extends StatelessWidget {
 
     if (!canAdd) return const SizedBox.shrink();
 
-    return PopupMenuButton<String>(
-      tooltip: 'Add series',
-      onSelected: overlay.addSeries,
-      itemBuilder: (context) {
-        final items = <PopupMenuEntry<String>>[
-          if (remainingOverall)
-            const PopupMenuItem(
-              value: OverlayChartIds.overall,
-              child: Text(OverlayChartIds.overall),
-            ),
-          for (final p in remainingPortfolios)
-            PopupMenuItem(value: p.id, child: Text(p.label)),
-        ];
-        if (items.isNotEmpty && remainingIndices.isNotEmpty) {
-          items.add(const PopupMenuDivider());
-        }
-        for (final id in remainingIndices) {
-          items.add(PopupMenuItem(value: id, child: Text(id)));
-        }
-        return items;
-      },
-      child: Chip(
-        visualDensity: VisualDensity.compact,
-        label: Text(
-          '+',
-          style: TextStyle(
-            color: ModuleColors.dashboard,
-            fontWeight: FontWeight.w600,
-          ),
+    final colors = context.colors;
+    final portfolioItems = <DropdownMenuItem<String>>[
+      if (remainingOverall)
+        OverlayChartIds.overall.toSimpleDropdownItem(
+          text: OverlayChartIds.overall,
+          fontSize: 12,
         ),
-        backgroundColor: colors.cardSurface.withValues(alpha: 0.55),
-        side: BorderSide(color: ModuleColors.dashboard.withValues(alpha: 0.35)),
+      for (final p in remainingPortfolios)
+        p.id.toSimpleDropdownItem(text: p.label, fontSize: 12),
+    ];
+    final indexItems = [
+      for (final id in remainingIndices)
+        id.toSimpleDropdownItem(text: id, fontSize: 12),
+    ];
+    final items = <DropdownMenuItem<String>>[
+      ...portfolioItems,
+      if (portfolioItems.isNotEmpty && indexItems.isNotEmpty)
+        const DropdownMenuItem<String>(
+          enabled: false,
+          value: null,
+          child: Divider(height: 1),
+        ),
+      ...indexItems,
+    ];
+
+    return SizedBox(
+      width: kComparisonChartHeaderRowHeight,
+      height: kComparisonChartHeaderRowHeight,
+      child: Tooltip(
+        message: 'Add series',
+        child: CustomDropdown<String>(
+          value: null,
+          height: kComparisonChartHeaderRowHeight,
+          isExpanded: true,
+          fontSize: 12,
+          borderRadius: AppRadii.xs,
+          showTrailingIcon: false,
+          menuMaxHeight: 280,
+          menuMaxWidth: 200,
+          primaryColor: accent,
+          backgroundColor: colors.cardSurface,
+          borderColor: accent.withValues(alpha: 0.35),
+          contentPadding: EdgeInsets.zero,
+          selectedItemBuilder: (_, __) => Text(
+            '+',
+            style: TextStyle(
+              color: accent,
+              fontWeight: FontWeight.w700,
+              fontSize: 14,
+              height: 1,
+            ),
+          ),
+          items: items,
+          onChanged: (id) {
+            if (id != null) overlay.addSeries(id);
+          },
+        ),
       ),
     );
   }
