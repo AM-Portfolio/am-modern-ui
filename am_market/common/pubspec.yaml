@@ -21,8 +21,8 @@ dependencies:
     path: ../sdk
 
   # Third Party
-  flutter_riverpod: ^3.0.3
-  riverpod_annotation: ^3.0.3
+  flutter_riverpod: ^3.5.0
+  riverpod_annotation: ^4.0.8
   http: ^1.1.2
   rxdart: ^0.27.7
   web_socket_channel: ^2.4.0
@@ -37,8 +37,7 @@ dev_dependencies:
   flutter_lints: ^4.0.0
   build_runner: ^2.4.8
   json_serializable: ^6.8.0
-  # Cap below 3.2.3: that range conflicts with riverpod_annotation ^3 + build_runner on Dart 3.14
-  freezed: '>=3.0.0 <3.2.3'
+  freezed: ^3.0.0
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

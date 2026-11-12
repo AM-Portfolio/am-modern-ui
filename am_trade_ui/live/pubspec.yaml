@@ -27,7 +27,7 @@ dependencies:
     
   # State Management
   flutter_bloc: ^9.1.1
-  flutter_riverpod: ^3.0.3
+  flutter_riverpod: ^3.5.0
   get_it: ^9.1.1
   
 dev_dependencies:

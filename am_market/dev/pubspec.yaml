@@ -19,7 +19,7 @@ dependencies:
     path: ../../am_common
 
   # Third Party
-  flutter_riverpod: ^3.0.3
+  flutter_riverpod: ^3.5.0
   provider: ^6.0.5
   http: ^1.1.2
   url_launcher: ^6.3.1
