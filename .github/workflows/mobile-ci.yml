@@ -241,9 +241,11 @@ jobs:
     if: ${{ (needs.resolve.outputs.run_android == 'true' || needs.resolve.outputs.run_ios == 'true') && needs.resolve.outputs.skip_validate != 'true' }}
     permissions:
       contents: read
-    uses: AM-Portfolio/am-pipelines/.github/workflows/central-mobile-validate.yml@main
+    # hotfix/pipeline: Flutter 3.44.0 pin + Play changesNotSentForReview (until merged to am-pipelines main)
+    uses: AM-Portfolio/am-pipelines/.github/workflows/central-mobile-validate.yml@hotfix/pipeline
     with:
       working_directory: am_app
+      flutter_version: "3.44.0"
 
   android:
     name: Android
@@ -251,7 +253,7 @@ jobs:
     if: ${{ always() && !cancelled() && needs.resolve.outputs.run_android == 'true' && (needs.validate.result == 'success' || needs.validate.result == 'skipped') }}
     permissions:
       contents: read
-    uses: AM-Portfolio/am-pipelines/.github/workflows/central-mobile-android.yml@main
+    uses: AM-Portfolio/am-pipelines/.github/workflows/central-mobile-android.yml@hotfix/pipeline
     with:
       working_directory: am_app
       build_mode: release
@@ -266,6 +268,7 @@ jobs:
       deploy_production: ${{ needs.resolve.outputs.deploy_android_production == 'true' }}
       gh_env_preprod: android-internal
       gh_env_prod: android-prod
+      flutter_version: "3.44.0"
     secrets: inherit
 
   ios:
@@ -275,7 +278,7 @@ jobs:
     permissions:
       contents: read
       actions: read
-    uses: AM-Portfolio/am-pipelines/.github/workflows/central-mobile-ios.yml@main
+    uses: AM-Portfolio/am-pipelines/.github/workflows/central-mobile-ios.yml@hotfix/pipeline
     with:
       working_directory: am_app
       build_mode: release
@@ -295,4 +298,5 @@ jobs:
       reuse_artifact_name: ${{ needs.resolve.outputs.reuse_artifact_name }}
       reuse_version_name: ${{ needs.resolve.outputs.reuse_version_name }}
       reuse_version_code: ${{ needs.resolve.outputs.reuse_version_code }}
+      flutter_version: "3.44.0"
     secrets: inherit
