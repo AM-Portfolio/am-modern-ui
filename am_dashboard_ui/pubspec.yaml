@@ -48,7 +48,8 @@ dev_dependencies:
     sdk: flutter
   flutter_lints: ^3.0.0
   build_runner: ^2.4.9
-  freezed: ^3.0.0
+  # Cap below 3.2.3: that range conflicts with riverpod_annotation ^3 + build_runner on Dart 3.14
+  freezed: '>=3.0.0 <3.2.3'
   json_serializable: ^6.8.0
   riverpod_generator: ^3.0.3
   injectable_generator: ^2.6.2
