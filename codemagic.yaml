@@ -300,7 +300,7 @@ workflows:
         AM_DOMAIN: "am.asrax.in"
         AM_ENV: "prod"
         # Floor = last known ASC cfBundleVersion; next IPA uses max(CM, floor+1)
-        ASC_BUILD_FLOOR: "15"
+        ASC_BUILD_FLOOR: "410"
       groups:
         - ios_credentials
     cache:
