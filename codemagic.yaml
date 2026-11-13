@@ -72,7 +72,7 @@ workflows:
           rm -rf build 2>/dev/null || true
           BUILD_NUM=${BUILD_NUMBER:-1}
           flutter build appbundle --release \
-            --build-name="2.0.0" \
+            --build-name="2.0.1" \
             --build-number="$BUILD_NUM" \
             --dart-define="AM_DOMAIN=${AM_DOMAIN}" \
             --dart-define="AM_ENV=${AM_ENV}"
@@ -175,7 +175,7 @@ workflows:
           BUILD_NUM=$(cat /tmp/android_version_code.txt)
           echo "Building AAB with versionCode=$BUILD_NUM"
           flutter build appbundle --release \
-            --build-name="2.0.0" \
+            --build-name="2.0.1" \
             --build-number="$BUILD_NUM" \
             --dart-define="AM_DOMAIN=${AM_DOMAIN}" \
             --dart-define="AM_ENV=${AM_ENV}"
@@ -269,7 +269,7 @@ workflows:
           rm -rf build 2>/dev/null || true
           BUILD_NUM=${BUILD_NUMBER:-1}
           flutter build ios --no-codesign --release \
-            --build-name="2.0.0" \
+            --build-name="2.0.1" \
             --build-number="$BUILD_NUM" \
             --dart-define="AM_DOMAIN=${AM_DOMAIN}" \
             --dart-define="AM_ENV=${AM_ENV}"
@@ -389,7 +389,7 @@ workflows:
             EXTRA_DEFINES+=(--dart-define="AM_GOOGLE_CLIENT_ID=${GOOGLE_WEB_CLIENT_ID}")
           fi
           flutter build ipa --release \
-            --build-name="2.0.0" \
+            --build-name="2.0.1" \
             --build-number="$BUILD_NUM" \
             --dart-define="AM_DOMAIN=${AM_DOMAIN}" \
             --dart-define="AM_ENV=${AM_ENV}" \
