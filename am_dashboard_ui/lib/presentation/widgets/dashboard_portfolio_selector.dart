@@ -354,15 +354,26 @@ class DashboardPortfolioSelector extends ConsumerWidget {
       });
     }
 
-    final currentName = portfolios
-            .where((choice) => choice.id == currentId)
-            .map((choice) => choice.name)
-            .firstOrNull ??
-        'All Portfolios';
-
     final primaryLabel = hub?.identity?.name?.trim().isNotEmpty == true
         ? hub!.identity!.name!.trim().split(RegExp(r'\s+')).first
         : 'You';
+
+    String bookLabel(DashboardPortfolioChoice choice) {
+      if (choice.id == 'all') return choice.name;
+      return labelForFamilyPortfolioFilter(
+        baseName: choice.name,
+        familyMemberId: choice.familyMemberId,
+        familyMemberName: choice.familyMemberName,
+        filterKey: filterKey,
+        showFamilyUi: showFamily,
+      );
+    }
+
+    final currentName = portfolios
+            .where((choice) => choice.id == currentId)
+            .map(bookLabel)
+            .firstOrNull ??
+        'All Portfolios';
 
     return FamilyAwarePortfolioPicker<DashboardPortfolioChoice>(
       showFamilyFilter: showFamily,
@@ -392,7 +403,7 @@ class DashboardPortfolioSelector extends ConsumerWidget {
       currentPortfolioName: currentName,
       portfolios: portfolios,
       idExtractor: (choice) => choice.id,
-      nameExtractor: (choice) => choice.name,
+      nameExtractor: bookLabel,
       subtitleExtractor: (choice) {
         final id = choice.externalId?.trim();
         if (id == null || id.isEmpty) return null;
