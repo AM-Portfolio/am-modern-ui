@@ -49,6 +49,11 @@ class DashboardOverlayNotifier extends Notifier<OverlayChartState> {
         reload();
       }
     });
+    ref.listen<String>(familyPortfolioFilterProvider, (previous, next) {
+      if (previous != next) {
+        reload();
+      }
+    });
     Future.microtask(reload);
     return OverlayChartState.initial(ref.read(appTimeFrameProvider).code);
   }
