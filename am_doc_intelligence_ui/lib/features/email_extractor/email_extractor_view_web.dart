@@ -1,12 +1,11 @@
 import 'dart:async';
-// ignore: avoid_web_libraries_in_flutter
-import 'dart:html' as html;
 import 'package:flutter/material.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:am_library/am_library.dart';
 import 'package:am_common/am_common.dart';
 import 'package:am_doc_intelligence_ui/features/broker_logo.dart';
 import 'package:am_doc_intelligence_ui/features/email_discover_models.dart';
+import 'package:am_doc_intelligence_ui/features/email_extractor/gmail_oauth_bridge.dart';
 import 'package:am_doc_intelligence_ui/features/import_holdings_shared_controls.dart';
 import 'package:am_doc_intelligence_ui/features/import_portfolio_sync.dart';
 import 'package:am_doc_intelligence_ui/features/import_process_banner.dart';
@@ -85,7 +84,7 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
   String? _selectedBrokerId;
 
   Timer? _statusPollTimer;
-  StreamSubscription<html.MessageEvent>? _oauthMessageSub;
+  final GmailOauthBridge _oauthBridge = GmailOauthBridge();
   final TextEditingController _panController = TextEditingController();
   bool _pdfPasswordVisible = false;
   ImportProcessPhase _phase = ImportProcessPhase.idle;
@@ -109,8 +108,13 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
     _effectivePasswordController.addListener(_onPasswordEdited);
     widget.npsPasswordController?.addListener(_onPasswordEdited);
 
-    // Popup callback posts here; also poll until status flips to connected
-    _oauthMessageSub = html.window.onMessage.listen(_onOAuthMessage);
+    // Web: popup postMessage. Native: resume + poll until connected.
+    _oauthBridge.listen(
+      onOauthEvent: _onOauthEvent,
+      onAppResumed: () {
+        if (_isServiceConnected == true) _checkGmail();
+      },
+    );
     _statusPollTimer = Timer.periodic(const Duration(seconds: 2), (timer) {
       if (_isServiceConnected == true && _gmailStatus?['connected'] != true) {
         _checkGmail();
@@ -209,30 +213,25 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
   }
 
   void _handleGmailQueryParams() {
-    try {
-      final uri = Uri.parse(html.window.location.href);
-      final gmail = uri.queryParameters['gmail'];
-      if (gmail == 'connected') {
-        _status = 'Gmail connected';
-        _phase = ImportProcessPhase.success;
-        _busyStartedAt = null;
-        _checkGmail();
-      } else if (gmail == 'error') {
-        _status =
-            'Gmail connection failed: ${uri.queryParameters['msg'] ?? 'unknown'}';
-        _phase = ImportProcessPhase.error;
-        _busyStartedAt = null;
-      }
-    } catch (_) {}
+    final params = _oauthBridge.readGmailQueryParams();
+    if (params == null) return;
+    final gmail = params['gmail'];
+    if (gmail == 'connected') {
+      _status = 'Gmail connected';
+      _phase = ImportProcessPhase.success;
+      _busyStartedAt = null;
+      _checkGmail();
+    } else if (gmail == 'error') {
+      _status = 'Gmail connection failed: ${params['msg'] ?? 'unknown'}';
+      _phase = ImportProcessPhase.error;
+      _busyStartedAt = null;
+    }
   }
 
-  void _onOAuthMessage(html.MessageEvent event) {
-    final data = event.data;
-    if (data is! Map) return;
-    if (data['type'] != 'am-gmail-oauth') return;
-    if (data['success'] == true) {
-      final email = data['email'] != null && '${data['email']}'.isNotEmpty
-          ? ' (${data['email']})'
+  void _onOauthEvent(GmailOauthEvent event) {
+    if (event.success) {
+      final email = event.email != null && event.email!.isNotEmpty
+          ? ' (${event.email})'
           : '';
       setState(() {
         _setFeedback(
@@ -244,7 +243,7 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
     } else {
       setState(() {
         _setFeedback(
-          'Gmail connection failed: ${data['error'] ?? 'unknown'}',
+          'Gmail connection failed: ${event.error ?? 'unknown'}',
           phase: ImportProcessPhase.error,
         );
       });
@@ -254,7 +253,7 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
   @override
   void dispose() {
     _statusPollTimer?.cancel();
-    _oauthMessageSub?.cancel();
+    _oauthBridge.dispose();
     _effectivePasswordController.removeListener(_onPasswordEdited);
     widget.npsPasswordController?.removeListener(_onPasswordEdited);
     // Only dispose locally owned controller.
@@ -536,14 +535,20 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
       }
       if (result['auth_url'] != null) {
         final String authUrl = result['auth_url'];
-        html.window.open(
-          authUrl,
-          'am_gmail_oauth',
-          'width=520,height=720',
-        );
+        final launched = await _oauthBridge.openAuthUrl(authUrl);
+        if (!mounted) return;
+        if (!launched) {
+          setState(() {
+            _setFeedback(
+              'Could not open Google sign-in. Try again or use a browser.',
+              phase: ImportProcessPhase.error,
+            );
+          });
+          return;
+        }
         setState(() {
           _setFeedback(
-            'Complete Google sign-in in the popup…',
+            'Complete Google sign-in in the browser, then return here…',
             phase: ImportProcessPhase.busy,
             snack: false,
           );
