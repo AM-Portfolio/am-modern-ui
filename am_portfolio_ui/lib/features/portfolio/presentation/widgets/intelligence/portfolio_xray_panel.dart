@@ -607,7 +607,15 @@ class _PortfolioXrayPanelState extends ConsumerState<PortfolioXrayPanel>
         final holdingsTotal = holdings == null || holdings.isEmpty
             ? null
             : holdings.fold<double>(0, (s, h) => s + h.currentValue);
-        final totalValue = xray?.totalValueInr ?? holdingsTotal;
+        // Sector/Industry/Cap slices are equity-only; center must match list sum
+        // (full xray.totalValueInr includes MF/NPS and looked "wrong" vs the pie).
+        final weightsSum = weights.fold<double>(
+          0,
+          (s, w) => s + (w.valueInr ?? 0),
+        );
+        final totalValue = weightsSum > 0
+            ? weightsSum
+            : (xray?.totalValueInr ?? holdingsTotal);
         final useFill = widget.fillHeight;
         // Phone Chart/List must stay exclusive. fillHeight only stretches the
         // active pane; do not force donut+list Row below the wide breakpoint.
@@ -979,7 +987,7 @@ class _XrayBody extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(
-          'Total Exposure',
+          tab <= 2 ? 'Equity exposure' : 'Total Exposure',
           style: Theme.of(context).textTheme.labelSmall?.copyWith(
                 color: Theme.of(context).hintColor,
                 fontWeight: FontWeight.w600,
