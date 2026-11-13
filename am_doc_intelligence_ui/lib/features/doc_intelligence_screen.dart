@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:am_doc_intelligence_ui/features/document_processor/document_processor_view.dart';
@@ -6,6 +5,7 @@ import 'package:am_doc_intelligence_ui/features/email_discover_models.dart';
 import 'package:am_doc_intelligence_ui/features/email_extractor/email_extractor_view.dart';
 import 'package:am_doc_intelligence_ui/features/import_holdings_info_rail.dart';
 import 'package:am_doc_intelligence_ui/features/import_holdings_shared_controls.dart';
+import 'package:am_doc_intelligence_ui/features/import_source_resolve.dart';
 import 'package:am_doc_intelligence_ui/features/recent_imports_store.dart';
 import 'package:am_doc_intelligence_ui/models/batch_sync_models.dart';
 import 'package:am_doc_intelligence_ui/services/api_service.dart';
@@ -57,16 +57,9 @@ class _DocIntelligenceScreenState extends State<DocIntelligenceScreen> {
   static const int _recentCap = 25;
 
   static _ImportSource _sourceFromSlug(String slug) {
-    switch (slug) {
-      case 'doc-processor':
-      case 'upload':
-        return _ImportSource.upload;
-      case 'email-extractor':
-      case 'mailbox':
-      default:
-        if (!kIsWeb) return _ImportSource.upload;
-        return _ImportSource.email;
-    }
+    return resolveImportSourceSlug(slug) == ImportSourceKind.upload
+        ? _ImportSource.upload
+        : _ImportSource.email;
   }
 
   static String _slugForSource(_ImportSource source) =>
