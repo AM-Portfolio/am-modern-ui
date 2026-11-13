@@ -70,5 +70,11 @@
 			</dict>
 		</array>
 		<!-- End of the Google Sign-in Section -->
+		<!-- url_launcher canLaunchUrl for Gmail OAuth in Safari -->
+		<key>LSApplicationQueriesSchemes</key>
+		<array>
+			<string>https</string>
+			<string>http</string>
+		</array>
 	</dict>
 </plist>
