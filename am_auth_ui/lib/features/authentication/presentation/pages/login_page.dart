@@ -8,6 +8,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/utils/auth_redirect.dart';
+import '../../../../core/utils/same_origin_navigation.dart';
 import '../../../../di/auth_providers.dart';
 import '../cubit/auth_cubit.dart';
 import '../cubit/auth_state.dart';
@@ -79,6 +80,10 @@ class _LoginPageState extends State<LoginPage> {
                 final target = AuthRedirect.postLoginLocation(
                   GoRouterState.of(context).uri,
                 );
+                if (kIsWeb && AuthRedirect.isQaPortalTarget(target)) {
+                  navigateToSameOrigin(target);
+                  return;
+                }
                 context.go(target);
               } else {
                 Navigator.of(context).pushReplacementNamed('/home');

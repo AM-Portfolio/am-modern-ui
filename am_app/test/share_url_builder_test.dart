@@ -289,6 +289,24 @@ void main() {
       );
     });
 
+    test('allows the same-origin QA portal handoff after login', () {
+      final target = AuthRedirect.postLoginLocation(
+        Uri.parse(
+          '/login?redirect=%2Fqa%2Fui%2F&state=ui-flows&qa_sso=1',
+        ),
+      );
+      expect(target, '/qa/ui/?state=ui-flows&qa_sso=1');
+      expect(AuthRedirect.isQaPortalTarget(target), isTrue);
+    });
+
+    test('never forwards external hosts as login destinations', () {
+      expect(
+        AuthRedirect.sanitize('https://attacker.example/qa/ui/'),
+        '/qa/ui/',
+      );
+      expect(AuthRedirect.sanitize('/admin'), isNull);
+    });
+
     test('recoverLoginLocation rebuilds login from encoded path', () {
       final recovered = AuthRedirect.recoverLoginLocation(
         Uri.parse('/app/profile%3Fhighlight%3Dsubscription'),

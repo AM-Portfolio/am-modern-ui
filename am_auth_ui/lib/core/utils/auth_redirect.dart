@@ -32,7 +32,7 @@ class AuthRedirect {
     if (candidate.startsWith('http://') || candidate.startsWith('https://')) {
       try {
         final uri = Uri.parse(candidate);
-        if (!uri.path.startsWith('/app')) return null;
+        if (!_isAllowedTargetPath(uri.path)) return null;
         candidate = uri.hasQuery ? '${uri.path}?${uri.query}' : uri.path;
       } catch (_) {
         return null;
@@ -47,22 +47,36 @@ class AuthRedirect {
       }
     }
 
-    if (!candidate.startsWith('/app')) return null;
+    final qIndex = candidate.indexOf('?');
+    final candidatePath = qIndex < 0 ? candidate : candidate.substring(0, qIndex);
+    if (!_isAllowedTargetPath(candidatePath)) return null;
 
     // Encoded nested query that failed to unpack must not become a path.
     if (candidate.contains('%3F') || candidate.contains('%3f')) return null;
 
-    final qIndex = candidate.indexOf('?');
     if (qIndex < 0) return candidate;
 
     final path = candidate.substring(0, qIndex);
-    if (!path.startsWith('/app')) return null;
+    if (!_isAllowedTargetPath(path)) return null;
     final query = candidate.substring(qIndex + 1);
     if (query.isEmpty) return path;
     final params = Uri.splitQueryString(query);
     if (params.isEmpty) return path;
     return Uri(path: path, queryParameters: params).toString();
   }
+
+  /// QA portal is same-origin and explicitly allowlisted for the post-login
+  /// handoff. Other non-app paths remain invalid redirect targets.
+  static bool isQaPortalTarget(String target) {
+    final path = Uri.tryParse(target)?.path;
+    return path != null && _isQaPortalPath(path);
+  }
+
+  static bool _isAllowedTargetPath(String path) =>
+      path.startsWith('/app') || _isQaPortalPath(path);
+
+  static bool _isQaPortalPath(String path) =>
+      path == '/qa/ui' || path.startsWith('/qa/ui/');
 
   /// Login URL when bouncing an unauthenticated `/app…` request.
   ///
@@ -116,7 +130,7 @@ class AuthRedirect {
     }
 
     final base = Uri.parse(sanitized);
-    if (!base.path.startsWith('/app')) {
+    if (!_isAllowedTargetPath(base.path)) {
       return _missingRedirectTarget(
         companions: companions,
         externalReturn: externalReturn,
