@@ -594,6 +594,41 @@ Future<void> deleteFamilyMember({
   );
 }
 
+/// Dry-run orphan family stamps (familyMemberId not in live family_members).
+Future<Map<String, dynamic>> listFamilyOrphans({
+  required ApiClient client,
+}) async {
+  return client.get(
+    '/v1/portfolios/family-orphans',
+    parser: (data) {
+      if (data is Map) return Map<String, dynamic>.from(data);
+      return <String, dynamic>{};
+    },
+  );
+}
+
+/// Deletes orphan family stamps for the caller. Primary books untouched.
+Future<Map<String, dynamic>> cleanupFamilyOrphans({
+  required ApiClient client,
+}) async {
+  return client.post(
+    '/v1/portfolios/family-orphans/cleanup',
+    parser: (data) {
+      if (data is Map) return Map<String, dynamic>.from(data);
+      return <String, dynamic>{};
+    },
+  );
+}
+
+/// Refresh persona-scoped dashboard data after family create/delete/cleanup.
+void invalidateFamilyPersonaCaches(Ref ref, String userId) {
+  ref.invalidate(accountsHubProvider(userId));
+  ref.invalidate(dashboardSummaryProvider(userId));
+  ref.invalidate(portfolioSummaryFallbackProvider);
+  ref.invalidate(dashboardStreamProvider(userId));
+  ref.invalidate(dashboardOverlayProvider(userId));
+}
+
 List<PortfolioOverview> _portfolioOverviewsFromAccountsHub(AccountsHub hub) {
   final rows = hub.portfolios;
   if (rows.isEmpty) {

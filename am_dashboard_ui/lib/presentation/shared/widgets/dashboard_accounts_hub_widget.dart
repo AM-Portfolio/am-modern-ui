@@ -522,19 +522,20 @@ class _DashboardUsersHubWidgetState
     try {
       final client = await ref.read(portfolioApiClientProvider.future);
       await deleteFamilyMember(client: client, familyMemberId: id);
-      if (FavoritePersonaStore.selectionFromKey(
-            ref.read(familyPortfolioFilterProvider),
-          ) ==
-          id) {
-        ref
-            .read(familyPortfolioFilterProvider.notifier)
-            .select(FavoritePersonaStore.kYou);
+      // Heal any leftover multi-UUID stamps from prior create/delete churn.
+      try {
+        await cleanupFamilyOrphans(client: client);
+      } catch (_) {
+        // Delete already succeeded; orphan cleanup is best-effort.
       }
-      if (_favoriteKey == id) {
+      ref
+          .read(familyPortfolioFilterProvider.notifier)
+          .select(FavoritePersonaStore.kYou);
+      if (_favoriteKey == id || _favoriteKey == FavoritePersonaStore.kAll) {
         await FavoritePersonaStore.instance.clear(widget.userId);
         if (mounted) setState(() => _favoriteKey = null);
       }
-      ref.invalidate(accountsHubProvider(widget.userId));
+      invalidateFamilyPersonaCaches(ref, widget.userId);
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Family member deleted')),

@@ -723,14 +723,20 @@ class _DashboardUsersPageState extends ConsumerState<DashboardUsersPage> {
     try {
       final client = await ref.read(portfolioApiClientProvider.future);
       await deleteFamilyMember(client: client, familyMemberId: id);
+      try {
+        await cleanupFamilyOrphans(client: client);
+      } catch (_) {}
       if (_familyMemberId == id) {
         setState(() => _familyMemberId = null);
       }
-      if (_favoriteKey == id) {
+      ref
+          .read(familyPortfolioFilterProvider.notifier)
+          .select(FavoritePersonaStore.kYou);
+      if (_favoriteKey == id || _favoriteKey == FavoritePersonaStore.kAll) {
         await FavoritePersonaStore.instance.clear(widget.userId);
         if (mounted) setState(() => _favoriteKey = null);
       }
-      ref.invalidate(accountsHubProvider(widget.userId));
+      invalidateFamilyPersonaCaches(ref, widget.userId);
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Family member deleted')),
@@ -864,6 +870,13 @@ class _UsersFamilyPanel extends ConsumerWidget {
     try {
       final client = await ref.read(portfolioApiClientProvider.future);
       await deleteFamilyMember(client: client, familyMemberId: id);
+      try {
+        await cleanupFamilyOrphans(client: client);
+      } catch (_) {}
+      ref
+          .read(familyPortfolioFilterProvider.notifier)
+          .select(FavoritePersonaStore.kYou);
+      invalidateFamilyPersonaCaches(ref, widget.userId);
       await _refresh(ref);
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
