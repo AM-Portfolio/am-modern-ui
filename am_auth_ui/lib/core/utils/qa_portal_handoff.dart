@@ -26,8 +26,11 @@ Future<void> handoffToQaPortalAfterLogin(String target) async {
   } catch (_) {}
 
   String? handoff;
-  final apiBase = _qaApiBase.trim().replaceAll(RegExp(r'/$'), '');
-  if (apiBase.isNotEmpty && _looksLikeJwt(token)) {
+  // Empty QA_API_BASE → same-origin /qa (am-dev Traefik). Local split ports set
+  // QA_API_BASE explicitly (e.g. http://localhost:8150).
+  final configured = _qaApiBase.trim().replaceAll(RegExp(r'/$'), '');
+  final apiBase = configured.isNotEmpty ? configured : '/qa';
+  if (_looksLikeJwt(token)) {
     try {
       final dio = Dio(
         BaseOptions(
