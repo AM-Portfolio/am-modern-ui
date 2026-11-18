@@ -73,7 +73,14 @@ GoRouter createAppRouter({
           return AppRoutes.dashboard;
         }
         if (isAuthenticated && location == AppRoutes.login) {
-          return AuthRedirect.postLoginLocation(state.uri);
+          final target = AuthRedirect.postLoginLocation(state.uri);
+          // /qa/ui is served by the QA ingress, not Flutter go_router.
+          // Returning it here 404s ("Page not found: /qa/ui/…") in-app.
+          if (kIsWeb && AuthRedirect.isQaPortalTarget(target)) {
+            await handoffToQaPortalAfterLogin(target);
+            return null;
+          }
+          return target;
         }
         return null;
       }
@@ -485,7 +492,8 @@ GoRouter createAppRouter({
                   final activePortfolioId =
                       context.selectedPortfolioId ?? portfolioId;
                   if (slug == 'portfolios' && activePortfolioId.isEmpty) {
-                    final currentLoc = GoRouterState.of(context).matchedLocation;
+                    final currentLoc =
+                        GoRouterState.of(context).matchedLocation;
                     if (currentLoc != AppRoutes.tradeDiscovery) {
                       context.go(AppRoutes.tradeDiscovery);
                     }
@@ -604,15 +612,13 @@ GoRouter createAppRouter({
           ),
           GoRoute(
             path: AppRoutes.docIntel,
-            redirect: (context, state) =>
-                AppRoutes.docIntelPath('mailbox'),
+            redirect: (context, state) => AppRoutes.docIntelPath('mailbox'),
           ),
           GoRoute(
             path: '${AppRoutes.docIntel}/:tab',
             builder: (context, state) {
               final tab = state.pathParameters['tab'] ?? 'mailbox';
-              final resolved =
-                  AppRoutes.isDocIntelTab(tab) ? tab : 'mailbox';
+              final resolved = AppRoutes.isDocIntelTab(tab) ? tab : 'mailbox';
               return buildDocIntelRoute(
                 userId: _userId(context),
                 tab: resolved,

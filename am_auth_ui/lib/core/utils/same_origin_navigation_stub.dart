@@ -1,1 +1,5 @@
-void navigateToSameOrigin(String path) {}
+void navigateToSameOrigin(
+  String path, {
+  String? accessToken,
+  String? handoffCode,
+}) {}
