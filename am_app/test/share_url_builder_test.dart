@@ -48,7 +48,8 @@ void main() {
     });
 
     test('trade discovery is not a deep trade link', () {
-      expect(ShareUrlBuilder.isDeepTradeLink(AppRoutes.tradeDiscovery), isFalse);
+      expect(
+          ShareUrlBuilder.isDeepTradeLink(AppRoutes.tradeDiscovery), isFalse);
       expect(
         ShareUrlBuilder.tradeTabFromLocation(AppRoutes.tradeDiscovery),
         'portfolios',
@@ -189,7 +190,8 @@ void main() {
         );
       });
 
-      test('external return without redirect goes to profile not dashboard', () {
+      test('external return without redirect goes to profile not dashboard',
+          () {
         final target = AuthRedirect.postLoginLocation(
           Uri.parse(
             '/login?return_to=http%3A%2F%2F127.0.0.1%3A18787%2Fcallback&state=s1',
@@ -198,7 +200,8 @@ void main() {
         final uri = Uri.parse(target);
         expect(uri.path, '/app/profile');
         expect(uri.path, isNot(AuthRedirect.productHomePath));
-        expect(uri.queryParameters['return_to'], 'http://127.0.0.1:18787/callback');
+        expect(uri.queryParameters['return_to'],
+            'http://127.0.0.1:18787/callback');
         expect(uri.queryParameters['state'], 's1');
       });
 
@@ -287,6 +290,33 @@ void main() {
         ),
         '/app/profile?highlight=subscription&state=s1',
       );
+    });
+
+    test('allows the same-origin QA portal handoff after login', () {
+      final target = AuthRedirect.postLoginLocation(
+        Uri.parse(
+          '/login?redirect=%2Fqa%2Fui%2F&state=ui-flows&qa_sso=1',
+        ),
+      );
+      expect(target, '/qa/ui/?state=ui-flows&qa_sso=1');
+      expect(AuthRedirect.isQaPortalTarget(target), isTrue);
+      // Must be handled via window.location (not context.go) — see app_router.
+    });
+
+    test('treats malformed redirect=/qa/ui/?qa_sso=1 as QA portal target', () {
+      final target = AuthRedirect.postLoginLocation(
+        Uri.parse('/login?redirect=%2Fqa%2Fui%2F%3Fqa_sso%3D1'),
+      );
+      expect(AuthRedirect.isQaPortalTarget(target), isTrue);
+      expect(target.startsWith('/qa/ui'), isTrue);
+    });
+
+    test('never forwards external hosts as login destinations', () {
+      expect(
+        AuthRedirect.sanitize('https://attacker.example/qa/ui/'),
+        '/qa/ui/',
+      );
+      expect(AuthRedirect.sanitize('/admin'), isNull);
     });
 
     test('recoverLoginLocation rebuilds login from encoded path', () {
