@@ -29,7 +29,7 @@ class PrivacyPolicyPage extends StatelessWidget {
 
     return LegalDocumentPage(
       title: 'Privacy Policy',
-      lastUpdated: '14 July 2026',
+      lastUpdated: '20 November 2026',
       onBack: onBack,
       relatedLabel: 'Terms of Service',
       onRelatedTap: onOpenTerms,
@@ -141,6 +141,55 @@ class PrivacyPolicyPage extends StatelessWidget {
             'hosting, analytics, authentication, and payment partners that help us operate the Services',
           ),
         ]),
+        const LegalHeading('Google Gmail data'),
+        const LegalParagraph(
+          'If you choose to connect Gmail for statement import, AM Investment '
+          'requests the read-only Google scope '
+          'https://www.googleapis.com/auth/gmail.messages.readonly. This '
+          'permission allows the app to read Gmail messages. AM Investment uses '
+          'it only to locate broker statements and attachments for an import you '
+          'request, and to extract investment information for your AM portfolio. '
+          'The app does not send, modify, or delete Gmail messages.',
+        ),
+        const LegalParagraph(
+          'We process Gmail messages and attachments temporarily to find broker '
+          'statements and extract investment information when you request an '
+          'import. We do not retain the original Gmail messages or attachments. '
+          'The extracted investment information is saved to your AM portfolio '
+          'while your account is active. We do not sell or share Gmail data with '
+          'third parties, use it for advertising, or use it for purposes unrelated '
+          'to the AM features you request. Our use of Google data follows the '
+          'Google API Services User Data Policy and its Limited Use requirements.',
+        ),
+        Padding(
+          padding: const EdgeInsets.only(bottom: 16),
+          child: Text.rich(
+            TextSpan(
+              children: [
+                const TextSpan(text: 'Read the '),
+                TextSpan(
+                  text: 'Google API Services User Data Policy',
+                  style: linkStyle,
+                  recognizer: TapGestureRecognizer()
+                    ..onTap = () => launchUrl(
+                      Uri.parse(
+                        'https://developers.google.com/terms/api-services-user-data-policy',
+                      ),
+                    ),
+                ),
+                const TextSpan(text: '.'),
+              ],
+            ),
+          ),
+        ),
+        const LegalParagraph(
+          'You can disconnect Gmail by deleting your AM account. Account '
+          'deletion applies across AM apps. Your account is deactivated when '
+          'deletion is requested. If you do not log back in during the following '
+          '90 days, your account and associated data, including Gmail connection '
+          'and imported data, are deleted across AM apps. No backup copies of '
+          'that account data are retained after the 90-day deletion period.',
+        ),
         const LegalHeading('2. How do we use your information?'),
         const LegalShort(
           'We process your information to provide and improve our Services based '
@@ -219,15 +268,17 @@ class PrivacyPolicyPage extends StatelessWidget {
           ),
           LegalBoldItem(
             'Vendors and Service Providers. ',
-            'We may share your data with third-party vendors, service providers, '
-            'contractors, or agents who perform services for us, such as hosting, '
-            'authentication, payment processing, email delivery, analytics, and '
-            'customer support.',
+            'We may share non-Gmail personal data with third-party vendors, '
+            'service providers, contractors, or agents who perform services for '
+            'us, such as hosting, authentication, payment processing, email '
+            'delivery, analytics, and customer support. Gmail data is not shared '
+            'with these parties.',
           ),
           LegalBoldItem(
             'Integrations you authorize. ',
-            'When you connect Google, Gmail, or broker-related services, '
-            'information is shared as required to provide those features.',
+            'When you connect Google, Gmail, or broker-related services, the '
+            'data is processed within AM apps only to provide the feature you '
+            'requested, as described in the Google Gmail data section.',
           ),
           LegalBoldItem(
             'Business Transfers. ',
@@ -253,16 +304,15 @@ class PrivacyPolicyPage extends StatelessWidget {
         ),
         const LegalHeading('5. How long do we keep your information?'),
         const LegalShort(
-          'We keep your information for as long as necessary to fulfill the '
-          'purposes outlined in this privacy policy unless otherwise required by law.',
+          'When an account is scheduled for deletion, it is deactivated '
+          'immediately and deleted after 90 days if you do not log back in.',
         ),
         const LegalParagraph(
-          'We will only keep your personal information for as long as it is '
-          'necessary for the purposes set out in this privacy policy, unless a '
-          'longer retention period is required or permitted by law. When we have '
-          'no ongoing legitimate business need to process your personal '
-          'information, we will either delete or anonymize it, or securely store '
-          'and isolate it from further processing until deletion is possible.',
+          'The 90-day deletion process applies to your AM account and associated '
+          'data across AM apps, including Gmail connection data and imported '
+          'information. Logging back in during this period restores your account '
+          'and cancels the pending deletion. After deletion is completed, no '
+          'backup copies of the deleted account data are retained.',
         ),
         const LegalHeading('6. How do we keep your information safe?'),
         const LegalShort(
@@ -325,11 +375,13 @@ class PrivacyPolicyPage extends StatelessWidget {
           'Contact us using the contact information provided below',
         ]),
         const LegalParagraph(
-          'Upon your request to terminate your account, we will deactivate or '
-          'delete your account and information from our active databases. However, '
-          'some information may be retained to prevent fraud, troubleshoot '
-          'problems, enforce our Terms of Service, and/or comply with legal '
-          'requirements.',
+          'When you request account deletion, your account is deactivated '
+          'immediately. If you do not log back in during the next 90 days, your '
+          'account and associated information are deleted across AM apps, '
+          'including Gmail connection data and imported information. Logging '
+          'back in during that period restores the account and cancels the '
+          'pending deletion. After deletion is completed, no backup copies of '
+          'the deleted account data are retained.',
         ),
         const LegalSubheading('Opting out of emails'),
         const LegalParagraph(
