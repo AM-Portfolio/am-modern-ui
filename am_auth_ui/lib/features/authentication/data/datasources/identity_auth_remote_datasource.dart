@@ -29,7 +29,16 @@ class IdentityAuthRemoteDataSource implements AuthDataSource {
 
       final userId = claims['sub'] ?? claims['user_id'] ?? claims['id'] ?? '';
       final email = claims['email'] ?? defaultEmail;
-      final name = claims['name'] ?? claims['preferred_username'] ?? claims['username'] ?? '';
+      final given = claims['given_name']?.toString().trim() ?? '';
+      final family = claims['family_name']?.toString().trim() ?? '';
+      final composedGiven = given.isNotEmpty
+          ? (family.isNotEmpty ? '$given $family' : given)
+          : null;
+      final name = claims['name'] ??
+          composedGiven ??
+          claims['preferred_username'] ??
+          claims['username'] ??
+          '';
 
       return UserModel(
         id: userId.toString(),

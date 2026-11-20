@@ -2,6 +2,7 @@ import 'package:am_common/am_common.dart';
 import 'package:am_dashboard_ui/domain/models/accounts_hub.dart';
 import 'package:am_dashboard_ui/presentation/layout/dashboard_widget_id.dart';
 import 'package:am_dashboard_ui/presentation/mappers/advanced_account_row_mapper.dart';
+import 'package:am_dashboard_ui/presentation/mappers/primary_persona_display_name.dart';
 import 'package:am_dashboard_ui/presentation/providers/dashboard_overlay_provider.dart';
 import 'package:am_dashboard_ui/presentation/providers/dashboard_portfolio_scope.dart';
 import 'package:am_dashboard_ui/presentation/providers/dashboard_provider.dart';
@@ -66,6 +67,7 @@ class _DashboardUsersHubWidgetState
   @override
   Widget build(BuildContext context) {
     final async = ref.watch(accountsHubProvider(widget.userId));
+    final sessionName = ref.watch(sessionDisplayNameProvider).value;
     final filterKey = ref.watch(familyPortfolioFilterProvider);
     final familyMemberId = FavoritePersonaStore.selectionFromKey(filterKey);
     final currency = NumberFormat.currency(symbol: '₹', decimalDigits: 0);
@@ -172,6 +174,7 @@ class _DashboardUsersHubWidgetState
               _CompactHeader(
                 identity: hub.identity,
                 nps: personaNps,
+                sessionDisplayName: sessionName,
                 onOpenUsers: widget.onOpenUsers,
                 tabs: _CompactFilterRow(
                   selected: _primary,
@@ -185,9 +188,7 @@ class _DashboardUsersHubWidgetState
               PersonaCardStrip(
                 members: familyMembers,
                 selectedId: familyMemberId,
-                primaryLabel: hub.identity?.name?.trim().isNotEmpty == true
-                    ? hub.identity!.name!.trim()
-                    : 'You',
+                primaryLabel: primaryPersonaStripLabel(hub, sessionName),
                 favoriteKey: _favoriteKey,
                 compact: true,
                 showRoleIcon: false,
@@ -520,21 +521,29 @@ class _DashboardUsersHubWidgetState
     );
     if (ok != true || !context.mounted) return;
     try {
+      final hubBefore =
+          ref.read(accountsHubProvider(widget.userId)).asData?.value;
       final client = await ref.read(portfolioApiClientProvider.future);
       await deleteFamilyMember(client: client, familyMemberId: id);
-      if (FavoritePersonaStore.selectionFromKey(
-            ref.read(familyPortfolioFilterProvider),
-          ) ==
-          id) {
+      try {
+        await cleanupFamilyOrphans(client: client);
+      } catch (_) {}
+      final remainingCount = (hubBefore?.familyMembers ?? [])
+          .where((m) => m.id?.trim() != id)
+          .length;
+      final selectedId = FavoritePersonaStore.selectionFromKey(
+        ref.read(familyPortfolioFilterProvider),
+      );
+      if (selectedId == id || remainingCount == 0) {
         ref
             .read(familyPortfolioFilterProvider.notifier)
             .select(FavoritePersonaStore.kYou);
       }
-      if (_favoriteKey == id) {
+      if (_favoriteKey == id || _favoriteKey == FavoritePersonaStore.kAll) {
         await FavoritePersonaStore.instance.clear(widget.userId);
         if (mounted) setState(() => _favoriteKey = null);
       }
-      ref.invalidate(accountsHubProvider(widget.userId));
+      invalidateFamilyPersonaCaches(ref, widget.userId);
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Family member deleted')),
@@ -699,16 +708,20 @@ class _CompactHeader extends StatelessWidget {
     required this.tabs,
     this.identity,
     this.nps,
+    this.sessionDisplayName,
   });
 
   final AccountsIdentity? identity;
   final NpsMetaRow? nps;
+  final String? sessionDisplayName;
   final VoidCallback? onOpenUsers;
   final Widget tabs;
 
   @override
   Widget build(BuildContext context) {
-    final rawName = identity?.name ?? nps?.subscriberName;
+    final rawName = identity?.name ??
+        nps?.subscriberName ??
+        sessionDisplayName;
     final name = () {
       final n = rawName?.trim() ?? '';
       if (n.isEmpty) return '—';

@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import '../services/secure_storage_service.dart';
 import '../utils/logger.dart';
+import '../utils/token_extractor.dart';
 
 /// Centralized, lazily-loaded context for the authenticated user.
 ///
@@ -99,6 +100,14 @@ class UserContext {
     } catch (_) {
       return false;
     }
+  }
+
+  /// Display name from secure storage (login) or live JWT claims.
+  Future<String?> get sessionDisplayName async {
+    final stored = await _storage.getUserDisplayName();
+    if (stored != null && stored.trim().isNotEmpty) return stored.trim();
+    final payload = await jwtPayload;
+    return TokenExtractor.extractDisplayName(payload);
   }
 
   /// Decode and return the full JWT payload as a map — zero extra deps.

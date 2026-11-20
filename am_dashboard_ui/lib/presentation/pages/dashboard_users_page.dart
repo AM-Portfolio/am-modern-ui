@@ -1,6 +1,7 @@
 import 'package:am_common/am_common.dart';
 import 'package:am_dashboard_ui/domain/models/accounts_hub.dart';
 import 'package:am_dashboard_ui/presentation/mappers/advanced_account_row_mapper.dart';
+import 'package:am_dashboard_ui/presentation/mappers/primary_persona_display_name.dart';
 import 'package:am_dashboard_ui/presentation/providers/dashboard_provider.dart';
 import 'package:am_dashboard_ui/presentation/shared/widgets/glass_card.dart';
 import 'package:am_dashboard_ui/presentation/shared/widgets/persona_card_strip.dart';
@@ -152,6 +153,7 @@ class _DashboardUsersPageState extends ConsumerState<DashboardUsersPage> {
   @override
   Widget build(BuildContext context) {
     final async = ref.watch(accountsHubProvider(widget.userId));
+    final sessionName = ref.watch(sessionDisplayNameProvider).value;
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -173,14 +175,20 @@ class _DashboardUsersPageState extends ConsumerState<DashboardUsersPage> {
               ],
             ),
           ),
-          data: (hub) => _body(context, hub),
+          data: (hub) => _body(context, hub, sessionDisplayName: sessionName),
         ),
       ),
     );
   }
 
-  Widget _body(BuildContext context, AccountsHub hub) {
-    final name = hub.identity?.name ?? hub.nps?.subscriberName;
+  Widget _body(
+    BuildContext context,
+    AccountsHub hub, {
+    String? sessionDisplayName,
+  }) {
+    final primaryName =
+        resolvePrimaryPersonaDisplayName(hub, sessionDisplayName);
+    final name = primaryName;
     final pran = hub.identity?.pran ?? hub.nps?.pran;
     final hasLinked = (hub.portfolios.isNotEmpty) ||
         hub.dematAccounts.isNotEmpty ||
@@ -379,9 +387,7 @@ class _DashboardUsersPageState extends ConsumerState<DashboardUsersPage> {
                 builder: (context) {
                   final compact = MediaQuery.sizeOf(context).width < 720;
                   final primaryLabel =
-                      hub.identity?.name?.trim().isNotEmpty == true
-                          ? hub.identity!.name!.trim()
-                          : 'You';
+                      primaryPersonaStripLabel(hub, sessionDisplayName);
                   final selectedKey =
                       FavoritePersonaStore.keyFromSelection(_familyMemberId);
                   if (compact) {
@@ -721,16 +727,31 @@ class _DashboardUsersPageState extends ConsumerState<DashboardUsersPage> {
     );
     if (ok != true || !context.mounted) return;
     try {
+      final hubBefore =
+          ref.read(accountsHubProvider(widget.userId)).asData?.value;
       final client = await ref.read(portfolioApiClientProvider.future);
       await deleteFamilyMember(client: client, familyMemberId: id);
-      if (_familyMemberId == id) {
+      try {
+        await cleanupFamilyOrphans(client: client);
+      } catch (_) {}
+      final remainingCount = (hubBefore?.familyMembers ?? [])
+          .where((m) => m.id?.trim() != id)
+          .length;
+      final filterKey = ref.read(familyPortfolioFilterProvider);
+      final selectedId = FavoritePersonaStore.selectionFromKey(filterKey);
+      if (_familyMemberId == id ||
+          selectedId == id ||
+          remainingCount == 0) {
         setState(() => _familyMemberId = null);
+        ref
+            .read(familyPortfolioFilterProvider.notifier)
+            .select(FavoritePersonaStore.kYou);
       }
-      if (_favoriteKey == id) {
+      if (_favoriteKey == id || _favoriteKey == FavoritePersonaStore.kAll) {
         await FavoritePersonaStore.instance.clear(widget.userId);
         if (mounted) setState(() => _favoriteKey = null);
       }
-      ref.invalidate(accountsHubProvider(widget.userId));
+      invalidateFamilyPersonaCaches(ref, widget.userId);
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Family member deleted')),
@@ -758,7 +779,7 @@ class _UsersFamilyPanel extends ConsumerWidget {
   final List<AccountsPortfolioRow> books;
 
   Future<void> _refresh(WidgetRef ref) async {
-    ref.invalidate(accountsHubProvider(userId));
+    invalidateFamilyPersonaCaches(ref, userId);
   }
 
   Future<void> _add(BuildContext context, WidgetRef ref) async {
@@ -864,6 +885,18 @@ class _UsersFamilyPanel extends ConsumerWidget {
     try {
       final client = await ref.read(portfolioApiClientProvider.future);
       await deleteFamilyMember(client: client, familyMemberId: id);
+      try {
+        await cleanupFamilyOrphans(client: client);
+      } catch (_) {}
+      final remainingCount = members.where((m) => m.id?.trim() != id).length;
+      final selectedId = FavoritePersonaStore.selectionFromKey(
+        ref.read(familyPortfolioFilterProvider),
+      );
+      if (selectedId == id || remainingCount == 0) {
+        ref
+            .read(familyPortfolioFilterProvider.notifier)
+            .select(FavoritePersonaStore.kYou);
+      }
       await _refresh(ref);
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

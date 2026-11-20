@@ -145,6 +145,14 @@ bool xrayRowTintSelected({
   return selectedName != null && selectedName == weightName;
 }
 
+/// Exposure total shown at the center of each X-Ray allocation tab.
+@visibleForTesting
+String xrayExposureLabel(int tab) {
+  if (tab == 0 || tab == 1) return 'Equity + mutual funds';
+  if (tab == 2) return 'Equity exposure';
+  return 'Total exposure';
+}
+
 /// Where a pointer lands on the donut box (hole clears; miss is no-op).
 @visibleForTesting
 enum XrayDonutTapKind { slice, hole, miss }
@@ -607,8 +615,8 @@ class _PortfolioXrayPanelState extends ConsumerState<PortfolioXrayPanel>
         final holdingsTotal = holdings == null || holdings.isEmpty
             ? null
             : holdings.fold<double>(0, (s, h) => s + h.currentValue);
-        // Sector/Industry/Cap slices are equity-only; center must match list sum
-        // (full xray.totalValueInr includes MF/NPS and looked "wrong" vs the pie).
+        // The center matches the visible slices: Sector/Industry include equity+MF;
+        // Cap is equity-only; Class and By Portfolio show their full visible totals.
         final weightsSum = weights.fold<double>(
           0,
           (s, w) => s + (w.valueInr ?? 0),
@@ -987,7 +995,7 @@ class _XrayBody extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(
-          tab <= 2 ? 'Equity exposure' : 'Total Exposure',
+          xrayExposureLabel(tab),
           style: Theme.of(context).textTheme.labelSmall?.copyWith(
                 color: Theme.of(context).hintColor,
                 fontWeight: FontWeight.w600,

@@ -108,6 +108,15 @@ class ExtractHistoryItem {
       holdingsCount: (json['holdings_count'] as num?)?.toInt() ?? 0,
     );
   }
+
+  /// Document upload (CDSL/NPS) vs Gmail mailbox extract.
+  bool get isDocumentUpload {
+    final s = source.trim().toLowerCase();
+    return s == 'upload' || s == 'document';
+  }
+
+  /// Recent-imports row source: `upload` | `mailbox`.
+  String get recentImportSource => isDocumentUpload ? 'upload' : 'mailbox';
 }
 
 /// Per-file status inside a [BatchSyncStatus].

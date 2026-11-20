@@ -4,6 +4,34 @@ import 'admin_access.dart';
 
 /// Utility class to extract information from JWT tokens
 class TokenExtractor {
+  /// Human-readable name from JWT claims (Keycloak / identity tokens).
+  static String? extractDisplayName(Map<String, dynamic>? payload) {
+    if (payload == null || payload.isEmpty) return null;
+
+    String? pick(String key) {
+      final value = payload[key];
+      if (value is! String) return null;
+      final trimmed = value.trim();
+      return trimmed.isEmpty ? null : trimmed;
+    }
+
+    final name = pick('name');
+    if (name != null) return name;
+
+    final given = pick('given_name');
+    final family = pick('family_name');
+    if (given != null) {
+      if (family != null && family.isNotEmpty) return '$given $family';
+      return given;
+    }
+
+    return pick('preferred_username') ?? pick('username');
+  }
+
+  static String? extractDisplayNameFromToken(String token) {
+    return extractDisplayName(decodePayload(token));
+  }
+
   /// Extract the userId (sub) from a JWT token
   static String extractUserId(String token) {
     try {

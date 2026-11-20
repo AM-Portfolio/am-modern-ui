@@ -179,16 +179,23 @@ class _DocIntelligenceScreenState extends State<DocIntelligenceScreen> {
     List<ExtractHistoryItem> items,
   ) {
     return items.map((e) {
-      final label = e.broker.isNotEmpty ? e.broker : 'Gmail';
-      final title =
-          e.filename?.isNotEmpty == true ? e.filename! : 'Gmail · $label';
+      final isUpload = e.isDocumentUpload;
+      final label = e.broker.isNotEmpty
+          ? e.broker
+          : (isUpload ? 'Upload' : 'Gmail');
+      final title = e.filename?.isNotEmpty == true
+          ? e.filename!
+          : (isUpload ? 'Document · $label' : 'Gmail · $label');
       return RecentImportEntry(
-        id: 'mb-${e.id}',
-        source: 'mailbox',
+        id: isUpload ? 'up-ex-${e.id}' : 'mb-${e.id}',
+        source: e.recentImportSource,
         title: title,
         status: 'success',
         at: e.extractedAt,
-        files: [e.filename ?? 'Gmail · $label statement'],
+        files: [
+          e.filename ??
+              (isUpload ? 'Document · $label' : 'Gmail · $label statement'),
+        ],
         detail: e.holdingsCount > 0 ? '${e.holdingsCount} holdings' : null,
       );
     }).toList();

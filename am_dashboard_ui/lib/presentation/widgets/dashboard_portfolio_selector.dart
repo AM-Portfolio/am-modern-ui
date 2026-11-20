@@ -177,8 +177,16 @@ List<DashboardPortfolioChoice> parseDashboardPortfolioChoices(dynamic data) {
     for (final p in pending)
       if (!hasRealBroker || !p.isCdsl) p.choice,
   ];
-  // Once any real (non-CDSL) broker book is present, Demo must leave the dropdown.
-  if (hasRealBroker) {
+  // Any concrete broker book (incl. CDSL CAS) retires Demo from the dropdown.
+  // hasRealBroker above is only for hiding the CDSL aggregator when first-class
+  // brokers exist — Demo hide must also cover CDSL-only CAS uploads.
+  final hasAnyBrokerBook = pending.any(
+    (p) =>
+        !p.isDemo &&
+        !p.choice.isPaper &&
+        (p.choice.brokerType?.trim().isNotEmpty ?? false),
+  );
+  if (hasAnyBrokerBook || hasRealBroker) {
     choices.removeWhere((c) => isDemoPortfolioEntry(name: c.name));
   }
   return choices;

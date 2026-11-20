@@ -29,7 +29,7 @@ void main() {
   });
 
   group('parseHasDemoPortfolio', () {
-    test('true when isDummy flag is set', () {
+    test('true when only demo/dummy seed (no broker yet)', () {
       expect(
         parseHasDemoPortfolio([
           {
@@ -41,23 +41,36 @@ void main() {
         ]),
         isTrue,
       );
-    });
-
-    test('true when any item is demo by kind', () {
       expect(
         parseHasDemoPortfolio([
-          {'portfolioId': '1', 'portfolioName': 'Zerodha', 'kind': 'LIVE'},
-          {'portfolioId': '2', 'portfolioName': 'Seed', 'kind': 'DUMMY'},
+          {'portfolioId': '2', 'portfolioName': 'Demo Portfolio', 'kind': 'DEMO'},
         ]),
         isTrue,
+      );
+    });
+
+    test('false when demo exists alongside a broker portfolio', () {
+      expect(
+        parseHasDemoPortfolio([
+          {'portfolioId': '1', 'portfolioName': 'Zerodha', 'kind': 'BROKER', 'brokerType': 'ZERODHA'},
+          {'portfolioId': '2', 'portfolioName': 'Demo Portfolio', 'kind': 'DEMO'},
+        ]),
+        isFalse,
+      );
+      expect(
+        parseHasDemoPortfolio([
+          {'portfolioId': '1', 'portfolioName': 'CDSL CAS', 'kind': 'BROKER', 'brokerType': 'CDSL'},
+          {'portfolioId': '2', 'portfolioName': 'Demo Portfolio', 'kind': 'DEMO'},
+        ]),
+        isFalse,
       );
     });
 
     test('false when only real portfolios', () {
       expect(
         parseHasDemoPortfolio([
-          {'portfolioId': '1', 'portfolioName': 'Zerodha', 'kind': 'LIVE'},
-          {'portfolioId': '2', 'portfolioName': 'Groww', 'kind': 'LIVE'},
+          {'portfolioId': '1', 'portfolioName': 'Zerodha', 'kind': 'LIVE', 'brokerType': 'ZERODHA'},
+          {'portfolioId': '2', 'portfolioName': 'Groww', 'kind': 'LIVE', 'brokerType': 'GROWW'},
         ]),
         isFalse,
       );

@@ -17,6 +17,24 @@ bool isDemoPortfolioEntry({
   return n.contains('demo');
 }
 
+bool _isBrokerPortfolioEntry({
+  String? kind,
+  String? brokerType,
+  bool isDemo = false,
+  bool isPaper = false,
+}) {
+  if (isDemo || isPaper) return false;
+  final k = kind?.toUpperCase();
+  if (k == 'DELETED' || k == 'DEMO' || k == 'DUMMY' || k == 'PAPER' || k == 'BASKET') {
+    return false;
+  }
+  final broker = brokerType?.trim() ?? '';
+  // Any concrete broker book (Zerodha, CDSL CAS, CAS_DEMAT, …) retires Demo chrome.
+  return broker.isNotEmpty && (k == null || k == 'BROKER' || k == 'LIVE');
+}
+
+/// True only when a demo/DUMMY row exists **and** there is no broker portfolio yet.
+/// Uploading/linking a broker book must hide Demo Account chrome.
 bool parseHasDemoPortfolio(dynamic data) {
   final List<dynamic> items;
   if (data is List) {
@@ -27,6 +45,8 @@ bool parseHasDemoPortfolio(dynamic data) {
     return false;
   }
 
+  var hasDemo = false;
+  var hasBroker = false;
   for (final raw in items) {
     if (raw is! Map) continue;
     final map = Map<String, dynamic>.from(raw);
@@ -36,14 +56,27 @@ bool parseHasDemoPortfolio(dynamic data) {
         (map['name'] as String?) ??
         '';
     final dummyFlag = map['isDummy'] == true || map['dummy'] == true;
-    if (isDemoPortfolioEntry(kind: kind, name: name, isDummy: dummyFlag)) {
-      return true;
+    final isDemo = isDemoPortfolioEntry(kind: kind, name: name, isDummy: dummyFlag);
+    final isPaper = kind?.toUpperCase() == 'PAPER' || name.toLowerCase() == 'paper';
+    if (isDemo) {
+      hasDemo = true;
+      continue;
+    }
+    final brokerType =
+        (map['brokerType'] ?? map['broker'])?.toString();
+    if (_isBrokerPortfolioEntry(
+      kind: kind,
+      brokerType: brokerType,
+      isDemo: isDemo,
+      isPaper: isPaper,
+    )) {
+      hasBroker = true;
     }
   }
-  return false;
+  return hasDemo && !hasBroker;
 }
 
-/// True when the signed-in user has any demo/DUMMY portfolio (first-time seed).
+/// True when the signed-in user still needs Demo chrome (demo seed, no broker yet).
 /// Soft-fails to `false` so the badge never blocks the dashboard.
 ///
 /// On API/auth failure the keepAlive link is closed so a later rebuild can retry

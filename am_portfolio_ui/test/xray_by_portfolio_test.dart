@@ -78,4 +78,12 @@ void main() {
     expect(weights, hasLength(1));
     expect(weights.single.name, 'Dhan');
   });
+
+  test('exposure label matches the scope of each allocation tab', () {
+    expect(xrayExposureLabel(0), 'Equity + mutual funds');
+    expect(xrayExposureLabel(1), 'Equity + mutual funds');
+    expect(xrayExposureLabel(2), 'Equity exposure');
+    expect(xrayExposureLabel(3), 'Total exposure');
+    expect(xrayExposureLabel(4), 'Total exposure');
+  });
 }

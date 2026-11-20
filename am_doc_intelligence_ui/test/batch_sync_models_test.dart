@@ -171,4 +171,29 @@ void main() {
       isFalse,
     );
   });
+
+  test('ExtractHistoryItem upload source maps to Document upload', () {
+    final upload = ExtractHistoryItem.fromJson({
+      'id': '1',
+      'broker': 'cdsl',
+      'extracted_at': '2026-11-17T11:54:00Z',
+      'source': 'upload',
+      'filename': 'AUG2026_AA49039213_TXN.pdf',
+      'holdings_count': 175,
+    });
+    expect(upload.isDocumentUpload, isTrue);
+    expect(upload.recentImportSource, 'upload');
+
+    final gmail = ExtractHistoryItem.fromJson({
+      'id': '2',
+      'broker': 'cdsl',
+      'extracted_at': '2026-11-17T11:54:00Z',
+      'source': 'gmail',
+      'filename': 'AUG2026_AA49039213_TXN.pdf',
+      'mailbox': 'user@gmail.com',
+      'holdings_count': 175,
+    });
+    expect(gmail.isDocumentUpload, isFalse);
+    expect(gmail.recentImportSource, 'mailbox');
+  });
 }
