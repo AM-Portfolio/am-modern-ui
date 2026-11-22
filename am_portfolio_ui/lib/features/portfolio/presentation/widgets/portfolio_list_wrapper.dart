@@ -125,7 +125,11 @@ class _PortfolioListWrapperState extends ConsumerState<PortfolioListWrapper> {
 
   /// Ensures STOMP queue + backend watch are active for the selected portfolio.
   void _ensureStreamActive(String portfolioId) {
-    if (portfolioId == 'all') return;
+    if (portfolioId == 'all' || portfolioId.startsWith('all|')) {
+      context.read<PortfolioCubit>().unsubscribeFromPortfolioUpdates();
+      _streamActivatedForId = null;
+      return;
+    }
     if (_streamActivatedForId == portfolioId) return;
     _streamActivatedForId = portfolioId;
     context.read<PortfolioCubit>().subscribeToPortfolioUpdates(
@@ -161,7 +165,10 @@ class _PortfolioListWrapperState extends ConsumerState<PortfolioListWrapper> {
   void _autoSelectFirstPortfolio(List<PortfolioItem> portfolios) {
     if (portfolios.isEmpty) return;
 
-    if (selectedPortfolioId == 'all' || context.selectedPortfolioId == 'all') return;
+    if (selectedPortfolioId == 'all' || context.selectedPortfolioId == 'all') {
+      _ensureStreamActive('all');
+      return;
+    }
 
     // Drop ghost selection (e.g. deleted broker still stuck in shell/URL).
     if (selectedPortfolioId != null) {

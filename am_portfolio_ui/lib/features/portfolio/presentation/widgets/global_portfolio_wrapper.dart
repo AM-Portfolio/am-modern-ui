@@ -158,6 +158,7 @@ class _GlobalPortfolioWrapperState
   void _loadPortfolioDetail(PortfolioCubit cubit, String id) {
     if (_deferPortfolioDetailLoad) return;
     if (id == 'all') {
+      cubit.unsubscribeFromPortfolioUpdates();
       cubit.loadAllPortfolios(persona: _persona);
     } else {
       cubit.loadPortfolioById(id);
@@ -177,6 +178,7 @@ class _GlobalPortfolioWrapperState
     try {
       final cubit = innerContext.read<PortfolioCubit>();
       if (id == 'all') {
+        cubit.unsubscribeFromPortfolioUpdates();
         if (!_deferPortfolioDetailLoad) {
           cubit.loadAllPortfolios(persona: _persona);
         }
@@ -293,6 +295,7 @@ class _GlobalPortfolioWrapperState
 
     if (_selectedPortfolioId != null) {
       if (_selectedPortfolioId == 'all') {
+        cubit.unsubscribeFromPortfolioUpdates();
         if (!_deferPortfolioDetailLoad) {
           cubit.loadAllPortfolios(persona: _persona);
         }
@@ -328,6 +331,7 @@ class _GlobalPortfolioWrapperState
       if (id != null && id != 'all') return;
       final cubit = _readPortfolioCubit();
       if (cubit == null || _deferPortfolioDetailLoad) return;
+      cubit.unsubscribeFromPortfolioUpdates();
       cubit.loadAllPortfolios(persona: holdingsPersonaParam(next));
     });
 

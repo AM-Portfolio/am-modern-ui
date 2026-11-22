@@ -96,6 +96,7 @@ class StockDto {
     this.changeAmount,
     this.changePercent,
     this.sector,
+    this.isin,
     this.quantity,
     this.avgPrice,
     this.marketValue,
@@ -115,6 +116,7 @@ class StockDto {
     changeAmount: (json['changeAmount'] ?? json['change'])?.toDouble(),
     changePercent: json['changePercent']?.toDouble(),
     sector: json['sector'] as String?,
+    isin: json['isin'] as String?,
     quantity: json['quantity']?.toDouble(),
     avgPrice: json['avgPrice']?.toDouble(),
     // Handle both 'marketValue' and 'value' fields
@@ -129,6 +131,7 @@ class StockDto {
   final double? changeAmount;
   final double? changePercent;
   final String? sector;
+  final String? isin;
   final double? quantity;
   final double? avgPrice;
   final double? marketValue;

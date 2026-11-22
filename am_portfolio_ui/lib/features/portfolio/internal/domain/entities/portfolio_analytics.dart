@@ -83,6 +83,7 @@ class Stock {
     required this.changeAmount,
     required this.changePercent,
     required this.sector,
+    this.isin,
     this.quantity,
     this.avgPrice,
     this.investedAmount,
@@ -93,6 +94,8 @@ class Stock {
   });
   final String symbol;
   final String companyName;
+  /// Scheme or equity ISIN when known (heatmap lookthrough expand key).
+  final String? isin;
   final double lastPrice;
   final double changeAmount;
   final double changePercent;
@@ -137,6 +140,7 @@ class Stock {
     double? changeAmount,
     double? changePercent,
     String? sector,
+    String? isin,
     double? quantity,
     double? avgPrice,
     double? investedAmount,
@@ -152,6 +156,7 @@ class Stock {
       changeAmount: changeAmount ?? this.changeAmount,
       changePercent: changePercent ?? this.changePercent,
       sector: sector ?? this.sector,
+      isin: isin ?? this.isin,
       quantity: quantity ?? this.quantity,
       avgPrice: avgPrice ?? this.avgPrice,
       investedAmount: investedAmount ?? this.investedAmount,

@@ -70,11 +70,16 @@ class PortfolioAnalyticsService {
     String portfolioId, {
     TimeFrame? timeFrame,
     FeatureToggles? featureToggles,
+    String? assetScope,
   }) async {
     CommonLogger.methodEntry(
       'getPortfolioAnalyticsWithDefaults',
       tag: 'PortfolioAnalyticsService',
-      metadata: {'portfolioId': portfolioId, 'timeFrame': timeFrame?.name},
+      metadata: {
+        'portfolioId': portfolioId,
+        'timeFrame': timeFrame?.name,
+        'assetScope': assetScope,
+      },
     );
 
     try {
@@ -83,6 +88,7 @@ class PortfolioAnalyticsService {
         portfolioId,
         timeFrame: timeFrame,
         featureToggles: featureToggles,
+        assetScope: assetScope,
       );
 
       CommonLogger.info(

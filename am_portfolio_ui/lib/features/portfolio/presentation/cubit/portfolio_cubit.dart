@@ -2,12 +2,10 @@ import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:am_common/am_common.dart';
-import 'package:am_library/am_library.dart';
 import '../../internal/domain/entities/portfolio_holding.dart';
 import '../../internal/domain/entities/portfolio_summary.dart';
 import '../../internal/services/portfolio_service.dart';
 import 'portfolio_state.dart';
-import '../../internal/data/dtos/portfolio_summary_dto.dart';
 import '../../internal/data/dtos/portfolio_socket_update_dto.dart';
 import '../../internal/data/dtos/portfolio_create_request_dto.dart';
 import '../../internal/data/dtos/portfolio_update_request_dto.dart';
@@ -15,6 +13,12 @@ import 'package:get_it/get_it.dart';
 import 'dart:convert';
 import 'dart:async';
 import 'package:uuid/uuid.dart';
+
+/// All-books scope: bare `all`, or `all|<persona>` from [scopedAllPortfolioId].
+bool isAggregateAllScope(String portfolioId) {
+  final id = portfolioId.trim().toLowerCase();
+  return id == 'all' || id.startsWith('all|');
+}
 
 class PortfolioCubit extends Cubit<PortfolioState> {
   final String _debugId = DateTime.now().millisecondsSinceEpoch
@@ -138,7 +142,10 @@ class PortfolioCubit extends Cubit<PortfolioState> {
         );
       }
       
-      if (status == StompStatus.connected && _portfolioStreamingAllowed) {
+      if (status == StompStatus.connected &&
+          _portfolioStreamingAllowed &&
+          _subPortfolioId != null &&
+          !isAggregateAllScope(_subPortfolioId!)) {
         CommonLogger.info(
           '[$_debugId] PortfolioCubit: Connected event received, calling _performSubscription',
           tag: 'PortfolioCubit',
@@ -274,6 +281,8 @@ class PortfolioCubit extends Cubit<PortfolioState> {
   /// Unsubscribe from portfolio updates
   void unsubscribeFromPortfolioUpdates() {
     _heartbeat?.stop();
+    _subPortfolioId = null;
+    _lastSentPortfolioId = null;
 
     if (_stompClient.isConnected) {
       _stompClient.send(
@@ -402,6 +411,7 @@ class PortfolioCubit extends Cubit<PortfolioState> {
   /// Load merged data for all portfolios.
   /// [persona] is `you`, `household`, or a family member id.
   Future<void> loadAllPortfolios({String? persona}) async {
+    unsubscribeFromPortfolioUpdates();
     final scope = persona ?? _allPersona;
     _allPersona = scope;
     final scopeId = 'all|$scope';
@@ -965,6 +975,7 @@ class PortfolioCubit extends Cubit<PortfolioState> {
 
     final currentState = state;
     if (currentState is PortfolioLoaded) {
+      if (isAggregateAllScope(currentState.portfolioId)) return;
       try {
         CommonLogger.debug(
           'Processing WebSocket update in Cubit for state: PortfolioLoaded',

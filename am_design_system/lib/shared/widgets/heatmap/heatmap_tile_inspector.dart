@@ -20,8 +20,7 @@ class HeatmapTileInspector extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.colors;
     final meta = tile.metadata ?? const <String, dynamic>{};
-    final symbol = (meta['symbol'] as String?) ??
-        (tile.displayName.isNotEmpty ? tile.displayName : tile.name);
+    final symbol = _inspectorLabel(tile, meta);
     final monogram = symbol.isNotEmpty ? symbol[0].toUpperCase() : '?';
     final price = _asDouble(meta['lastPrice']);
     final value = tile.value;
@@ -36,6 +35,7 @@ class HeatmapTileInspector extends StatelessWidget {
     final chipFill = ink.withValues(alpha: context.isDark ? 0.08 : 0.06);
     final chipBorder = ink.withValues(alpha: context.isDark ? 0.14 : 0.10);
 
+    final lookthroughNote = meta['lookthroughNote']?.toString().trim();
     final chips = <Widget>[
       if (quantity != null && quantity > 0)
         _chip(
@@ -65,6 +65,13 @@ class HeatmapTileInspector extends StatelessWidget {
         border: chipBorder,
         textColor: mutedInk,
       ),
+      if (lookthroughNote != null && lookthroughNote.isNotEmpty)
+        _chip(
+          lookthroughNote,
+          fill: chipFill,
+          border: chipBorder,
+          textColor: mutedInk,
+        ),
     ];
 
     return Material(
@@ -101,6 +108,8 @@ class HeatmapTileInspector extends StatelessWidget {
             ),
             const SizedBox(width: 7),
             ConstrainedBox(
+              // Same compact ticker width as equities (TCS / NIFTYBEES).
+              // Long MF names ellipsis — do not widen the pill.
               constraints: const BoxConstraints(maxWidth: 72),
               child: Text(
                 symbol,
@@ -178,6 +187,25 @@ class HeatmapTileInspector extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  /// Equity/ETF: trading symbol. MF schemes: fund display name (never INF* ISIN).
+  static String _inspectorLabel(
+    HeatmapTileData tile,
+    Map<String, dynamic> meta,
+  ) {
+    final raw = ((meta['symbol'] as String?) ?? '').trim();
+    final display =
+        tile.displayName.trim().isNotEmpty ? tile.displayName.trim() : tile.name.trim();
+    final upper = raw.toUpperCase();
+    final looksLikeIsin = RegExp(r'^INF[A-Z0-9]{9}$').hasMatch(upper);
+    if (looksLikeIsin && display.isNotEmpty) {
+      return display;
+    }
+    if (raw.isNotEmpty) {
+      return upper;
+    }
+    return display;
   }
 
   static String _qtyLabel(double quantity) {

@@ -885,21 +885,32 @@ class SectorHeatmapConverter {
             combinedWeight
         : 0.0;
 
+    // Keep each small sector's holdings so drill into Other → sector still works.
     final children = small
         .map(
-          (t) => HeatmapTileData(
-            id: t.id,
-            name: t.name,
-            displayName: t.displayName,
-            weightage: t.weightage,
-            performance: t.performance,
-            value: t.value,
-            children: null,
-            metadata: {
-              ...?t.metadata,
-              'type': 'stock',
-            },
-          ),
+          (t) {
+            final hasHoldings =
+                t.children != null && t.children!.isNotEmpty;
+            final wasSector = t.metadata?['type'] == 'sector' ||
+                t.id.startsWith('sector_') ||
+                hasHoldings;
+            return HeatmapTileData(
+              id: t.id,
+              name: t.name,
+              displayName: t.displayName,
+              weightage: t.weightage,
+              performance: t.performance,
+              value: t.value,
+              children: t.children,
+              metadata: {
+                ...?t.metadata,
+                'type': wasSector ? 'sector' : (t.metadata?['type'] ?? 'stock'),
+                if (hasHoldings) 'holdingsCount': t.children!.length,
+              },
+              customColor: t.customColor,
+              icon: t.icon,
+            );
+          },
         )
         .toList();
 
@@ -1029,6 +1040,8 @@ class SectorHeatmapConverter {
       metadata: {
         'type': 'stock',
         'symbol': stock.symbol,
+        if (stock.isin != null && stock.isin!.trim().isNotEmpty)
+          'isin': stock.isin!.trim().toUpperCase(),
         'parentSector': sector.sectorName,
         'quantity': stock.quantity,
         'avgPrice': stock.avgPrice,
@@ -1256,14 +1269,31 @@ class SectorHeatmapConverter {
     return stock.lastPrice;
   }
 
-  /// Get display name for a stock (symbol with optional company name shortening)
+  /// Mosaic cell label:
+  /// - Mutual-fund schemes (INF* / Mutual Funds sector): full fund name
+  /// - Listed equity / ETF: trading symbol (TCS, NIFTYBEES), not legal name
   static String _getStockDisplayName(Stock stock) {
-    // For most stocks, the symbol is sufficient
-    // But for very long symbols or when we want to show company name, we can modify this
-    if (stock.symbol.length > 6) {
-      return stock.symbol.substring(0, 6);
+    final company = stock.companyName.trim();
+    final symbol = stock.symbol.trim();
+    final upperSymbol = symbol.toUpperCase();
+    final sector = stock.sector.trim().toLowerCase();
+    final looksLikeIsin =
+        RegExp(r'^INF[A-Z0-9]{9}$').hasMatch(upperSymbol);
+    final isMfSector = sector.contains('mutual fund');
+    final usableCompany = company.isNotEmpty &&
+        company.toLowerCase() != 'unknown company' &&
+        company.toUpperCase() != upperSymbol;
+
+    if ((looksLikeIsin || isMfSector) && usableCompany) {
+      return company;
     }
-    return stock.symbol;
+    if (symbol.isNotEmpty && !looksLikeIsin) {
+      return upperSymbol;
+    }
+    if (usableCompany) {
+      return company;
+    }
+    return symbol;
   }
 
   /// Calculate sector performance (prefer sector aggregate when stocks are flat).

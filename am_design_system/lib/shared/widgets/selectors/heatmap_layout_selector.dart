@@ -68,7 +68,7 @@ class HeatmapLayoutSelector extends StatefulWidget {
   /// Available layout options to show
   final List<HeatmapLayoutType> availableLayouts;
 
-  /// Whether to show the "Layout" label
+  /// Whether to show the "View" label
   final bool showLabel;
 
   /// Whether to use compact display
@@ -109,7 +109,7 @@ class _HeatmapLayoutSelectorState extends State<HeatmapLayoutSelector> {
               ),
               const SizedBox(width: 8),
               Text(
-                'Layout',
+                'View',
                 style: Theme.of(context).textTheme.labelMedium?.copyWith(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                   fontWeight: FontWeight.w500,

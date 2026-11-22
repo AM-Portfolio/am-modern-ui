@@ -915,6 +915,13 @@ class _HoverTileState extends State<_HoverTile> {
   }
 
   void _handleTap(HeatmapInteractionScope? scope) {
+    final kids = widget.tile.children;
+    final hasHoldings = kids != null && kids.isNotEmpty;
+    // Flat leaf that still has children (e.g. sector inside Other) → expand.
+    if (hasHoldings && scope?.onSectorDrill != null) {
+      scope!.onSectorDrill!(widget.tile);
+      return;
+    }
     final isStock = widget.tile.metadata?['type'] == 'stock';
     if (isStock) {
       scope?.onTileSelect?.call(widget.tile);
@@ -1042,7 +1049,7 @@ class _HoverTileState extends State<_HoverTile> {
     final showAmount = value != null && value > 0 && w >= 56 && h >= 44;
     final showMonogram = solid && isStock && w >= 72 && h >= 72;
     final showWeight = !solid && h > 56;
-    final nameMaxLines = h > 70 ? 2 : 1;
+    final nameMaxLines = h > 110 ? 4 : (h > 70 ? 3 : (h > 48 ? 2 : 1));
 
     final nameFontSize = _adaptiveFontSize(w, h, _FontRole.name);
     final primaryFontSize = _adaptiveFontSize(w, h, _FontRole.primary);
@@ -1092,9 +1099,12 @@ class _HoverTileState extends State<_HoverTile> {
                   fontSize: nameFontSize,
                   fontWeight: FontWeight.w700,
                   letterSpacing: -0.2,
+                  height: 1.15,
                 ),
                 textAlign: TextAlign.center,
+                softWrap: true,
                 maxLines: nameMaxLines,
+                overflow: TextOverflow.fade,
               ),
             if (showPct)
               Padding(

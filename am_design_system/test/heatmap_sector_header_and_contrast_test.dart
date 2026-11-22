@@ -123,4 +123,45 @@ void main() {
     expect(find.text('+0.90%'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('HeatmapTileInspector shows MF fund name not INF ISIN',
+      (tester) async {
+    final tile = HeatmapTileData(
+      id: 'stock_Mutual Funds_INF879C01081',
+      name: 'INF879C01081',
+      displayName: 'Parag Parikh Flexi Cap Fund',
+      weightage: 7.7,
+      performance: 0.81,
+      value: 1060000,
+      metadata: {
+        'type': 'stock',
+        'symbol': 'INF879C01081',
+        'quantity': 11104.56,
+        'lastPrice': 95.46,
+        'weightPortfolioPct': 7.7,
+      },
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: ThemeData(
+          brightness: Brightness.dark,
+          extensions: const [AppColorsTheme.dark],
+        ),
+        home: Scaffold(
+          body: Center(
+            child: SizedBox(
+              width: 720,
+              child: HeatmapTileInspector(tile: tile),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('Parag Parikh Flexi Cap Fund'), findsOneWidget);
+    expect(find.textContaining('INF879'), findsNothing);
+    expect(find.textContaining('Qty 11104.56'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
 }

@@ -15,7 +15,6 @@ import '../../../internal/domain/entities/portfolio_intelligence.dart';
 import '../../../internal/data/dtos/accounts_hub_dto.dart';
 import '../../../providers/accounts_hub_provider.dart';
 import '../../../providers/portfolio_intelligence_providers.dart';
-import '../../../providers/portfolio_providers.dart';
 import '../../cubit/portfolio_analytics_cubit.dart';
 import '../../cubit/portfolio_analytics_state.dart';
 import '../../cubit/portfolio_cubit.dart';
@@ -23,10 +22,20 @@ import '../../cubit/portfolio_state.dart';
 import 'intelligence_currency.dart';
 import 'intelligence_donut.dart';
 import 'intelligence_glass_card.dart';
-import 'xray_class_add_sheet.dart';
 import 'xray_display_name.dart';
 
 export 'xray_display_name.dart' show xrayDisplayName;
+
+/// Donut hole uses book NAV (`xray.totalValue` / [totalValueInr]) whenever the
+/// API sent it. Visible-slice sums stay on hover and the list.
+@visibleForTesting
+double? xrayDonutCenterTotal({
+  double? totalValueInr,
+  double? holdingsTotal,
+}) {
+  if (totalValueInr != null) return totalValueInr;
+  return holdingsTotal;
+}
 
 /// Running book value — current only (never promote invested-only zeros).
 double _hubRowValue(AccountsPortfolioRowDto p) => p.current ?? 0;
@@ -615,15 +624,10 @@ class _PortfolioXrayPanelState extends ConsumerState<PortfolioXrayPanel>
         final holdingsTotal = holdings == null || holdings.isEmpty
             ? null
             : holdings.fold<double>(0, (s, h) => s + h.currentValue);
-        // The center matches the visible slices: Sector/Industry include equity+MF;
-        // Cap is equity-only; Class and By Portfolio show their full visible totals.
-        final weightsSum = weights.fold<double>(
-          0,
-          (s, w) => s + (w.valueInr ?? 0),
+        final totalValue = xrayDonutCenterTotal(
+          totalValueInr: xray?.totalValueInr,
+          holdingsTotal: holdingsTotal,
         );
-        final totalValue = weightsSum > 0
-            ? weightsSum
-            : (xray?.totalValueInr ?? holdingsTotal);
         final useFill = widget.fillHeight;
         // Phone Chart/List must stay exclusive. fillHeight only stretches the
         // active pane; do not force donut+list Row below the wide breakpoint.

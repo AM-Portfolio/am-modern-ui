@@ -684,6 +684,63 @@ void main() {
       expect(names.contains('Financial Services'), isTrue);
     });
 
+    test('Other (<3%) keeps sector holdings for drill-in', () {
+      final tiles = [
+        HeatmapTileData(
+          id: 'sector_big',
+          name: 'Financial Services',
+          displayName: 'Finance',
+          weightage: 40,
+          performance: 1.0,
+          value: 40000,
+          metadata: const {'type': 'sector'},
+          children: [
+            HeatmapTileData(
+              id: 's1',
+              name: 'HDFCBANK',
+              displayName: 'HDFC Bank',
+              weightage: 40,
+              performance: 1.0,
+              value: 40000,
+              metadata: const {'type': 'stock'},
+            ),
+          ],
+        ),
+        HeatmapTileData(
+          id: 'sector_tiny',
+          name: 'Utilities',
+          displayName: 'Utilities',
+          weightage: 2,
+          performance: -1.0,
+          value: 2000,
+          metadata: const {'type': 'sector'},
+          children: [
+            HeatmapTileData(
+              id: 'u1',
+              name: 'NTPC',
+              displayName: 'NTPC',
+              weightage: 2,
+              performance: -1.0,
+              value: 2000,
+              metadata: const {'type': 'stock'},
+            ),
+          ],
+        ),
+      ];
+      final merged =
+          SectorHeatmapConverter.mergeSmallWeightTilesForTreemap(tiles);
+      final other = merged.firstWhere(
+        (t) => t.name == SectorHeatmapConverter.otherSmallWeightName,
+      );
+      expect(other.children, isNotNull);
+      expect(other.children!.length, 1);
+      final util = other.children!.first;
+      expect(util.name, 'Utilities');
+      expect(util.metadata?['type'], 'sector');
+      expect(util.children, isNotNull);
+      expect(util.children!.single.name, 'NTPC');
+    });
+
     test('compact budget merges small sectors and caps stocks per sector', () {
       final stockChildren = List.generate(
         20,
@@ -805,6 +862,98 @@ void main() {
       final summary = SectorHeatmapConverter.resolveSectorSummary(tiles: tiles);
       expect(summary.topSector, 'Financial Services');
       expect(summary.worstSector, 'Energy');
+    });
+
+    test('INF scheme tiles prefer companyName over truncated ISIN', () {
+      final heatmap = Heatmap(
+        sectors: [
+          _sector(
+            name: 'Mutual Funds',
+            changePercent: 0.38,
+            totalValue: 100000,
+            stocks: [
+              Stock(
+                symbol: 'INF247L01999',
+                companyName: 'Motilal Oswal Large and Midcap Fund',
+                lastPrice: 40.67,
+                changeAmount: 0.15,
+                changePercent: 0.38,
+                sector: 'Mutual Funds',
+                marketValue: 100000,
+                quantity: 2460,
+                previousClose: 40.52,
+              ),
+            ],
+          ),
+        ],
+      );
+
+      final data = SectorHeatmapConverter.convertToHeatmapData(
+        heatmap: heatmap,
+        showSubCards: true,
+      );
+      final mf = data.tiles.firstWhere((t) => t.name == 'Mutual Funds');
+      final child = mf.children!.first;
+      expect(
+        child.displayName,
+        'Motilal Oswal Large and Midcap Fund',
+      );
+      expect(child.displayName.contains('INF247'), isFalse);
+      expect(child.displayName.contains('…'), isFalse);
+      expect(child.performance, closeTo(0.38, 0.001));
+    });
+
+    test('equity and ETF tiles use trading symbols not legal names', () {
+      final heatmap = Heatmap(
+        sectors: [
+          _sector(
+            name: 'Information Technology',
+            changePercent: 1.4,
+            totalValue: 100000,
+            stocks: [
+              Stock(
+                symbol: 'TCS',
+                companyName:
+                    'TATA CONSULTANCY SERVICES LIMITED EQUITY SHARES WITH FACE VALUE RS. 1/- AFTER SUB-DIVISION',
+                lastPrice: 2400,
+                changeAmount: 30,
+                changePercent: 1.4,
+                sector: 'Information Technology',
+                marketValue: 88000,
+                quantity: 413,
+              ),
+            ],
+          ),
+          _sector(
+            name: 'Exchange Traded Funds (ETFs)',
+            changePercent: 0.4,
+            totalValue: 50000,
+            stocks: [
+              Stock(
+                symbol: 'NIFTYBEES',
+                companyName: 'NIPPON INDIA ETF NIFTY BEES',
+                lastPrice: 288,
+                changeAmount: 1,
+                changePercent: 0.4,
+                sector: 'Exchange Traded Funds (ETFs)',
+                marketValue: 50000,
+                quantity: 4497,
+              ),
+            ],
+          ),
+        ],
+      );
+
+      final data = SectorHeatmapConverter.convertToHeatmapData(
+        heatmap: heatmap,
+        showSubCards: true,
+      );
+      final it = data.tiles.firstWhere((t) => t.name == 'Information Technology');
+      final etf = data.tiles.firstWhere(
+        (t) => t.name.contains('Exchange Traded Funds'),
+      );
+      expect(it.children!.first.displayName, 'TCS');
+      expect(etf.children!.first.displayName, 'NIFTYBEES');
     });
 
     test('keeps full Consumer Discretionary label and sector holdings meta', () {
