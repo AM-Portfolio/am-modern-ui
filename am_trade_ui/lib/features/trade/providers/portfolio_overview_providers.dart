@@ -12,6 +12,13 @@ import 'trade_internal_providers.dart';
 
 export 'portfolio_bridge_providers.dart';
 
+/// Refresh Trade Portfolios list + live enrichment (Retry / pull-to-refresh).
+/// Invalidates [tradePortfoliosProvider] so Retry cannot stick on a cached error.
+void invalidateTradePortfolios(WidgetRef ref) {
+  invalidateTradeData(ref);
+  ref.invalidate(enrichedTradePortfoliosProvider);
+}
+
 // ============================================================================
 // Public Providers (for UI consumption)
 // ============================================================================

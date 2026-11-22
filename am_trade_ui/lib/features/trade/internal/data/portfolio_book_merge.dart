@@ -1,5 +1,9 @@
 import 'dtos/trade_portfolio_dto.dart';
 
+/// Best-effort am-portfolio `/list` merge must not burn the parent 20s
+/// Trade Portfolios timeout (see enrichedTradePortfoliosProvider).
+const Duration kPortfolioListMergeTimeout = Duration(seconds: 3);
+
 /// Trade `GET /v1/portfolio-summary/by-owner` hides PAPER books unless asked.
 String withIncludePaper(String uri) {
   final parsed = Uri.parse(uri);

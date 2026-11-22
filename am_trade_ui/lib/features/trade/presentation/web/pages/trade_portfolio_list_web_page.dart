@@ -16,12 +16,11 @@ class TradePortfolioListWebPage extends ConsumerWidget {
     //   - Live Unrealized metrics (Portfolio Value, Gain/Loss) from am-portfolio
     // If am-portfolio is unavailable, it degrades gracefully to realized-only data.
     final portfoliosAsync = ref.watch(enrichedTradePortfoliosProvider);
+    final streamPortfolios =
+        ref.watch(tradePortfoliosStreamProvider).asData?.value ??
+            const <TradePortfolioViewModel>[];
 
-    void handleRefresh() {
-      // Invalidate both the upstream providers so fresh data is fetched
-      ref.invalidate(tradePortfoliosStreamProvider);
-      ref.invalidate(enrichedTradePortfoliosProvider);
-    }
+    void handleRefresh() => invalidateTradePortfolios(ref);
 
     return Scaffold(
       appBar: AppBar(
@@ -37,16 +36,31 @@ class TradePortfolioListWebPage extends ConsumerWidget {
         data: (portfolios) => TradePortfolioDiscoveryTemplate(
           portfolios: portfolios,
           isLoading: false,
-          onPortfolioSelected: (portfolio) => _navigateToHoldings(context, portfolio),
+          onPortfolioSelected: (portfolio) =>
+              _navigateToHoldings(context, portfolio),
           onRefresh: handleRefresh,
           isWebView: true,
         ),
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () {
+          if (streamPortfolios.isNotEmpty) {
+            return TradePortfolioDiscoveryTemplate(
+              portfolios: streamPortfolios,
+              isLoading: false,
+              onPortfolioSelected: (portfolio) =>
+                  _navigateToHoldings(context, portfolio),
+              onRefresh: handleRefresh,
+              isWebView: true,
+            );
+          }
+          return const Center(child: CircularProgressIndicator());
+        },
         error: (error, stack) => TradePortfolioDiscoveryTemplate(
-          portfolios: const <TradePortfolioViewModel>[],
+          portfolios: streamPortfolios,
           isLoading: false,
-          errorMessage: error.toString(),
-          onPortfolioSelected: (_) {},
+          errorMessage: streamPortfolios.isEmpty ? error.toString() : null,
+          onPortfolioSelected: streamPortfolios.isEmpty
+              ? (_) {}
+              : (portfolio) => _navigateToHoldings(context, portfolio),
           onRefresh: handleRefresh,
           isWebView: true,
         ),
@@ -54,7 +68,8 @@ class TradePortfolioListWebPage extends ConsumerWidget {
     );
   }
 
-  void _navigateToHoldings(BuildContext context, TradePortfolioViewModel portfolio) {
+  void _navigateToHoldings(
+      BuildContext context, TradePortfolioViewModel portfolio) {
     Navigator.pushNamed(
       context,
       '/trade/holdings/${portfolio.id}',
