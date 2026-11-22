@@ -150,13 +150,19 @@ DashboardSummary _dashboardSummaryFromPortfolioRaw(Map<String, dynamic> rawData)
           ? holdingsRaw.toInt()
           : int.tryParse('$holdingsRaw') ?? 0;
 
+  // Missing investmentValue must stay 0 so Invested/Return cards hide (cost unknown),
+  // never invent principal from a prior scope.
+  final investedRaw = rawData['investmentValue'] ?? rawData['totalInvested'];
+  final invested = investedRaw == null ? 0.0 : _parseDouble(investedRaw);
+  final gainRaw = rawData['totalGainLoss'];
+  final gainPctRaw = rawData['totalGainLossPercentage'];
+  final costKnown = invested > 0;
+
   return DashboardSummary(
     totalValue: _parseDouble(rawData['currentValue'] ?? rawData['totalValue']),
-    totalInvested: _parseDouble(
-      rawData['investmentValue'] ?? rawData['totalInvested'],
-    ),
-    totalGainLoss: _parseDouble(rawData['totalGainLoss']),
-    totalGainLossPercentage: _parseDouble(rawData['totalGainLossPercentage']),
+    totalInvested: invested,
+    totalGainLoss: costKnown ? _parseDouble(gainRaw) : 0.0,
+    totalGainLossPercentage: costKnown ? _parseDouble(gainPctRaw) : 0.0,
     dayChange: _parseDouble(rawData['todayGainLoss'] ?? rawData['dayChange']),
     dayChangePercentage: _parseDouble(
       rawData['todayGainLossPercentage'] ?? rawData['dayChangePercentage'],
@@ -350,22 +356,19 @@ Future<DashboardSummary> dashboardSummary(Ref ref, String userId) async {
 @Riverpod(keepAlive: true)
 Stream<DashboardSummary> dashboardStream(Ref ref, String userId) async* {
   final resolvedUserId = await _requireDashboardUserId(ref, userId);
-  // Same persona dependency as dashboardSummary — avoid stale day% from prior scope.
+  // Rebuild when persona or book scope changes — never mix You invested with household NAV.
   ref.watch(familyPortfolioFilterProvider);
+  ref.watch(dashboardPortfolioScopeProvider);
 
   final repository = await ref.watch(dashboardRepositoryProvider.future);
 
   final summary = await _resolveDashboardSummary(ref, repository, resolvedUserId);
   yield summary;
 
+  // Keep STOMP session for movers/activity/allocation. Do NOT merge analysis
+  // watchSummary() into KPI cards — that feed is unscoped and overwrote
+  // portfolioId/persona REST (e.g. Groww ~₹1.8k invested kept, NAV → ~₹9L+).
   _attachDashboardStreaming(ref, resolvedUserId);
-  try {
-    await for (final next in repository.watchSummary()) {
-      yield next;
-    }
-  } catch (e) {
-    AppLogger.warning('Dashboard summary live stream unavailable', error: e);
-  }
 }
 
 @riverpod
