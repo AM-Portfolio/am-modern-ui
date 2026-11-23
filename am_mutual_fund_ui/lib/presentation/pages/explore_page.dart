@@ -60,8 +60,13 @@ class _MfExplorePageState extends ConsumerState<MfExplorePage> {
         if (ar != null && br != null) return br.compareTo(ar);
         if (ar != null) return -1;
         if (br != null) return 1;
-        // Avoid alphabetical "360 ONE" clump when returns are empty.
-        final amcCmp = a.amcLabel.toLowerCase().compareTo(b.amcLabel.toLowerCase());
+        // Dig often lacks mf_scheme_returns; still surface funds that have EOD NAV
+        // ahead of SCH-only rows (e.g. new 360 ONE SIF / DYNASIF with null NAV).
+        final aHasNav = a.nav != null;
+        final bHasNav = b.nav != null;
+        if (aHasNav != bHasNav) return aHasNav ? -1 : 1;
+        final amcCmp =
+            a.amcLabel.toLowerCase().compareTo(b.amcLabel.toLowerCase());
         if (amcCmp != 0) return amcCmp;
         return a.shortName.compareTo(b.shortName);
       });

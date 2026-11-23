@@ -280,6 +280,8 @@ const digInvestableIsins = <String>{
 /// Top NSE amc_code → retail display name (SIP master is preferred when present).
 const knownAmcDisplayNames = <String, String>{
   'IIFLMUTUALFUND_MF': '360 ONE',
+  // SIF master codes — distinct from retail 360 ONE MF (many SCH rows still lack EOD NAV).
+  '360ONEMF_SIF': '360 ONE SIF',
   '112121': 'Old Bridge',
   'HDFC Mutual Fund': 'HDFC',
   'HDFCMUTUALFUND_MF': 'HDFC',
