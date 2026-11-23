@@ -1,6 +1,10 @@
+import 'dart:async';
+
 import 'package:am_design_system/am_design_system.dart';
+import 'package:am_common/am_common.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../data/oms_models.dart';
@@ -30,18 +34,50 @@ class _PosRow {
 }
 
 /// Open positions with today's P&L — adaptive table/card.
-class PaperPositionsPnlPane extends StatefulWidget {
+class PaperPositionsPnlPane extends ConsumerStatefulWidget {
   const PaperPositionsPnlPane({super.key});
 
   @override
-  State<PaperPositionsPnlPane> createState() => _PaperPositionsPnlPaneState();
+  ConsumerState<PaperPositionsPnlPane> createState() =>
+      _PaperPositionsPnlPaneState();
 }
 
-class _PaperPositionsPnlPaneState extends State<PaperPositionsPnlPane> {
+class _PaperPositionsPnlPaneState extends ConsumerState<PaperPositionsPnlPane> {
   final _market = PaperMarketClient();
   final Map<String, double> _ltpBySymbol = {};
   bool _loadingLtp = false;
   String? _lastPosKey;
+  static const _streamOwner = 'paper.positions';
+
+  @override
+  void initState() {
+    super.initState();
+    ref.listenManual<AsyncValue<Map<String, QuoteChange>>>(priceStreamProvider,
+        (previous, next) {
+      next.whenData((updates) {
+        var changed = false;
+        for (final entry in updates.entries) {
+          final price = entry.value.lastPrice;
+          if (price == null || !price.isFinite || price <= 0) continue;
+          final key = _symbolKey(entry.key);
+          if (_ltpBySymbol[key] != price) {
+            _ltpBySymbol[key] = price;
+            changed = true;
+          }
+        }
+        if (changed && mounted) setState(() {});
+      });
+    });
+  }
+
+  String _symbolKey(String raw) {
+    var value = raw.trim().toUpperCase();
+    final pipe = value.lastIndexOf('|');
+    if (pipe >= 0) value = value.substring(pipe + 1);
+    final colon = value.lastIndexOf(':');
+    if (colon >= 0) value = value.substring(colon + 1);
+    return value;
+  }
 
   @override
   void didChangeDependencies() {
@@ -55,8 +91,32 @@ class _PaperPositionsPnlPaneState extends State<PaperPositionsPnlPane> {
       final key = state.positions.map((p) => '${p.symbol}:${p.qty}').join('|');
       if (key == _lastPosKey && _ltpBySymbol.isNotEmpty) return;
       _lastPosKey = key;
+      unawaited(_syncStreamScope(state.positions));
       _loadLtps(state.positions);
     } catch (_) {}
+  }
+
+  Future<void> _syncStreamScope(List<OmsPosition> positions) async {
+    final instruments = positions
+        .map((p) => p.symbol.trim().toUpperCase())
+        .where((s) => s.isNotEmpty)
+        .map((s) => MarketStreamInstrument(symbol: s, isIndexSymbol: false))
+        .toList(growable: false);
+    try {
+      final service = await ref.read(priceServiceProvider.future);
+      await service.replaceScope(_streamOwner, instruments);
+    } catch (_) {}
+  }
+
+  @override
+  void dispose() {
+    unawaited(ref
+        .read(priceServiceProvider.future)
+        .then(
+          (service) => service.releaseScope(_streamOwner),
+        )
+        .catchError((_) {}));
+    super.dispose();
   }
 
   Future<void> _loadLtps(List<OmsPosition> positions) async {

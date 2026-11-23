@@ -62,6 +62,10 @@ class _PaperWatchlistPaneState extends ConsumerState<PaperWatchlistPane> {
   @override
   void initState() {
     super.initState();
+    ref.listenManual<AsyncValue<Map<String, QuoteChange>>>(priceStreamProvider,
+        (previous, next) {
+      next.whenData(_controller.applyLiveQuotes);
+    });
     if (widget.controller == null) {
       _internalController =
           WatchlistController(onSelectSymbol: widget.onSelectSymbol);

@@ -49,4 +49,36 @@ void main() {
 
     expect(selected, [' tatatest ', 'ONCGTEST']);
   });
+
+  testWidgets('missing live baseline is rendered as pending instead of zero',
+      (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.darkTheme,
+        home: Scaffold(
+          body: SizedBox(
+            width: 760,
+            height: 520,
+            child: TopMoversWidgetV2(
+              gainers: [
+                TopMoverStock(
+                  symbol: 'TCS',
+                  companyName: 'Tata Consultancy Services',
+                  lastPrice: 2450,
+                  change: 0,
+                  changePercent: 0,
+                  changeUnavailable: true,
+                  volume: 1000,
+                ),
+              ],
+              losers: const [],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('—'), findsOneWidget);
+    expect(find.text('+0.00%'), findsNothing);
+  });
 }

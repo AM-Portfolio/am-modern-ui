@@ -96,6 +96,7 @@ class MarketProvider with ChangeNotifier {
   String _activeSurface = dashboardSurface;
   int _surfaceGeneration = 0;
   DateTime? _lastNotify;
+  Timer? _pendingNotify;
   static const Duration _notifyThrottle = Duration(milliseconds: 300);
   StreamSubscription<MarketDataUpdate>? _priceUpdateSub;
 
@@ -722,6 +723,12 @@ class MarketProvider with ChangeNotifier {
   void _notifyThrottled() {
     final now = DateTime.now();
     if (_lastNotify != null && now.difference(_lastNotify!) < _notifyThrottle) {
+      _pendingNotify ??=
+          Timer(_notifyThrottle - now.difference(_lastNotify!), () {
+        _pendingNotify = null;
+        _lastNotify = DateTime.now();
+        notifyListeners();
+      });
       return;
     }
     _lastNotify = now;
@@ -759,6 +766,7 @@ class MarketProvider with ChangeNotifier {
 
   @override
   void dispose() {
+    _pendingNotify?.cancel();
     _priceUpdateSub?.cancel();
     final service = _priceService;
     if (service != null) {

@@ -31,6 +31,12 @@ class IndexCard extends StatelessWidget {
         // Keep last known 1D change while non-1D base prices load — never force zeros.
         double displayChange = data.change;
         double displayPChange = data.pChange;
+        final liveQuote = provider.getPrice(data.indexSymbol);
+        final liveChangeUnavailable =
+            provider.selectedIndicesTimeframe == '1D' &&
+                liveQuote?['lastPrice'] != null &&
+                liveQuote?['changePercent'] == null &&
+                liveQuote?['previousClose'] == null;
         String timeframeLabel = '';
 
         if (provider.selectedIndicesTimeframe != '1D') {
@@ -45,7 +51,7 @@ class IndexCard extends StatelessWidget {
         final isGlobalWithoutPrice = data.isGlobal && !data.hasValidPrice;
         final isNonLiveGlobalQuote =
             data.isGlobal && data.suspended && data.hasValidPrice;
-        final changeColor = isLoading
+        final changeColor = isLoading || liveChangeUnavailable
             ? MarketColors.textMuted(context)
             : (isGlobalWithoutPrice || isNonLiveGlobalQuote
                 ? MarketColors.textMuted(context)
@@ -135,9 +141,11 @@ class IndexCard extends StatelessWidget {
                               ? 'Loading...'
                               : (isGlobalWithoutPrice
                                   ? 'Quote pending'
-                                  : (isNonLiveGlobalQuote
-                                      ? 'Last confirmed quote'
-                                      : '${isPositive ? '+' : '-'}$displayChangeFormatted (${isPositive ? '+' : '-'}$displayPChangeFormatted%$timeframeLabel')),
+                                  : (liveChangeUnavailable
+                                      ? 'Change pending'
+                                      : isNonLiveGlobalQuote
+                                          ? 'Last confirmed quote'
+                                          : '${isPositive ? '+' : '-'}$displayChangeFormatted (${isPositive ? '+' : '-'}$displayPChangeFormatted%$timeframeLabel')),
                           style: TextStyle(
                             fontSize: isMobile ? 9.5 : 10.5,
                             color: changeColor,

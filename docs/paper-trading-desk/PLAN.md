@@ -4,6 +4,53 @@ Status: **implementation in progress; F&O contract-resolution fix awaiting appro
 Scope: `am-modern-ui` Market UI, Market common, the centralized `am_design_system`, and the existing `am-market` instrument-search backend contract/provider path, including Paper Trading, Market F&O, and Market Analytics.
 Out of scope: Portfolio, Trade, unrelated backend services, new services, and unrelated modules.
 
+## Streaming-enrichment addendum (2026-11-24)
+
+### Decision
+
+Paper Trading must consume the existing shared `PriceService` WebSocket stream. It must not create a second socket, poll REST on a timer, or calculate a day change from the current OHLC candle close. The backend-enriched `previousClose`, `change`, and `changePercent` values are authoritative; REST remains the initial-load/offline fallback only.
+
+### Current system verified
+
+- `am_market/common/lib/providers/market_provider.dart` already owns the shared `PriceService`, surface activation, symbol budgets, and quote stream.
+- `MarketProvider.paperSurface` exists, but Paper widgets do not currently register their visible symbols or listen to `PriceService` updates.
+- `am_paper_ui/lib/data/paper_market_client.dart` uses `/live-ltp` and `/quotes` for REST enrichment.
+- `am_paper_ui/lib/presentation/widgets/watchlist/watchlist_controller.dart` refreshes visible rows on load/manual refresh; it has no live-tick subscription.
+- `paper_positions_pnl_pane.dart` fetches position LTPs on dependency/position changes and calculates position P&L locally.
+- `StreamerManager` enriches Indian `Map<String, OHLCQuote>` ticks before cache, Kafka, and UI publication. Paper integration must consume those fields without replacing valid values with zero.
+
+### Implementation plan
+
+1. Add a Paper stream coordinator that reuses the existing `PriceService`/`MarketProvider` surface lifecycle. Register the union of visible watchlist symbols, visible page symbols, and open-position symbols; release them on page disposal, source/page changes, and navigation away.
+2. Normalize symbols/exchanges once (`NSE:TCS`, `NSE_EQ|TCS`, and `TCS` must resolve to the same row) and preserve the instrument type for index/underlying subscriptions.
+3. On each live quote, update LTP, value change, percentage change, and previous close only when the field is finite and valid. If the stream lacks a baseline, retain the last valid REST value and mark the live change as pending; never overwrite a valid value with `0`.
+4. Update watchlist rows in place so sorting, pagination, expanded depth, and selected-symbol state do not reset on every tick.
+5. Update position rows and aggregate unrealized P&L from the live LTP while keeping OMS quantities, average prices, and fills immutable. Ignore stale/out-of-order ticks and reject non-positive LTPs.
+6. Keep REST loading as a fallback: initial REST enrichment may populate rows before the socket is ready; live ticks supersede it; manual refresh remains available and must not create duplicate subscriptions.
+7. Ensure all index constituents and underlying stocks use the same path. Option/derivative contract streaming is out of scope unless the Paper page explicitly displays that contract; the underlying equity/index must still be subscribed when shown.
+8. Add observability for subscription count, live-tick age, missing-baseline count, dropped stale ticks, and REST fallback usage without logging credentials or full payloads.
+
+### Correctness and failure rules
+
+| Case | Expected behavior | Test coverage |
+|---|---|---|
+| Valid tick with baseline | Update LTP, value change, % change, and P&L immediately | stream coordinator unit test |
+| Missing baseline | Keep prior valid value or show pending; never show false zero | mapper/widget test |
+| REST arrives before socket | REST value is shown, then replaced by newer valid tick | integration/provider test |
+| Stale tick | Ignore it and preserve newer quote | ordering test |
+| Duplicate symbol forms | One row/subscription, one update | normalization test |
+| Page/source change | Unsubscribe old symbols and subscribe new visible union | lifecycle test |
+| Empty watchlist/positions | No subscriptions; normal empty state | widget test |
+| Socket unavailable | REST/manual refresh remains usable | failure test |
+| Index constituent/underlying stock | Same enrichment and update behavior as direct stock | parameterized test |
+
+### Non-goals
+
+- No new WebSocket endpoint or gateway protocol.
+- No second Paper-specific streaming client.
+- No mutation of OMS order/position persistence from market ticks.
+- No UI-side derivation from today’s OHLC `close`.
+
 ## Implementation TODO
 
 - [x] Make F&O contract metadata and selected-contract LTP load independently and asynchronously.
@@ -237,4 +284,4 @@ No new endpoint or backend change is part of this plan. The existing historical-
 
 ## Implementation status
 
-The lot-size/contract-resolution fix is implemented locally and verified with focused UI and backend regression tests. Deployment, commit, and push are not included in this implementation step.
+The lot-size/contract-resolution fix and Paper live-price integration are implemented locally and verified with focused UI and backend regression tests. Deployment, commit, and push are not included in this implementation step.

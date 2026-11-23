@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:am_market_ui/features/watchlists/data/watchlist_api_client.dart';
+import 'package:am_common/am_common.dart';
 import 'package:flutter/foundation.dart';
 
 import '../../../data/paper_market_client.dart';
@@ -86,6 +87,46 @@ class WatchlistController extends ChangeNotifier {
     if (start >= allRows.length) return const [];
     final end = (start + _pageSize).clamp(0, allRows.length);
     return allRows.sublist(start, end);
+  }
+
+  /// Applies a live QuoteChange without rebuilding, reordering, or dropping
+  /// rows. Invalid/missing day-change fields never become a fabricated zero.
+  void applyLiveQuotes(Map<String, QuoteChange> updates) {
+    if (updates.isEmpty || allRows.isEmpty) return;
+    final bySymbol = <String, QuoteChange>{};
+    for (final entry in updates.entries) {
+      bySymbol[_liveKey(entry.key)] = entry.value;
+    }
+    var changed = false;
+    for (var i = 0; i < allRows.length; i++) {
+      final row = allRows[i];
+      final update = bySymbol[_liveKey(row.symbol)];
+      if (update == null) continue;
+      final ltp = update.lastPrice;
+      final dayChange = update.change;
+      final dayPercent = update.changePercent;
+      final validLtp = ltp != null && ltp.isFinite && ltp > 0;
+      final validChange = dayChange != null && dayChange.isFinite;
+      final validPercent = dayPercent != null && dayPercent.isFinite;
+      if (!validLtp && !validChange && !validPercent) continue;
+      allRows[i] = row.copyWith(
+        ltp: validLtp ? ltp : null,
+        change: validChange ? dayChange : null,
+        changePercent: validPercent ? dayPercent : null,
+        changeUnavailable: !(validChange && validPercent),
+      );
+      changed = true;
+    }
+    if (changed) _notify();
+  }
+
+  String _liveKey(String raw) {
+    var value = raw.trim().toUpperCase();
+    final separator = value.lastIndexOf('|');
+    if (separator >= 0) value = value.substring(separator + 1);
+    final colon = value.lastIndexOf(':');
+    if (colon >= 0) value = value.substring(colon + 1);
+    return value;
   }
 
   WatchlistSource get selectedSource => sources.firstWhere(

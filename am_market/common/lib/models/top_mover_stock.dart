@@ -1,5 +1,3 @@
-import 'package:flutter/material.dart';
-
 /// Model for top mover stock data
 class TopMoverStock {
   final String symbol;
@@ -8,6 +6,7 @@ class TopMoverStock {
   final double change;
   final double changePercent;
   final int volume;
+  final bool changeUnavailable;
 
   TopMoverStock({
     required this.symbol,
@@ -16,12 +15,14 @@ class TopMoverStock {
     required this.change,
     required this.changePercent,
     required this.volume,
+    this.changeUnavailable = false,
   });
 
   TopMoverStock copyWith({
     double? lastPrice,
     double? change,
     double? changePercent,
+    bool? changeUnavailable,
   }) {
     return TopMoverStock(
       symbol: symbol,
@@ -30,6 +31,7 @@ class TopMoverStock {
       change: change ?? this.change,
       changePercent: changePercent ?? this.changePercent,
       volume: volume,
+      changeUnavailable: changeUnavailable ?? this.changeUnavailable,
     );
   }
 
@@ -41,13 +43,16 @@ class TopMoverStock {
         json['pchange'] ??
         json['pctChange'] ??
         json['change_percent'];
+    final changePercent = double.tryParse(pctRaw?.toString() ?? '');
     return TopMoverStock(
       symbol: json['symbol'] as String? ?? '',
-      companyName: json['companyName'] as String? ?? json['symbol'] as String? ?? '',
+      companyName:
+          json['companyName'] as String? ?? json['symbol'] as String? ?? '',
       lastPrice: double.tryParse(json['lastPrice']?.toString() ?? '') ?? 0.0,
       change: double.tryParse(json['change']?.toString() ?? '') ?? 0.0,
-      changePercent: double.tryParse(pctRaw?.toString() ?? '') ?? 0.0,
+      changePercent: changePercent ?? 0.0,
       volume: int.tryParse(json['volume']?.toString() ?? '') ?? 0,
+      changeUnavailable: changePercent == null,
     );
   }
 }
