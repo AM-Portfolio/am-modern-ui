@@ -41,7 +41,8 @@ class MfApiClient {
       queryParameters: {
         if (query != null && query.trim().isNotEmpty) 'query': query.trim(),
         if (amc != null && amc.trim().isNotEmpty) 'amc': amc.trim(),
-        if (purchaseAllowed != null) 'purchaseAllowed': purchaseAllowed,
+        // Dig/parser store Y/N; bool true becomes "true" and matches zero rows.
+        if (purchaseAllowed != null) 'purchaseAllowed': purchaseAllowed ? 'Y' : 'N',
         'limit': limit.clamp(1, 200),
       },
     );
