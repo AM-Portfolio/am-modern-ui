@@ -7,6 +7,7 @@ enum ModuleType {
   market,
   trade,
   portfolio,
+  mutualFund,
   news,
   admin,
   other
@@ -21,6 +22,7 @@ extension ModuleTypeExtension on ModuleType {
       case ModuleType.market: return 'Market Data';
       case ModuleType.trade: return 'Trade Analysis';
       case ModuleType.portfolio: return 'Portfolio';
+      case ModuleType.mutualFund: return 'Mutual Funds';
       case ModuleType.news: return 'News';
       case ModuleType.admin: return 'Admin';
       case ModuleType.other: return '';
@@ -33,6 +35,7 @@ extension ModuleTypeExtension on ModuleType {
       case ModuleType.market: return 'Real-time market insights';
       case ModuleType.trade: return 'Trade execution & analysis';
       case ModuleType.portfolio: return 'Asset management';
+      case ModuleType.mutualFund: return 'Invest · SIP · onboarding';
       case ModuleType.news: return 'Latest updates';
       case ModuleType.admin: return 'System administration';
       case ModuleType.other: return '';
@@ -45,6 +48,7 @@ extension ModuleTypeExtension on ModuleType {
       case ModuleType.market: return Icons.trending_up_rounded;
       case ModuleType.trade: return Icons.analytics_rounded;
       case ModuleType.portfolio: return Icons.pie_chart_rounded;
+      case ModuleType.mutualFund: return Icons.account_balance_rounded;
       case ModuleType.news: return Icons.newspaper_rounded;
       case ModuleType.admin: return Icons.admin_panel_settings_rounded;
       case ModuleType.other: return Icons.grid_view_rounded;
@@ -57,6 +61,7 @@ extension ModuleTypeExtension on ModuleType {
       case ModuleType.market: return ModuleColors.market;
       case ModuleType.trade: return ModuleColors.trade;
       case ModuleType.portfolio: return ModuleColors.portfolio;
+      case ModuleType.mutualFund: return ModuleColors.mutualFund;
       case ModuleType.news: return ModuleColors.reports; // Reuse Amber
       case ModuleType.admin: return const Color(0xFFFF6B6B);
       case ModuleType.other: return Colors.blueGrey;

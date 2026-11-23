@@ -1,0 +1,35 @@
+name: am_mutual_fund_ui
+description: Mutual fund broker desk (explore, onboarding, invest, SIP)
+version: 0.1.0
+publish_to: "none"
+
+environment:
+  sdk: ^3.5.0
+  flutter: ">=1.17.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  am_design_system:
+    path: ../am_design_system
+  am_common:
+    path: ../am_common
+  am_library:
+    path: ../am_library
+  am_auth_ui:
+    path: ../am_auth_ui
+  flutter_riverpod: ^3.0.3
+  flutter_bloc: ^9.1.0
+  dio: ^5.4.0
+  go_router: ^14.0.0
+  intl: ^0.20.2
+  uuid: ^4.5.1
+  url_launcher: ^6.2.5
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true

@@ -85,6 +85,19 @@ final journalWeeklyReviewEnabledProvider = Provider<bool>((ref) {
   }
 });
 
+/// Mutual Funds module. Defaults ON when GB unavailable (dig often has GB off).
+final mutualFundsEnabledProvider = Provider<bool>((ref) {
+  try {
+    ref.watch(featureFlagsReadyProvider);
+    return ref.watch(featureFlagServiceProvider).isOn(
+          FeatureFlagKeys.mutualFundsEnabled,
+          defaultValue: true,
+        );
+  } catch (_) {
+    return true;
+  }
+});
+
 final securityAlertBannerEnabledProvider = Provider<bool>((ref) {
   return ref.watch(
     featureFlagProvider(FeatureFlagKeys.securityAlertBannerEnabled),

@@ -11,6 +11,7 @@ class AppRoutes {
   static const dashboard = '/app/dashboard';
   static const users = '/app/users';
   static const portfolio = '/app/portfolio';
+  static const mutualFunds = '/app/mutual-funds';
   static const trade = '/app/trade';
   static const tradeDiscovery = '/app/trade/portfolios';
   static const paper = '/app/paper';
@@ -224,6 +225,7 @@ class AppRoutes {
   static const Map<String, String> navTitleToDefaultPath = {
     'Dashboard': dashboard,
     'Portfolio': '/app/portfolio/overview',
+    'Mutual Funds': mutualFunds,
     'Trade': tradeDiscovery,
     // Legacy session title — Paper is now a Market tab.
     'Paper': '/app/market/paper',
@@ -235,6 +237,15 @@ class AppRoutes {
     'Profile': profile,
     'Subscription': subscription,
   };
+
+  static String mutualFundsSchemePath(String isin) =>
+      '$mutualFunds/schemes/${Uri.encodeComponent(isin)}';
+
+  static String mutualFundsInvestPath(String isin) =>
+      '$mutualFunds/invest/${Uri.encodeComponent(isin)}';
+
+  static String mutualFundsOrderPath(String orderId) =>
+      '$mutualFunds/orders/${Uri.encodeComponent(orderId)}';
 
   static String? pathForNavTitle(String title) => navTitleToDefaultPath[title];
 
@@ -256,6 +267,7 @@ class AppRoutes {
 
   static String activeNavTitleForLocation(String location) {
     if (location.startsWith(portfolio)) return 'Portfolio';
+    if (location.startsWith(mutualFunds)) return 'Mutual Funds';
     if (location.startsWith(trade)) return 'Trade';
     // Legacy /app/paper redirects to Market; keep Market highlighted.
     if (location.startsWith(paper)) return 'Market';

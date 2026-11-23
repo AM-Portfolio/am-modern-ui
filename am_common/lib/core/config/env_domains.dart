@@ -69,6 +69,10 @@ class EnvDomains {
   static String get ai => ConfigService.override('ai') ?? '$apiBase/ai';
   static String get news => ConfigService.override('news') ?? '$apiBase/news';
 
+  /// Mutual-fund BFF. Dig uses Traefik `/router/am/mf` (not `/mutual-fund`).
+  static String get mutualFund =>
+      ConfigService.override('mutualFund') ?? '$apiBase/router/am/mf';
+
   // WebSocket — all real-time UI uses am-gateway STOMP
   static String get wsStream =>
       ConfigService.override('wsStream') ?? '$wsBase/gateway/v1/streams';

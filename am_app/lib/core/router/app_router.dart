@@ -27,6 +27,16 @@ bool _subscriptionPageEnabled() {
   );
 }
 
+bool _mutualFundsEnabled() {
+  if (!GetIt.instance.isRegistered<common.FeatureFlagService>()) {
+    return true;
+  }
+  return GetIt.instance<common.FeatureFlagService>().isOn(
+    common.FeatureFlagKeys.mutualFundsEnabled,
+    defaultValue: true,
+  );
+}
+
 GoRouter createAppRouter({
   required AuthCubit authCubit,
   required AuthRefreshListenable refreshListenable,
@@ -340,6 +350,111 @@ GoRouter createAppRouter({
                 path: AppRoutes.marketPath('chart'),
                 queryParameters: query.isEmpty ? null : query,
               ).toString();
+            },
+          ),
+          GoRoute(
+            path: AppRoutes.mutualFunds,
+            redirect: (context, state) {
+              if (!_mutualFundsEnabled()) return AppRoutes.dashboard;
+              return null;
+            },
+            builder: (context, state) => buildMutualFundsExploreRoute(),
+          ),
+          GoRoute(
+            path: '${AppRoutes.mutualFunds}/schemes/:isin',
+            redirect: (context, state) =>
+                _mutualFundsEnabled() ? null : AppRoutes.dashboard,
+            builder: (context, state) {
+              final isin = state.pathParameters['isin'] ?? '';
+              return buildMutualFundsSchemeRoute(isin);
+            },
+          ),
+          GoRoute(
+            path: '${AppRoutes.mutualFunds}/onboarding',
+            redirect: (context, state) =>
+                _mutualFundsEnabled() ? null : AppRoutes.dashboard,
+            builder: (context, state) => buildMutualFundsOnboardingRoute(),
+          ),
+          GoRoute(
+            path: '${AppRoutes.mutualFunds}/invest/:isin',
+            redirect: (context, state) =>
+                _mutualFundsEnabled() ? null : AppRoutes.dashboard,
+            builder: (context, state) {
+              final isin = state.pathParameters['isin'] ?? '';
+              return buildMutualFundsInvestRoute(isin);
+            },
+          ),
+          GoRoute(
+            path: '${AppRoutes.mutualFunds}/orders/:orderId',
+            redirect: (context, state) =>
+                _mutualFundsEnabled() ? null : AppRoutes.dashboard,
+            builder: (context, state) {
+              final orderId = state.pathParameters['orderId'] ?? '';
+              return buildMutualFundsOrderRoute(orderId);
+            },
+          ),
+          GoRoute(
+            path: '${AppRoutes.mutualFunds}/systematic',
+            redirect: (context, state) =>
+                _mutualFundsEnabled() ? null : AppRoutes.dashboard,
+            builder: (context, state) {
+              final isin = state.uri.queryParameters['isin'];
+              return buildMutualFundsSystematicRoute(isin: isin);
+            },
+          ),
+          GoRoute(
+            path: '${AppRoutes.mutualFunds}/holdings',
+            redirect: (context, state) =>
+                _mutualFundsEnabled() ? null : AppRoutes.dashboard,
+            builder: (context, state) => buildMutualFundsHoldingsRoute(),
+          ),
+          GoRoute(
+            path: '${AppRoutes.mutualFunds}/history',
+            redirect: (context, state) =>
+                _mutualFundsEnabled() ? null : AppRoutes.dashboard,
+            builder: (context, state) => buildMutualFundsHistoryRoute(),
+          ),
+          GoRoute(
+            path: '${AppRoutes.mutualFunds}/stp-swp',
+            redirect: (context, state) =>
+                _mutualFundsEnabled() ? null : AppRoutes.dashboard,
+            builder: (context, state) {
+              final isin = state.uri.queryParameters['isin'];
+              return buildMutualFundsStpSwpRoute(isin: isin);
+            },
+          ),
+          GoRoute(
+            path: '${AppRoutes.mutualFunds}/redeem/:isin',
+            redirect: (context, state) =>
+                _mutualFundsEnabled() ? null : AppRoutes.dashboard,
+            builder: (context, state) {
+              final isin = state.pathParameters['isin'] ?? '';
+              final units = double.tryParse(
+                state.uri.queryParameters['units'] ?? '',
+              );
+              final folio = state.uri.queryParameters['folio'];
+              return buildMutualFundsRedeemRoute(
+                isin,
+                units: units,
+                folio: folio,
+              );
+            },
+          ),
+          GoRoute(
+            path: '${AppRoutes.mutualFunds}/switch/:isin',
+            redirect: (context, state) =>
+                _mutualFundsEnabled() ? null : AppRoutes.dashboard,
+            builder: (context, state) {
+              final isin = state.pathParameters['isin'] ?? '';
+              final units = double.tryParse(
+                state.uri.queryParameters['units'] ?? '',
+              );
+              final folio = state.uri.queryParameters['folio'];
+              return buildMutualFundsSwitchRoute(
+                isin,
+                units: units,
+                folio: folio,
+              );
             },
           ),
           GoRoute(

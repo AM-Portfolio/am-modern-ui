@@ -19,6 +19,7 @@ class AppColors {
   static Color marketAccent = const Color(0xFF06b6d4); // Cyan
   static Color portfolioAccent = const Color(0xFFec4899); // Pink
   static Color tradeAccent = const Color(0xFF8b5cf6); // Purple
+  static Color mutualFundAccent = const Color(0xFF0D9488); // Teal
   static Color authAccent = const Color(0xFF6C63FF); // Indigo
   static Color userAccent = const Color(0xFF8B7EE0); // Light Purple
 
@@ -28,12 +29,14 @@ class AppColors {
     required Color trade,
     required Color portfolio,
     required Color dashboard,
+    Color? mutualFund,
   }) {
     marketAccent = market;
     tradeAccent = trade;
     portfolioAccent = portfolio;
     authAccent = dashboard;
     userAccent = Color.lerp(portfolio, trade, 0.5)!;
+    if (mutualFund != null) mutualFundAccent = mutualFund;
   }
   // ============================================================================
   // FINANCIAL STATUS COLORS
