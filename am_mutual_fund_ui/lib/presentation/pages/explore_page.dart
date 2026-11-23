@@ -21,7 +21,8 @@ class _MfExplorePageState extends ConsumerState<MfExplorePage> {
   final _controller = TextEditingController();
   String _query = '';
   MfExploreCategoryFilter _category = MfExploreCategoryFilter.all;
-  MfExploreOptionFilter _optionFilter = MfExploreOptionFilter.growth;
+  // Default All so seed peer (Growth + IDCW) both show; Growth still one tap away.
+  MfExploreOptionFilter _optionFilter = MfExploreOptionFilter.all;
   MfReturnPeriod _period = MfReturnPeriod.y1;
   bool _purchaseOnly = true;
 
