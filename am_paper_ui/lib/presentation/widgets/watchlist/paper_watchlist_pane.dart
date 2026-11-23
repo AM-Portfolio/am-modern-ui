@@ -1,6 +1,5 @@
 import 'package:am_paper_ui/providers/paper_symbol_discovery_provider.dart';
 import 'package:am_common/am_common.dart';
-import 'package:am_common/core/di/price_providers.dart';
 import 'package:am_market_ui/shared/widgets/market_stream_surface_scope.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -63,7 +62,7 @@ class _PaperWatchlistPaneState extends ConsumerState<PaperWatchlistPane> {
   @override
   void initState() {
     super.initState();
-    ref.listenManual<Map<String, QuoteChange>>(priceStreamProvider,
+    ref.listenManual<AsyncValue<Map<String, QuoteChange>>>(priceStreamProvider,
         (previous, next) {
       next.whenData(_controller.applyLiveQuotes);
     });

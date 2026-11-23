@@ -1,6 +1,7 @@
+import 'dart:async';
+
 import 'package:am_design_system/am_design_system.dart';
 import 'package:am_common/am_common.dart';
-import 'package:am_common/core/di/price_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -37,7 +38,8 @@ class PaperPositionsPnlPane extends ConsumerStatefulWidget {
   const PaperPositionsPnlPane({super.key});
 
   @override
-  State<PaperPositionsPnlPane> createState() => _PaperPositionsPnlPaneState();
+  ConsumerState<PaperPositionsPnlPane> createState() =>
+      _PaperPositionsPnlPaneState();
 }
 
 class _PaperPositionsPnlPaneState extends ConsumerState<PaperPositionsPnlPane> {
@@ -50,7 +52,7 @@ class _PaperPositionsPnlPaneState extends ConsumerState<PaperPositionsPnlPane> {
   @override
   void initState() {
     super.initState();
-    ref.listenManual<Map<String, QuoteChange>>(priceStreamProvider,
+    ref.listenManual<AsyncValue<Map<String, QuoteChange>>>(priceStreamProvider,
         (previous, next) {
       next.whenData((updates) {
         var changed = false;
