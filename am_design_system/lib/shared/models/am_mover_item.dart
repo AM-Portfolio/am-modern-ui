@@ -45,6 +45,7 @@ class AmMoverItem {
   /// Signed percentage change. Positive = gainer, negative = loser.
   /// The tile derives its color (green/red) from this value's sign.
   final double changePercent;
+  final bool changeUnavailable;
 
   const AmMoverItem({
     required this.symbol,
@@ -52,6 +53,7 @@ class AmMoverItem {
     required this.price,
     required this.priceLabel,
     required this.changePercent,
+    this.changeUnavailable = false,
   });
 
   /// Convenience factory — identical to the default constructor but
@@ -76,8 +78,9 @@ class AmMoverItem {
   bool get isGainer => changePercent >= 0;
 
   /// Formatted percentage string with sign prefix.
-  String get formattedChangePercent =>
-      '${changePercent >= 0 ? '+' : ''}${changePercent.toStringAsFixed(2)}%';
+  String get formattedChangePercent => changeUnavailable
+      ? '—'
+      : '${changePercent >= 0 ? '+' : ''}${changePercent.toStringAsFixed(2)}%';
 
   @override
   bool operator ==(Object other) =>
@@ -85,10 +88,12 @@ class AmMoverItem {
       other is AmMoverItem &&
           symbol == other.symbol &&
           price == other.price &&
-          changePercent == other.changePercent;
+          changePercent == other.changePercent &&
+          changeUnavailable == other.changeUnavailable;
 
   @override
-  int get hashCode => Object.hash(symbol, price, changePercent);
+  int get hashCode =>
+      Object.hash(symbol, price, changePercent, changeUnavailable);
 
   @override
   String toString() =>

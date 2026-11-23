@@ -49,8 +49,9 @@ class _AmMoverTileState extends State<AmMoverTile> {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    final accentColor =
-        widget.item.isGainer ? widget.positiveColor : widget.negativeColor;
+    final accentColor = widget.item.changeUnavailable
+        ? colors.textSecondary
+        : (widget.item.isGainer ? widget.positiveColor : widget.negativeColor);
 
     // Tile background tint — accent at low opacity
     final bgColor = accentColor.withValues(alpha: widget.isDark ? 0.14 : 0.10);
@@ -71,7 +72,9 @@ class _AmMoverTileState extends State<AmMoverTile> {
       enabled: widget.onTap != null,
       label: widget.onTap == null
           ? widget.item.symbol
-          : '${widget.item.symbol}, ${widget.item.isGainer ? 'gainer' : 'loser'}',
+          : (widget.item.changeUnavailable
+              ? '${widget.item.symbol}, change pending'
+              : '${widget.item.symbol}, ${widget.item.isGainer ? 'gainer' : 'loser'}'),
       onTap: widget.onTap,
       child: MouseRegion(
         cursor: widget.onTap == null
@@ -134,9 +137,11 @@ class _AmMoverTileState extends State<AmMoverTile> {
                           ),
                         ),
                         child: Icon(
-                          widget.item.isGainer
-                              ? Icons.arrow_upward_rounded
-                              : Icons.arrow_downward_rounded,
+                          widget.item.changeUnavailable
+                              ? Icons.remove_rounded
+                              : (widget.item.isGainer
+                                  ? Icons.arrow_upward_rounded
+                                  : Icons.arrow_downward_rounded),
                           size: isCompact ? AppTypeScale.md : AppTypeScale.base,
                           color: accentColor,
                         ),

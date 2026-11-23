@@ -90,6 +90,7 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
   // Desktop drawer animation state
   late AnimationController _drawerController;
   bool _isDrawerVisible = false;
+
   /// When false, drawer chrome is still animating out but must not eat hits.
   bool _drawerBlocksHits = false;
 
@@ -575,13 +576,17 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
         if (quote is! Map<String, dynamic>) return item;
         double? number(String key) {
           final value = quote[key];
-          return value is num ? value.toDouble() : double.tryParse('$value');
+          final parsed =
+              value is num ? value.toDouble() : double.tryParse('$value');
+          return parsed != null && parsed.isFinite ? parsed : null;
         }
 
+        final livePercent = number('changePercent') ?? number('pChange');
         return item.copyWith(
           lastPrice: number('lastPrice'),
           change: number('change'),
-          changePercent: number('changePercent') ?? number('pChange'),
+          changePercent: livePercent,
+          changeUnavailable: livePercent == null,
         );
       }).toList();
     }
@@ -593,7 +598,8 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
       for (var i = 0; i < before.length; i++) {
         if (before[i].lastPrice != after[i].lastPrice ||
             before[i].change != after[i].change ||
-            before[i].changePercent != after[i].changePercent) {
+            before[i].changePercent != after[i].changePercent ||
+            before[i].changeUnavailable != after[i].changeUnavailable) {
           return true;
         }
       }

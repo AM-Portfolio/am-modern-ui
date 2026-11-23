@@ -19,10 +19,16 @@ class IndexCard extends StatelessWidget {
     return Consumer<MarketProvider>(
       builder: (context, provider, child) {
         final numberFormat = NumberFormat('#,##,###.##', 'en_IN');
-        
+
         bool isLoading = false;
         double displayChange = data.change;
         double displayPChange = data.pChange;
+        final liveQuote = provider.getPrice(data.indexSymbol);
+        final liveChangeUnavailable =
+            provider.selectedIndicesTimeframe == '1D' &&
+                liveQuote?['lastPrice'] != null &&
+                liveQuote?['changePercent'] == null &&
+                liveQuote?['previousClose'] == null;
         String timeframeLabel = '';
 
         if (provider.selectedIndicesTimeframe != '1D') {
@@ -33,9 +39,11 @@ class IndexCard extends StatelessWidget {
         }
 
         final isPositive = displayChange >= 0;
-        final accentColor = isLoading 
+        final accentColor = isLoading || liveChangeUnavailable
             ? context.colors.textSecondary
-            : (isPositive ? context.colors.statusSuccess : context.colors.statusError);
+            : (isPositive
+                ? context.colors.statusSuccess
+                : context.colors.statusError);
 
         return Container(
           width: 160,
@@ -45,12 +53,12 @@ class IndexCard extends StatelessWidget {
             color: context.colors.actionPrimaryBg.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: accentColor.withOpacity(0.3),
+              color: accentColor.withValues(alpha: 0.3),
               width: 1,
             ),
             boxShadow: [
               BoxShadow(
-                color: accentColor.withOpacity(0.1),
+                color: accentColor.withValues(alpha: 0.1),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -75,7 +83,7 @@ class IndexCard extends StatelessWidget {
 
               // Price
               Text(
-                '${numberFormat.format(data.lastPrice)}',
+                numberFormat.format(data.lastPrice),
                 style: TextStyle(
                   color: context.colors.textPrimary,
                   fontSize: 20,
@@ -88,13 +96,23 @@ class IndexCard extends StatelessWidget {
               Row(
                 children: [
                   Icon(
-                    isLoading ? Icons.sync : (isPositive ? Icons.arrow_upward : Icons.arrow_downward),
+                    isLoading
+                        ? Icons.sync
+                        : (liveChangeUnavailable
+                            ? Icons.remove
+                            : (isPositive
+                                ? Icons.arrow_upward
+                                : Icons.arrow_downward)),
                     color: accentColor,
                     size: 14,
                   ),
                   const SizedBox(width: 4),
                   Text(
-                    isLoading ? '...' : '${isPositive ? '+' : ''}${numberFormat.format(displayChange)}',
+                    isLoading
+                        ? '...'
+                        : (liveChangeUnavailable
+                            ? '—'
+                            : '${isPositive ? '+' : ''}${numberFormat.format(displayChange)}'),
                     style: TextStyle(
                       color: accentColor,
                       fontSize: 14,
@@ -107,7 +125,11 @@ class IndexCard extends StatelessWidget {
 
               // Percentage
               Text(
-                isLoading ? 'Loading...' : '${isPositive ? '+' : ''}${displayPChange.toStringAsFixed(2)}%$timeframeLabel',
+                isLoading
+                    ? 'Loading...'
+                    : (liveChangeUnavailable
+                        ? 'Change pending'
+                        : '${isPositive ? '+' : ''}${displayPChange.toStringAsFixed(2)}%$timeframeLabel'),
                 style: TextStyle(
                   color: accentColor,
                   fontSize: 12,
