@@ -275,8 +275,17 @@ class _MfMandateSipPageState extends ConsumerState<MfMandateSipPage> {
                     });
                   }),
         ),
-        if (session.distributorSipRef != null) ...[
-          const SizedBox(height: AppSpacing.md),
+        const SizedBox(height: AppSpacing.md),
+        Text('Pause / Resume', style: Theme.of(context).textTheme.titleSmall),
+        if (session.distributorSipRef == null) ...[
+          const SizedBox(height: AppSpacing.sm),
+          const MfQuietNote(
+            message:
+                'No ACTIVE SIP yet. Create mandate → wait until ACTIVE (eNACH) → '
+                'register SIP, then Pause/Resume appear here (also on History → SIPs).',
+          ),
+        ] else ...[
+          const SizedBox(height: AppSpacing.sm),
           Row(
             children: [
               const Text('SIP ref: '),

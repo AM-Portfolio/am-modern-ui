@@ -1,5 +1,25 @@
 // Asrax MF BFF DTOs — mirrors `mf_service/app/api/schemas.py` (no NSE wire fields).
 
+class MfMeta {
+  const MfMeta({
+    required this.onboardingStrict,
+    this.activeDistributor = '',
+    this.persistence = 'memory',
+  });
+
+  final bool onboardingStrict;
+  final String activeDistributor;
+  final String persistence;
+
+  factory MfMeta.fromJson(Map<String, dynamic> json) {
+    return MfMeta(
+      onboardingStrict: json['onboarding_strict'] == true,
+      activeDistributor: json['active_distributor']?.toString() ?? '',
+      persistence: json['persistence']?.toString() ?? 'memory',
+    );
+  }
+}
+
 class MfDistributorOp {
   const MfDistributorOp({
     required this.ok,

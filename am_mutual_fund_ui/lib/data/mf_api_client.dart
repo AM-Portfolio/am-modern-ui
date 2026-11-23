@@ -156,6 +156,11 @@ class MfApiClient {
     }
   }
 
+  Future<MfMeta> getMeta() async {
+    final response = await _dio.get<Map<String, dynamic>>(MfEndpoints.meta);
+    return MfMeta.fromJson(response.data ?? const {});
+  }
+
   Future<MfDistributorOp> submitUcc(Map<String, dynamic> body) async {
     final response = await _dio.post<Map<String, dynamic>>(
       MfEndpoints.ucc,

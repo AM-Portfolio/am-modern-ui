@@ -188,10 +188,10 @@ class _MfExplorePageState extends ConsumerState<MfExplorePage> {
                   onTap: () => setState(() => _purchaseOnly = !_purchaseOnly),
                 ),
               ),
+              // 6M hidden until mf_scheme_returns.ret_6m exists
               for (final p in const [
                 MfReturnPeriod.m1,
                 MfReturnPeriod.m3,
-                MfReturnPeriod.m6,
                 MfReturnPeriod.y1,
                 MfReturnPeriod.y3,
                 MfReturnPeriod.y5,
@@ -236,6 +236,13 @@ class _MfExplorePageState extends ConsumerState<MfExplorePage> {
                   const MfQuietNote(
                     message:
                         'Some EOD NAV dates are more than one day old — waiting on daily catalog refresh (not live LTP).',
+                  ),
+                if (filtered.isNotEmpty &&
+                    filtered.every(
+                      (v) => v.returnFor(_period.apiKey) == null,
+                    ))
+                  const MfQuietNote(
+                    message: 'Period returns not available yet',
                   ),
                 if (filtered.isEmpty)
                   const MfEmptyState(

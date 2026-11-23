@@ -126,7 +126,9 @@ class _MfOrderDetailPageState extends ConsumerState<MfOrderDetailPage> {
           children: [
             MfPageHeader(
               title: 'Order',
-              subtitle: order.id,
+              subtitle: order.canPay
+                  ? 'Pay on this screen · ${order.id}'
+                  : order.id,
               leading: IconButton(
                 icon: const Icon(Icons.arrow_back),
                 onPressed: () => context.go('/app/mutual-funds/history'),

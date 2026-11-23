@@ -336,7 +336,7 @@ class _ReturnsStrip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final keys = ['1M', '3M', '6M', '1Y', '3Y', '5Y'];
+    final keys = ['1M', '3M', '1Y', '3Y', '5Y'];
     final pctFmt = NumberFormat('+0.0%;-0.0%');
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,

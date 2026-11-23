@@ -72,7 +72,16 @@ class _MfInvestPageState extends ConsumerState<MfInvestPage> {
       context.go('/app/mutual-funds/orders/${order.id}');
     } catch (e) {
       if (!mounted) return;
-      setState(() => _error = mfErrorMessage(e));
+      final msg = mfErrorMessage(e);
+      final lower = msg.toLowerCase();
+      final onboardHint = lower.contains('fatca') ||
+          lower.contains('bank') ||
+          lower.contains('onboarding');
+      setState(
+        () => _error = onboardHint
+            ? '$msg — open Onboarding to finish FATCA + bank, then retry.'
+            : msg,
+      );
     } finally {
       if (mounted) setState(() => _busy = false);
     }

@@ -9,7 +9,8 @@ String mfErrorMessage(Object error, {String fallback = 'Request failed'}) {
     final status = error.response?.statusCode;
     if (status != null) {
       return switch (status) {
-        401 || 403 => 'Not authenticated — sign in again',
+        401 => 'Not authenticated — sign in again',
+        403 => fromBody ?? 'Forbidden — finish onboarding (FATCA + bank) or sign in',
         404 => 'Not found',
         409 => fromBody ?? 'Conflict — check idempotency or existing record',
         422 => fromBody ?? 'Invalid request',

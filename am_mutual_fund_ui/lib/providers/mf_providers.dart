@@ -5,6 +5,12 @@ import '../data/mf_dto.dart';
 
 final mfApiClientProvider = Provider<MfApiClient>((ref) => MfApiClient());
 
+/// Dig soft vs preprod/prod strict (from BFF `/v1/mf/meta`).
+final mfMetaProvider = FutureProvider<MfMeta>((ref) async {
+  final client = ref.watch(mfApiClientProvider);
+  return client.getMeta();
+});
+
 /// Explore search key — pass [purchaseAllowed] when Buyable filter is on.
 typedef MfSchemeSearchKey = ({String query, bool? purchaseAllowed});
 
@@ -101,6 +107,10 @@ class MfOnboardingDraft {
     this.bankAccountNo = '',
     this.bankIfsc = '',
     this.accountType = 'SB',
+    this.countryOfBirth = 'IN',
+    this.citizenship = 'IN',
+    this.taxStatus = '01',
+    this.fatcaAttested = false,
     this.ekycOk = false,
     this.uccOk = false,
     this.fatcaOk = false,
@@ -117,6 +127,10 @@ class MfOnboardingDraft {
   final String bankAccountNo;
   final String bankIfsc;
   final String accountType;
+  final String countryOfBirth;
+  final String citizenship;
+  final String taxStatus;
+  final bool fatcaAttested;
   final bool ekycOk;
   final bool uccOk;
   final bool fatcaOk;
@@ -133,6 +147,10 @@ class MfOnboardingDraft {
     String? bankAccountNo,
     String? bankIfsc,
     String? accountType,
+    String? countryOfBirth,
+    String? citizenship,
+    String? taxStatus,
+    bool? fatcaAttested,
     bool? ekycOk,
     bool? uccOk,
     bool? fatcaOk,
@@ -149,6 +167,10 @@ class MfOnboardingDraft {
       bankAccountNo: bankAccountNo ?? this.bankAccountNo,
       bankIfsc: bankIfsc ?? this.bankIfsc,
       accountType: accountType ?? this.accountType,
+      countryOfBirth: countryOfBirth ?? this.countryOfBirth,
+      citizenship: citizenship ?? this.citizenship,
+      taxStatus: taxStatus ?? this.taxStatus,
+      fatcaAttested: fatcaAttested ?? this.fatcaAttested,
       ekycOk: ekycOk ?? this.ekycOk,
       uccOk: uccOk ?? this.uccOk,
       fatcaOk: fatcaOk ?? this.fatcaOk,
