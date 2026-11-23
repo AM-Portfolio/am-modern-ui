@@ -416,9 +416,11 @@ class WatchlistRow extends StatelessWidget {
                     ],
                   ),
                   Text(
-                    stock.ltp > 0
+                    stock.ltp > 0 && !stock.changeUnavailable
                         ? '${fmt.format(stock.change)} (${stock.changePercent.toStringAsFixed(2)}%)'
-                        : '',
+                        : stock.ltp > 0
+                            ? '—'
+                            : '',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: priceColor,
                         ),

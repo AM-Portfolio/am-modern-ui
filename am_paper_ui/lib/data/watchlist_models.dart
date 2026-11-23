@@ -6,6 +6,7 @@ class WatchlistStock {
     required this.ltp,
     required this.change,
     required this.changePercent,
+    this.changeUnavailable = false,
     this.holdingQty,
     this.avgPrice,
   });
@@ -16,6 +17,7 @@ class WatchlistStock {
   final double ltp;
   final double change;
   final double changePercent;
+  final bool changeUnavailable;
   final int? holdingQty;
   final double? avgPrice;
 
@@ -29,6 +31,7 @@ class WatchlistStock {
     double? ltp,
     double? change,
     double? changePercent,
+    bool? changeUnavailable,
     int? holdingQty,
     double? avgPrice,
   }) {
@@ -39,6 +42,7 @@ class WatchlistStock {
       ltp: ltp ?? this.ltp,
       change: change ?? this.change,
       changePercent: changePercent ?? this.changePercent,
+      changeUnavailable: changeUnavailable ?? this.changeUnavailable,
       holdingQty: holdingQty ?? this.holdingQty,
       avgPrice: avgPrice ?? this.avgPrice,
     );

@@ -41,5 +41,11 @@
 | 37 | Remove cross-underlying default selection and synchronize quantity with the selected contract lot size | **done** |
 | 38 | Add API/provider/widget regressions for NIFTY 65, FINNIFTY 60, async arrival, stale selection, and missing data | **partial — resolver coverage only; widget/API coverage remains planned** |
 | 39 | Run local backend/UI tests, curl regression, and before/after response verification; update the report only after all tests pass | **done** |
+| 40 | Reuse the existing shared `PriceService` stream and Paper surface scopes | **done** |
+| 41 | Subscribe/unsubscribe visible watchlist and position symbols without duplicate sockets | **done** |
+| 42 | Apply valid enriched LTP/value/% ticks without overwriting REST values with zero or stale data | **done** |
+| 43 | Recalculate live position P&L from ticks while preserving OMS state | **done** |
+| 44 | Add Paper stream lifecycle, normalization, stale-tick, missing-baseline, and fallback tests | **partial — existing shared stream and UI regressions pass; dedicated Paper controller tests remain** |
+| 45 | Add bounded stream observability and verify no credential/payload leakage | **done — reused existing bounded PriceService path; no new payload/logging path** |
 
 The lot-size/contract-resolution implementation is complete locally. Deployment, commit, and push remain separate actions.
