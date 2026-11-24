@@ -151,7 +151,6 @@ class _RiskRadarLoadedBodyState extends State<_RiskRadarLoadedBody> {
     final overall = _worstBandLabel(factors);
     final overallColor = _severityColor(context, overall);
     final semanticsBand = '$overall Risk';
-    // Soft painter focus from sweep only; strong selection only when pinned.
     final focusAxisId = _userPinned ? null : _sweepFocusId;
     final pinnedAxisId = _userPinned ? _selectedAxisId : null;
 

@@ -3,14 +3,22 @@ import 'package:am_portfolio_ui/features/portfolio/presentation/widgets/intellig
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  test('donut center uses xray totalValue when sector slices sum lower', () {
+  test('donut center prefers book total then xray totalValue', () {
+    expect(
+      xrayDonutCenterTotal(
+        bookTotalInr: 13668229.67,
+        totalValueInr: 1000000,
+        holdingsTotal: 250000,
+      ),
+      13668229.67,
+    );
     expect(
       xrayDonutCenterTotal(totalValueInr: 1000000, holdingsTotal: 250000),
       1000000,
     );
     expect(
       xrayDonutCenterTotal(totalValueInr: 0, holdingsTotal: 250000),
-      0,
+      250000,
     );
     expect(xrayDonutCenterTotal(holdingsTotal: 250000), 250000);
     expect(xrayDonutCenterTotal(), isNull);

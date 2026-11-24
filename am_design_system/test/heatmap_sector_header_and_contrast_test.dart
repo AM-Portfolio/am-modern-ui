@@ -139,6 +139,7 @@ void main() {
         'quantity': 11104.56,
         'lastPrice': 95.46,
         'weightPortfolioPct': 7.7,
+        'priceSource': 'EOD_NAV',
       },
     );
 
@@ -162,6 +163,48 @@ void main() {
     expect(find.text('Parag Parikh Flexi Cap Fund'), findsOneWidget);
     expect(find.textContaining('INF879'), findsNothing);
     expect(find.textContaining('Qty 11104.56'), findsOneWidget);
+    expect(find.textContaining('NAV'), findsOneWidget);
+    expect(find.textContaining('LTP'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('HeatmapTileInspector omits fake +0.00% without previousClose',
+      (tester) async {
+    final tile = HeatmapTileData(
+      id: 'stock_Mutual Funds_INF000000001',
+      name: 'INF000000001',
+      displayName: 'Import Only Scheme',
+      weightage: 1.0,
+      performance: 0.0,
+      value: 10000,
+      metadata: {
+        'type': 'stock',
+        'symbol': 'INF000000001',
+        'lastPrice': 100.0,
+        'priceSource': 'IMPORT_MARK',
+        'weightPortfolioPct': 1.0,
+      },
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: ThemeData(
+          brightness: Brightness.dark,
+          extensions: const [AppColorsTheme.dark],
+        ),
+        home: Scaffold(
+          body: Center(
+            child: SizedBox(
+              width: 720,
+              child: HeatmapTileInspector(tile: tile),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('—'), findsOneWidget);
+    expect(find.text('+0.00%'), findsNothing);
     expect(tester.takeException(), isNull);
   });
 }

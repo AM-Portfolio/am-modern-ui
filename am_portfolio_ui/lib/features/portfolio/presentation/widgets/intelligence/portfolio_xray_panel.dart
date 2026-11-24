@@ -26,14 +26,17 @@ import 'xray_display_name.dart';
 
 export 'xray_display_name.dart' show xrayDisplayName;
 
-/// Donut hole uses book NAV (`xray.totalValue` / [totalValueInr]) whenever the
-/// API sent it. Visible-slice sums stay on hover and the list.
+/// Donut hole uses the same book NAV as Total Balance when available
+/// ([bookTotalInr] from portfolio summary), then API `xray.totalValue`, then
+/// holdings sum. Visible-slice sums stay on hover and the list.
 @visibleForTesting
 double? xrayDonutCenterTotal({
+  double? bookTotalInr,
   double? totalValueInr,
   double? holdingsTotal,
 }) {
-  if (totalValueInr != null) return totalValueInr;
+  if (bookTotalInr != null && bookTotalInr > 0) return bookTotalInr;
+  if (totalValueInr != null && totalValueInr > 0) return totalValueInr;
   return holdingsTotal;
 }
 
@@ -567,6 +570,7 @@ class _PortfolioXrayPanelState extends ConsumerState<PortfolioXrayPanel>
         widget.fillHeight ? _donutSizeFill : _donutSizePhone;
 
     List<PortfolioHolding>? holdings = widget.holdingsOverride;
+    double? bookTotalInr;
     MarketCapAllocation? mcap;
     if (holdings == null) {
       try {
@@ -581,7 +585,17 @@ class _PortfolioXrayPanelState extends ConsumerState<PortfolioXrayPanel>
           final portfolioState = context.read<PortfolioCubit>().state;
           if (portfolioState is PortfolioLoaded) {
             holdings = portfolioState.holdings;
+            bookTotalInr = portfolioState.summary.totalValue;
           }
+        }
+      } catch (_) {
+        // Tests / hosts without PortfolioCubit.
+      }
+    } else {
+      try {
+        final portfolioState = context.read<PortfolioCubit>().state;
+        if (portfolioState is PortfolioLoaded) {
+          bookTotalInr = portfolioState.summary.totalValue;
         }
       } catch (_) {
         // Tests / hosts without PortfolioCubit.
@@ -625,6 +639,7 @@ class _PortfolioXrayPanelState extends ConsumerState<PortfolioXrayPanel>
             ? null
             : holdings.fold<double>(0, (s, h) => s + h.currentValue);
         final totalValue = xrayDonutCenterTotal(
+          bookTotalInr: bookTotalInr,
           totalValueInr: xray?.totalValueInr,
           holdingsTotal: holdingsTotal,
         );
@@ -1010,7 +1025,7 @@ class _XrayBody extends StatelessWidget {
             message: NumberFormat.currency(
               locale: 'en_IN',
               symbol: '₹',
-              decimalDigits: 0,
+              decimalDigits: 2,
             ).format(totalValue),
             child: Text(
               formatIntelligenceCompactInr(totalValue),

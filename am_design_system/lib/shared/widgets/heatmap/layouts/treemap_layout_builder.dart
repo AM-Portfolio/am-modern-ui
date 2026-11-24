@@ -1059,8 +1059,7 @@ class _HoverTileState extends State<_HoverTile> {
       return const SizedBox.expand();
     }
 
-    final pctText =
-        '${widget.tile.performance >= 0 ? '+' : ''}${widget.tile.performance.toStringAsFixed(2)}%';
+    final pctText = _dayChangeLabel(widget.tile);
     final amountText = value != null ? StringUtils.formatCurrency(value) : null;
 
     Widget content = Padding(
@@ -1154,6 +1153,19 @@ class _HoverTileState extends State<_HoverTile> {
 
     // Always clip — never report flex overflow outside the allocation cell.
     return ClipRect(child: SizedBox.expand(child: content));
+  }
+
+  /// Omit painted +0.00% when a scheme/stock has no prior close (no real 1D %).
+  static String _dayChangeLabel(HeatmapTileData tile) {
+    final meta = tile.metadata ?? const <String, dynamic>{};
+    final isStock = meta['type'] == 'stock';
+    final prev = meta['previousClose'];
+    final hasPrev = prev is num && prev > 0;
+    if (isStock && !hasPrev && tile.performance.abs() < 0.005) {
+      return '—';
+    }
+    final up = tile.performance >= 0;
+    return '${up ? '+' : ''}${tile.performance.toStringAsFixed(2)}%';
   }
 
   double _adaptiveFontSize(double w, double h, _FontRole role) {

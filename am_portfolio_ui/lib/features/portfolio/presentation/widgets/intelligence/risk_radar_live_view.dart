@@ -2,13 +2,12 @@ import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:am_design_system/am_design_system.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../../../internal/domain/entities/portfolio_intelligence.dart';
 import 'risk_radar_math.dart';
 
-/// Fixed flat live Risk Radar — full grid visible; no center popup.
+/// Flat Risk Radar with a clockwise rotating sweep bar (sonar-style).
 class RiskRadarLiveView extends StatefulWidget {
   const RiskRadarLiveView({
     required this.axes,
@@ -64,7 +63,8 @@ class _RiskRadarLiveViewState extends State<RiskRadarLiveView>
   void _syncSweep() {
     if (!mounted) return;
     final ticking = TickerMode.of(context);
-    if (kIsWeb || _reduceMotion || !ticking) {
+    // Animate on web and mobile; only stop for reduce-motion / paused ticker.
+    if (_reduceMotion || !ticking) {
       if (_sweep.isAnimating) _sweep.stop();
       return;
     }
@@ -75,6 +75,7 @@ class _RiskRadarLiveViewState extends State<RiskRadarLiveView>
     if (_reduceMotion) return;
     final n = widget.axes.length;
     if (n < 3) return;
+    // Clockwise: start at top (-pi/2), increase angle.
     final angle = -math.pi / 2 + _sweep.value * 2 * math.pi;
     final idx = riskRadarSweepHitAxis(sweepAngle: angle, n: n);
     if (idx < 0 || idx == _lastSweepIndex) return;
@@ -104,8 +105,6 @@ class _RiskRadarLiveViewState extends State<RiskRadarLiveView>
   }
 
   /// Keep labels readable while maximizing plot radius inside the card.
-  /// Left/right names need more pad than top/bottom so clamp-to-edge does
-  /// not pull "Liquidity" / "Sector" back onto the diamond tips.
   static double _labelPad(double side) => (side * 0.22).clamp(52.0, 70.0);
 
   void _onTapUp(TapUpDetails d) {
@@ -229,41 +228,6 @@ class _RiskRadarLivePainter extends CustomPainter {
     final radius = math.min(size.width, size.height) / 2 - labelPad;
     const gold = kRiskRadarPolygonGold;
 
-    // Foreshortened pedestal stage (elliptical rings below plot center).
-    final stage = Offset(center.dx, center.dy + radius * 0.1);
-    canvas.drawOval(
-      Rect.fromCenter(
-        center: stage,
-        width: radius * 1.88,
-        height: radius * 0.58,
-      ),
-      Paint()
-        ..shader = ui.Gradient.radial(
-          stage,
-          radius * 0.95,
-          [
-            gold.withValues(alpha: 0.16),
-            gold.withValues(alpha: 0.04),
-            Colors.transparent,
-          ],
-          const [0.0, 0.5, 1.0],
-        ),
-    );
-    for (var i = 0; i < 3; i++) {
-      final t = 1.0 - i * 0.14;
-      canvas.drawOval(
-        Rect.fromCenter(
-          center: Offset(stage.dx, stage.dy + i * 2.0),
-          width: radius * 1.78 * t,
-          height: radius * 0.48 * t,
-        ),
-        Paint()
-          ..color = gold.withValues(alpha: 0.26 - i * 0.06)
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = i == 0 ? 1.45 : 1.05,
-      );
-    }
-
     Offset pt(int i, double frac) => riskRadarFlatPoint(
           center: center,
           radius: radius,
@@ -290,7 +254,8 @@ class _RiskRadarLivePainter extends CustomPainter {
       canvas.drawPath(
         ring(frac),
         Paint()
-          ..color = gold.withValues(alpha: ringI == 4 ? 0.4 : 0.12 + ringI * 0.04)
+          ..color =
+              gold.withValues(alpha: ringI == 4 ? 0.4 : 0.12 + ringI * 0.04)
           ..style = PaintingStyle.stroke
           ..strokeWidth = ringI == 4 ? 1.5 : 1.0,
       );
@@ -324,7 +289,6 @@ class _RiskRadarLivePainter extends CustomPainter {
     }
     data.close();
 
-    // Soft gold glow behind polygon.
     canvas.drawPath(
       data,
       Paint()
@@ -362,7 +326,7 @@ class _RiskRadarLivePainter extends CustomPainter {
         ..strokeJoin = StrokeJoin.round,
     );
 
-    // Soft sweep (no center text overlay).
+    // Rotating radar sweep (wedge + tip line).
     final sweepPath = Path()
       ..moveTo(center.dx, center.dy)
       ..arcTo(
@@ -379,7 +343,7 @@ class _RiskRadarLivePainter extends CustomPainter {
           center,
           [
             gold.withValues(alpha: 0.0),
-            gold.withValues(alpha: 0.2),
+            gold.withValues(alpha: 0.28),
             gold.withValues(alpha: 0.0),
           ],
           const [0.0, 0.5, 1.0],
@@ -396,8 +360,8 @@ class _RiskRadarLivePainter extends CustomPainter {
       center,
       tip,
       Paint()
-        ..color = gold.withValues(alpha: 0.8)
-        ..strokeWidth = 1.45
+        ..color = gold.withValues(alpha: 0.9)
+        ..strokeWidth = 1.6
         ..strokeCap = StrokeCap.round,
     );
 
@@ -464,19 +428,15 @@ class _RiskRadarLivePainter extends CustomPainter {
         maxLines: 2,
       )..layout(maxWidth: math.max(96, labelPad + 28));
 
-      // Push the text block fully past the tip so half the label does not
-      // sit back on the spider. Horizontal axes get extra clearance — those
-      // long names otherwise collide with the diamond corners.
       final isHorizontal = i % 4 == 1 || i % 4 == 3;
       final tipClearance = isHorizontal ? 14.0 : 8.0;
       final extentAlong =
           tp.width * unit.dx.abs() * 0.5 + tp.height * unit.dy.abs() * 0.5;
-      // Prefer empty corners for left/right tips (slight upward bias).
       final cornerBias = switch (i % 4) {
-        1 => const Offset(6, -5), // right
-        3 => const Offset(-6, -5), // left
-        0 => const Offset(0, -2), // top
-        _ => const Offset(0, 2), // bottom
+        1 => const Offset(6, -5),
+        3 => const Offset(-6, -5),
+        0 => const Offset(0, -2),
+        _ => const Offset(0, 2),
       };
       final anchor =
           tipPt + unit * (tipClearance + extentAlong) + cornerBias;

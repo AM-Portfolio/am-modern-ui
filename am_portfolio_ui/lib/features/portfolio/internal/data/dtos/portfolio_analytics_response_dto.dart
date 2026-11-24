@@ -103,6 +103,7 @@ class StockDto {
     this.totalReturn,
     this.weight,
     this.previousClose,
+    this.priceSource,
   });
 
   /// Custom factory to handle multiple JSON formats
@@ -124,6 +125,7 @@ class StockDto {
     totalReturn: json['totalReturn']?.toDouble(),
     weight: json['weight']?.toDouble(),
     previousClose: json['previousClose']?.toDouble(),
+    priceSource: json['priceSource'] as String?,
   );
   final String? symbol;
   final String? companyName;
@@ -138,6 +140,7 @@ class StockDto {
   final double? totalReturn;
   final double? weight;
   final double? previousClose;
+  final String? priceSource;
 
   Map<String, dynamic> toJson() => _$StockDtoToJson(this);
 }

@@ -348,18 +348,26 @@ class PortfolioHeatmapCubit extends Cubit<PortfolioHeatmapState> {
     }
   }
 
-  static HeatmapTileData _reweightSector(
+  static HeatmapTileData _reweightMfCategoryParent(
     HeatmapTileData tile,
-    List<HeatmapTileEntity> children,
+    List<HeatmapTileData> children,
     double portfolioTotal,
   ) {
     final newValue = children.fold<double>(
       0.0,
       (sum, child) => sum + (child.value ?? 0.0),
     );
+    final weightedPerf = newValue > 0
+        ? children.fold<double>(
+              0.0,
+              (sum, child) => sum + child.performance * (child.value ?? 0.0),
+            ) /
+            newValue
+        : tile.performance;
     return tile.copyWith(
       children: children,
       value: newValue,
+      performance: weightedPerf,
       weightage:
           portfolioTotal > 0 ? (newValue / portfolioTotal) * 100 : tile.weightage,
     );
@@ -371,29 +379,48 @@ class PortfolioHeatmapCubit extends Cubit<PortfolioHeatmapState> {
   ) {
     if (category == HeatmapMfCategory.all) return data;
 
-    final portfolioTotal = data.uiTiles.fold<double>(
-      0.0,
-      (sum, tile) => sum + (tile.value ?? 0.0),
-    );
+    final label = category.displayName;
     final filtered = <HeatmapTileData>[];
 
     for (final tile in data.uiTiles) {
+      final metaCat = tile.metadata?['mfCategory']?.toString();
+      final isCategoryParent = metaCat == category.name ||
+          tile.name == label ||
+          tile.displayName == label;
+
       if (tile.children == null || tile.children!.isEmpty) {
-        final label = '${tile.displayName} ${tile.name}';
-        if (category.matchesLabel(label)) filtered.add(tile);
+        final leafLabel = '${tile.displayName} ${tile.name}';
+        if (category.matchesLabel(leafLabel)) filtered.add(tile);
         continue;
       }
 
-      final children = tile.children!.where((child) {
+      // Fast path: keep the matching category shell as-is.
+      if (isCategoryParent) {
+        filtered.add(tile);
+        continue;
+      }
+
+      final children = <HeatmapTileData>[];
+      for (final child in tile.children!) {
         final leaf =
             child is HeatmapTileData ? child : HeatmapTileData.fromEntity(child);
-        final label = '${leaf.displayName} ${leaf.name}';
-        return category.matchesLabel(label);
-      }).toList();
+        final leafLabel = '${leaf.displayName} ${leaf.name}';
+        if (category.matchesLabel(leafLabel)) children.add(leaf);
+      }
       if (children.isEmpty) continue;
-      filtered.add(_reweightSector(tile, children, portfolioTotal));
+      filtered.add(_reweightMfCategoryParent(tile, children, 0));
     }
 
-    return data.copyWith(tiles: filtered);
+    if (filtered.isEmpty) return data.copyWith(tiles: filtered);
+
+    final total = filtered.fold<double>(0, (sum, t) => sum + (t.value ?? 0));
+    final reweighted = filtered
+        .map(
+          (tile) => tile.copyWith(
+            weightage: total > 0 ? ((tile.value ?? 0) / total) * 100 : tile.weightage,
+          ),
+        )
+        .toList();
+    return data.copyWith(tiles: reweighted);
   }
 }

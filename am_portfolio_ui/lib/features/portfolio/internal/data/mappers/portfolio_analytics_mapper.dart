@@ -155,6 +155,7 @@ class PortfolioAnalyticsMapper {
       totalReturn: dto.totalReturn ?? 0.0,
       weight: dto.weight,
       previousClose: dto.previousClose,
+      priceSource: dto.priceSource,
     );
   }
 

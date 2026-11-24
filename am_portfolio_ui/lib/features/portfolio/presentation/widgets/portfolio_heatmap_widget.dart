@@ -602,11 +602,30 @@ class _PortfolioHeatmapWidgetState
         convertedHeatmapData.configuration.selectors ?? const SelectorConfig();
     final baseLayout =
         convertedHeatmapData.configuration.layout ?? const LayoutConfig();
-    final useNested =
-        _drillDownTile == null && _selectedLayout == HeatmapLayoutType.treemap;
     final baseInteractions =
         convertedHeatmapData.configuration.interactions ??
         const InteractionConfig();
+
+    // Overview tiles (before drill). Keep a full copy for sector lookup.
+    var workingTiles = convertedHeatmapData.tiles
+        .map((t) => t is HeatmapTileData ? t : HeatmapTileData.fromEntity(t))
+        .toList();
+    _fullOverviewTiles = workingTiles;
+
+    if (_drillDownTile != null && _drillDownTile!.children != null) {
+      workingTiles = _drillDownTile!.children!
+          .map((t) => t is HeatmapTileData ? t : HeatmapTileData.fromEntity(t))
+          .toList();
+    }
+
+    // Keep nested sector chrome whenever tiles still have children (MF → Equity
+    // → Flexi Cap → schemes). Flat-only drill hid category headers and funds.
+    final useNested = _selectedLayout == HeatmapLayoutType.treemap &&
+        (_drillDownTile == null ||
+            workingTiles.any(
+              (t) => t.children != null && t.children!.isNotEmpty,
+            ));
+
     final customConfig = convertedHeatmapData.configuration.copyWith(
       display:
           (convertedHeatmapData.configuration.display ?? const DisplayConfig())
@@ -635,18 +654,8 @@ class _PortfolioHeatmapWidgetState
       ),
     );
 
-    // Drill-down: flat children (full sector). Nested overview: always budget —
-    // uncapped web books paint hundreds of leaves and lock the page.
-    var workingTiles = convertedHeatmapData.tiles
-        .map((t) => t is HeatmapTileData ? t : HeatmapTileData.fromEntity(t))
-        .toList();
-    _fullOverviewTiles = workingTiles;
-
-    if (_drillDownTile != null && _drillDownTile!.children != null) {
-      workingTiles = _drillDownTile!.children!
-          .map((t) => t is HeatmapTileData ? t : HeatmapTileData.fromEntity(t))
-          .toList();
-    } else if (useNested) {
+    // Nested mosaic (overview or mid-level drill): budget leaves so web stays responsive.
+    if (useNested) {
       workingTiles = SectorHeatmapConverter.applyCompactTreemapBudget(
         workingTiles,
         maxStocksPerSector: widget.config.compactMode
@@ -880,12 +889,20 @@ class _PortfolioHeatmapWidgetState
     );
   }
 
-  /// Drill chrome inside the Heatmap Overview card (back + sector + stats).
+  String _drillSectorLabel(HeatmapTileData tile) {
+    final name = tile.name.trim();
+    if (name.isNotEmpty) return name;
+    return tile.displayName.trim();
+  }
+
+  /// Drill chrome inside the Heatmap Overview card (back + sector path + stats).
   Widget _buildDrillInCardHeader(BuildContext context) {
     final tile = _drillDownTile!;
-    final sectorLabel = tile.name.trim().isNotEmpty
-        ? tile.name
-        : tile.displayName;
+    // Breadcrumb so Mutual Funds › Equity keeps category context in the header.
+    final sectorLabel = _drillStack
+        .map(_drillSectorLabel)
+        .where((s) => s.isNotEmpty)
+        .join(' › ');
     final meta = tile.metadata ?? const <String, dynamic>{};
     final holdings = meta['holdingsCount'] ?? meta['stockCount'];
     final compact = widget.config.compactMode;
@@ -914,7 +931,7 @@ class _PortfolioHeatmapWidgetState
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(
-          sectorLabel,
+          sectorLabel.isNotEmpty ? sectorLabel : _drillSectorLabel(tile),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style:
@@ -1141,12 +1158,13 @@ class _PortfolioHeatmapWidgetState
     );
   }
 
-  /// Filters live inside the heatmap card, same row as "Heatmap Overview".
-  /// Title left; filter chips then Equity / MF / All Assets pinned right.
+  /// Header controls on one row, grouped by function:
+  /// title → asset scope → view dropdowns → day movers.
   Widget _buildHeatmapCardHeader(BuildContext context) {
     final compact = widget.config.compactMode;
     final showMfCategory =
         _selectedAssetFilter == HeatmapAssetFilter.mutualFunds;
+    final scheme = Theme.of(context).colorScheme;
 
     final title = Row(
       mainAxisSize: MainAxisSize.min,
@@ -1154,183 +1172,198 @@ class _PortfolioHeatmapWidgetState
         Icon(
           Icons.grid_view_rounded,
           color: ModuleColors.portfolio,
-          size: compact ? 18 : 22,
+          size: compact ? 16 : 18,
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: 6),
         Text(
           compact ? 'Heatmap' : 'Heatmap Overview',
           style: (compact
-                  ? Theme.of(context).textTheme.titleMedium
-                  : Theme.of(context).textTheme.titleLarge)
+                  ? Theme.of(context).textTheme.titleSmall
+                  : Theme.of(context).textTheme.titleMedium)
               ?.copyWith(fontWeight: FontWeight.w700),
         ),
       ],
     );
 
-    // Size to label (isExpanded: false) so "All Sectors" / "All Categories"
-    // are not clipped by a fixed narrow width.
-    final filterChips = Row(
+    Widget groupGap() => Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 6),
+          child: SizedBox(
+            height: 18,
+            child: VerticalDivider(
+              width: 1,
+              thickness: 1,
+              color: scheme.outlineVariant.withValues(alpha: 0.7),
+            ),
+          ),
+        );
+
+    CustomDropdown<T> denseDropdown<T>({
+      required T value,
+      required List<DropdownMenuItem<T>> items,
+      required ValueChanged<T?> onChanged,
+    }) {
+      return CustomDropdown<T>(
+        value: value,
+        items: items,
+        onChanged: onChanged,
+        isExpanded: false,
+        height: 30,
+        fontSize: 11,
+        iconSize: 14,
+        borderRadius: 8,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+        primaryColor: ModuleColors.portfolio,
+      );
+    }
+
+    // View / layout dropdowns only (not mixed with pill toggles).
+    final viewDropdowns = Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        CustomDropdown<SectorType>(
+        denseDropdown<SectorType>(
           value: _selectedSector ?? SectorType.all,
           items: SectorType.values
               .map(
                 (item) => item.toDropdownItem(
                   text: item.displayName,
                   icon: Icons.category_outlined,
+                  fontSize: 11,
+                  iconSize: 13,
+                  expandText: false,
                 ),
               )
               .toList(),
           onChanged: (val) {
             if (val != null) _onFiltersChanged(sector: val);
           },
-          isExpanded: false,
-          primaryColor: ModuleColors.portfolio,
         ),
-        const SizedBox(width: 8),
-        CustomDropdown<MarketCapType>(
+        const SizedBox(width: 4),
+        denseDropdown<MarketCapType>(
           value: _selectedMarketCap ?? MarketCapType.all,
           items: MarketCapType.values
               .map(
                 (item) => item.toDropdownItem(
                   text: item.displayName,
                   icon: Icons.pie_chart_outline,
+                  fontSize: 11,
+                  iconSize: 13,
+                  expandText: false,
                 ),
               )
               .toList(),
           onChanged: (val) {
             if (val != null) _onFiltersChanged(marketCap: val);
           },
-          isExpanded: false,
-          primaryColor: ModuleColors.portfolio,
         ),
         if (showMfCategory) ...[
-          const SizedBox(width: 8),
-          CustomDropdown<HeatmapMfCategory>(
+          const SizedBox(width: 4),
+          denseDropdown<HeatmapMfCategory>(
             value: _selectedMfCategory,
             items: HeatmapMfCategory.values
                 .map(
                   (item) => item.toDropdownItem(
                     text: item.displayName,
                     icon: item.icon,
+                    fontSize: 11,
+                    iconSize: 13,
+                    expandText: false,
                   ),
                 )
                 .toList(),
             onChanged: (val) {
               if (val != null) _onFiltersChanged(mfCategory: val);
             },
-            isExpanded: false,
-            primaryColor: ModuleColors.portfolio,
           ),
         ],
-        const SizedBox(width: 8),
-        CustomDropdown<HeatmapLayoutType>(
+        const SizedBox(width: 4),
+        denseDropdown<HeatmapLayoutType>(
           value: _selectedLayout,
           items: HeatmapLayoutType.values
               .map(
                 (item) => item.toDropdownItem(
                   text: item.displayName,
                   icon: Icons.visibility_outlined,
+                  fontSize: 11,
+                  iconSize: 13,
+                  expandText: false,
                 ),
               )
               .toList(),
           onChanged: (val) {
             if (val != null) _onFiltersChanged(layout: val);
           },
-          isExpanded: false,
-          primaryColor: ModuleColors.portfolio,
         ),
-        if (!compact) ...[
-          const SizedBox(width: 8),
-          _buildPerformanceFilterControl(context, compact: false),
-        ],
       ],
     );
 
-    // Web keeps Equity / MF / All Assets as tabs; mobile uses a dropdown above.
-    final assetTabs = compact
-        ? null
-        : _buildAssetScopeControl(context, compact: false);
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final wrap = constraints.maxWidth < 1180 || compact;
-        if (compact) {
-          // Title row: Heatmap | asset + movers (scale to fit, never clip).
-          // Second row: sector / cap / layout.
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+    if (compact) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  title,
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Align(
-                      alignment: Alignment.centerRight,
-                      child: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        alignment: Alignment.centerRight,
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            _buildAssetScopeControl(context, compact: true),
-                            const SizedBox(width: 6),
-                            _buildPerformanceFilterControl(
-                              context,
-                              compact: true,
-                            ),
-                          ],
+              title,
+              const SizedBox(width: 8),
+              Expanded(
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerRight,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _buildAssetScopeControl(context, compact: true),
+                        const SizedBox(width: 6),
+                        _buildPerformanceFilterControl(
+                          context,
+                          compact: true,
                         ),
-                      ),
+                      ],
                     ),
                   ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: filterChips,
-              ),
-            ],
-          );
-        }
-        if (wrap) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(
-                children: [
-                  Flexible(child: title),
-                  const SizedBox(width: 12),
-                  assetTabs!,
-                ],
-              ),
-              const SizedBox(height: 8),
-              Align(
-                alignment: Alignment.centerRight,
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  reverse: true,
-                  child: filterChips,
                 ),
               ),
             ],
-          );
-        }
-        return Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            title,
-            const Spacer(),
-            filterChips,
-            const SizedBox(width: 12),
-            assetTabs!,
-          ],
-        );
-      },
+          ),
+          const SizedBox(height: 6),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: viewDropdowns,
+          ),
+        ],
+      );
+    }
+
+    // Web: one row — scale controls down so Equity is never clipped.
+    final controls = Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _buildAssetScopeControl(context, compact: false),
+        groupGap(),
+        viewDropdowns,
+        groupGap(),
+        _buildPerformanceFilterControl(context, compact: false),
+      ],
+    );
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        title,
+        const SizedBox(width: 10),
+        Expanded(
+          child: Align(
+            alignment: Alignment.centerRight,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerRight,
+              child: controls,
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -1383,33 +1416,33 @@ class _PortfolioHeatmapWidgetState
       children: HeatmapAssetFilter.values.map((filter) {
         final selected = filter == _selectedAssetFilter;
         return Padding(
-          padding: const EdgeInsets.only(right: 6),
+          padding: const EdgeInsets.only(right: 4),
           child: Material(
             color: selected
                 ? ModuleColors.portfolio
                 : scheme.surfaceContainerHighest.withValues(alpha: 0.55),
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(14),
             child: InkWell(
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(14),
               onTap: () => _onFiltersChanged(assetFilter: filter),
               child: Padding(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 8,
+                  horizontal: 8,
+                  vertical: 5,
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
                       filter.icon,
-                      size: 14,
+                      size: 12,
                       color: selected ? Colors.white : scheme.onSurface,
                     ),
-                    const SizedBox(width: 6),
+                    const SizedBox(width: 4),
                     Text(
                       filter.displayName,
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: 11,
                         fontWeight: FontWeight.w600,
                         color: selected ? Colors.white : scheme.onSurface,
                       ),
@@ -1424,98 +1457,36 @@ class _PortfolioHeatmapWidgetState
     );
   }
 
-  /// Web: All / Gainers / Losers pills. Mobile: single dropdown.
+  /// All / Gainers / Losers — same dense dropdown as other header filters.
   Widget _buildPerformanceFilterControl(
     BuildContext context, {
     required bool compact,
   }) {
-    if (compact) {
-      return CustomDropdown<HeatmapPerformanceFilter>(
-        value: _selectedPerformanceFilter,
-        items: HeatmapPerformanceFilter.values
-            .map(
-              (item) => item.toDropdownItem(
-                text: item.displayName,
-                icon: item.icon,
-                fontSize: 12,
-                iconSize: 14,
-                expandText: false,
-              ),
-            )
-            .toList(),
-        onChanged: (val) {
-          if (val == null || val == _selectedPerformanceFilter) return;
-          setState(() => _selectedPerformanceFilter = val);
-        },
-        isExpanded: false,
-        height: 36,
-        fontSize: 12,
-        iconSize: 16,
-        borderRadius: 10,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 8),
-        primaryColor: ModuleColors.portfolio,
-      );
-    }
-
-    final scheme = Theme.of(context).colorScheme;
-    Color selectedColor(HeatmapPerformanceFilter filter) {
-      switch (filter) {
-        case HeatmapPerformanceFilter.gainers:
-          return context.marketPositive;
-        case HeatmapPerformanceFilter.losers:
-          return context.marketNegative;
-        case HeatmapPerformanceFilter.all:
-          return ModuleColors.portfolio;
-      }
-    }
-
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: HeatmapPerformanceFilter.values.map((filter) {
-        final selected = filter == _selectedPerformanceFilter;
-        final accent = selectedColor(filter);
-        return Padding(
-          padding: const EdgeInsets.only(right: 6),
-          child: Material(
-            color: selected
-                ? accent
-                : scheme.surfaceContainerHighest.withValues(alpha: 0.55),
-            borderRadius: BorderRadius.circular(20),
-            child: InkWell(
-              borderRadius: BorderRadius.circular(20),
-              onTap: () {
-                if (filter == _selectedPerformanceFilter) return;
-                setState(() => _selectedPerformanceFilter = filter);
-              },
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 8,
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      filter.icon,
-                      size: 14,
-                      color: selected ? Colors.white : scheme.onSurface,
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      filter.displayName,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: selected ? Colors.white : scheme.onSurface,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+    final dense = !compact;
+    return CustomDropdown<HeatmapPerformanceFilter>(
+      value: _selectedPerformanceFilter,
+      items: HeatmapPerformanceFilter.values
+          .map(
+            (item) => item.toDropdownItem(
+              text: item.displayName,
+              icon: item.icon,
+              fontSize: dense ? 11 : 12,
+              iconSize: dense ? 13 : 14,
+              expandText: false,
             ),
-          ),
-        );
-      }).toList(),
+          )
+          .toList(),
+      onChanged: (val) {
+        if (val == null || val == _selectedPerformanceFilter) return;
+        setState(() => _selectedPerformanceFilter = val);
+      },
+      isExpanded: false,
+      height: dense ? 30 : 36,
+      fontSize: dense ? 11 : 12,
+      iconSize: dense ? 14 : 16,
+      borderRadius: dense ? 8 : 10,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+      primaryColor: ModuleColors.portfolio,
     );
   }
 

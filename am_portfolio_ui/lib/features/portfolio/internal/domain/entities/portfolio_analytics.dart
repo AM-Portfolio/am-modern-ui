@@ -91,6 +91,7 @@ class Stock {
     this.totalReturn,
     this.weight,
     this.previousClose,
+    this.priceSource,
   });
   final String symbol;
   final String companyName;
@@ -107,6 +108,8 @@ class Stock {
   final double? totalReturn;
   final double? weight;
   final double? previousClose;
+  /// LIVE / LAST / COST_BASIS / EOD_NAV when known.
+  final String? priceSource;
 
   /// Dhan/mail books often have qty but no avg/invested — treat zeros as missing.
   bool get hasCostBasis =>
@@ -148,6 +151,7 @@ class Stock {
     double? totalReturn,
     double? weight,
     double? previousClose,
+    String? priceSource,
   }) {
     return Stock(
       symbol: symbol ?? this.symbol,
@@ -164,6 +168,7 @@ class Stock {
       totalReturn: totalReturn ?? this.totalReturn,
       weight: weight ?? this.weight,
       previousClose: previousClose ?? this.previousClose,
+      priceSource: priceSource ?? this.priceSource,
     );
   }
 }

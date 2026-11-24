@@ -9,13 +9,14 @@ HeatmapTileData _leaf({
   String? assetClass,
   String? sector,
   String? displayName,
+  double performance = 1,
 }) {
   return HeatmapTileData(
     id: 'stock_$symbol',
     name: name,
     displayName: displayName ?? name,
     weightage: 100,
-    performance: 1,
+    performance: performance,
     value: value,
     metadata: {
       'type': 'stock',
@@ -100,19 +101,19 @@ void main() {
       );
     });
 
-    test('Mutual Funds filter flattens schemes and drops equity shells', () {
+    test('All Assets nests Mutual Funds | Stocks with categories and sectors', () {
       final tiles = filterHeatmapTilesByAsset(
         [
           _sector(
             name: 'Information Technology',
-            value: 400,
+            value: 500,
             children: [
-              _leaf(name: 'TCS', symbol: 'TCS', value: 400, assetClass: 'EQUITY'),
+              _leaf(name: 'TCS', symbol: 'TCS', value: 500, assetClass: 'EQUITY'),
             ],
           ),
           _sector(
             name: 'Mutual Funds',
-            value: 900,
+            value: 1500,
             children: [
               _leaf(
                 name: 'INF247L01999',
@@ -125,8 +126,95 @@ void main() {
                 name: 'INF966L01689',
                 symbol: 'INF966L01689',
                 displayName: 'Quant Small Cap Fund',
+                value: 400,
+                assetClass: 'MUTUAL_FUND',
+              ),
+              _leaf(
+                name: 'INF179K01VI0',
+                symbol: 'INF179K01VI0',
+                displayName: 'HDFC Liquid Fund',
+                value: 500,
+                assetClass: 'MUTUAL_FUND',
+              ),
+            ],
+          ),
+        ],
+        HeatmapAssetFilter.allAssets,
+      );
+
+      expect(tiles.map((t) => t.displayName), ['Mutual Funds', 'Stocks']);
+      final mf = tiles.firstWhere((t) => t.displayName == 'Mutual Funds');
+      final stocks = tiles.firstWhere((t) => t.displayName == 'Stocks');
+      expect(mf.weightage, closeTo(75, 0.01));
+      expect(stocks.weightage, closeTo(25, 0.01));
+      expect(mf.children!.map((c) => c.displayName), ['Equity', 'Debt']);
+      expect(stocks.children!.single.displayName, 'Information Technology');
+      final equity = mf.children!.firstWhere((t) => t.displayName == 'Equity');
+      expect(equity.metadata?['mfBroadGroup'], 'equity');
+      // Equity bucket = Large Cap 600 + Small Cap 400 = 1000 of 1500 MF.
+      expect(equity.weightage, closeTo(1000 / 1500 * 100, 0.01));
+      final largeCap =
+          equity.children!.firstWhere((t) => t.displayName == 'Large Cap');
+      // Nested category weight vs Equity bucket.
+      expect(largeCap.weightage, closeTo(60, 0.01));
+      expect(largeCap.children!.single.displayName, 'Motilal Oswal Large Cap Fund');
+      final debt = mf.children!.firstWhere((t) => t.displayName == 'Debt');
+      expect(debt.children!.single.displayName, 'Liquid');
+    });
+
+    test('Mutual Funds filter nests Equity|Debt|Hybrid then SEBI categories', () {
+      final tiles = filterHeatmapTilesByAsset(
+        [
+          _sector(
+            name: 'Information Technology',
+            value: 400,
+            children: [
+              _leaf(name: 'TCS', symbol: 'TCS', value: 400, assetClass: 'EQUITY'),
+            ],
+          ),
+          _sector(
+            name: 'Mutual Funds',
+            value: 1500,
+            children: [
+              _leaf(
+                name: 'INF247L01999',
+                symbol: 'INF247L01999',
+                displayName: 'Motilal Oswal Large Cap Fund',
+                value: 600,
+                assetClass: 'MUTUAL_FUND',
+                performance: 1.0,
+              ),
+              _leaf(
+                name: 'INF879O01027',
+                symbol: 'INF879O01027',
+                displayName: 'Edelweiss Mid Cap Fund',
                 value: 300,
                 assetClass: 'MUTUAL_FUND',
+                performance: -0.5,
+              ),
+              _leaf(
+                name: 'INF966L01689',
+                symbol: 'INF966L01689',
+                displayName: 'Quant Small Cap Fund',
+                value: 300,
+                assetClass: 'MUTUAL_FUND',
+                performance: -2.0,
+              ),
+              _leaf(
+                name: 'INF179K01VI0',
+                symbol: 'INF179K01VI0',
+                displayName: 'HDFC Liquid Fund',
+                value: 200,
+                assetClass: 'MUTUAL_FUND',
+                performance: 0.5,
+              ),
+              _leaf(
+                name: 'INF109KC1AH2',
+                symbol: 'INF109KC1AH2',
+                displayName: 'ICICI Prudential Equity & Debt Aggressive Hybrid Fund',
+                value: 100,
+                assetClass: 'MUTUAL_FUND',
+                performance: 0.2,
               ),
             ],
           ),
@@ -135,13 +223,42 @@ void main() {
         HeatmapAssetFilter.mutualFunds,
       );
 
-      expect(tiles.map((t) => t.displayName), [
-        'Motilal Oswal Large Cap Fund',
-        'Quant Small Cap Fund',
+      expect(tiles.map((t) => t.displayName), ['Equity', 'Debt', 'Hybrid']);
+      expect(tiles.every((t) => t.id.startsWith('sector_mf_broad_')), isTrue);
+      expect(tiles.every((t) => t.metadata?['mfBroadGroup'] != null), isTrue);
+      final equity = tiles.firstWhere((t) => t.displayName == 'Equity');
+      expect(equity.children!.map((c) => c.displayName), [
+        'Large Cap',
+        'Mid Cap',
+        'Small Cap',
       ]);
-      expect(tiles.every((t) => t.children == null || t.children!.isEmpty), isTrue);
-      expect(tiles.first.weightage, closeTo(66.67, 0.1));
-      expect(tiles.last.weightage, closeTo(33.33, 0.1));
+      expect(equity.children!.first.children!.single.displayName,
+          'Motilal Oswal Large Cap Fund');
+      final hybrid = tiles.firstWhere((t) => t.displayName == 'Hybrid');
+      expect(hybrid.children!.single.displayName, 'Aggressive Hybrid');
+      expect(hybrid.children!.single.children!.single.displayName,
+          'ICICI Prudential Equity & Debt Aggressive Hybrid Fund');
+    });
+
+    test('inferFromLabel covers ELSS Index FoF Overnight', () {
+      expect(
+        HeatmapMfCategoryX.inferFromLabel('HDFC ELSS Tax Saver'),
+        HeatmapMfCategory.elss,
+      );
+      expect(
+        HeatmapMfCategoryX.inferFromLabel('Motilal Oswal Nifty 50 Index Fund'),
+        HeatmapMfCategory.indexFund,
+      );
+      expect(
+        HeatmapMfCategoryX.inferFromLabel(
+          'Franklin U.S. Opportunities Equity Active Fund of Funds',
+        ),
+        HeatmapMfCategory.fofOverseas,
+      );
+      expect(
+        HeatmapMfCategoryX.inferFromLabel('UTI Overnight Fund'),
+        HeatmapMfCategory.overnight,
+      );
     });
 
     test('IT / TCS is equity not mutual fund', () {
