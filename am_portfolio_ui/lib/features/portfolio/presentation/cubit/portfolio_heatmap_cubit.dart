@@ -5,6 +5,7 @@ import 'package:am_design_system/am_design_system.dart'
     hide MarketCapType, MetricType, TimeFrame, SectorType;
 import '../mappers/heatmap_sector_matcher.dart';
 import '../mappers/sector_heatmap_converter.dart';
+import '../models/heatmap_asset_filter.dart';
 import '../../internal/domain/entities/portfolio_analytics.dart';
 import 'portfolio_analytics_cubit.dart';
 import 'portfolio_analytics_state.dart';
@@ -28,6 +29,8 @@ class PortfolioHeatmapCubit extends Cubit<PortfolioHeatmapState> {
     MetricType metric = MetricType.marketValue,
     SectorType sector = SectorType.all,
     MarketCapType marketCap = MarketCapType.all,
+    HeatmapAssetFilter assetFilter = HeatmapAssetFilter.allAssets,
+    HeatmapMfCategory mfCategory = HeatmapMfCategory.all,
     PortfolioAnalyticsCubit? analyticsCubit,
   }) async {
     CommonLogger.info(
@@ -69,6 +72,13 @@ class PortfolioHeatmapCubit extends Cubit<PortfolioHeatmapState> {
             subtitle: 'Sector Performance Analysis',
             accentColor: ModuleColors.portfolio,
           );
+
+          heatmapData = heatmapData.copyWith(
+            tiles: filterHeatmapTilesByAsset(heatmapData.uiTiles, assetFilter),
+          );
+          if (assetFilter == HeatmapAssetFilter.mutualFunds) {
+            heatmapData = _applyMfCategoryFilter(heatmapData, mfCategory);
+          }
 
           // Apply Sector filtering using domain-aware mapping
           if (sector != SectorType.all && sector != SectorType.noGroup) {
@@ -191,6 +201,8 @@ class PortfolioHeatmapCubit extends Cubit<PortfolioHeatmapState> {
           metric: metric,
           sector: sector,
           marketCap: marketCap,
+          assetFilter: assetFilter,
+          mfCategory: mfCategory,
           lastUpdated: DateTime.now(),
         ),
       );
@@ -216,25 +228,6 @@ class PortfolioHeatmapCubit extends Cubit<PortfolioHeatmapState> {
     emit(PortfolioHeatmapError(message: message));
   }
 
-  Future<void> updateTimeFrame(TimeFrame timeFrame) async {
-    final currentState = state;
-    if (currentState is PortfolioHeatmapLoaded) {
-      await loadHeatmapData(
-        portfolioId: currentState.portfolioId,
-        timeFrame: timeFrame,
-        metric: currentState.metric,
-        sector: currentState.sector ?? SectorType.all,
-        marketCap: currentState.marketCap ?? MarketCapType.all,
-        analyticsCubit: _analyticsCubit,
-      );
-    } else {
-      CommonLogger.warning(
-        'Cannot update timeframe - current state is not loaded',
-        tag: 'PortfolioHeatmapCubit',
-      );
-    }
-  }
-
   Future<void> updateMetric(MetricType metric) async {
     final currentState = state;
     if (currentState is PortfolioHeatmapLoaded) {
@@ -244,6 +237,8 @@ class PortfolioHeatmapCubit extends Cubit<PortfolioHeatmapState> {
         metric: metric,
         sector: currentState.sector ?? SectorType.all,
         marketCap: currentState.marketCap ?? MarketCapType.all,
+        assetFilter: currentState.assetFilter,
+        mfCategory: currentState.mfCategory,
         analyticsCubit: _analyticsCubit,
       );
     } else {
@@ -263,6 +258,8 @@ class PortfolioHeatmapCubit extends Cubit<PortfolioHeatmapState> {
         metric: currentState.metric,
         sector: sector,
         marketCap: currentState.marketCap ?? MarketCapType.all,
+        assetFilter: currentState.assetFilter,
+        mfCategory: currentState.mfCategory,
         analyticsCubit: _analyticsCubit,
       );
     } else {
@@ -282,11 +279,49 @@ class PortfolioHeatmapCubit extends Cubit<PortfolioHeatmapState> {
         metric: currentState.metric,
         sector: currentState.sector ?? SectorType.all,
         marketCap: marketCap,
+        assetFilter: currentState.assetFilter,
+        mfCategory: currentState.mfCategory,
         analyticsCubit: _analyticsCubit,
       );
     } else {
       CommonLogger.warning(
         'Cannot update market cap - current state is not loaded',
+        tag: 'PortfolioHeatmapCubit',
+      );
+    }
+  }
+
+  Future<void> updateAssetFilter(HeatmapAssetFilter assetFilter) async {
+    final currentState = state;
+    if (currentState is PortfolioHeatmapLoaded) {
+      final analytics = _analyticsCubit;
+      if (analytics != null) {
+        final rawId = currentState.portfolioId;
+        final pipe = rawId.indexOf('|');
+        final bookId = pipe > 0 ? rawId.substring(0, pipe) : rawId;
+        final persona = pipe > 0 ? rawId.substring(pipe + 1) : null;
+        await analytics.loadAnalytics(
+          bookId,
+          timeFrame: currentState.timeFrame,
+          persona: persona,
+          assetScope: assetFilter.apiAssetScope,
+        );
+      }
+      await loadHeatmapData(
+        portfolioId: currentState.portfolioId,
+        timeFrame: currentState.timeFrame,
+        metric: currentState.metric,
+        sector: currentState.sector ?? SectorType.all,
+        marketCap: currentState.marketCap ?? MarketCapType.all,
+        assetFilter: assetFilter,
+        mfCategory: assetFilter == HeatmapAssetFilter.mutualFunds
+            ? currentState.mfCategory
+            : HeatmapMfCategory.all,
+        analyticsCubit: _analyticsCubit,
+      );
+    } else {
+      CommonLogger.warning(
+        'Cannot update asset filter - current state is not loaded',
         tag: 'PortfolioHeatmapCubit',
       );
     }
@@ -301,6 +336,8 @@ class PortfolioHeatmapCubit extends Cubit<PortfolioHeatmapState> {
         metric: currentState.metric,
         sector: currentState.sector ?? SectorType.all,
         marketCap: currentState.marketCap ?? MarketCapType.all,
+        assetFilter: currentState.assetFilter,
+        mfCategory: currentState.mfCategory,
         analyticsCubit: _analyticsCubit,
       );
     } else {
@@ -311,4 +348,79 @@ class PortfolioHeatmapCubit extends Cubit<PortfolioHeatmapState> {
     }
   }
 
+  static HeatmapTileData _reweightMfCategoryParent(
+    HeatmapTileData tile,
+    List<HeatmapTileData> children,
+    double portfolioTotal,
+  ) {
+    final newValue = children.fold<double>(
+      0.0,
+      (sum, child) => sum + (child.value ?? 0.0),
+    );
+    final weightedPerf = newValue > 0
+        ? children.fold<double>(
+              0.0,
+              (sum, child) => sum + child.performance * (child.value ?? 0.0),
+            ) /
+            newValue
+        : tile.performance;
+    return tile.copyWith(
+      children: children,
+      value: newValue,
+      performance: weightedPerf,
+      weightage:
+          portfolioTotal > 0 ? (newValue / portfolioTotal) * 100 : tile.weightage,
+    );
+  }
+
+  static HeatmapData _applyMfCategoryFilter(
+    HeatmapData data,
+    HeatmapMfCategory category,
+  ) {
+    if (category == HeatmapMfCategory.all) return data;
+
+    final label = category.displayName;
+    final filtered = <HeatmapTileData>[];
+
+    for (final tile in data.uiTiles) {
+      final metaCat = tile.metadata?['mfCategory']?.toString();
+      final isCategoryParent = metaCat == category.name ||
+          tile.name == label ||
+          tile.displayName == label;
+
+      if (tile.children == null || tile.children!.isEmpty) {
+        final leafLabel = '${tile.displayName} ${tile.name}';
+        if (category.matchesLabel(leafLabel)) filtered.add(tile);
+        continue;
+      }
+
+      // Fast path: keep the matching category shell as-is.
+      if (isCategoryParent) {
+        filtered.add(tile);
+        continue;
+      }
+
+      final children = <HeatmapTileData>[];
+      for (final child in tile.children!) {
+        final leaf =
+            child is HeatmapTileData ? child : HeatmapTileData.fromEntity(child);
+        final leafLabel = '${leaf.displayName} ${leaf.name}';
+        if (category.matchesLabel(leafLabel)) children.add(leaf);
+      }
+      if (children.isEmpty) continue;
+      filtered.add(_reweightMfCategoryParent(tile, children, 0));
+    }
+
+    if (filtered.isEmpty) return data.copyWith(tiles: filtered);
+
+    final total = filtered.fold<double>(0, (sum, t) => sum + (t.value ?? 0));
+    final reweighted = filtered
+        .map(
+          (tile) => tile.copyWith(
+            weightage: total > 0 ? ((tile.value ?? 0) / total) * 100 : tile.weightage,
+          ),
+        )
+        .toList();
+    return data.copyWith(tiles: reweighted);
+  }
 }

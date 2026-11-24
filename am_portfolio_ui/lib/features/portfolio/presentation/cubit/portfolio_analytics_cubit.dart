@@ -113,16 +113,20 @@ class PortfolioAnalyticsCubit extends Cubit<PortfolioAnalyticsState> {
   }
 
   /// Load all analytics data for a portfolio
+  String? _loadedAssetScope;
+
   Future<void> loadAnalytics(
     String portfolioId, {
     TimeFrame? timeFrame,
     FeatureToggles? featureToggles,
     String? persona,
+    String? assetScope,
   }) async {
     // Coalesce only when the same portfolio AND timeframe are already loading.
     if (_loadingFuture != null &&
         _currentPortfolioId == portfolioId &&
         _loadedPersona == persona &&
+        _loadedAssetScope == assetScope &&
         _inFlightTimeFrame == timeFrame) {
       CommonLogger.debug(
         '🔍 PortfolioAnalyticsCubit: loadAnalytics already in progress for portfolioId: $portfolioId tf: ${timeFrame?.name}',
@@ -134,6 +138,7 @@ class PortfolioAnalyticsCubit extends Cubit<PortfolioAnalyticsState> {
     if (state is PortfolioAnalyticsLoaded &&
         _currentPortfolioId == portfolioId &&
         _loadedPersona == persona &&
+        _loadedAssetScope == assetScope &&
         _lastLoadedTimeFrame == timeFrame) {
       CommonLogger.debug(
         '🔍 PortfolioAnalyticsCubit: Data already loaded for $portfolioId and timeFrame: ${timeFrame?.name}',
@@ -144,6 +149,7 @@ class PortfolioAnalyticsCubit extends Cubit<PortfolioAnalyticsState> {
 
     _currentPortfolioId = portfolioId;
     _loadedPersona = persona;
+    _loadedAssetScope = assetScope;
     _inFlightTimeFrame = timeFrame;
     final gen = ++_loadGeneration;
     _loadingFuture = _doLoadAnalytics(
@@ -151,6 +157,7 @@ class PortfolioAnalyticsCubit extends Cubit<PortfolioAnalyticsState> {
       timeFrame: timeFrame,
       featureToggles: featureToggles,
       persona: persona,
+      assetScope: assetScope,
       gen: gen,
     );
 
@@ -169,6 +176,7 @@ class PortfolioAnalyticsCubit extends Cubit<PortfolioAnalyticsState> {
     TimeFrame? timeFrame,
     FeatureToggles? featureToggles,
     String? persona,
+    String? assetScope,
     required int gen,
   }) async {
     final requestId = portfolioId == 'all' && persona != null && persona.isNotEmpty
@@ -210,6 +218,7 @@ class PortfolioAnalyticsCubit extends Cubit<PortfolioAnalyticsState> {
       requestId, 
       timeFrame: timeFrame,
       featureToggles: featureToggles,
+      assetScope: assetScope,
     );
 
     // Fast fetch for allocations (uses MongoDB / fast current market data, ~100ms)

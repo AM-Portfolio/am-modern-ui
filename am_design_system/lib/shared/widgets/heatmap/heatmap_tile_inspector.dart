@@ -20,8 +20,7 @@ class HeatmapTileInspector extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.colors;
     final meta = tile.metadata ?? const <String, dynamic>{};
-    final symbol = (meta['symbol'] as String?) ??
-        (tile.displayName.isNotEmpty ? tile.displayName : tile.name);
+    final symbol = _inspectorLabel(tile, meta);
     final monogram = symbol.isNotEmpty ? symbol[0].toUpperCase() : '?';
     final price = _asDouble(meta['lastPrice']);
     final value = tile.value;
@@ -30,12 +29,13 @@ class HeatmapTileInspector extends StatelessWidget {
     final change = tile.performance;
     final up = change >= 0;
     final changeColor = up ? context.marketPositive : context.marketNegative;
-    final changeText = '${up ? '+' : ''}${change.toStringAsFixed(2)}%';
+    final changeText = _dayChangeLabel(meta, change);
     final ink = colors.textPrimary;
     final mutedInk = colors.textSecondary;
     final chipFill = ink.withValues(alpha: context.isDark ? 0.08 : 0.06);
     final chipBorder = ink.withValues(alpha: context.isDark ? 0.14 : 0.10);
 
+    final lookthroughNote = meta['lookthroughNote']?.toString().trim();
     final chips = <Widget>[
       if (quantity != null && quantity > 0)
         _chip(
@@ -54,7 +54,7 @@ class HeatmapTileInspector extends StatelessWidget {
         ),
       if (price != null)
         _chip(
-          'LTP ${StringUtils.formatCurrency(price)}',
+          '${_priceLabel(meta)} ${StringUtils.formatCurrency(price)}',
           fill: chipFill,
           border: chipBorder,
           textColor: mutedInk,
@@ -65,6 +65,13 @@ class HeatmapTileInspector extends StatelessWidget {
         border: chipBorder,
         textColor: mutedInk,
       ),
+      if (lookthroughNote != null && lookthroughNote.isNotEmpty)
+        _chip(
+          lookthroughNote,
+          fill: chipFill,
+          border: chipBorder,
+          textColor: mutedInk,
+        ),
     ];
 
     return Material(
@@ -101,6 +108,8 @@ class HeatmapTileInspector extends StatelessWidget {
             ),
             const SizedBox(width: 7),
             ConstrainedBox(
+              // Same compact ticker width as equities (TCS / NIFTYBEES).
+              // Long MF names ellipsis — do not widen the pill.
               constraints: const BoxConstraints(maxWidth: 72),
               child: Text(
                 symbol,
@@ -178,6 +187,44 @@ class HeatmapTileInspector extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  /// Equity/ETF: trading symbol. MF schemes: fund display name (never INF* ISIN).
+  static String _inspectorLabel(
+    HeatmapTileData tile,
+    Map<String, dynamic> meta,
+  ) {
+    final raw = ((meta['symbol'] as String?) ?? '').trim();
+    final display =
+        tile.displayName.trim().isNotEmpty ? tile.displayName.trim() : tile.name.trim();
+    final upper = raw.toUpperCase();
+    final looksLikeIsin = RegExp(r'^INF[A-Z0-9]{9}$').hasMatch(upper);
+    if (looksLikeIsin && display.isNotEmpty) {
+      return display;
+    }
+    if (raw.isNotEmpty) {
+      return upper;
+    }
+    return display;
+  }
+
+  /// EOD AMFI NAV schemes use NAV; equity/ETF tiles keep LTP.
+  static String _priceLabel(Map<String, dynamic> meta) {
+    final source = (meta['priceSource'] as String?)?.trim().toUpperCase();
+    if (source == 'EOD_NAV') return 'NAV';
+    return 'LTP';
+  }
+
+  /// Flat 0% without a prior close is not a measured day move.
+  static String _dayChangeLabel(Map<String, dynamic> meta, double change) {
+    final prev = meta['previousClose'];
+    final hasPrev = prev is num && prev > 0;
+    final isStock = meta['type'] == 'stock';
+    if (isStock && !hasPrev && change.abs() < 0.005) {
+      return '—';
+    }
+    final up = change >= 0;
+    return '${up ? '+' : ''}${change.toStringAsFixed(2)}%';
   }
 
   static String _qtyLabel(double quantity) {

@@ -1,5 +1,6 @@
 import 'package:am_design_system/am_design_system.dart';
 
+import '../../../internal/data/mappers/portfolio_holdings_mapper.dart';
 import '../../../internal/domain/entities/portfolio_holding.dart';
 
 /// Maps portfolio domain holdings → design-system [AdvancedHoldingRow].
@@ -8,10 +9,17 @@ List<AdvancedHoldingRow> mapPortfolioHoldingsToAdvancedRows(
 ) {
   return holdings
       .map(
-        (h) => AdvancedHoldingRow(
+        (h) {
+          final company =
+              h.companyName.isNotEmpty ? h.companyName : h.name;
+          return AdvancedHoldingRow(
           id: h.id,
-          symbol: h.symbol,
-          companyName: h.companyName.isNotEmpty ? h.companyName : h.name,
+          symbol: PortfolioHoldingsMapper.displayHoldingSymbol(
+            symbol: h.symbol,
+            name: company,
+            assetClass: h.assetClass,
+          ),
+          companyName: company,
           sector: h.sector.isEmpty ? null : h.sector,
           industry: h.industry.isEmpty ? null : h.industry,
           brokerLabel: h.primaryBroker?.brokerName,
@@ -26,7 +34,8 @@ List<AdvancedHoldingRow> mapPortfolioHoldingsToAdvancedRows(
           todayChange: h.todayChange,
           todayChangePercentage: h.todayChangePercentage,
           portfolioWeight: h.portfolioWeight,
-        ),
+        );
+        },
       )
       .toList();
 }

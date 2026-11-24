@@ -205,6 +205,7 @@ class UniversalHeatmapTemplateFactory {
           selectorWidget: selectorWidget,
           title: title,
           subtitle: subtitle,
+          showLegend: false,
           showSelectors: selectorWidget != null,
           icon: icon,
           accentColor: accent,

@@ -35,6 +35,7 @@ class PortfolioAnalyticsMapper {
     fromDate: request.fromDate,
     toDate: request.toDate,
     timeFrame: request.timeFrame,
+    assetScope: request.assetScope,
   );
 
   /// Convert analytics request DTO to entity
@@ -63,6 +64,7 @@ class PortfolioAnalyticsMapper {
     fromDate: dto.fromDate,
     toDate: dto.toDate,
     timeFrame: dto.timeFrame,
+    assetScope: dto.assetScope,
   );
 
   // Response mapping methods
@@ -146,12 +148,14 @@ class PortfolioAnalyticsMapper {
       changeAmount: changeAmount,
       changePercent: changePercent,
       sector: _normalizeSectorName(dto.sector),
+      isin: dto.isin,
       quantity: dto.quantity ?? 0.0,
       avgPrice: dto.avgPrice ?? 0.0,
       marketValue: dto.marketValue ?? 0.0,
       totalReturn: dto.totalReturn ?? 0.0,
       weight: dto.weight,
       previousClose: dto.previousClose,
+      priceSource: dto.priceSource,
     );
   }
 
@@ -226,6 +230,7 @@ class PortfolioAnalyticsMapper {
     String portfolioId, {
     TimeFrame? timeFrame,
     FeatureToggles? featureToggles,
+    String? assetScope,
   }) {
     String? fromDateStr;
     String? toDateStr;
@@ -308,6 +313,7 @@ class PortfolioAnalyticsMapper {
       fromDate: fromDateStr,
       toDate: toDateStr,
       timeFrame: backendTimeFrame,
+      assetScope: assetScope,
     );
   }
 

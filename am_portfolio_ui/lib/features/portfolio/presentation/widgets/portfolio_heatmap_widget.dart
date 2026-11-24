@@ -8,6 +8,7 @@ import 'package:am_common/am_common.dart';
 import 'package:am_design_system/am_design_system.dart'
     hide MarketCapType, MetricType, TimeFrame, SectorType;
 import 'package:am_design_system/core/utils/string_utils.dart';
+import '../../providers/portfolio_providers.dart';
 import '../cubit/portfolio_analytics_cubit.dart';
 import '../cubit/portfolio_analytics_state.dart';
 import '../cubit/portfolio_cubit.dart';
@@ -15,6 +16,7 @@ import '../cubit/portfolio_heatmap_cubit.dart';
 import '../cubit/portfolio_heatmap_state.dart';
 import '../cubit/portfolio_state.dart';
 import '../mappers/sector_heatmap_converter.dart';
+import '../models/heatmap_asset_filter.dart';
 import 'portfolio_metric_card.dart';
 
 /// Platform UI settings for the portfolio heatmap page widget
@@ -107,16 +109,44 @@ class _PortfolioHeatmapWidgetState
   SectorType? _selectedSector;
   MarketCapType? _selectedMarketCap;
   late HeatmapLayoutType _selectedLayout;
-  HeatmapTileData? _drillDownTile;
+  HeatmapAssetFilter _selectedAssetFilter = HeatmapAssetFilter.allAssets;
+  HeatmapMfCategory _selectedMfCategory = HeatmapMfCategory.all;
+  HeatmapPerformanceFilter _selectedPerformanceFilter =
+      HeatmapPerformanceFilter.all;
+  /// Drill path: overview → Other → Commodities → … Back pops one level.
+  final List<HeatmapTileData> _drillStack = <HeatmapTileData>[];
+  HeatmapTileData? get _drillDownTile =>
+      _drillStack.isEmpty ? null : _drillStack.last;
   final ValueNotifier<HeatmapTileData?> _inspectedTile =
       ValueNotifier<HeatmapTileData?>(null);
   Timer? _hoverClearTimer;
   int _heatmapLoadGeneration = 0;
+  int _lookthroughGeneration = 0;
+  bool _lookthroughLoading = false;
   /// Full nested tiles before compact budget — used for sector drill-down.
   List<HeatmapTileData> _fullOverviewTiles = const [];
 
-  /// Height of the pinned Sector / Market Cap / Layout row on mobile.
-  static const double _mobilePinnedFiltersH = 52;
+  void _pushDrill(HeatmapTileData tile) {
+    if (_drillStack.isNotEmpty && _drillStack.last.id == tile.id) return;
+    setState(() {
+      _drillStack.add(tile);
+      _inspectedTile.value = null;
+    });
+  }
+
+  void _popDrill() {
+    if (_drillStack.isEmpty) return;
+    setState(() {
+      _drillStack.removeLast();
+      _inspectedTile.value = null;
+    });
+  }
+
+  void _clearDrill() {
+    if (_drillStack.isEmpty && _inspectedTile.value == null) return;
+    _drillStack.clear();
+    _inspectedTile.value = null;
+  }
 
   late final ValueChanged<HeatmapTileData?> _onTileHover;
   late final ValueChanged<HeatmapTileData> _onTileSelect;
@@ -172,7 +202,16 @@ class _PortfolioHeatmapWidgetState
 
   void _handleTileSelect(HeatmapTileData tile) {
     if (!mounted) return;
+    // Sector shells painted as flat leaves (e.g. inside Other) still expand.
+    if (_tileHasHoldings(tile) && !_isSchemeLookthroughTile(tile)) {
+      _handleSectorDrill(tile);
+      return;
+    }
     if (tile.metadata?['type'] != 'stock') return;
+    if (_isSchemeLookthroughTile(tile)) {
+      unawaited(_openSchemeLookthrough(tile));
+      return;
+    }
     _inspectedTile.value = tile;
   }
 
@@ -181,6 +220,10 @@ class _PortfolioHeatmapWidgetState
     final full = _lookupFullSectorTile(tile);
     final hasChildren = full.children != null && full.children!.isNotEmpty;
     if (!hasChildren) {
+      if (_isSchemeLookthroughTile(full)) {
+        unawaited(_openSchemeLookthrough(full));
+        return;
+      }
       _inspectedTile.value = full;
       return;
     }
@@ -188,17 +231,125 @@ class _PortfolioHeatmapWidgetState
       'Heatmap sector drill: ${full.name}',
       tag: '${widget.config.logTag}.Action',
     );
-    setState(() {
-      _drillDownTile = full;
-      _inspectedTile.value = null;
-    });
+    _pushDrill(full);
+  }
+
+  bool _tileHasHoldings(HeatmapTileData tile) {
+    final kids = tile.children;
+    if (kids != null && kids.isNotEmpty) return true;
+    final full = _lookupFullSectorTile(tile);
+    return full.children != null && full.children!.isNotEmpty;
+  }
+
+  static final RegExp _mfIsin = RegExp(r'^INF[A-Z0-9]{9}$');
+
+  String? _schemeKeyOf(HeatmapTileData tile) {
+    final isin = tile.metadata?['isin']?.toString().trim();
+    if (isin != null && isin.isNotEmpty) {
+      return isin.toUpperCase();
+    }
+    final symbol =
+        (tile.metadata?['symbol'] ?? tile.name).toString().trim().toUpperCase();
+    if (_mfIsin.hasMatch(symbol)) return symbol;
+    // ETF display tickers (NIFTYBEES, etc.) still resolve via parser.
+    if (symbol.isNotEmpty && symbol != 'UNKNOWN') return symbol;
+    return null;
+  }
+
+  bool _isSchemeLookthroughTile(HeatmapTileData tile) {
+    if (tile.metadata?['lookthroughLeaf'] == true) return false;
+    if (tile.metadata?['type'] != 'stock') return false;
+    final parent = (tile.metadata?['parentSector'] ?? tile.metadata?['sector'] ?? '')
+        .toString()
+        .toLowerCase();
+    if (parent.contains('mutual fund') || parent.contains('etf')) {
+      return true;
+    }
+    final symbol =
+        (tile.metadata?['symbol'] ?? tile.name).toString().trim().toUpperCase();
+    final isin = tile.metadata?['isin']?.toString().trim().toUpperCase();
+    if (isin != null && _mfIsin.hasMatch(isin)) return true;
+    if (_mfIsin.hasMatch(symbol)) return true;
+    return HeatmapAssetFilterX.isMutualFundTile(
+      name: tile.name,
+      displayName: tile.displayName,
+      symbol: symbol,
+      parentSector: parent,
+      sector: parent,
+    );
+  }
+
+  Future<void> _openSchemeLookthrough(HeatmapTileData tile) async {
+    final key = _schemeKeyOf(tile);
+    if (key == null) {
+      _inspectedTile.value = tile;
+      return;
+    }
+    final gen = ++_lookthroughGeneration;
+    setState(() => _lookthroughLoading = true);
+    CommonLogger.userAction(
+      'Heatmap lookthrough: $key',
+      tag: '${widget.config.logTag}.Action',
+    );
+    try {
+      final ds = await ref.read(portfolioRemoteDataSourceProvider.future);
+      final result = await ds.getHeatmapLookthrough(
+        widget.portfolioId,
+        schemeIsin: key,
+        schemeValue: tile.value,
+      );
+      if (!mounted || gen != _lookthroughGeneration) return;
+      if (!result.available || result.sectors.isEmpty) {
+        // Expected when catalog has no holdingsJson — pin inspector, no page toast.
+        _inspectedTile.value = tile.copyWith(
+          metadata: {
+            ...?tile.metadata,
+            'lookthroughNote': 'Underlying holdings not in catalog yet',
+          },
+        );
+        return;
+      }
+      _pushDrill(result.toDrillTile(tile));
+    } catch (e, st) {
+      CommonLogger.error(
+        'Heatmap lookthrough failed for $key',
+        tag: widget.config.logTag,
+        error: e,
+        stackTrace: st,
+      );
+      if (!mounted || gen != _lookthroughGeneration) return;
+      _inspectedTile.value = tile.copyWith(
+        metadata: {
+          ...?tile.metadata,
+          'lookthroughNote': 'Could not load fund holdings',
+        },
+      );
+    } finally {
+      if (mounted && gen == _lookthroughGeneration) {
+        setState(() => _lookthroughLoading = false);
+      }
+    }
   }
 
   HeatmapTileData _lookupFullSectorTile(HeatmapTileData tile) {
-    for (final t in _fullOverviewTiles) {
-      if (t.id == tile.id || t.name == tile.name) return t;
+    HeatmapTileData? find(List<HeatmapTileData> tiles) {
+      for (final t in tiles) {
+        if (t.id == tile.id || t.name == tile.name) return t;
+        final kids = t.children;
+        if (kids == null || kids.isEmpty) continue;
+        final nested = find(
+          kids
+              .map(
+                (c) => c is HeatmapTileData ? c : HeatmapTileData.fromEntity(c),
+              )
+              .toList(),
+        );
+        if (nested != null) return nested;
+      }
+      return null;
     }
-    return tile;
+
+    return find(_fullOverviewTiles) ?? tile;
   }
 
   @override
@@ -209,24 +360,25 @@ class _PortfolioHeatmapWidgetState
       setState(() => _selectedLayout = widget.config.defaultLayout);
     }
     if (oldWidget.portfolioId != widget.portfolioId) {
-      _drillDownTile = null;
-      _inspectedTile.value = null;
+      _clearDrill();
       _loadHeatmapData();
     }
   }
 
   void _loadHeatmapData() {
-    final selectedTimeframe = ref.read(appTimeFrameProvider);
+    const timeFrame = TimeFrame.oneDay;
     final loadGen = ++_heatmapLoadGeneration;
     CommonLogger.methodEntry(
       '_loadHeatmapData',
       tag: '${widget.config.logTag}.Data',
       metadata: {
         'portfolioId': widget.portfolioId,
-        'timeFrame': selectedTimeframe.name,
+        'timeFrame': timeFrame.name,
         'metric': _selectedMetric.name,
         'sector': _selectedSector?.name ?? 'all',
         'marketCap': _selectedMarketCap?.name ?? 'all',
+        'assetFilter': _selectedAssetFilter.name,
+        'mfCategory': _selectedMfCategory.name,
         'loadGen': loadGen,
       },
     );
@@ -239,7 +391,7 @@ class _PortfolioHeatmapWidgetState
     portfolioAnalyticsCubit
         .loadAnalytics(
           widget.portfolioId,
-          timeFrame: selectedTimeframe,
+          timeFrame: timeFrame,
           persona: widget.portfolioId == 'all'
               ? holdingsPersonaParam(filterKey)
               : null,
@@ -265,10 +417,12 @@ class _PortfolioHeatmapWidgetState
 
           portfolioHeatmapCubit.loadHeatmapData(
             portfolioId: widget.portfolioId,
-            timeFrame: selectedTimeframe,
+            timeFrame: timeFrame,
             metric: _selectedMetric,
             sector: _selectedSector ?? SectorType.all,
             marketCap: _selectedMarketCap ?? MarketCapType.all,
+            assetFilter: _selectedAssetFilter,
+            mfCategory: _selectedMfCategory,
             analyticsCubit: portfolioAnalyticsCubit,
           );
         })
@@ -282,10 +436,12 @@ class _PortfolioHeatmapWidgetState
 
           portfolioHeatmapCubit.loadHeatmapData(
             portfolioId: widget.portfolioId,
-            timeFrame: selectedTimeframe,
+            timeFrame: timeFrame,
             metric: _selectedMetric,
             sector: _selectedSector ?? SectorType.all,
             marketCap: _selectedMarketCap ?? MarketCapType.all,
+            assetFilter: _selectedAssetFilter,
+            mfCategory: _selectedMfCategory,
             analyticsCubit: portfolioAnalyticsCubit,
           );
         });
@@ -298,13 +454,9 @@ class _PortfolioHeatmapWidgetState
 
   @override
   Widget build(BuildContext context) {
-    ref.listen(appTimeFrameProvider, (previous, next) {
-      if (previous != next) _loadHeatmapData();
-    });
     ref.listen<String>(familyPortfolioFilterProvider, (previous, next) {
       if (previous != next && widget.portfolioId == 'all') _loadHeatmapData();
     });
-    ref.watch(appTimeFrameProvider);
 
     // Mobile: scroll KPIs away; pinned filters + mosaic fill one tab.
     // Web: fill the tab (unchanged).
@@ -316,9 +468,30 @@ class _PortfolioHeatmapWidgetState
         return SizedBox(
           width: constraints.maxWidth,
           height: viewportH,
-          child: Padding(
-            padding: widget.config.padding,
-            child: _buildHeatmapContent(mobileViewportH: viewportH),
+          child: Stack(
+            children: [
+              Padding(
+                padding: widget.config.padding,
+                child: _buildHeatmapContent(mobileViewportH: viewportH),
+              ),
+              // Corner spinner only — never dim / block the whole mosaic.
+              if (_lookthroughLoading)
+                const Positioned(
+                  right: 16,
+                  bottom: 16,
+                  child: Card(
+                    elevation: 4,
+                    child: Padding(
+                      padding: EdgeInsets.all(10),
+                      child: SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(strokeWidth: 2.5),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
           ),
         );
       },
@@ -417,7 +590,6 @@ class _PortfolioHeatmapWidgetState
     PortfolioHeatmapLoaded state, {
     required double mobileViewportH,
   }) {
-    final selectedTimeFrame = ref.watch(appTimeFrameProvider);
     CommonLogger.info(
       'Showing heatmap: ${state.heatmapData.tiles.length} tiles',
       tag: '${widget.config.logTag}.UI',
@@ -430,15 +602,34 @@ class _PortfolioHeatmapWidgetState
         convertedHeatmapData.configuration.selectors ?? const SelectorConfig();
     final baseLayout =
         convertedHeatmapData.configuration.layout ?? const LayoutConfig();
-    final useNested =
-        _drillDownTile == null && _selectedLayout == HeatmapLayoutType.treemap;
     final baseInteractions =
         convertedHeatmapData.configuration.interactions ??
         const InteractionConfig();
+
+    // Overview tiles (before drill). Keep a full copy for sector lookup.
+    var workingTiles = convertedHeatmapData.tiles
+        .map((t) => t is HeatmapTileData ? t : HeatmapTileData.fromEntity(t))
+        .toList();
+    _fullOverviewTiles = workingTiles;
+
+    if (_drillDownTile != null && _drillDownTile!.children != null) {
+      workingTiles = _drillDownTile!.children!
+          .map((t) => t is HeatmapTileData ? t : HeatmapTileData.fromEntity(t))
+          .toList();
+    }
+
+    // Keep nested sector chrome whenever tiles still have children (MF → Equity
+    // → Flexi Cap → schemes). Flat-only drill hid category headers and funds.
+    final useNested = _selectedLayout == HeatmapLayoutType.treemap &&
+        (_drillDownTile == null ||
+            workingTiles.any(
+              (t) => t.children != null && t.children!.isNotEmpty,
+            ));
+
     final customConfig = convertedHeatmapData.configuration.copyWith(
       display:
           (convertedHeatmapData.configuration.display ?? const DisplayConfig())
-              .copyWith(showPerformance: true, showLegend: true),
+              .copyWith(showPerformance: true, showLegend: false),
       layout: baseLayout.copyWith(
         layoutType: _selectedLayout,
         showLayoutSelector: widget.config.compactMode ? true : null,
@@ -463,18 +654,8 @@ class _PortfolioHeatmapWidgetState
       ),
     );
 
-    // Drill-down: flat children (full sector). Nested overview: always budget —
-    // uncapped web books paint hundreds of leaves and lock the page.
-    var workingTiles = convertedHeatmapData.tiles
-        .map((t) => t is HeatmapTileData ? t : HeatmapTileData.fromEntity(t))
-        .toList();
-    _fullOverviewTiles = workingTiles;
-
-    if (_drillDownTile != null && _drillDownTile!.children != null) {
-      workingTiles = _drillDownTile!.children!
-          .map((t) => t is HeatmapTileData ? t : HeatmapTileData.fromEntity(t))
-          .toList();
-    } else if (useNested) {
+    // Nested mosaic (overview or mid-level drill): budget leaves so web stays responsive.
+    if (useNested) {
       workingTiles = SectorHeatmapConverter.applyCompactTreemapBudget(
         workingTiles,
         maxStocksPerSector: widget.config.compactMode
@@ -503,23 +684,62 @@ class _PortfolioHeatmapWidgetState
             'Heatmap drill-down: ${tile.name}',
             tag: '${widget.config.logTag}.Action',
           );
-          final full = _lookupFullSectorTile(tile);
-          setState(() {
-            _drillDownTile = full;
-            _inspectedTile.value = null;
-          });
+          _pushDrill(_lookupFullSectorTile(tile));
         },
         customWidgets: tile.customWidgets,
       );
     }).toList();
+
+    // Gainers / Losers — overview sectors or drilled-in stocks/schemes.
+    workingTiles = filterHeatmapTilesByPerformance(
+      workingTiles,
+      _selectedPerformanceFilter,
+    );
 
     final displayData = convertedHeatmapData.copyWith(
       tiles: workingTiles,
       configuration: customConfig,
     );
 
-    Widget heatmapBody({required bool showSelectors}) =>
-        HeatmapInteractionScope(
+    Widget heatmapBody({required bool showSelectors}) {
+      // Keep filters visible even when the mosaic is empty so the user can reset.
+      if (workingTiles.isEmpty) {
+        final compact = widget.config.compactMode;
+        return Card(
+          elevation: compact ? 2 : 4,
+          margin: EdgeInsets.zero,
+          clipBehavior: Clip.hardEdge,
+          child: Padding(
+            padding: compact
+                ? const EdgeInsets.fromLTRB(6, 6, 6, 6)
+                : const EdgeInsets.fromLTRB(10, 8, 10, 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _buildHeatmapCardHeader(context),
+                SizedBox(height: compact ? 6 : 8),
+                Expanded(
+                  child: Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Text(
+                        'No holdings match these filters.\nTry All Assets or All Sectors.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          fontSize: 14,
+                          height: 1.4,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      }
+      return HeatmapInteractionScope(
           onTileHover: _onTileHover,
           onTileSelect: _onTileSelect,
           onSectorDrill: _onSectorDrill,
@@ -538,13 +758,16 @@ class _PortfolioHeatmapWidgetState
                       : widget.config.subtitle,
                   customHeader: _drillDownTile != null
                       ? _buildDrillInCardHeader(context)
-                      : null,
+                      : _buildHeatmapCardHeader(context),
                   config: _mapToWidgetConfig(customConfig),
                   showSelectors: showSelectors,
                   compactMode: widget.config.compactMode,
-                  selectedTimeFrame: selectedTimeFrame,
+                  selectedTimeFrame: TimeFrame.oneDay,
                   selectedMetric: _selectedMetric,
-                  selectedSector: _selectedSector,
+                  // Cubit already applied sector / asset / cap filters. Passing
+                  // Banking here made the treemap look for the literal name
+                  // "Banking" and hide "Financial Services" → blank mosaic.
+                  selectedSector: SectorType.all,
                   selectedMarketCap: _selectedMarketCap,
                   selectedLayout: _selectedLayout,
                   onTilePressed: () {
@@ -597,27 +820,25 @@ class _PortfolioHeatmapWidgetState
             ],
           ),
         );
+    }
 
     // Mobile only: scroll past KPIs → filters pin → mosaic fills the rest of
     // the tab. Taps inside filters/mosaic must not reveal the floating bottom nav.
     if (widget.config.compactMode) {
-      final scheme = Theme.of(context).colorScheme;
       final screenH = MediaQuery.sizeOf(context).height;
       final topSafe = MediaQuery.paddingOf(context).top;
       final bottomSafe = MediaQuery.paddingOf(context).bottom;
       final navReserve = PlatformConstants.globalBottomNavReserve(context);
       const stickyHeaderH = 44.0;
-      final topChromeWhenPinned =
-          topSafe + stickyHeaderH + _mobilePinnedFiltersH;
+      final topChromeWhenPinned = topSafe + stickyHeaderH;
       final bottomMargin =
           (bottomSafe > 0 ? bottomSafe : 8.0) +
           (navReserve > 0 ? navReserve : 20.0);
       final fullMobileScreenH = screenH - topChromeWhenPinned - bottomMargin;
-      final mapH =
-          (fullMobileScreenH > (mobileViewportH - _mobilePinnedFiltersH)
-                  ? fullMobileScreenH
-                  : (mobileViewportH - _mobilePinnedFiltersH))
-              .clamp(540.0, 4000.0);
+      final mapH = (fullMobileScreenH > mobileViewportH
+              ? fullMobileScreenH
+              : mobileViewportH)
+          .clamp(540.0, 4000.0);
 
       return CustomScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
@@ -629,18 +850,6 @@ class _PortfolioHeatmapWidgetState
                 _buildSummaryCardsRow(),
                 const SizedBox(height: 8),
               ],
-            ),
-          ),
-          SliverPersistentHeader(
-            pinned: true,
-            delegate: _PinnedHeatmapFiltersDelegate(
-              height: _mobilePinnedFiltersH,
-              background: scheme.surface,
-              child: Listener(
-                behavior: HitTestBehavior.opaque,
-                onPointerDown: (_) => _suppressBottomNavOnHeatmapTap(),
-                child: _buildMobilePinnedFilters(context),
-              ),
             ),
           ),
           SliverToBoxAdapter(
@@ -667,8 +876,6 @@ class _PortfolioHeatmapWidgetState
       children: [
         _buildSummaryCardsRow(),
         const SizedBox(height: 8),
-        _buildEquityDistributionHeader(context),
-        const SizedBox(height: 6),
         Expanded(
           child: LayoutBuilder(
             builder: (context, heatmapConstraints) => SizedBox(
@@ -682,12 +889,20 @@ class _PortfolioHeatmapWidgetState
     );
   }
 
-  /// Drill chrome inside the Heatmap Overview card (back + sector + stats).
+  String _drillSectorLabel(HeatmapTileData tile) {
+    final name = tile.name.trim();
+    if (name.isNotEmpty) return name;
+    return tile.displayName.trim();
+  }
+
+  /// Drill chrome inside the Heatmap Overview card (back + sector path + stats).
   Widget _buildDrillInCardHeader(BuildContext context) {
     final tile = _drillDownTile!;
-    final sectorLabel = tile.name.trim().isNotEmpty
-        ? tile.name
-        : tile.displayName;
+    // Breadcrumb so Mutual Funds › Equity keeps category context in the header.
+    final sectorLabel = _drillStack
+        .map(_drillSectorLabel)
+        .where((s) => s.isNotEmpty)
+        .join(' › ');
     final meta = tile.metadata ?? const <String, dynamic>{};
     final holdings = meta['holdingsCount'] ?? meta['stockCount'];
     final compact = widget.config.compactMode;
@@ -716,7 +931,7 @@ class _PortfolioHeatmapWidgetState
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(
-          sectorLabel,
+          sectorLabel.isNotEmpty ? sectorLabel : _drillSectorLabel(tile),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style:
@@ -753,14 +968,20 @@ class _PortfolioHeatmapWidgetState
       ],
     );
 
+    final showMfCategory = _selectedAssetFilter == HeatmapAssetFilter.mutualFunds ||
+        HeatmapAssetFilterX.isMutualFundTile(
+          name: tile.name,
+          displayName: tile.displayName,
+          symbol: meta['symbol']?.toString(),
+          sector: meta['sector']?.toString() ?? meta['parentSector']?.toString(),
+          assetClass: meta['assetClass']?.toString(),
+        );
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         InkWell(
-          onTap: () => setState(() {
-            _drillDownTile = null;
-            _inspectedTile.value = null;
-          }),
+          onTap: _popDrill,
           borderRadius: BorderRadius.circular(16),
           child: Padding(
             padding: const EdgeInsets.fromLTRB(0, 4, 6, 4),
@@ -772,54 +993,29 @@ class _PortfolioHeatmapWidgetState
           ),
         ),
         Expanded(child: titleBlock),
-        if (!compact) ...[
+        _buildPerformanceFilterControl(context, compact: compact),
+        if (showMfCategory) ...[
           const SizedBox(width: 8),
-          Flexible(
-            fit: FlexFit.loose,
-            child: Align(
-              alignment: Alignment.centerRight,
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                alignment: Alignment.centerRight,
-                child: _buildDrillPerformanceLegend(context),
-              ),
-            ),
+          CustomDropdown<HeatmapMfCategory>(
+            value: _selectedMfCategory,
+            items: HeatmapMfCategory.values
+                .map(
+                  (item) => item.toDropdownItem(
+                    text: item.displayName,
+                    icon: item.icon,
+                  ),
+                )
+                .toList(),
+            onChanged: (val) {
+              if (val != null) _onFiltersChanged(mfCategory: val);
+            },
+            isExpanded: false,
+            primaryColor: ModuleColors.portfolio,
           ),
         ],
       ],
     );
   }
-
-  Widget _buildDrillPerformanceLegend(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text('Performance: ', style: Theme.of(context).textTheme.bodySmall),
-        _drillLegendSwatch(context, 'Loss', context.marketNegative),
-        const SizedBox(width: 16),
-        _drillLegendSwatch(context, 'Neutral', context.colors.statusNeutral),
-        const SizedBox(width: 16),
-        _drillLegendSwatch(context, 'Gain', context.marketPositive),
-      ],
-    );
-  }
-
-  Widget _drillLegendSwatch(BuildContext context, String label, Color color) =>
-      Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 12,
-            height: 12,
-            decoration: BoxDecoration(
-              color: color,
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          const SizedBox(width: 4),
-          Text(label, style: Theme.of(context).textTheme.bodySmall),
-        ],
-      );
 
   /// Builds the 4 summary stat cards row
   Widget _buildSummaryCardsRow() {
@@ -962,207 +1158,335 @@ class _PortfolioHeatmapWidgetState
     );
   }
 
-  /// Builds the "Equity Distribution" header with perfectly aligned title, filters, and timeframe.
-  Widget _buildEquityDistributionHeader(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isNarrow = constraints.maxWidth < 950;
+  /// Header controls on one row, grouped by function:
+  /// title → asset scope → view dropdowns → day movers.
+  Widget _buildHeatmapCardHeader(BuildContext context) {
+    final compact = widget.config.compactMode;
+    final showMfCategory =
+        _selectedAssetFilter == HeatmapAssetFilter.mutualFunds;
+    final scheme = Theme.of(context).colorScheme;
 
-        final titleWidget = Container(
-          height: 40,
-          alignment: Alignment.centerLeft,
-          child: Text(
-            'Equity Distribution',
-            style: TextStyle(
-              color: Theme.of(context).colorScheme.onSurface,
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-              letterSpacing: -0.2,
+    final title = Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          Icons.grid_view_rounded,
+          color: ModuleColors.portfolio,
+          size: compact ? 16 : 18,
+        ),
+        const SizedBox(width: 6),
+        Text(
+          compact ? 'Heatmap' : 'Heatmap Overview',
+          style: (compact
+                  ? Theme.of(context).textTheme.titleSmall
+                  : Theme.of(context).textTheme.titleMedium)
+              ?.copyWith(fontWeight: FontWeight.w700),
+        ),
+      ],
+    );
+
+    Widget groupGap() => Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 6),
+          child: SizedBox(
+            height: 18,
+            child: VerticalDivider(
+              width: 1,
+              thickness: 1,
+              color: scheme.outlineVariant.withValues(alpha: 0.7),
             ),
           ),
         );
 
-        final filterRow = _buildFilterRow(context, isCompact: isNarrow);
+    CustomDropdown<T> denseDropdown<T>({
+      required T value,
+      required List<DropdownMenuItem<T>> items,
+      required ValueChanged<T?> onChanged,
+    }) {
+      return CustomDropdown<T>(
+        value: value,
+        items: items,
+        onChanged: onChanged,
+        isExpanded: false,
+        height: 30,
+        fontSize: 11,
+        iconSize: 14,
+        borderRadius: 8,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+        primaryColor: ModuleColors.portfolio,
+      );
+    }
 
-        final timeframeBar = Container(
-          height: 40,
-          alignment: Alignment.centerRight,
-          child: GlobalTimeFrameBar(
-            variant: isNarrow
-                ? GlobalTimeFrameVariant.dropdown
-                : GlobalTimeFrameVariant.pills,
-            primaryColor: ModuleColors.portfolio,
-            availableTimeFrames: TimeFrame.heatmapTimeFrames,
-          ),
-        );
-
-        if (isNarrow) {
-          return Wrap(
-            spacing: 12,
-            runSpacing: 10,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            alignment: WrapAlignment.spaceBetween,
-            children: [titleWidget, filterRow, timeframeBar],
-          );
-        }
-
-        return Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            // Left: Title
-            titleWidget,
-
-            const SizedBox(width: 20),
-
-            // Center-left: Filters grouped beside title
-            filterRow,
-
-            const Spacer(),
-
-            // Right: Timeframe Pills
-            timeframeBar,
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _buildFilterRow(BuildContext context, {bool isCompact = false}) {
-    final dropWidth = isCompact ? 130.0 : 150.0;
-    return Row(
+    // View / layout dropdowns only (not mixed with pill toggles).
+    final viewDropdowns = Row(
       mainAxisSize: MainAxisSize.min,
+      children: [
+        denseDropdown<SectorType>(
+          value: _selectedSector ?? SectorType.all,
+          items: SectorType.values
+              .map(
+                (item) => item.toDropdownItem(
+                  text: item.displayName,
+                  icon: Icons.category_outlined,
+                  fontSize: 11,
+                  iconSize: 13,
+                  expandText: false,
+                ),
+              )
+              .toList(),
+          onChanged: (val) {
+            if (val != null) _onFiltersChanged(sector: val);
+          },
+        ),
+        const SizedBox(width: 4),
+        denseDropdown<MarketCapType>(
+          value: _selectedMarketCap ?? MarketCapType.all,
+          items: MarketCapType.values
+              .map(
+                (item) => item.toDropdownItem(
+                  text: item.displayName,
+                  icon: Icons.pie_chart_outline,
+                  fontSize: 11,
+                  iconSize: 13,
+                  expandText: false,
+                ),
+              )
+              .toList(),
+          onChanged: (val) {
+            if (val != null) _onFiltersChanged(marketCap: val);
+          },
+        ),
+        if (showMfCategory) ...[
+          const SizedBox(width: 4),
+          denseDropdown<HeatmapMfCategory>(
+            value: _selectedMfCategory,
+            items: HeatmapMfCategory.values
+                .map(
+                  (item) => item.toDropdownItem(
+                    text: item.displayName,
+                    icon: item.icon,
+                    fontSize: 11,
+                    iconSize: 13,
+                    expandText: false,
+                  ),
+                )
+                .toList(),
+            onChanged: (val) {
+              if (val != null) _onFiltersChanged(mfCategory: val);
+            },
+          ),
+        ],
+        const SizedBox(width: 4),
+        denseDropdown<HeatmapLayoutType>(
+          value: _selectedLayout,
+          items: HeatmapLayoutType.values
+              .map(
+                (item) => item.toDropdownItem(
+                  text: item.displayName,
+                  icon: Icons.visibility_outlined,
+                  fontSize: 11,
+                  iconSize: 13,
+                  expandText: false,
+                ),
+              )
+              .toList(),
+          onChanged: (val) {
+            if (val != null) _onFiltersChanged(layout: val);
+          },
+        ),
+      ],
+    );
+
+    if (compact) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              title,
+              const SizedBox(width: 8),
+              Expanded(
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerRight,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _buildAssetScopeControl(context, compact: true),
+                        const SizedBox(width: 6),
+                        _buildPerformanceFilterControl(
+                          context,
+                          compact: true,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: viewDropdowns,
+          ),
+        ],
+      );
+    }
+
+    // Web: one row — scale controls down so Equity is never clipped.
+    final controls = Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _buildAssetScopeControl(context, compact: false),
+        groupGap(),
+        viewDropdowns,
+        groupGap(),
+        _buildPerformanceFilterControl(context, compact: false),
+      ],
+    );
+
+    return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        // Sector Filter
-        SizedBox(
-          width: dropWidth,
-          child: CustomDropdown<SectorType>(
-            value: _selectedSector ?? SectorType.all,
-            items: SectorType.values
-                .map(
-                  (item) => item.toDropdownItem(
-                    text: item.displayName,
-                    icon: Icons.category_outlined,
-                  ),
-                )
-                .toList(),
-            onChanged: (val) {
-              if (val != null) _onFiltersChanged(sector: val);
-            },
-            isExpanded: true,
-            primaryColor: ModuleColors.portfolio,
-          ),
-        ),
-        const SizedBox(width: 8),
-        // Market Cap Filter
-        SizedBox(
-          width: dropWidth,
-          child: CustomDropdown<MarketCapType>(
-            value: _selectedMarketCap ?? MarketCapType.all,
-            items: MarketCapType.values
-                .map(
-                  (item) => item.toDropdownItem(
-                    text: item.displayName,
-                    icon: Icons.pie_chart_outline,
-                  ),
-                )
-                .toList(),
-            onChanged: (val) {
-              if (val != null) _onFiltersChanged(marketCap: val);
-            },
-            isExpanded: true,
-            primaryColor: ModuleColors.portfolio,
-          ),
-        ),
-        const SizedBox(width: 8),
-        // Layout Filter
-        SizedBox(
-          width: dropWidth,
-          child: CustomDropdown<HeatmapLayoutType>(
-            value: _selectedLayout,
-            items: HeatmapLayoutType.values
-                .map(
-                  (item) => item.toDropdownItem(
-                    text: item.displayName,
-                    icon: Icons.grid_view_outlined,
-                  ),
-                )
-                .toList(),
-            onChanged: (val) {
-              if (val != null) _onFiltersChanged(layout: val);
-            },
-            isExpanded: true,
-            primaryColor: ModuleColors.portfolio,
+        title,
+        const SizedBox(width: 10),
+        Expanded(
+          child: Align(
+            alignment: Alignment.centerRight,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerRight,
+              child: controls,
+            ),
           ),
         ),
       ],
     );
   }
 
-  /// Mobile pinned Sector / Market Cap / Layout row (full width).
-  Widget _buildMobilePinnedFilters(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(2, 6, 2, 6),
-      child: Row(
-        children: [
-          Expanded(
-            child: CustomDropdown<SectorType>(
-              value: _selectedSector ?? SectorType.all,
-              items: SectorType.values
-                  .map(
-                    (item) => item.toDropdownItem(
-                      text: item.displayName,
-                      icon: Icons.category_outlined,
+  String _mobileAssetLabel(HeatmapAssetFilter filter) {
+    switch (filter) {
+      case HeatmapAssetFilter.equity:
+        return 'Equity';
+      case HeatmapAssetFilter.mutualFunds:
+        return 'Funds';
+      case HeatmapAssetFilter.allAssets:
+        return 'All';
+    }
+  }
+
+  /// Web: pill tabs. Mobile ([compact]): dropdown — avoids horizontal overflow.
+  Widget _buildAssetScopeControl(
+    BuildContext context, {
+    required bool compact,
+  }) {
+    if (compact) {
+      return CustomDropdown<HeatmapAssetFilter>(
+        value: _selectedAssetFilter,
+        items: HeatmapAssetFilter.values
+            .map(
+              (item) => item.toDropdownItem(
+                text: _mobileAssetLabel(item),
+                icon: item.icon,
+                fontSize: 12,
+                iconSize: 14,
+                expandText: false,
+              ),
+            )
+            .toList(),
+        onChanged: (val) {
+          if (val != null) _onFiltersChanged(assetFilter: val);
+        },
+        isExpanded: false,
+        height: 36,
+        fontSize: 12,
+        iconSize: 16,
+        borderRadius: 10,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+        primaryColor: ModuleColors.portfolio,
+      );
+    }
+
+    final scheme = Theme.of(context).colorScheme;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: HeatmapAssetFilter.values.map((filter) {
+        final selected = filter == _selectedAssetFilter;
+        return Padding(
+          padding: const EdgeInsets.only(right: 4),
+          child: Material(
+            color: selected
+                ? ModuleColors.portfolio
+                : scheme.surfaceContainerHighest.withValues(alpha: 0.55),
+            borderRadius: BorderRadius.circular(14),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(14),
+              onTap: () => _onFiltersChanged(assetFilter: filter),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 5,
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      filter.icon,
+                      size: 12,
+                      color: selected ? Colors.white : scheme.onSurface,
                     ),
-                  )
-                  .toList(),
-              onChanged: (val) {
-                if (val != null) _onFiltersChanged(sector: val);
-              },
-              isExpanded: true,
-              primaryColor: ModuleColors.portfolio,
+                    const SizedBox(width: 4),
+                    Text(
+                      filter.displayName,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: selected ? Colors.white : scheme.onSurface,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
-          const SizedBox(width: 6),
-          Expanded(
-            child: CustomDropdown<MarketCapType>(
-              value: _selectedMarketCap ?? MarketCapType.all,
-              items: MarketCapType.values
-                  .map(
-                    (item) => item.toDropdownItem(
-                      text: item.displayName,
-                      icon: Icons.pie_chart_outline,
-                    ),
-                  )
-                  .toList(),
-              onChanged: (val) {
-                if (val != null) _onFiltersChanged(marketCap: val);
-              },
-              isExpanded: true,
-              primaryColor: ModuleColors.portfolio,
+        );
+      }).toList(),
+    );
+  }
+
+  /// All / Gainers / Losers — same dense dropdown as other header filters.
+  Widget _buildPerformanceFilterControl(
+    BuildContext context, {
+    required bool compact,
+  }) {
+    final dense = !compact;
+    return CustomDropdown<HeatmapPerformanceFilter>(
+      value: _selectedPerformanceFilter,
+      items: HeatmapPerformanceFilter.values
+          .map(
+            (item) => item.toDropdownItem(
+              text: item.displayName,
+              icon: item.icon,
+              fontSize: dense ? 11 : 12,
+              iconSize: dense ? 13 : 14,
+              expandText: false,
             ),
-          ),
-          const SizedBox(width: 6),
-          Expanded(
-            child: CustomDropdown<HeatmapLayoutType>(
-              value: _selectedLayout,
-              items: HeatmapLayoutType.values
-                  .map(
-                    (item) => item.toDropdownItem(
-                      text: item.displayName,
-                      icon: Icons.grid_view_outlined,
-                    ),
-                  )
-                  .toList(),
-              onChanged: (val) {
-                if (val != null) _onFiltersChanged(layout: val);
-              },
-              isExpanded: true,
-              primaryColor: ModuleColors.portfolio,
-            ),
-          ),
-        ],
-      ),
+          )
+          .toList(),
+      onChanged: (val) {
+        if (val == null || val == _selectedPerformanceFilter) return;
+        setState(() => _selectedPerformanceFilter = val);
+      },
+      isExpanded: false,
+      height: dense ? 30 : 36,
+      fontSize: dense ? 11 : 12,
+      iconSize: dense ? 14 : 16,
+      borderRadius: dense ? 8 : 10,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+      primaryColor: ModuleColors.portfolio,
     );
   }
 
@@ -1262,34 +1586,39 @@ class _PortfolioHeatmapWidgetState
     SectorType? sector,
     MarketCapType? marketCap,
     HeatmapLayoutType? layout,
+    HeatmapAssetFilter? assetFilter,
+    HeatmapMfCategory? mfCategory,
   }) {
     CommonLogger.debug(
-      'Filters: timeFrame=${timeFrame?.code}, metric=${metric?.name}, sector=${sector?.name}, marketCap=${marketCap?.name}, layout=${layout?.name}',
+      'Filters: metric=${metric?.name}, sector=${sector?.name}, marketCap=${marketCap?.name}, view=${layout?.name}, asset=${assetFilter?.name}, mfCat=${mfCategory?.name}',
       tag: '${widget.config.logTag}.Filter',
     );
 
-    // Update local state; clear drill/inspector so mosaic stays consistent.
     setState(() {
-      _drillDownTile = null;
-      _inspectedTile.value = null;
+      _clearDrill();
       if (metric != null) _selectedMetric = metric;
       if (sector != null) _selectedSector = sector;
       if (marketCap != null) _selectedMarketCap = marketCap;
       if (layout != null) _selectedLayout = layout;
+      if (assetFilter != null) {
+        _selectedAssetFilter = assetFilter;
+        if (assetFilter != HeatmapAssetFilter.mutualFunds) {
+          _selectedMfCategory = HeatmapMfCategory.all;
+        }
+      }
+      if (mfCategory != null) _selectedMfCategory = mfCategory;
     });
-    if (timeFrame != null) {
-      ref.read(appTimeFrameProvider.notifier).setTimeFrame(timeFrame);
-    }
     if (layout != null) {
       CommonLogger.info(
-        'Layout changed to: ${layout.name}',
-        tag: '${widget.config.logTag}.Layout',
+        'View changed to: ${layout.name}',
+        tag: '${widget.config.logTag}.View',
       );
     }
 
-    // Sector/market-cap need client-side refilter. Layout/metric are UI-only.
-    // Timeframe reloads via appTimeFrameProvider listen.
-    if (sector != null || marketCap != null) {
+    if (sector != null ||
+        marketCap != null ||
+        assetFilter != null ||
+        mfCategory != null) {
       _loadHeatmapData();
     }
   }
@@ -1312,44 +1641,5 @@ class _PortfolioHeatmapWidgetState
       ),
     );
     */
-  }
-}
-
-/// Pins Sector / Market Cap / Layout filters while the mobile heatmap scrolls.
-class _PinnedHeatmapFiltersDelegate extends SliverPersistentHeaderDelegate {
-  _PinnedHeatmapFiltersDelegate({
-    required this.height,
-    required this.background,
-    required this.child,
-  });
-
-  final double height;
-  final Color background;
-  final Widget child;
-
-  @override
-  double get minExtent => height;
-
-  @override
-  double get maxExtent => height;
-
-  @override
-  Widget build(
-    BuildContext context,
-    double shrinkOffset,
-    bool overlapsContent,
-  ) {
-    return Material(
-      color: background,
-      elevation: overlapsContent ? 2 : 0,
-      child: SizedBox(height: height, width: double.infinity, child: child),
-    );
-  }
-
-  @override
-  bool shouldRebuild(covariant _PinnedHeatmapFiltersDelegate oldDelegate) {
-    return height != oldDelegate.height ||
-        background != oldDelegate.background ||
-        child != oldDelegate.child;
   }
 }
