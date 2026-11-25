@@ -104,6 +104,7 @@ jobs:
           releaseFiles: android-out/*.aab
           tracks: internal
           status: completed
+          changesNotSentForReview: true
 
   ios-testflight:
     name: iOS -> TestFlight (reuse signed IPA)

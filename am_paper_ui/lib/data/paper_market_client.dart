@@ -164,6 +164,7 @@ class PaperMarketClient {
       ltp: 0,
       change: 0,
       changePercent: 0,
+      changeUnavailable: true,
     );
   }
 
@@ -272,8 +273,10 @@ class PaperMarketClient {
       if (parsed.ltp <= 0) return row;
       return row.copyWith(
         ltp: parsed.ltp,
-        change: parsed.change,
-        changePercent: parsed.changePercent,
+        change: parsed.change ?? row.change,
+        changePercent: parsed.changePercent ?? row.changePercent,
+        changeUnavailable:
+            parsed.change == null || parsed.changePercent == null,
       );
     }).toList();
   }
@@ -617,8 +620,8 @@ class PaperMarketClient {
       name: name,
       exchange: resolvedExchange.isEmpty ? ex : resolvedExchange,
       ltp: prices.ltp,
-      change: prices.change,
-      changePercent: prices.changePercent,
+      change: prices.change ?? 0,
+      changePercent: prices.changePercent ?? 0,
       open: open,
       high: high,
       low: low,
@@ -650,10 +653,12 @@ class PaperMarketClient {
     if (ltpPrices.previousClose != null && ltpPrices.previousClose! > 0) {
       merged['previousClose'] = ltpPrices.previousClose;
     }
-    if (ltpPrices.change != 0 || quotePrices.change == 0) {
+    if (ltpPrices.change != null &&
+        (quotePrices.change == null || ltpPrices.change != 0)) {
       merged['change'] = ltpPrices.change;
     }
-    if (ltpPrices.changePercent != 0 || quotePrices.changePercent == 0) {
+    if (ltpPrices.changePercent != null &&
+        (quotePrices.changePercent == null || ltpPrices.changePercent != 0)) {
       merged['changePercent'] = ltpPrices.changePercent;
     }
     final ltpEx = ltp['exchange'] ?? ltp['segment'];
@@ -735,23 +740,27 @@ class PaperMarketClient {
         ) ??
         0;
     final prev = _asDouble(item['previousClose'] ?? item['previous_close']);
-    final change = _asDouble(
-          item['change'] ??
-              item['net_change'] ??
-              item['dayChange'] ??
-              item['netChange'] ??
-              item['chg'],
-        ) ??
-        (prev != null && prev > 0 && lp > 0 ? lp - prev : 0.0);
-    final changePct = _asDouble(
-          item['changePercent'] ??
-              item['change_percent'] ??
-              item['pChange'] ??
-              item['dayChangePercent'] ??
-              item['percentChange'] ??
-              item['pctChange'],
-        ) ??
-        (prev != null && prev > 0 && lp > 0 ? ((lp - prev) / prev) * 100 : 0.0);
+    final explicitChange = _asDouble(
+      item['change'] ??
+          item['net_change'] ??
+          item['dayChange'] ??
+          item['netChange'] ??
+          item['chg'],
+    );
+    final change = explicitChange ??
+        (prev != null && prev > 0 && lp > 0 ? lp - prev : null);
+    final explicitChangePct = _asDouble(
+      item['changePercent'] ??
+          item['change_percent'] ??
+          item['pChange'] ??
+          item['dayChangePercent'] ??
+          item['percentChange'] ??
+          item['pctChange'],
+    );
+    final changePct = explicitChangePct ??
+        (prev != null && prev > 0 && lp > 0
+            ? ((lp - prev) / prev) * 100
+            : null);
     return _PriceFields(
       ltp: lp,
       change: change,
@@ -810,8 +819,8 @@ class _PriceFields {
   });
 
   final double ltp;
-  final double change;
-  final double changePercent;
+  final double? change;
+  final double? changePercent;
   final double? open;
   final double? high;
   final double? low;

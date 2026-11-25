@@ -6,7 +6,7 @@ void main() {
     expect(stockTopicDestination('NIFTY 50'), '/topic/stock/NIFTY 50');
   });
 
-  test('quoteChangeFromEquityPriceJson maps EquityPrice fields', () {
+  test('quoteChangeFromEquityPriceJson does not use today OHLC close as a baseline', () {
     final quote = quoteChangeFromEquityPriceJson({
       'symbol': 'RELIANCE',
       'lastPrice': 2450.5,
@@ -23,12 +23,12 @@ void main() {
     expect(quote.high, 2460.0);
     expect(quote.low, 2435.0);
     expect(quote.close, 2445.0);
-    expect(quote.previousClose, 2445.0);
-    expect(quote.change, 5.5);
-    expect(quote.changePercent, closeTo(0.22, 0.01));
+    expect(quote.previousClose, isNull);
+    expect(quote.change, isNull);
+    expect(quote.changePercent, isNull);
   });
 
-  test('quoteChangeFromEquityPriceJson computes change from ITC-style payload', () {
+  test('quoteChangeFromEquityPriceJson keeps change pending without previous close', () {
     final quote = quoteChangeFromEquityPriceJson({
       'symbol': 'ITC',
       'lastPrice': 289.28,
@@ -41,9 +41,9 @@ void main() {
       'exchange': 'MOCK',
     });
 
-    expect(quote.change, -0.57);
-    expect(quote.changePercent, closeTo(-0.2, 0.01));
-    expect(quote.previousClose, 289.85);
+    expect(quote.change, isNull);
+    expect(quote.changePercent, isNull);
+    expect(quote.previousClose, isNull);
   });
 
   test('quoteChangeFromEquityPriceJson uses explicit change fields when present', () {
@@ -57,5 +57,18 @@ void main() {
 
     expect(quote.change, 2.0);
     expect(quote.changePercent, 2.04);
+  });
+
+  test('quoteChangeFromEquityPriceJson derives NIFTY 500 change from verified close', () {
+    final quote = quoteChangeFromEquityPriceJson({
+      'symbol': 'NIFTY 500',
+      'lastPrice': 23852.55,
+      'previousClose': 24000.0,
+      'ohlcv': {'close': 23852.55},
+    });
+
+    expect(quote.previousClose, 24000.0);
+    expect(quote.change, -147.45);
+    expect(quote.changePercent, closeTo(-0.61, 0.01));
   });
 }

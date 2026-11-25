@@ -83,6 +83,7 @@ class TopMoversWidgetV2 extends StatelessWidget {
       price: s.lastPrice,
       priceLabel: '₹${s.lastPrice.toStringAsFixed(2)}',
       changePercent: s.changePercent,
+      changeUnavailable: s.changeUnavailable,
     );
   }
 }
