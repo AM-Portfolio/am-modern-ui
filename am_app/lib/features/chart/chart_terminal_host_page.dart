@@ -127,6 +127,8 @@ class _ChartTerminalBodyState extends ConsumerState<_ChartTerminalBody>
 
   PaperChartTradeUiConfig _tradeUiConfig = PaperChartTradeUiConfig.defaults();
   PaperChartTradeLinesController? _tradeLines;
+  String _cachedChartSymbol = '';
+  ChartTimeframe? _cachedChartTf;
 
   static const _baseTags = <(_ChartBottomSection, String)>[
     (_ChartBottomSection.overview, 'Overview'),
@@ -299,16 +301,11 @@ class _ChartTerminalBodyState extends ConsumerState<_ChartTerminalBody>
   @override
   void dispose() {
     ChartSearchBridge.unbind();
-    _tradeLines?.removeListener(_onTradeLinesChanged);
     _tradeLines?.dispose();
     _marketProvider.dispose();
     _watchlistController.dispose();
     _sidebarTabController.dispose();
     super.dispose();
-  }
-
-  void _onTradeLinesChanged() {
-    if (mounted) setState(() {});
   }
 
   Future<void> _bootstrapTradeUi() async {
@@ -349,7 +346,6 @@ class _ChartTerminalBodyState extends ConsumerState<_ChartTerminalBody>
           ),
       cancelOrder: cubit.cancel,
     );
-    ctrl.addListener(_onTradeLinesChanged);
     setState(() {
       _tradeUiConfig = cfg;
       _tradeLines = ctrl;
@@ -361,7 +357,14 @@ class _ChartTerminalBodyState extends ConsumerState<_ChartTerminalBody>
     final sym = symbol.trim().toUpperCase();
     if (sym.isEmpty) return;
     final nextSide = side.toUpperCase() == 'SELL' ? 'SELL' : 'BUY';
-    _currentTerminalCtrl?.selectSymbol(sym);
+    final ctrl = _currentTerminalCtrl;
+    if (ctrl != null) {
+      final same = _cachedChartSymbol.trim().toUpperCase() == sym;
+      if (!same) {
+        await ctrl.selectSymbol(sym, timeframe: _cachedChartTf);
+      }
+    }
+    if (!mounted) return;
 
     if (!widget.paperEnabled) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -418,21 +421,19 @@ class _ChartTerminalBodyState extends ConsumerState<_ChartTerminalBody>
     }
     if (line == null) return;
     final side = line.side == ChartTradeLineSide.sell ? 'SELL' : 'BUY';
-    final result = await showPaperTradeLineOrderPopover(
+    final price = line.price.toStringAsFixed(2);
+    await showPaperOrderTicketSheet(
       context: context,
-      config: _tradeUiConfig,
       symbol: line.symbol,
       side: side,
-      favoriteOrderType: line.orderType,
       initialQuantity: line.quantity,
-      title: 'Edit line',
-      confirmLabel: 'Update',
-    );
-    if (result == null || !mounted) return;
-    await tl.updateLineOrder(
-      id,
-      orderType: result.orderType,
-      quantity: result.quantity,
+      initialLimitPrice: price,
+      onSymbolChanged: (_) {},
+      onSideChanged: (_) {},
+      onOrderPlaced: () {
+        // New order is live; drop the edited line (cancels prior OMS id).
+        tl.removeLine(id);
+      },
     );
   }
 
@@ -445,7 +446,11 @@ class _ChartTerminalBodyState extends ConsumerState<_ChartTerminalBody>
             _tradeUiConfig.resolveDefaultOrderType())
         .toUpperCase();
     final qty = tl.pendingQty ?? _tradeUiConfig.resolveDefaultQuantity();
-    return '$side $type ×$qty · move on chart, click to place';
+    final base = '$side $type ×$qty · click chart to place';
+    final q = tl.queuedSide;
+    if (q == null) return base;
+    final qSide = q == ChartTradeLineSide.sell ? 'SELL' : 'BUY';
+    return '$base · then $qSide';
   }
 
   void _bindChartSearch(
@@ -961,12 +966,11 @@ class _ChartTerminalBodyState extends ConsumerState<_ChartTerminalBody>
     final tradeEnabled =
         widget.paperEnabled && (_tradeUiConfig.tradeLinesEnabled);
     final symKey = activeSymbol.trim().toUpperCase();
-    final visibleTradeLines = (tl?.lines ?? const [])
-        .where((l) => l.symbol.toUpperCase() == symKey)
+    List<ChartTradeLine> visibleLinesFor(String key) => (tl?.lines ?? const [])
+        .where((l) => l.symbol.toUpperCase() == key)
         .toList(growable: false);
-    final pendingForSymbol = (tl?.pendingSymbol ?? '').toUpperCase() == symKey
-        ? tl?.pendingSide
-        : null;
+    ChartTradeLineSide? pendingFor(String key) =>
+        (tl?.pendingSymbol ?? '').toUpperCase() == key ? tl?.pendingSide : null;
     final chartWorkspace = ChartWorkspacePage(
       initialSymbol: widget.initialSymbol,
       initialTimeframe: widget.initialTimeframe,
@@ -974,12 +978,48 @@ class _ChartTerminalBodyState extends ConsumerState<_ChartTerminalBody>
       bottomPanelHeight: 360,
       showHeaderSearch: true,
       accentColor: ModuleColors.market,
-      tradeLines: visibleTradeLines,
+      tradeLines: visibleLinesFor(symKey),
       tradeLinesEnabled: tradeEnabled,
       tradeLinesAllowDrag: _tradeUiConfig.replaceOnDrag,
-      pendingTradeSide: pendingForSymbol,
+      pendingTradeSide: pendingFor(symKey),
       pendingTradeHint:
-          pendingForSymbol == null ? null : _pendingTradeHint(),
+          pendingFor(symKey) == null ? null : _pendingTradeHint(),
+      tradeLinesListenable: tl,
+      tradeLinesOf: () {
+        final key = (_cachedChartSymbol.isEmpty ? activeSymbol : _cachedChartSymbol)
+            .trim()
+            .toUpperCase();
+        return visibleLinesFor(key);
+      },
+      pendingTradeSideOf: () {
+        final key = (_cachedChartSymbol.isEmpty ? activeSymbol : _cachedChartSymbol)
+            .trim()
+            .toUpperCase();
+        return pendingFor(key);
+      },
+      pendingTradeHintOf: () {
+        final key = (_cachedChartSymbol.isEmpty ? activeSymbol : _cachedChartSymbol)
+            .trim()
+            .toUpperCase();
+        return pendingFor(key) == null ? null : _pendingTradeHint();
+      },
+      // Live under ListenableBuilder: hide 1st toggle until both sides armed.
+      preferBuyFirstOf: tl == null || !_tradeUiConfig.allowDualPending
+          ? null
+          : () => tl.queuedSide == null
+              ? null
+              : tl.executionPreference == DualExecutionPreference.buyFirst,
+      preferBuyFirst: null,
+      onPreferBuyFirst: tl == null || !_tradeUiConfig.allowDualPending
+          ? null
+          : (buyFirst) {
+              if (tl.queuedSide == null) return;
+              tl.setExecutionPreference(
+                buyFirst
+                    ? DualExecutionPreference.buyFirst
+                    : DualExecutionPreference.sellFirst,
+              );
+            },
       onTradeLineMoved:
           tl == null ? null : (id, price) => tl.onDragPrice(id, price),
       onTradeLineDragEnd: tl == null ? null : (id) => tl.commitDrag(id),
@@ -992,6 +1032,8 @@ class _ChartTerminalBodyState extends ConsumerState<_ChartTerminalBody>
       onCancelPendingTrade: tl == null ? null : () => tl.clearPending(),
       sidebarBuilder: (context, state, ctrl) {
         _currentTerminalCtrl = ctrl;
+        _cachedChartSymbol = state.symbol;
+        _cachedChartTf = state.timeframe;
         final theme = Theme.of(context);
         final sidebarWidget = Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,

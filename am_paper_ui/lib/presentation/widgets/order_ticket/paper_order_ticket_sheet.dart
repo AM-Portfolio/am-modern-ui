@@ -13,6 +13,8 @@ Future<void> showPaperOrderTicketSheet({
   required ValueChanged<String> onSymbolChanged,
   required ValueChanged<String> onSideChanged,
   VoidCallback? onOrderPlaced,
+  String? initialQuantity,
+  String? initialLimitPrice,
 }) {
   final colors = context.colors;
   // Modal routes sit above the desk tree — re-provide the same cubit.
@@ -52,6 +54,8 @@ Future<void> showPaperOrderTicketSheet({
                   child: PaperOrderTicket(
                     symbol: symbol,
                     side: side,
+                    initialQuantity: initialQuantity,
+                    initialLimitPrice: initialLimitPrice,
                     compact: true,
                     floating: false,
                     onSymbolChanged: onSymbolChanged,

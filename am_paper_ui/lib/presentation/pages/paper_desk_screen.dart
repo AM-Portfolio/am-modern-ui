@@ -14,11 +14,10 @@ import '../widgets/paper_chart_trade_lines_controller.dart';
 import '../widgets/paper_order_ticket.dart';
 import '../widgets/paper_order_ticket_sheet.dart';
 import '../widgets/paper_orders_pane.dart';
-import '../widgets/paper_positions_pnl_pane.dart';
-import '../widgets/paper_wallet_pane.dart';
+import '../widgets/paper_wallet_positions_pane.dart';
 import '../widgets/paper_watchlist_pane.dart';
 
-enum _MidTab { wallet, orders, chart, positions }
+enum _MidTab { wallet, orders, chart }
 
 class PaperDeskScreen extends StatefulWidget {
   const PaperDeskScreen({super.key});
@@ -57,7 +56,6 @@ class _PaperDeskScreenState extends State<PaperDeskScreen> {
         _MidTab.wallet => 'wallet',
         _MidTab.orders => 'orders',
         _MidTab.chart => 'chart',
-        _MidTab.positions => 'positions',
       };
 
   bool get _showWatchlistBuySell => _tradeUiConfig.showBuySell(
@@ -177,10 +175,14 @@ class _PaperDeskScreenState extends State<PaperDeskScreen> {
         orderType = _tradeUiConfig.resolveDefaultOrderType();
         if (orderType == 'MARKET') orderType = 'LIMIT';
       }
-      setState(() {
-        _symbol = sym;
-        _midTab = _MidTab.chart;
-      });
+      final symbolChanged = _symbol.trim().toUpperCase() != sym;
+      final tabChanged = _midTab != _MidTab.chart;
+      if (symbolChanged || tabChanged) {
+        setState(() {
+          _symbol = sym;
+          _midTab = _MidTab.chart;
+        });
+      }
       tl.armPending(
         symbol: sym,
         side: nextSide == 'SELL'
@@ -333,10 +335,9 @@ class _PaperDeskScreenState extends State<PaperDeskScreen> {
                       child: Row(
                         children: [
                           for (final t in const [
-                            (_MidTab.wallet, 'Wallet'),
+                            (_MidTab.wallet, 'Account'),
                             (_MidTab.orders, 'Orders'),
                             (_MidTab.chart, 'Chart'),
-                            (_MidTab.positions, 'Positions'),
                           ])
                             _MidTabChip(
                               label: t.$2,
@@ -364,13 +365,15 @@ class _PaperDeskScreenState extends State<PaperDeskScreen> {
       _MidTab.wallet => 0,
       _MidTab.orders => 1,
       _MidTab.chart => 2,
-      _MidTab.positions => 3,
     };
     return IndexedStack(
       index: index,
       sizing: StackFit.expand,
       children: [
-        const PaperWalletPane(),
+        PaperWalletPositionsPane(
+          onBuySell: _showPositionsBuySell ? _buySell : null,
+          onOpenTradeHistory: () => setState(() => _midTab = _MidTab.orders),
+        ),
         PaperOrdersPane(onReorder: _reorderOrder),
         if (_hasSymbol)
           PaperChartEmbed(
@@ -390,9 +393,6 @@ class _PaperDeskScreenState extends State<PaperDeskScreen> {
               ),
             ),
           ),
-        PaperPositionsPnlPane(
-          onBuySell: _showPositionsBuySell ? _buySell : null,
-        ),
       ],
     );
   }
@@ -561,7 +561,7 @@ class _NarrowDeskBodyState extends State<_NarrowDeskBody> {
     if (widget.showDesk) {
       body = widget.midTabBar(context);
     } else if (_surface == _NarrowSurface.positions) {
-      body = PaperPositionsPnlPane(
+      body = PaperWalletPositionsPane(
         onBuySell: widget.showBuySell ? widget.onBuySell : null,
       );
     } else {
@@ -617,7 +617,7 @@ class _NarrowDeskBodyState extends State<_NarrowDeskBody> {
                   ),
                   Expanded(
                     child: _NarrowSurfaceChip(
-                      label: 'Positions',
+                      label: 'Account',
                       selected: _surface == _NarrowSurface.positions,
                       accent: accent,
                       onTap: () => setState(

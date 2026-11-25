@@ -19,7 +19,7 @@ void main() {
       );
       expect(
         c.showBuySell(PaperBuySellSurface.watchlist, midTab: 'wallet'),
-        isFalse,
+        isTrue,
       );
       expect(
         c.showBuySell(PaperBuySellSurface.positions),
@@ -68,6 +68,17 @@ void main() {
       });
       expect(c.defaultQuantity, '25');
       expect(c.resolveDefaultQuantity(), '25');
+    });
+
+    test('fromJson dual pending preference', () {
+      final c = PaperChartTradeUiConfig.fromJson({
+        'tradeLines': {
+          'allowDualPending': true,
+          'dualExecutionPreference': 'sell_first',
+        },
+      });
+      expect(c.allowDualPending, isTrue);
+      expect(c.dualExecutionPreference, DualExecutionPreference.sellFirst);
     });
   });
 }

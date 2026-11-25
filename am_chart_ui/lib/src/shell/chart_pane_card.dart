@@ -28,12 +28,19 @@ class ChartPaneCard extends ConsumerStatefulWidget {
     this.tradeLinesAllowDrag = true,
     this.pendingTradeSide,
     this.pendingTradeHint,
+    this.tradeLinesListenable,
+    this.tradeLinesOf,
+    this.pendingTradeSideOf,
+    this.pendingTradeHintOf,
+    this.preferBuyFirstOf,
     this.onTradeLineMoved,
     this.onTradeLineDragEnd,
     this.onTradeLineRemoved,
     this.onEditTradeLine,
     this.onTradeLinePlaceAtPrice,
     this.onCancelPendingTrade,
+    this.preferBuyFirst,
+    this.onPreferBuyFirst,
   });
 
   final int paneIndex;
@@ -51,6 +58,13 @@ class ChartPaneCard extends ConsumerStatefulWidget {
   final bool tradeLinesAllowDrag;
   final ChartTradeLineSide? pendingTradeSide;
   final String? pendingTradeHint;
+
+  /// When set, trade-line overlays rebuild from resolvers without remounting the host.
+  final Listenable? tradeLinesListenable;
+  final List<ChartTradeLine> Function()? tradeLinesOf;
+  final ChartTradeLineSide? Function()? pendingTradeSideOf;
+  final String? Function()? pendingTradeHintOf;
+  final bool? Function()? preferBuyFirstOf;
   final void Function(String id, double newPrice)? onTradeLineMoved;
   final void Function(String id)? onTradeLineDragEnd;
   final void Function(String id)? onTradeLineRemoved;
@@ -58,6 +72,8 @@ class ChartPaneCard extends ConsumerStatefulWidget {
   final void Function(ChartTradeLineSide side, double price, double anchorXNorm)?
       onTradeLinePlaceAtPrice;
   final VoidCallback? onCancelPendingTrade;
+  final bool? preferBuyFirst;
+  final ValueChanged<bool>? onPreferBuyFirst;
 
   @override
   ConsumerState<ChartPaneCard> createState() => _ChartPaneCardState();
@@ -127,48 +143,12 @@ class _ChartPaneCardState extends ConsumerState<ChartPaneCard> {
                             )
                           : pane.hasComparisons
                               ? _buildComparisonChart(context, pane, ctrl)
-                              : InteractiveChartSurface(
-                                  bars: pane.bars,
-                                  chartType: pane.chartType,
-                                  isMock: pane.isMock,
-                                  viewEpoch: _viewEpoch,
+                              : _buildTradeAwareSurface(
+                                  ctrl: ctrl,
+                                  multi: multi,
+                                  syncedTime: syncedTime,
                                   zoomEpoch: zoomEpoch,
                                   zoomDelta: zoomDelta,
-                                  drawTool: widget.isActive
-                                      ? widget.drawTool
-                                      : ChartDrawTool.none,
-                                  clearDrawingsEpoch: widget.isActive
-                                      ? widget.clearDrawingsEpoch
-                                      : 0,
-                                  onDrawingsCountChanged: widget.isActive
-                                      ? widget.onDrawingsCountChanged
-                                      : null,
-                                  tradeLines: widget.tradeLines,
-                                  tradeLinesEnabled: widget.tradeLinesEnabled,
-                                  tradeLinesAllowDrag:
-                                      widget.tradeLinesAllowDrag,
-                                  pendingTradeSide: widget.pendingTradeSide,
-                                  pendingTradeHint: widget.pendingTradeHint,
-                                  onTradeLineMoved: widget.onTradeLineMoved,
-                                  onTradeLineDragEnd: widget.onTradeLineDragEnd,
-                                  onTradeLineRemoved: widget.onTradeLineRemoved,
-                                  onEditTradeLine: widget.onEditTradeLine,
-                                  onTradeLinePlaceAtPrice:
-                                      widget.onTradeLinePlaceAtPrice,
-                                  onCancelPendingTrade:
-                                      widget.onCancelPendingTrade,
-                                  onNeedOlderHistory: () {
-                                    ctrl.setActivePane(widget.paneIndex);
-                                    ctrl.widenHistoryForActivePane();
-                                  },
-                                  onCrosshair: (bar) {
-                                    if (_hoverBar != bar) {
-                                      setState(() => _hoverBar = bar);
-                                    }
-                                    if (multi)
-                                      ctrl.setSyncedCrosshairTime(bar?.time);
-                                  },
-                                  externalCrosshairTime: syncedTime,
                                 ),
                   if (!widget.showIdentityStrip && !pane.hasComparisons)
                     Positioned(
@@ -187,6 +167,93 @@ class _ChartPaneCardState extends ConsumerState<ChartPaneCard> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildTradeAwareSurface({
+    required ChartTerminalController ctrl,
+    required bool multi,
+    required DateTime? syncedTime,
+    required int zoomEpoch,
+    required double zoomDelta,
+  }) {
+    InteractiveChartSurface surface({
+      required List<ChartTradeLine> lines,
+      ChartTradeLineSide? pendingSide,
+      String? pendingHint,
+      bool? preferBuyFirst,
+    }) {
+      return InteractiveChartSurface(
+        bars: widget.pane.bars,
+        chartType: widget.pane.chartType,
+        isMock: widget.pane.isMock,
+        viewEpoch: _viewEpoch,
+        zoomEpoch: zoomEpoch,
+        zoomDelta: zoomDelta,
+        drawTool: widget.isActive ? widget.drawTool : ChartDrawTool.none,
+        clearDrawingsEpoch:
+            widget.isActive ? widget.clearDrawingsEpoch : 0,
+        onDrawingsCountChanged:
+            widget.isActive ? widget.onDrawingsCountChanged : null,
+        tradeLines: lines,
+        tradeLinesEnabled: widget.tradeLinesEnabled,
+        tradeLinesAllowDrag: widget.tradeLinesAllowDrag,
+        pendingTradeSide: pendingSide,
+        pendingTradeHint: pendingHint,
+        onTradeLineMoved: widget.onTradeLineMoved,
+        onTradeLineDragEnd: widget.onTradeLineDragEnd,
+        onTradeLineRemoved: widget.onTradeLineRemoved,
+        onEditTradeLine: widget.onEditTradeLine,
+        onTradeLinePlaceAtPrice: widget.onTradeLinePlaceAtPrice,
+        onCancelPendingTrade: widget.onCancelPendingTrade,
+        preferBuyFirst: widget.isActive ? preferBuyFirst : null,
+        onPreferBuyFirst: widget.isActive ? widget.onPreferBuyFirst : null,
+        onNeedOlderHistory: () {
+          ctrl.setActivePane(widget.paneIndex);
+          ctrl.widenHistoryForActivePane();
+        },
+        onCrosshair: (bar) {
+          if (_hoverBar != bar) {
+            setState(() => _hoverBar = bar);
+          }
+          if (multi) ctrl.setSyncedCrosshairTime(bar?.time);
+        },
+        externalCrosshairTime: syncedTime,
+      );
+    }
+
+    final listenable = widget.tradeLinesListenable;
+    if (listenable == null) {
+      return surface(
+        lines: widget.tradeLines,
+        pendingSide: widget.pendingTradeSide,
+        pendingHint: widget.pendingTradeHint,
+        preferBuyFirst: widget.preferBuyFirst,
+      );
+    }
+
+    return ListenableBuilder(
+      listenable: listenable,
+      builder: (context, _) {
+        final lines = widget.tradeLinesOf?.call() ?? widget.tradeLines;
+        final pending = widget.isActive
+            ? (widget.pendingTradeSideOf?.call() ?? widget.pendingTradeSide)
+            : null;
+        final hint = widget.isActive
+            ? (widget.pendingTradeHintOf?.call() ?? widget.pendingTradeHint)
+            : null;
+        final prefer = !widget.isActive
+            ? null
+            : widget.preferBuyFirstOf != null
+                ? widget.preferBuyFirstOf!()
+                : widget.preferBuyFirst;
+        return surface(
+          lines: widget.tradeLinesEnabled ? lines : const [],
+          pendingSide: pending,
+          pendingHint: hint,
+          preferBuyFirst: prefer,
+        );
+      },
     );
   }
 

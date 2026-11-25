@@ -205,53 +205,37 @@ class _PaperOrdersPaneState extends State<PaperOrdersPane> {
     }
   }
 
-  Widget _sideChip(BuildContext context, String side) {
-    final c = _sideColor(context, side);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
-        color: c.withValues(alpha: 0.18),
-        borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: c.withValues(alpha: 0.55)),
-      ),
-      child: Text(
-        side,
-        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: c,
-              fontWeight: FontWeight.w700,
-            ),
+  /// Compact badge — Align so Expanded table cells do not stretch it into a card.
+  Widget _orderBadge(BuildContext context, String label, Color color) {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.14),
+          borderRadius: BorderRadius.circular(4),
+          border: Border.all(color: color.withValues(alpha: 0.45)),
+        ),
+        child: Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: color,
+                fontWeight: FontWeight.w700,
+                fontSize: 11,
+                height: 1.2,
+              ),
+        ),
       ),
     );
   }
 
-  Widget _statusPill(BuildContext context, String displayStatus) {
-    final c = _statusColor(context, displayStatus);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: c.withValues(alpha: 0.65)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 7,
-            height: 7,
-            decoration: BoxDecoration(color: c, shape: BoxShape.circle),
-          ),
-          const SizedBox(width: 6),
-          Text(
-            displayStatus,
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: c,
-                  fontWeight: FontWeight.w600,
-                ),
-          ),
-        ],
-      ),
-    );
-  }
+  Widget _sideChip(BuildContext context, String side) =>
+      _orderBadge(context, side, _sideColor(context, side));
+
+  Widget _statusPill(BuildContext context, String displayStatus) =>
+      _orderBadge(context, displayStatus, _statusColor(context, displayStatus));
 
   Widget _symbolCell(BuildContext context, String symbol) {
     return Row(

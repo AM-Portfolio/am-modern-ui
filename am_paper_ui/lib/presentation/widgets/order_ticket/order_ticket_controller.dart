@@ -40,6 +40,7 @@ class OrderTicketController extends ChangeNotifier {
   String _lastSyncedSymbol = '';
   bool _disposed = false;
   bool _favoriteLoaded = false;
+  String? _seedLimitPrice;
 
   String get ctaLabel {
     final isBuy = side == 'BUY';
@@ -55,12 +56,26 @@ class OrderTicketController extends ChangeNotifier {
     super.dispose();
   }
 
-  void init({required bool compact, required String side, required String symbol}) {
+  void init({
+    required bool compact,
+    required String side,
+    required String symbol,
+    String? initialQuantity,
+    String? initialLimitPrice,
+  }) {
     _lastSyncedSymbol = symbol.trim().toUpperCase();
     this.side = side.toUpperCase() == 'SELL' ? 'SELL' : 'BUY';
     displayName = symbol;
     bookProfitsOpen = !compact;
     orderType = 'MARKET';
+    _seedLimitPrice = initialLimitPrice?.trim();
+    if (initialQuantity != null && initialQuantity.trim().isNotEmpty) {
+      qty.text = initialQuantity.trim();
+    }
+    if (_seedLimitPrice != null && _seedLimitPrice!.isNotEmpty) {
+      limit.text = _seedLimitPrice!;
+      trigger.text = _seedLimitPrice!;
+    }
     if (compact) {
       useLimit = false;
       entryType = 'MARKET';
@@ -145,7 +160,14 @@ class OrderTicketController extends ChangeNotifier {
     final ltp = quote?.ltp ?? 0;
     if (ltp <= 0) return;
     final fmt = ltp.toStringAsFixed(2);
-    if (force || limit.text.trim().isEmpty) limit.text = fmt;
+    final seeded = _seedLimitPrice;
+    if (seeded != null && seeded.isNotEmpty) {
+      // Keep chart-line price when opening the same Buy/Sell ticket for edit.
+      if (force || limit.text.trim().isEmpty) limit.text = seeded;
+      if (force || trigger.text.trim().isEmpty) trigger.text = seeded;
+    } else if (force || limit.text.trim().isEmpty) {
+      limit.text = fmt;
+    }
     if (force || target.text.trim().isEmpty) {
       target.text = (ltp * 1.025).toStringAsFixed(2);
     }

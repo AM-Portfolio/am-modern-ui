@@ -39,6 +39,13 @@ class ChartWorkspacePage extends ConsumerStatefulWidget {
     this.tradeLinesAllowDrag = true,
     this.pendingTradeSide,
     this.pendingTradeHint,
+    this.tradeLinesListenable,
+    this.tradeLinesOf,
+    this.pendingTradeSideOf,
+    this.pendingTradeHintOf,
+    this.preferBuyFirstOf,
+    this.preferBuyFirst,
+    this.onPreferBuyFirst,
     this.onTradeLineMoved,
     this.onTradeLineDragEnd,
     this.onTradeLineRemoved,
@@ -73,6 +80,15 @@ class ChartWorkspacePage extends ConsumerStatefulWidget {
   final bool tradeLinesAllowDrag;
   final ChartTradeLineSide? pendingTradeSide;
   final String? pendingTradeHint;
+
+  /// Scoped trade-line rebuilds (avoid host-wide setState on arm/place).
+  final Listenable? tradeLinesListenable;
+  final List<ChartTradeLine> Function()? tradeLinesOf;
+  final ChartTradeLineSide? Function()? pendingTradeSideOf;
+  final String? Function()? pendingTradeHintOf;
+  final bool? Function()? preferBuyFirstOf;
+  final bool? preferBuyFirst;
+  final ValueChanged<bool>? onPreferBuyFirst;
   final void Function(String id, double newPrice)? onTradeLineMoved;
   final void Function(String id)? onTradeLineDragEnd;
   final void Function(String id)? onTradeLineRemoved;
@@ -347,6 +363,20 @@ class _ChartWorkspacePageState extends ConsumerState<ChartWorkspacePage> {
                                                       widget.pendingTradeSide,
                                                   pendingTradeHint:
                                                       widget.pendingTradeHint,
+                                                  tradeLinesListenable:
+                                                      widget.tradeLinesListenable,
+                                                  tradeLinesOf:
+                                                      widget.tradeLinesOf,
+                                                  pendingTradeSideOf:
+                                                      widget.pendingTradeSideOf,
+                                                  pendingTradeHintOf:
+                                                      widget.pendingTradeHintOf,
+                                                  preferBuyFirstOf:
+                                                      widget.preferBuyFirstOf,
+                                                  preferBuyFirst:
+                                                      widget.preferBuyFirst,
+                                                  onPreferBuyFirst:
+                                                      widget.onPreferBuyFirst,
                                                   onTradeLineMoved:
                                                       widget.onTradeLineMoved,
                                                   onTradeLineDragEnd:
@@ -767,6 +797,13 @@ class _ChartGrid extends StatelessWidget {
     this.tradeLinesAllowDrag = true,
     this.pendingTradeSide,
     this.pendingTradeHint,
+    this.tradeLinesListenable,
+    this.tradeLinesOf,
+    this.pendingTradeSideOf,
+    this.pendingTradeHintOf,
+    this.preferBuyFirstOf,
+    this.preferBuyFirst,
+    this.onPreferBuyFirst,
     this.onTradeLineMoved,
     this.onTradeLineDragEnd,
     this.onTradeLineRemoved,
@@ -784,6 +821,13 @@ class _ChartGrid extends StatelessWidget {
   final bool tradeLinesAllowDrag;
   final ChartTradeLineSide? pendingTradeSide;
   final String? pendingTradeHint;
+  final Listenable? tradeLinesListenable;
+  final List<ChartTradeLine> Function()? tradeLinesOf;
+  final ChartTradeLineSide? Function()? pendingTradeSideOf;
+  final String? Function()? pendingTradeHintOf;
+  final bool? Function()? preferBuyFirstOf;
+  final bool? preferBuyFirst;
+  final ValueChanged<bool>? onPreferBuyFirst;
   final void Function(String id, double newPrice)? onTradeLineMoved;
   final void Function(String id)? onTradeLineDragEnd;
   final void Function(String id)? onTradeLineRemoved;
@@ -813,6 +857,15 @@ class _ChartGrid extends StatelessWidget {
           tradeLinesAllowDrag: tradeLinesAllowDrag,
           pendingTradeSide: i == active ? pendingTradeSide : null,
           pendingTradeHint: i == active ? pendingTradeHint : null,
+          tradeLinesListenable: tradeLinesListenable,
+          tradeLinesOf: tradeLinesOf,
+          pendingTradeSideOf:
+              i == active ? pendingTradeSideOf : null,
+          pendingTradeHintOf:
+              i == active ? pendingTradeHintOf : null,
+          preferBuyFirstOf: i == active ? preferBuyFirstOf : null,
+          preferBuyFirst: i == active ? preferBuyFirst : null,
+          onPreferBuyFirst: i == active ? onPreferBuyFirst : null,
           onTradeLineMoved: onTradeLineMoved,
           onTradeLineDragEnd: onTradeLineDragEnd,
           onTradeLineRemoved: onTradeLineRemoved,

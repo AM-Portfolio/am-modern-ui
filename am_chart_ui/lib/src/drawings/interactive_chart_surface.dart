@@ -38,6 +38,8 @@ class InteractiveChartSurface extends StatefulWidget {
     this.onEditTradeLine,
     this.onTradeLinePlaceAtPrice,
     this.onCancelPendingTrade,
+    this.preferBuyFirst,
+    this.onPreferBuyFirst,
   });
 
   final List<ChartBar> bars;
@@ -71,6 +73,8 @@ class InteractiveChartSurface extends StatefulWidget {
   final void Function(ChartTradeLineSide side, double price, double anchorXNorm)?
       onTradeLinePlaceAtPrice;
   final VoidCallback? onCancelPendingTrade;
+  final bool? preferBuyFirst;
+  final ValueChanged<bool>? onPreferBuyFirst;
 
   @override
   State<InteractiveChartSurface> createState() =>
@@ -162,6 +166,8 @@ class _InteractiveChartSurfaceState extends State<InteractiveChartSurface> {
                 onEditLine: widget.onEditTradeLine,
                 onPlaceAtPrice: widget.onTradeLinePlaceAtPrice,
                 onCancelPending: widget.onCancelPendingTrade,
+                preferBuyFirst: widget.preferBuyFirst,
+                onPreferBuyFirst: widget.onPreferBuyFirst,
               ),
             if (_tool != ChartDrawTool.none)
               Positioned.fill(

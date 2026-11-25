@@ -1,15 +1,16 @@
 {
-  "_comment": "Cluster production gateway (am.asrax.in). Client keys injected at Contabo roll from GitHub secrets.",
-  "domain": "am.asrax.in",
+  "_comment": "Cluster preprod gateway.",
+  "domain": "am-preprod.asrax.in",
+  "env": "preprod",
   "services": {},
   "google": {
-    "webClientId": "",
-    "iosClientId": "",
-    "androidClientId": ""
+    "webClientId": "307768822337-ad7tee4d82cc0b4flgrfs157e5e6rc0g.apps.googleusercontent.com",
+    "iosClientId": "307768822337-082220ndhdik3b6utgac7t8hun23dqns.apps.googleusercontent.com",
+    "androidClientId": "307768822337-ad7tee4d82cc0b4flgrfs157e5e6rc0g.apps.googleusercontent.com"
   },
   "growthbook": {
     "enabled": true,
     "apiHost": "https://growthbook.asrax.in/gbapi",
-    "clientKey": "sdk-8WmIFrhYLelAXr8"
+    "clientKey": "sdk-GLujAhix8Foe5qoC"
   }
 }

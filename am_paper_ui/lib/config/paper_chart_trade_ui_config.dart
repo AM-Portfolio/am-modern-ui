@@ -9,6 +9,9 @@ enum PaperBuySellSurface { chartChrome, watchlist, portfolio, positions }
 /// When watchlist B/S is allowed relative to the desk mid-tab.
 enum WatchlistBuySellMidTabPolicy { chart, always, never }
 
+/// Which side places first when buy+sell are both armed.
+enum DualExecutionPreference { buyFirst, sellFirst }
+
 /// Typed config for paper chart B/S placement + trade lines (asset-driven).
 @immutable
 class PaperChartTradeUiConfig {
@@ -26,12 +29,14 @@ class PaperChartTradeUiConfig {
     required this.cancelOrderOnLineDelete,
     required this.replaceOnDrag,
     required this.marketKeepsLine,
+    this.allowDualPending = true,
+    this.dualExecutionPreference = DualExecutionPreference.buyFirst,
   });
 
   factory PaperChartTradeUiConfig.defaults() => const PaperChartTradeUiConfig(
         showOnChartChrome: false,
         showOnWatchlist: true,
-        watchlistOnlyWhenMidTab: WatchlistBuySellMidTabPolicy.chart,
+        watchlistOnlyWhenMidTab: WatchlistBuySellMidTabPolicy.always,
         showOnPortfolio: false,
         showOnPositions: true,
         tradeLinesEnabled: true,
@@ -42,6 +47,8 @@ class PaperChartTradeUiConfig {
         cancelOrderOnLineDelete: true,
         replaceOnDrag: true,
         marketKeepsLine: false,
+        allowDualPending: true,
+        dualExecutionPreference: DualExecutionPreference.buyFirst,
       );
 
   factory PaperChartTradeUiConfig.fromJson(Map<String, dynamic> json) {
@@ -72,18 +79,32 @@ class PaperChartTradeUiConfig {
           lines['cancelOrderOnLineDelete'] as bool? ?? true,
       replaceOnDrag: lines['replaceOnDrag'] as bool? ?? true,
       marketKeepsLine: lines['marketKeepsLine'] as bool? ?? false,
+      allowDualPending: lines['allowDualPending'] as bool? ?? true,
+      dualExecutionPreference: _parseDualPref(
+        lines['dualExecutionPreference'] as String?,
+      ),
     );
   }
 
+  static DualExecutionPreference _parseDualPref(String? raw) {
+    switch ((raw ?? 'buy_first').trim().toLowerCase()) {
+      case 'sell_first':
+        return DualExecutionPreference.sellFirst;
+      case 'buy_first':
+      default:
+        return DualExecutionPreference.buyFirst;
+    }
+  }
+
   static WatchlistBuySellMidTabPolicy _parseMidTabPolicy(String? raw) {
-    switch ((raw ?? 'chart').trim().toLowerCase()) {
-      case 'always':
-        return WatchlistBuySellMidTabPolicy.always;
+    switch ((raw ?? 'always').trim().toLowerCase()) {
+      case 'chart':
+        return WatchlistBuySellMidTabPolicy.chart;
       case 'never':
         return WatchlistBuySellMidTabPolicy.never;
-      case 'chart':
+      case 'always':
       default:
-        return WatchlistBuySellMidTabPolicy.chart;
+        return WatchlistBuySellMidTabPolicy.always;
     }
   }
 
@@ -139,6 +160,8 @@ class PaperChartTradeUiConfig {
   final bool cancelOrderOnLineDelete;
   final bool replaceOnDrag;
   final bool marketKeepsLine;
+  final bool allowDualPending;
+  final DualExecutionPreference dualExecutionPreference;
 
   /// Single interpreter for B/S visibility — keep product rules out of widgets.
   bool showBuySell(

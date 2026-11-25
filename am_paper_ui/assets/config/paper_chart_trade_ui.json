@@ -2,7 +2,7 @@
   "buySell": {
     "showOnChartChrome": false,
     "showOnWatchlist": true,
-    "watchlistOnlyWhenMidTab": "chart",
+    "watchlistOnlyWhenMidTab": "always",
     "showOnPortfolio": false,
     "showOnPositions": true
   },
@@ -15,6 +15,8 @@
     "cancelOrderOnLineDelete": true,
     "replaceOnDrag": true,
     "marketKeepsLine": false,
+    "allowDualPending": true,
+    "dualExecutionPreference": "buy_first",
     "strokeWidth": 2.25,
     "showVolumeWithTrades": true,
     "zones": {

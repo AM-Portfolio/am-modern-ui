@@ -10,7 +10,8 @@ class PaperChartTradeLinesController extends ChangeNotifier {
     required PaperChartTradeUiConfig config,
     required this.placeOrder,
     required this.cancelOrder,
-  }) : _config = config;
+  })  : _config = config,
+        executionPreference = config.dualExecutionPreference;
 
   PaperChartTradeUiConfig _config;
   final Future<OmsOrder?> Function({
@@ -35,6 +36,17 @@ class PaperChartTradeLinesController extends ChangeNotifier {
   String? pendingTarget;
   String? pendingStop;
   String? pendingTrail;
+
+  /// Queued second side when [allowDualPending] — placed after the active side.
+  ChartTradeLineSide? queuedSide;
+  String? queuedOrderType;
+  String? queuedQty;
+  String? queuedTarget;
+  String? queuedStop;
+  String? queuedTrail;
+
+  DualExecutionPreference executionPreference;
+
   int _seq = 0;
   String? _draggingId;
 
@@ -42,8 +54,50 @@ class PaperChartTradeLinesController extends ChangeNotifier {
   PaperChartTradeUiConfig get config => _config;
 
   void updateConfig(PaperChartTradeUiConfig config) {
+    final changed = !identical(_config, config) && _config != config;
     _config = config;
+    if (config.allowDualPending) {
+      executionPreference = config.dualExecutionPreference;
+    }
+    if (changed) notifyListeners();
+  }
+
+  void setExecutionPreference(DualExecutionPreference pref) {
+    if (executionPreference == pref) return;
+    executionPreference = pref;
+    _reorderPendingForPreference();
     notifyListeners();
+  }
+
+  void _reorderPendingForPreference() {
+    if (queuedSide == null || pendingSide == null) return;
+    final preferBuy = executionPreference == DualExecutionPreference.buyFirst;
+    final activeIsPreferred = preferBuy
+        ? pendingSide == ChartTradeLineSide.buy
+        : pendingSide == ChartTradeLineSide.sell;
+    if (activeIsPreferred) return;
+    _swapPendingAndQueued();
+  }
+
+  void _swapPendingAndQueued() {
+    final s = pendingSide;
+    final ot = pendingOrderType;
+    final q = pendingQty;
+    final t = pendingTarget;
+    final st = pendingStop;
+    final tr = pendingTrail;
+    pendingSide = queuedSide;
+    pendingOrderType = queuedOrderType;
+    pendingQty = queuedQty;
+    pendingTarget = queuedTarget;
+    pendingStop = queuedStop;
+    pendingTrail = queuedTrail;
+    queuedSide = s;
+    queuedOrderType = ot;
+    queuedQty = q;
+    queuedTarget = t;
+    queuedStop = st;
+    queuedTrail = tr;
   }
 
   void armPending({
@@ -58,18 +112,68 @@ class PaperChartTradeLinesController extends ChangeNotifier {
     if (!_config.tradeLinesEnabled || !_config.placeFromWatchlistBuySell) {
       return;
     }
-    pendingSymbol = symbol.trim().toUpperCase();
-    pendingSide = side;
-    pendingOrderType =
+    final sym = symbol.trim().toUpperCase();
+    final type =
         (orderType ?? _config.resolveDefaultOrderType()).toUpperCase();
-    pendingQty = quantity ?? _config.resolveDefaultQuantity();
+    final qty = quantity ?? _config.resolveDefaultQuantity();
+
+    if (_config.allowDualPending &&
+        pendingSide != null &&
+        pendingSymbol == sym &&
+        pendingSide != side) {
+      // Second side: queue it. Preference already follows whichever was armed first.
+      queuedSide = side;
+      queuedOrderType = type;
+      queuedQty = qty;
+      queuedTarget = targetPrice;
+      queuedStop = stopLoss;
+      queuedTrail = trailJump;
+      _reorderPendingForPreference();
+      notifyListeners();
+      return;
+    }
+
+    final same = pendingSymbol == sym &&
+        pendingSide == side &&
+        pendingOrderType == type &&
+        pendingQty == qty &&
+        pendingTarget == targetPrice &&
+        pendingStop == stopLoss &&
+        pendingTrail == trailJump &&
+        queuedSide == null;
+    if (same) return;
+
+    if (!_config.allowDualPending || pendingSymbol != sym) {
+      queuedSide = null;
+      queuedOrderType = null;
+      queuedQty = null;
+      queuedTarget = null;
+      queuedStop = null;
+      queuedTrail = null;
+    }
+
+    pendingSymbol = sym;
+    pendingSide = side;
+    pendingOrderType = type;
+    pendingQty = qty;
     pendingTarget = targetPrice;
     pendingStop = stopLoss;
     pendingTrail = trailJump;
+    // First click wins: Sell first → sell executes/places first (red), not config default.
+    if (_config.allowDualPending) {
+      executionPreference = side == ChartTradeLineSide.sell
+          ? DualExecutionPreference.sellFirst
+          : DualExecutionPreference.buyFirst;
+    }
     notifyListeners();
   }
 
   void clearPending() {
+    if (pendingSide == null &&
+        pendingSymbol == null &&
+        queuedSide == null) {
+      return;
+    }
     pendingSide = null;
     pendingSymbol = null;
     pendingOrderType = null;
@@ -77,7 +181,29 @@ class PaperChartTradeLinesController extends ChangeNotifier {
     pendingTarget = null;
     pendingStop = null;
     pendingTrail = null;
+    queuedSide = null;
+    queuedOrderType = null;
+    queuedQty = null;
+    queuedTarget = null;
+    queuedStop = null;
+    queuedTrail = null;
     notifyListeners();
+  }
+
+  void _promoteQueued() {
+    if (queuedSide == null) return;
+    pendingSide = queuedSide;
+    pendingOrderType = queuedOrderType;
+    pendingQty = queuedQty;
+    pendingTarget = queuedTarget;
+    pendingStop = queuedStop;
+    pendingTrail = queuedTrail;
+    queuedSide = null;
+    queuedOrderType = null;
+    queuedQty = null;
+    queuedTarget = null;
+    queuedStop = null;
+    queuedTrail = null;
   }
 
   Future<void> placeAtPrice(
@@ -94,7 +220,19 @@ class PaperChartTradeLinesController extends ChangeNotifier {
     final target = pendingTarget;
     final stop = pendingStop;
     final trail = pendingTrail;
-    clearPending();
+    final hadQueued = queuedSide != null;
+
+    // Clear only the active arm; keep queued for dual place.
+    pendingSide = null;
+    pendingOrderType = null;
+    pendingQty = null;
+    pendingTarget = null;
+    pendingStop = null;
+    pendingTrail = null;
+    if (!hadQueued) {
+      pendingSymbol = null;
+    }
+    notifyListeners();
 
     if (orderType == 'MARKET' && !_config.marketKeepsLine) {
       await placeOrder(
@@ -103,6 +241,10 @@ class PaperChartTradeLinesController extends ChangeNotifier {
         orderType: 'MARKET',
         quantity: qty,
       );
+      if (hadQueued) {
+        _promoteQueued();
+        notifyListeners();
+      }
       return;
     }
 
@@ -121,7 +263,13 @@ class PaperChartTradeLinesController extends ChangeNotifier {
       entryType: orderType == 'SUPER' ? 'LIMIT' : null,
     );
 
-    if (order == null || !order.isWorking) return;
+    if (order == null || !order.isWorking) {
+      if (hadQueued) {
+        // Drop the queue if the preferred side failed.
+        clearPending();
+      }
+      return;
+    }
 
     final line = ChartTradeLine(
       id: 'tl${_seq++}',
@@ -134,6 +282,11 @@ class PaperChartTradeLinesController extends ChangeNotifier {
       anchorXNorm: anchorXNorm,
     );
     _lines.add(line.copyWith(label: line.detailLabel));
+    if (hadQueued) {
+      _promoteQueued();
+    } else {
+      pendingSymbol = null;
+    }
     notifyListeners();
   }
 
@@ -228,11 +381,14 @@ class PaperChartTradeLinesController extends ChangeNotifier {
                 o.orderType == 'SUPER'))
         .toList();
 
+    var changed = false;
+    final before = _lines.length;
     _lines.removeWhere((line) {
       if (line.symbol.toUpperCase() != sym) return false;
       if (line.orderId == null) return false;
       return !working.any((o) => o.orderId == line.orderId);
     });
+    if (_lines.length != before) changed = true;
 
     for (final o in working) {
       if (_lines.any((l) => l.orderId == o.orderId)) continue;
@@ -251,8 +407,9 @@ class PaperChartTradeLinesController extends ChangeNotifier {
         quantity: o.quantity,
       );
       _lines.add(draft.copyWith(label: draft.detailLabel));
+      changed = true;
     }
-    notifyListeners();
+    if (changed) notifyListeners();
   }
 
   double _orderPrice(OmsOrder o) {

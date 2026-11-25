@@ -13,6 +13,8 @@ class PaperOrderTicket extends StatefulWidget {
     super.key,
     required this.symbol,
     this.side = 'BUY',
+    this.initialQuantity,
+    this.initialLimitPrice,
     this.onSymbolChanged,
     this.onSideChanged,
     this.onOrderPlaced,
@@ -26,6 +28,10 @@ class PaperOrderTicket extends StatefulWidget {
 
   final String symbol;
   final String side;
+
+  /// Optional seeds (e.g. edit chart line) — ticket still uses normal defaults/favorites.
+  final String? initialQuantity;
+  final String? initialLimitPrice;
   final ValueChanged<String>? onSymbolChanged;
   final ValueChanged<String>? onSideChanged;
 
@@ -58,6 +64,8 @@ class _PaperOrderTicketState extends State<PaperOrderTicket> {
       compact: widget.compact,
       side: widget.side,
       symbol: widget.symbol,
+      initialQuantity: widget.initialQuantity,
+      initialLimitPrice: widget.initialLimitPrice,
     );
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;

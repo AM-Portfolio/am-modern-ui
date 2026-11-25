@@ -5,9 +5,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:get_it/get_it.dart';
 
+import '../../config/paper_chart_trade_ui_config.dart';
+import 'order_ticket/paper_order_ticket_sheet.dart';
 import 'paper_chart_bottom_panel.dart';
 import 'paper_chart_trade_lines_controller.dart';
-import 'paper_trade_line_order_popover.dart';
 
 /// Live OHLC for the paper-desk chart column (same Market SDK path as chart tab).
 class _PaperChartHistoricalProvider implements HistoricalDataProvider {
@@ -228,34 +229,27 @@ class _PaperChartEmbedState extends ConsumerState<PaperChartEmbed> {
     super.initState();
     _historical = _PaperChartHistoricalProvider();
     _market = _PaperChartMarketProvider();
-    widget.tradeLinesController?.addListener(_onTradeLines);
   }
 
   @override
   void didUpdateWidget(covariant PaperChartEmbed oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.tradeLinesController != widget.tradeLinesController) {
-      oldWidget.tradeLinesController?.removeListener(_onTradeLines);
-      widget.tradeLinesController?.addListener(_onTradeLines);
-    }
     final next = widget.symbol.trim().toUpperCase();
     final prev = oldWidget.symbol.trim().toUpperCase();
     if (next.isNotEmpty && next != prev) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
-        ref.read(chartTerminalProvider.notifier).selectSymbol(next);
+        final tf = ref.read(chartTerminalProvider).timeframe;
+        ref
+            .read(chartTerminalProvider.notifier)
+            .selectSymbol(next, timeframe: tf);
       });
     }
   }
 
   @override
   void dispose() {
-    widget.tradeLinesController?.removeListener(_onTradeLines);
     super.dispose();
-  }
-
-  void _onTradeLines() {
-    if (mounted) setState(() {});
   }
 
   @override
@@ -290,8 +284,47 @@ class _PaperChartEmbedState extends ConsumerState<PaperChartEmbed> {
               .toUpperCase();
           final qty = p.pendingQty ??
               (cfg?.resolveDefaultQuantity() ?? '1');
-          return '$side $type ×$qty · move on chart, click to place';
+          final base = '$side $type ×$qty · click chart to place';
+          final q = p.queuedSide;
+          if (q == null) return base;
+          final qSide = q == ChartTradeLineSide.sell ? 'SELL' : 'BUY';
+          return '$base · then $qSide';
         }(),
+        tradeLinesListenable: tl,
+        tradeLinesOf: () => tl?.lines ?? const [],
+        pendingTradeSideOf: () => tl?.pendingSide,
+        pendingTradeHintOf: () {
+          final p = tl;
+          if (p?.pendingSide == null) return null;
+          final side =
+              p!.pendingSide == ChartTradeLineSide.sell ? 'SELL' : 'BUY';
+          final type = (p.pendingOrderType ??
+                  (cfg?.resolveDefaultOrderType() ?? 'LIMIT'))
+              .toUpperCase();
+          final qty =
+              p.pendingQty ?? (cfg?.resolveDefaultQuantity() ?? '1');
+          final base = '$side $type ×$qty · click chart to place';
+          final q = p.queuedSide;
+          if (q == null) return base;
+          final qSide = q == ChartTradeLineSide.sell ? 'SELL' : 'BUY';
+          return '$base · then $qSide';
+        },
+        preferBuyFirstOf: tl == null || !(cfg?.allowDualPending ?? false)
+            ? null
+            : () => tl.queuedSide == null
+                ? null
+                : tl.executionPreference == DualExecutionPreference.buyFirst,
+        preferBuyFirst: null,
+        onPreferBuyFirst: tl == null || !(cfg?.allowDualPending ?? false)
+            ? null
+            : (buyFirst) {
+                if (tl.queuedSide == null) return;
+                tl.setExecutionPreference(
+                  buyFirst
+                      ? DualExecutionPreference.buyFirst
+                      : DualExecutionPreference.sellFirst,
+                );
+              },
         onTradeLineMoved:
             tl == null ? null : (id, price) => tl.onDragPrice(id, price),
         onTradeLineDragEnd: tl == null ? null : (id) => tl.commitDrag(id),
@@ -306,24 +339,18 @@ class _PaperChartEmbedState extends ConsumerState<PaperChartEmbed> {
                     break;
                   }
                 }
-                if (line == null || cfg == null) return;
+                if (line == null || !context.mounted) return;
                 final side =
                     line.side == ChartTradeLineSide.sell ? 'SELL' : 'BUY';
-                final result = await showPaperTradeLineOrderPopover(
+                await showPaperOrderTicketSheet(
                   context: context,
-                  config: cfg,
                   symbol: line.symbol,
                   side: side,
-                  favoriteOrderType: line.orderType,
                   initialQuantity: line.quantity,
-                  title: 'Edit line',
-                  confirmLabel: 'Update',
-                );
-                if (result == null || !context.mounted) return;
-                await tl.updateLineOrder(
-                  id,
-                  orderType: result.orderType,
-                  quantity: result.quantity,
+                  initialLimitPrice: line.price.toStringAsFixed(2),
+                  onSymbolChanged: (_) {},
+                  onSideChanged: (_) {},
+                  onOrderPlaced: () => tl.removeLine(id),
                 );
               },
         onTradeLinePlaceAtPrice: tl == null

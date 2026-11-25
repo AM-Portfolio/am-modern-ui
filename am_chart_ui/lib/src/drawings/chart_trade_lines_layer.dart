@@ -24,6 +24,8 @@ class ChartTradeLinesLayer extends StatefulWidget {
     this.pendingHint,
     this.onPlaceAtPrice,
     this.onCancelPending,
+    this.preferBuyFirst,
+    this.onPreferBuyFirst,
   });
 
   final List<ChartTradeLine> lines;
@@ -40,6 +42,8 @@ class ChartTradeLinesLayer extends StatefulWidget {
   final void Function(ChartTradeLineSide side, double price, double anchorXNorm)?
       onPlaceAtPrice;
   final VoidCallback? onCancelPending;
+  final bool? preferBuyFirst;
+  final ValueChanged<bool>? onPreferBuyFirst;
 
   @override
   State<ChartTradeLinesLayer> createState() => _ChartTradeLinesLayerState();
@@ -152,18 +156,9 @@ class _ChartTradeLinesLayerState extends State<ChartTradeLinesLayer> {
                   hint: widget.pendingHint ??
                       '${side == ChartTradeLineSide.sell ? 'SELL' : 'BUY'} · click chart to set price',
                   onCancel: widget.onCancelPending,
+                  preferBuyFirst: widget.preferBuyFirst,
+                  onPreferBuyFirst: widget.onPreferBuyFirst,
                 ),
-              ),
-            if (hovered != null && layout != null && layout.isValid)
-              _HoverConfigChip(
-                line: hovered,
-                layout: layout,
-                onEdit: widget.onEditLine == null
-                    ? null
-                    : () => widget.onEditLine!(hovered!.id),
-                onRemove: widget.onRemoved == null
-                    ? null
-                    : () => widget.onRemoved!(hovered!.id),
               ),
             GestureDetector(
               behavior: HitTestBehavior.translucent,
@@ -210,6 +205,18 @@ class _ChartTradeLinesLayerState extends State<ChartTradeLinesLayer> {
               },
               child: const SizedBox.expand(),
             ),
+            // Chip above the full-screen detector so Edit/Cancel win the arena.
+            if (hovered != null && layout != null && layout.isValid)
+              _HoverConfigChip(
+                line: hovered,
+                layout: layout,
+                onEdit: widget.onEditLine == null
+                    ? null
+                    : () => widget.onEditLine!(hovered!.id),
+                onRemove: widget.onRemoved == null
+                    ? null
+                    : () => widget.onRemoved!(hovered!.id),
+              ),
           ],
         ),
       ),
@@ -301,15 +308,20 @@ class _PendingTradeHintBar extends StatelessWidget {
     required this.color,
     required this.hint,
     this.onCancel,
+    this.preferBuyFirst,
+    this.onPreferBuyFirst,
   });
 
   final Color color;
   final String hint;
   final VoidCallback? onCancel;
+  final bool? preferBuyFirst;
+  final ValueChanged<bool>? onPreferBuyFirst;
 
   @override
   Widget build(BuildContext context) {
     final bg = Theme.of(context).colorScheme.surface.withValues(alpha: 0.92);
+    final theme = Theme.of(context);
     return Material(
       color: bg,
       elevation: 2,
@@ -327,12 +339,35 @@ class _PendingTradeHintBar extends StatelessWidget {
             Expanded(
               child: Text(
                 hint,
-                style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: color,
-                    ),
+                style: theme.textTheme.labelMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: color,
+                ),
               ),
             ),
+            if (onPreferBuyFirst != null && preferBuyFirst != null) ...[
+              Text(
+                '1st',
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.hintColor,
+                ),
+              ),
+              const SizedBox(width: 4),
+              _PrefChip(
+                label: 'B',
+                selected: preferBuyFirst!,
+                color: const Color(0xFF26A69A),
+                onTap: () => onPreferBuyFirst!(true),
+              ),
+              const SizedBox(width: 2),
+              _PrefChip(
+                label: 'S',
+                selected: !preferBuyFirst!,
+                color: const Color(0xFFEF5350),
+                onTap: () => onPreferBuyFirst!(false),
+              ),
+              const SizedBox(width: 4),
+            ],
             if (onCancel != null)
               IconButton(
                 tooltip: 'Cancel',
@@ -341,9 +376,54 @@ class _PendingTradeHintBar extends StatelessWidget {
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
                 onPressed: onCancel,
-                icon: Icon(Icons.close, color: Theme.of(context).hintColor),
+                icon: Icon(Icons.close, color: theme.hintColor),
               ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PrefChip extends StatelessWidget {
+  const _PrefChip({
+    required this.label,
+    required this.selected,
+    required this.color,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final Color color;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: selected ? color.withValues(alpha: 0.25) : Colors.transparent,
+      borderRadius: BorderRadius.circular(4),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(4),
+        child: Container(
+          width: 22,
+          height: 22,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(4),
+            border: Border.all(
+              color: selected ? color : Theme.of(context).dividerColor,
+            ),
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+              color: selected ? color : Theme.of(context).hintColor,
+            ),
+          ),
         ),
       ),
     );
