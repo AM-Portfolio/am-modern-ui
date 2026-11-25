@@ -13,6 +13,7 @@ import '../../../../di/auth_providers.dart';
 import '../cubit/auth_cubit.dart';
 import '../cubit/auth_state.dart';
 import '../widgets/auth_method_pill_tabs.dart';
+import '../widgets/apple_login_button.dart';
 import '../widgets/auth_page_background.dart';
 import '../widgets/dev_section_widget.dart';
 import '../widgets/email_login_form_widget.dart';
@@ -436,7 +437,7 @@ class _LoginPageState extends State<LoginPage> {
     return [
       if (showPaneBlurb) ...[
         Text(
-          'Sign in with your email and password, or continue with Google.',
+          'Sign in with your email and password, or continue with ${AppleLoginButton.isAvailable ? 'Google or Apple' : 'Google'}.',
           textAlign: TextAlign.center,
           style: context.text.bodyMuted(compact: true).copyWith(
                 color: context.colors.textSecondary,
@@ -470,6 +471,10 @@ class _LoginPageState extends State<LoginPage> {
       ),
       SizedBox(height: isCompact ? 16 : 20),
       GoogleLoginButtonWidget(isLoading: state is AuthLoading),
+      if (AppleLoginButton.isAvailable) ...[
+        const SizedBox(height: 12),
+        AppleLoginButton(isLoading: state is AuthLoading),
+      ],
       SizedBox(height: isCompact ? 16 : 20),
       Row(
         mainAxisAlignment: MainAxisAlignment.center,
