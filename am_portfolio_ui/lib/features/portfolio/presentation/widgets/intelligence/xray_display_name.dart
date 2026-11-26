@@ -29,6 +29,9 @@ String xrayDisplayName(String raw) {
     case 'MUTUAL_FUND_DEMAT':
     case 'MUTUAL_FUND_FOLIO':
       return 'Mutual Fund';
+    case 'ETF':
+    case 'EXCHANGE_TRADED':
+      return 'ETF';
     case 'NPS':
       return 'NPS';
     case 'UNKNOWN':

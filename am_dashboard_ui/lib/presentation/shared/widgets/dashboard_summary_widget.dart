@@ -1,3 +1,4 @@
+import 'package:am_dashboard_ui/domain/dashboard_cost_basis.dart';
 import 'package:am_dashboard_ui/domain/models/dashboard_summary.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -75,14 +76,8 @@ class DashboardSummaryWidget extends StatelessWidget {
     );
   }
 
-  /// CDSL/CAS books often have market value only — invested ≈ balance and overall return ≈ 0.
-  bool get _costBasisUnknown {
-    final value = summary.totalValue;
-    if (value <= 0) return false;
-    final invested = summary.totalInvested;
-    if (invested <= 0) return true;
-    return (invested - value).abs() / value < 0.005;
-  }
+  /// No Invested / Total Return unless cost belongs to this book.
+  bool get _costBasisUnknown => !dashboardCostBasisKnown(summary);
 
   Widget _buildPortfolioCard(BuildContext context, {required bool isMobile}) {
     final currencyFormat =

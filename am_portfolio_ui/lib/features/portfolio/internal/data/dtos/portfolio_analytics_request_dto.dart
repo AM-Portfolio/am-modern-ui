@@ -13,6 +13,7 @@ class PortfolioAnalyticsRequestDto {
     this.fromDate,
     this.toDate,
     this.timeFrame,
+    this.assetScope,
   });
 
   factory PortfolioAnalyticsRequestDto.fromJson(Map<String, dynamic> json) =>
@@ -24,6 +25,7 @@ class PortfolioAnalyticsRequestDto {
   final String? fromDate;
   final String? toDate;
   final String? timeFrame;
+  final String? assetScope;
 
   Map<String, dynamic> toJson() => _$PortfolioAnalyticsRequestDtoToJson(this);
 }
