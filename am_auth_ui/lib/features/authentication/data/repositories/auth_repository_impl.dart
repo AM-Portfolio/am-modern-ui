@@ -66,7 +66,7 @@ class AuthRepositoryImpl implements AuthRepository {
         givenName: credential.givenName,
         familyName: credential.familyName,
       );
-      return _persistAuthResult(result);
+      return await _persistAuthResult(result);
     } on SignInWithAppleAuthorizationException catch (e) {
       if (e.code == AuthorizationErrorCode.canceled) {
         return const Left(AuthFailure('Apple sign-in was cancelled'));
