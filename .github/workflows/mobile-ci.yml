@@ -5,7 +5,7 @@
 #   main only → separate production builds for Play + App Store (prod backend)
 #   Codemagic: no auto builds — use codemagic-fallback.yml (approval) only
 #
-# Pipelines ref: AM-Portfolio/am-pipelines@hotfix/pipeline (until merged to main)
+# Pipelines ref: AM-Portfolio/am-pipelines@fix/mobile-env-build-versioning (until merged to main)
 
 name: Mobile CI
 
@@ -171,8 +171,8 @@ jobs:
     if: ${{ (needs.resolve.outputs.run_android == 'true' || needs.resolve.outputs.run_ios == 'true') && needs.resolve.outputs.skip_validate != 'true' }}
     permissions:
       contents: read
-    # hotfix/pipeline: Flutter 3.44.0 pin + Play changesNotSentForReview (until merged to am-pipelines main)
-    uses: AM-Portfolio/am-pipelines/.github/workflows/central-mobile-validate.yml@hotfix/pipeline
+    # Use the follow-up pipeline branch until its iOS build-number support merges.
+    uses: AM-Portfolio/am-pipelines/.github/workflows/central-mobile-validate.yml@fix/mobile-env-build-versioning
     with:
       working_directory: am_app
       flutter_version: "3.44.0"
@@ -183,7 +183,7 @@ jobs:
     if: ${{ always() && !cancelled() && needs.resolve.outputs.run_android == 'true' && needs.resolve.outputs.deploy_android_internal == 'true' && (needs.validate.result == 'success' || needs.validate.result == 'skipped') }}
     permissions:
       contents: read
-    uses: AM-Portfolio/am-pipelines/.github/workflows/central-mobile-android.yml@hotfix/pipeline
+    uses: AM-Portfolio/am-pipelines/.github/workflows/central-mobile-android.yml@fix/mobile-env-build-versioning
     with:
       working_directory: am_app
       build_mode: release
@@ -208,7 +208,7 @@ jobs:
     if: ${{ always() && !cancelled() && needs.resolve.outputs.run_android == 'true' && needs.resolve.outputs.deploy_android_production == 'true' && needs.android-internal.result == 'success' && (needs.validate.result == 'success' || needs.validate.result == 'skipped') }}
     permissions:
       contents: read
-    uses: AM-Portfolio/am-pipelines/.github/workflows/central-mobile-android.yml@hotfix/pipeline
+    uses: AM-Portfolio/am-pipelines/.github/workflows/central-mobile-android.yml@fix/mobile-env-build-versioning
     with:
       working_directory: am_app
       build_mode: release
@@ -234,7 +234,7 @@ jobs:
     permissions:
       contents: read
       actions: read
-    uses: AM-Portfolio/am-pipelines/.github/workflows/central-mobile-ios.yml@hotfix/pipeline
+    uses: AM-Portfolio/am-pipelines/.github/workflows/central-mobile-ios.yml@fix/mobile-env-build-versioning
     with:
       working_directory: am_app
       build_mode: release
@@ -260,7 +260,7 @@ jobs:
     permissions:
       contents: read
       actions: read
-    uses: AM-Portfolio/am-pipelines/.github/workflows/central-mobile-ios.yml@hotfix/pipeline
+    uses: AM-Portfolio/am-pipelines/.github/workflows/central-mobile-ios.yml@fix/mobile-env-build-versioning
     with:
       working_directory: am_app
       build_mode: release
