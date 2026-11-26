@@ -1,17 +1,17 @@
 # Mobile CI — Android + iOS (parallel), GitHub-owned store ladder
 #
 # Branch policy:
-#   feature/** + deploy_internal / deploy_testflight → Play Internal + TestFlight
-#   main → Internal then Production (Play Production + App Store) via GH Environments
+#   every branch push → Play Internal + TestFlight
+#   main only → Internal/TestFlight, then Production (Play + App Store)
 #   Codemagic: no auto builds — use codemagic-fallback.yml (approval) only
 #
-# Pipelines ref: AM-Portfolio/am-pipelines@main
+# Pipelines ref: AM-Portfolio/am-pipelines@hotfix/pipeline (until merged to main)
 
 name: Mobile CI
 
 on:
   push:
-    branches: ["main", "develop", "feature/**", "hotfix/**"]
+    branches: ["**"]
     paths:
       - "am_app/**"
       - "am_common/**"
@@ -53,17 +53,12 @@ on:
         type: boolean
         default: true
       deploy_internal:
-        description: "Play Internal (Android) and/or TestFlight (iOS)"
+        description: "Manual override for Play Internal + TestFlight on non-main branches (pushes deploy automatically)"
         required: false
         type: boolean
         default: false
       deploy_testflight:
-        description: "Upload iOS IPA to TestFlight (feature branches allowed)"
-        required: false
-        type: boolean
-        default: false
-      force_deploy:
-        description: "Force Internal+Production (even off main; use carefully)"
+        description: "Manual TestFlight upload on non-main branches (pushes deploy automatically)"
         required: false
         type: boolean
         default: false
@@ -138,7 +133,6 @@ jobs:
         run: |
           REF="${GITHUB_REF_NAME}"
           EVENT="${{ github.event_name }}"
-          FORCE="${{ github.event.inputs.force_deploy }}"
           DISPATCH_INTERNAL="${{ github.event.inputs.deploy_internal }}"
           DISPATCH_TF="${{ github.event.inputs.deploy_testflight }}"
 
@@ -170,14 +164,18 @@ jobs:
           DEPLOY_IOS_TF=false
           DEPLOY_IOS_PRODUCTION=false
 
-          if [ "$REF" = "main" ] || [ "$FORCE" = "true" ]; then
+          if [ "$REF" = "main" ]; then
             # Full ladder: Internal → Production (Play + App Store)
             DEPLOY_ANDROID_INTERNAL=true
             DEPLOY_ANDROID_PRODUCTION=true
             DEPLOY_IOS_TF=true
             DEPLOY_IOS_PRODUCTION=true
+          elif [ "$EVENT" = "push" ]; then
+            # Every pushed code branch is distributed to testers; production stays main-only.
+            DEPLOY_ANDROID_INTERNAL=true
+            DEPLOY_IOS_TF=true
           else
-            # Feature / develop: Internal + TestFlight only
+            # Manual non-main runs can request tester distribution, never production.
             if [ "$DISPATCH_INTERNAL" = "true" ]; then
               DEPLOY_ANDROID_INTERNAL=true
               DEPLOY_IOS_TF=true
@@ -195,7 +193,7 @@ jobs:
             DEPLOY_IOS_TF=false
             DEPLOY_IOS_PRODUCTION=false
           fi
-          if [ "$REF" != "main" ] && [ "$FORCE" != "true" ]; then
+          if [ "$REF" != "main" ]; then
             DEPLOY_IOS_PRODUCTION=false
             DEPLOY_ANDROID_PRODUCTION=false
           fi
