@@ -36,12 +36,6 @@ class _AllIndicesPageState extends ConsumerState<AllIndicesPage> {
       if (!mounted) return;
       final mp =
           provider_pkg.Provider.of<MarketProvider>(context, listen: false);
-      if (mp.allIndicesData.isEmpty) {
-        mp.loadIndices();
-      }
-      if (mp.globalIndicesData.isEmpty) {
-        mp.loadGlobalIndicesData();
-      }
       final tf = ref.read(appTimeFrameProvider).code;
       if (mp.selectedIndicesTimeframe != tf) {
         mp.setIndicesTimeframe(tf);
