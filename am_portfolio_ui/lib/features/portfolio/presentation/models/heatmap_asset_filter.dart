@@ -1,9 +1,10 @@
 import 'package:am_design_system/shared/models/heatmap/heatmap_tile_data.dart';
 import 'package:flutter/material.dart';
 
-/// Heatmap mosaic scope: equity stocks, mutual-fund schemes, or both.
+/// Heatmap mosaic scope: stocks, listed ETFs, mutual-fund schemes, or all.
 enum HeatmapAssetFilter {
   equity,
+  etfs,
   mutualFunds,
   allAssets,
 }
@@ -75,6 +76,8 @@ extension HeatmapAssetFilterX on HeatmapAssetFilter {
     switch (this) {
       case HeatmapAssetFilter.equity:
         return 'EQUITY';
+      case HeatmapAssetFilter.etfs:
+        return 'ETF';
       case HeatmapAssetFilter.mutualFunds:
         return 'MUTUAL_FUND';
       case HeatmapAssetFilter.allAssets:
@@ -86,6 +89,8 @@ extension HeatmapAssetFilterX on HeatmapAssetFilter {
     switch (this) {
       case HeatmapAssetFilter.equity:
         return 'Equity';
+      case HeatmapAssetFilter.etfs:
+        return 'ETFs';
       case HeatmapAssetFilter.mutualFunds:
         return 'Mutual Funds';
       case HeatmapAssetFilter.allAssets:
@@ -97,6 +102,8 @@ extension HeatmapAssetFilterX on HeatmapAssetFilter {
     switch (this) {
       case HeatmapAssetFilter.equity:
         return Icons.show_chart;
+      case HeatmapAssetFilter.etfs:
+        return Icons.candlestick_chart_outlined;
       case HeatmapAssetFilter.mutualFunds:
         return Icons.account_balance_outlined;
       case HeatmapAssetFilter.allAssets:
@@ -120,10 +127,18 @@ extension HeatmapAssetFilterX on HeatmapAssetFilter {
         .toUpperCase()
         .replaceAll(RegExp(r'[\s-]+'), '_');
     if (cls == 'ETF' || cls.contains('EXCHANGE_TRADED')) return true;
+    final sym = (symbol ?? '').trim().toUpperCase();
+    if (sym.endsWith('BEES') ||
+        sym.contains('ETF') ||
+        sym.endsWith('IETF') ||
+        (sym.endsWith('GOLD') && sym.length <= 12)) {
+      return true;
+    }
     final hay =
         '$name $displayName ${sector ?? ''} ${parentSector ?? ''}'.toLowerCase();
     if (hay.contains('exchange traded')) return true;
     if (RegExp(r'\betfs?\b').hasMatch(hay)) return true;
+    if (hay.contains('bees')) return true;
     return false;
   }
 
@@ -184,6 +199,22 @@ bool _tileIsMutualFund(HeatmapTileData tile) {
   );
 }
 
+bool _tileIsEtf(HeatmapTileData tile) {
+  final symbol = tile.metadata?['symbol']?.toString();
+  final assetClass = tile.metadata?['assetClass']?.toString() ??
+      tile.metadata?['instrument']?.toString();
+  final sector = tile.metadata?['sector']?.toString();
+  final parentSector = tile.metadata?['parentSector']?.toString();
+  return HeatmapAssetFilterX.isEtfTile(
+    name: tile.name,
+    displayName: tile.displayName,
+    symbol: symbol == null || symbol.trim().isEmpty ? null : symbol,
+    sector: sector,
+    parentSector: parentSector,
+    assetClass: assetClass,
+  );
+}
+
 bool _isSectorShell(HeatmapTileData tile) {
   final type = tile.metadata?['type']?.toString();
   return type == 'sector' || tile.id.startsWith('sector_');
@@ -204,6 +235,33 @@ HeatmapTileData _reweightSector(
     weightage:
         portfolioTotal > 0 ? (newValue / portfolioTotal) * 100 : tile.weightage,
   );
+}
+
+/// After Equity/ETF/MF filter, express sector weight as % of the visible sleeve
+/// so Other (&lt;3%) merges against what the user sees, not full-book NAV (incl. MF).
+List<HeatmapTileData> renormalizeHeatmapWeightsToVisibleSleeve(
+  List<HeatmapTileData> tiles,
+) {
+  final sleeveTotal = tiles.fold<double>(
+    0,
+    (sum, tile) => sum + (tile.value ?? 0),
+  );
+  if (sleeveTotal <= 0) return tiles;
+
+  return tiles.map((tile) {
+    final children = tile.children;
+    if (children != null && children.isNotEmpty) {
+      final kids = children
+          .map(
+            (c) => c is HeatmapTileData ? c : HeatmapTileData.fromEntity(c),
+          )
+          .toList();
+      return _reweightSector(tile, kids, sleeveTotal);
+    }
+    return tile.copyWith(
+      weightage: ((tile.value ?? 0) / sleeveTotal) * 100,
+    );
+  }).toList();
 }
 
 double _valueWeightedPerformance(List<HeatmapTileData> children) {
@@ -269,6 +327,36 @@ const _mfBroadGroupOrder = <HeatmapMfBroadGroup>[
 bool _isMutualFundsBucketName(String? raw) {
   final u = (raw ?? '').trim().toLowerCase();
   return u == 'mutual funds' || u == 'mutual fund' || u == 'mf';
+}
+
+bool _isEtfSectorName(String? raw) {
+  final u = (raw ?? '').trim().toLowerCase();
+  if (u.isEmpty) return false;
+  if (u == 'etf' || u == 'etfs') return true;
+  return u.contains('exchange traded');
+}
+
+/// ETF sector shell or a lone ETF leaf (All Assets peer root).
+bool _isEtfBucketTile(HeatmapTileData tile) {
+  if (_isEtfSectorName(tile.name) || _isEtfSectorName(tile.displayName)) {
+    return true;
+  }
+  final sector = tile.metadata?['sector']?.toString();
+  final parentSector = tile.metadata?['parentSector']?.toString();
+  if (_isEtfSectorName(sector) || _isEtfSectorName(parentSector)) {
+    return true;
+  }
+  final symbol = tile.metadata?['symbol']?.toString();
+  final assetClass = tile.metadata?['assetClass']?.toString() ??
+      tile.metadata?['instrument']?.toString();
+  return HeatmapAssetFilterX.isEtfTile(
+    name: tile.name,
+    displayName: tile.displayName,
+    symbol: symbol == null || symbol.trim().isEmpty ? null : symbol,
+    sector: sector,
+    parentSector: parentSector,
+    assetClass: assetClass,
+  );
 }
 
 bool _isKnownMfCategoryShell(HeatmapTileData tile) {
@@ -444,8 +532,9 @@ List<HeatmapTileData> _mfMosaicFromSchemes(
   );
 }
 
-/// All Assets top level: Mutual Funds | Stocks.
-/// MF children = Equity|Debt|Hybrid|Other → SEBI categories; Stocks = sectors.
+/// All Assets top level: Mutual Funds | Stocks | ETFs (peer roots).
+/// MF children = Equity|Debt|Hybrid|Other → SEBI categories; Stocks = equity
+/// sectors; ETFs = listed ETF sector / leaves (not nested under Stocks).
 List<HeatmapTileData> _nestAllAssetsByAssetClass(List<HeatmapTileData> tiles) {
   final portfolioTotal = tiles.fold<double>(
     0,
@@ -454,6 +543,8 @@ List<HeatmapTileData> _nestAllAssetsByAssetClass(List<HeatmapTileData> tiles) {
 
   final schemes = <HeatmapTileData>[];
   final stockSectors = <HeatmapTileData>[];
+  final etfSectors = <HeatmapTileData>[];
+  final etfOrphans = <HeatmapTileData>[];
 
   for (final tile in tiles) {
     final children = tile.children;
@@ -464,7 +555,11 @@ List<HeatmapTileData> _nestAllAssetsByAssetClass(List<HeatmapTileData> tiles) {
       for (final child in children) {
         final leaf =
             child is HeatmapTileData ? child : HeatmapTileData.fromEntity(child);
-        if (_tileIsMutualFund(leaf)) schemes.add(leaf);
+        if (_tileIsEtf(leaf)) {
+          etfOrphans.add(leaf);
+        } else if (_tileIsMutualFund(leaf)) {
+          schemes.add(leaf);
+        }
       }
       continue;
     }
@@ -477,14 +572,99 @@ List<HeatmapTileData> _nestAllAssetsByAssetClass(List<HeatmapTileData> tiles) {
           final leaf = child is HeatmapTileData
               ? child
               : HeatmapTileData.fromEntity(child);
-          if (_tileIsMutualFund(leaf)) schemes.add(leaf);
+          if (_tileIsEtf(leaf)) {
+            etfOrphans.add(leaf);
+          } else if (_tileIsMutualFund(leaf)) {
+            schemes.add(leaf);
+          }
         }
       }
       continue;
     }
 
-    // Equity / ETF / Other sectors stay under Stocks.
+    if (_isEtfBucketTile(tile)) {
+      etfSectors.add(tile);
+      continue;
+    }
+
+    // Equity sectors: peel ETF leaves (e.g. NIFTYBEES stuck under Financial Services).
+    if (children != null && children.isNotEmpty) {
+      final equityKids = <HeatmapTileData>[];
+      for (final child in children) {
+        final leaf = child is HeatmapTileData
+            ? child
+            : HeatmapTileData.fromEntity(child);
+        if (_tileIsEtf(leaf)) {
+          etfOrphans.add(leaf);
+        } else if (_tileIsMutualFund(leaf)) {
+          schemes.add(leaf);
+        } else {
+          equityKids.add(leaf);
+        }
+      }
+      if (equityKids.isEmpty) continue;
+      final equityValue =
+          equityKids.fold<double>(0, (s, t) => s + (t.value ?? 0));
+      stockSectors.add(
+        tile.copyWith(
+          children: equityKids,
+          value: equityValue,
+          weightage: portfolioTotal > 0
+              ? (equityValue / portfolioTotal) * 100
+              : tile.weightage,
+          performance: _valueWeightedPerformance(equityKids),
+        ),
+      );
+      continue;
+    }
+
     stockSectors.add(tile);
+  }
+
+  if (etfOrphans.isNotEmpty) {
+    final etfShellIdx = etfSectors.indexWhere(
+      (t) =>
+          _isEtfSectorName(t.name) ||
+          _isEtfSectorName(t.displayName),
+    );
+    if (etfShellIdx >= 0) {
+      final shell = etfSectors[etfShellIdx];
+      final mergedKids = <HeatmapTileData>[
+        ...?shell.children?.map(
+          (c) => c is HeatmapTileData ? c : HeatmapTileData.fromEntity(c),
+        ),
+        ...etfOrphans,
+      ];
+      final mergedValue =
+          mergedKids.fold<double>(0, (s, t) => s + (t.value ?? 0));
+      etfSectors[etfShellIdx] = shell.copyWith(
+        children: mergedKids,
+        value: mergedValue,
+        weightage: portfolioTotal > 0
+            ? (mergedValue / portfolioTotal) * 100
+            : shell.weightage,
+        performance: _valueWeightedPerformance(mergedKids),
+      );
+    } else {
+      final orphanValue =
+          etfOrphans.fold<double>(0, (s, t) => s + (t.value ?? 0));
+      etfSectors.add(
+        HeatmapTileData(
+          id: 'sector_etf_peeled',
+          name: 'Exchange Traded Funds (ETFs)',
+          displayName: 'Exchange Traded Funds (ETFs)',
+          weightage:
+              portfolioTotal > 0 ? (orphanValue / portfolioTotal) * 100 : 0,
+          performance: _valueWeightedPerformance(etfOrphans),
+          value: orphanValue,
+          children: etfOrphans,
+          metadata: const {
+            'type': 'sector',
+            'sectorName': 'Exchange Traded Funds (ETFs)',
+          },
+        ),
+      );
+    }
   }
 
   final mfTotal = schemes.fold<double>(0, (s, t) => s + (t.value ?? 0));
@@ -521,7 +701,6 @@ List<HeatmapTileData> _nestAllAssetsByAssetClass(List<HeatmapTileData> tiles) {
   if (stockSectors.isNotEmpty) {
     final stockValue =
         stockSectors.fold<double>(0, (s, t) => s + (t.value ?? 0));
-    // Reweight sector shells vs stocks bucket for nested mosaic labels.
     final nestedStocks = stockSectors
         .map(
           (s) => s.copyWith(
@@ -551,20 +730,76 @@ List<HeatmapTileData> _nestAllAssetsByAssetClass(List<HeatmapTileData> tiles) {
     );
   }
 
+  if (etfSectors.isNotEmpty) {
+    final etfValue =
+        etfSectors.fold<double>(0, (s, t) => s + (t.value ?? 0));
+    final nestedEtfs = etfSectors
+        .map(
+          (s) => s.copyWith(
+            weightage:
+                etfValue > 0 ? ((s.value ?? 0) / etfValue) * 100 : s.weightage,
+          ),
+        )
+        .toList();
+    out.add(
+      HeatmapTileData(
+        id: 'asset_etfs',
+        name: 'ETFs',
+        displayName: 'ETFs',
+        weightage:
+            portfolioTotal > 0 ? (etfValue / portfolioTotal) * 100 : 0,
+        performance: _valueWeightedPerformance(nestedEtfs),
+        value: etfValue,
+        children: nestedEtfs,
+        metadata: {
+          'type': 'sector',
+          'sectorName': 'ETFs',
+          'assetClassRoot': 'ETF',
+          'stockCount': nestedEtfs.length,
+          'holdingsCount': nestedEtfs.length,
+        },
+      ),
+    );
+  }
+
   return out;
 }
 
 /// Keep leaves that match [filter]. A sector with no matching leaves is dropped,
 /// including equity shells such as IT when the filter is Mutual Funds.
 ///
-/// All Assets: Mutual Funds | Stocks at the top; broad groups / sectors nested.
+/// All Assets: Mutual Funds | Stocks | ETFs at the top; broad groups / sectors nested.
 /// Mutual Funds tab: Equity | Debt | Hybrid | Other → SEBI categories.
+/// Equity: stocks only (no ETFs). ETFs: listed ETF mosaic only.
 List<HeatmapTileData> filterHeatmapTilesByAsset(
   List<HeatmapTileData> tiles,
   HeatmapAssetFilter filter,
 ) {
   if (filter == HeatmapAssetFilter.allAssets) {
     return _nestAllAssetsByAssetClass(tiles);
+  }
+
+  if (filter == HeatmapAssetFilter.etfs) {
+    final nested = _nestAllAssetsByAssetClass(tiles);
+    for (final tile in nested) {
+      final root = tile.metadata?['assetClassRoot']?.toString();
+      if (tile.id == 'asset_etfs' ||
+          root == 'ETF' ||
+          tile.displayName == 'ETFs') {
+        final children = tile.children;
+        if (children != null && children.isNotEmpty) {
+          return children
+              .map(
+                (c) => c is HeatmapTileData
+                    ? c
+                    : HeatmapTileData.fromEntity(c),
+              )
+              .toList();
+        }
+        return [tile];
+      }
+    }
+    return const [];
   }
 
   final wantMf = filter == HeatmapAssetFilter.mutualFunds;
@@ -601,7 +836,9 @@ List<HeatmapTileData> filterHeatmapTilesByAsset(
           filtered.addAll(groupMfSchemesByCategory([tile]));
         }
       }
-      return nestMfCategoriesUnderBroadGroups(filtered);
+      return renormalizeHeatmapWeightsToVisibleSleeve(
+        nestMfCategoriesUnderBroadGroups(filtered),
+      );
     }
 
     final schemes = <HeatmapTileData>[];
@@ -619,12 +856,18 @@ List<HeatmapTileData> filterHeatmapTilesByAsset(
       if (_isSectorShell(tile)) continue;
       if (_tileIsMutualFund(tile)) schemes.add(tile);
     }
-    return _mfMosaicFromSchemes(schemes);
+    return renormalizeHeatmapWeightsToVisibleSleeve(
+      _mfMosaicFromSchemes(schemes),
+    );
   }
 
+  // Equity: stocks only — drop ETF sectors and ETF leaves.
   final filtered = <HeatmapTileData>[];
 
   for (final tile in tiles) {
+    if (_isEtfSectorName(tile.name) || _isEtfSectorName(tile.displayName)) {
+      continue;
+    }
     final children = tile.children;
     if (children != null && children.isNotEmpty) {
       final kept = <HeatmapTileData>[];
@@ -632,17 +875,20 @@ List<HeatmapTileData> filterHeatmapTilesByAsset(
         final leaf = child is HeatmapTileData
             ? child
             : HeatmapTileData.fromEntity(child);
-        if (!_tileIsMutualFund(leaf)) kept.add(leaf);
+        if (_tileIsMutualFund(leaf) || _tileIsEtf(leaf)) continue;
+        kept.add(leaf);
       }
       if (kept.isEmpty) continue;
       filtered.add(_reweightSector(tile, kept, portfolioTotal));
       continue;
     }
 
-    if (!_tileIsMutualFund(tile)) filtered.add(tile);
+    if (_isSectorShell(tile)) continue;
+    if (_tileIsMutualFund(tile) || _tileIsEtf(tile)) continue;
+    filtered.add(tile);
   }
 
-  return filtered;
+  return renormalizeHeatmapWeightsToVisibleSleeve(filtered);
 }
 
 extension HeatmapPerformanceFilterX on HeatmapPerformanceFilter {

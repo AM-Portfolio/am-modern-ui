@@ -49,6 +49,7 @@ class PortfolioAnalyticsCubit extends Cubit<PortfolioAnalyticsState> {
 
   /// Accept [candidate] only when its non-zero sector mass is comparable to [prior].
   /// Thin hist (few priced sectors) must not wipe a richer live/prior map.
+  /// Prefer candidate when it remounts ETFs out of stock sectors (e.g. NIFTYBEES).
   static Heatmap? preferQualityHeatmap(
     Heatmap? candidate,
     Heatmap? prior, {
@@ -59,6 +60,10 @@ class PortfolioAnalyticsCubit extends Cubit<PortfolioAnalyticsState> {
       return candidate ?? prior;
     }
     if (prior == null || prior.sectors.isEmpty) return candidate;
+
+    if (_hasMisbucketedEtf(prior) && !_hasMisbucketedEtf(candidate)) {
+      return candidate;
+    }
 
     final candidateValue = _heatmapValueSum(candidate);
     final priorValue = _heatmapValueSum(prior);
@@ -79,6 +84,32 @@ class PortfolioAnalyticsCubit extends Cubit<PortfolioAnalyticsState> {
       return _overlayPeriodPercents(prior, candidate);
     }
     return candidate;
+  }
+
+  static bool _isEtfSectorName(String raw) {
+    final u = raw.trim().toLowerCase();
+    if (u.isEmpty) return false;
+    if (u == 'etf' || u == 'etfs') return true;
+    return u.contains('exchange traded');
+  }
+
+  static bool _looksLikeEtfSymbol(String symbol) {
+    final u = symbol.trim().toUpperCase();
+    if (u.isEmpty) return false;
+    return u.endsWith('BEES') ||
+        u.contains('ETF') ||
+        u.endsWith('IETF');
+  }
+
+  /// True when a BEES/ETF leaf sits under a non-ETF sector (Financial Services, etc.).
+  static bool _hasMisbucketedEtf(Heatmap heatmap) {
+    for (final sector in heatmap.sectors) {
+      if (_isEtfSectorName(sector.sectorName)) continue;
+      for (final stock in sector.stocks) {
+        if (_looksLikeEtfSymbol(stock.symbol)) return true;
+      }
+    }
+    return false;
   }
 
   static double _heatmapValueSum(Heatmap heatmap) =>
@@ -115,18 +146,30 @@ class PortfolioAnalyticsCubit extends Cubit<PortfolioAnalyticsState> {
   /// Load all analytics data for a portfolio
   String? _loadedAssetScope;
 
+  /// ALL / blank / null are the same mosaic cache key (client filters Equity/ETF/MF).
+  static String? _normalizeAssetScopeKey(String? assetScope) {
+    if (assetScope == null || assetScope.trim().isEmpty) return 'ALL';
+    final u = assetScope.trim().toUpperCase();
+    return u == 'ALL' ? 'ALL' : u;
+  }
+
   Future<void> loadAnalytics(
     String portfolioId, {
     TimeFrame? timeFrame,
     FeatureToggles? featureToggles,
     String? persona,
     String? assetScope,
+    bool forceRefresh = false,
+    bool heatmapFirst = true,
   }) async {
     // Coalesce only when the same portfolio AND timeframe are already loading.
-    if (_loadingFuture != null &&
+    final scopeKey = _normalizeAssetScopeKey(assetScope);
+
+    if (!forceRefresh &&
+        _loadingFuture != null &&
         _currentPortfolioId == portfolioId &&
         _loadedPersona == persona &&
-        _loadedAssetScope == assetScope &&
+        _normalizeAssetScopeKey(_loadedAssetScope) == scopeKey &&
         _inFlightTimeFrame == timeFrame) {
       CommonLogger.debug(
         '🔍 PortfolioAnalyticsCubit: loadAnalytics already in progress for portfolioId: $portfolioId tf: ${timeFrame?.name}',
@@ -135,21 +178,27 @@ class PortfolioAnalyticsCubit extends Cubit<PortfolioAnalyticsState> {
       return _loadingFuture;
     }
 
-    if (state is PortfolioAnalyticsLoaded &&
+    if (!forceRefresh &&
+        state is PortfolioAnalyticsLoaded &&
         _currentPortfolioId == portfolioId &&
         _loadedPersona == persona &&
-        _loadedAssetScope == assetScope &&
+        _normalizeAssetScopeKey(_loadedAssetScope) == scopeKey &&
         _lastLoadedTimeFrame == timeFrame) {
-      CommonLogger.debug(
-        '🔍 PortfolioAnalyticsCubit: Data already loaded for $portfolioId and timeFrame: ${timeFrame?.name}',
-        tag: 'PortfolioAnalyticsCubit',
-      );
-      return;
+      final loaded = state as PortfolioAnalyticsLoaded;
+      final hasHeatmap =
+          loaded.heatmap != null && loaded.heatmap!.sectors.isNotEmpty;
+      if (hasHeatmap) {
+        CommonLogger.debug(
+          '🔍 PortfolioAnalyticsCubit: Data already loaded for $portfolioId and timeFrame: ${timeFrame?.name}',
+          tag: 'PortfolioAnalyticsCubit',
+        );
+        return;
+      }
     }
 
     _currentPortfolioId = portfolioId;
     _loadedPersona = persona;
-    _loadedAssetScope = assetScope;
+    _loadedAssetScope = scopeKey;
     _inFlightTimeFrame = timeFrame;
     final gen = ++_loadGeneration;
     _loadingFuture = _doLoadAnalytics(
@@ -158,6 +207,7 @@ class PortfolioAnalyticsCubit extends Cubit<PortfolioAnalyticsState> {
       featureToggles: featureToggles,
       persona: persona,
       assetScope: assetScope,
+      heatmapFirst: heatmapFirst,
       gen: gen,
     );
 
@@ -177,6 +227,7 @@ class PortfolioAnalyticsCubit extends Cubit<PortfolioAnalyticsState> {
     FeatureToggles? featureToggles,
     String? persona,
     String? assetScope,
+    bool heatmapFirst = true,
     required int gen,
   }) async {
     final requestId = portfolioId == 'all' && persona != null && persona.isNotEmpty
@@ -213,50 +264,26 @@ class PortfolioAnalyticsCubit extends Cubit<PortfolioAnalyticsState> {
     MarketCapAllocation? fastMarketCapAllocation;
     final sw = Stopwatch()..start();
 
-    // Start full analytics fetch (takes ~58s due to live market data for Movers/Heatmap)
+    final useHeatmapFirst = heatmapFirst && featureToggles == null;
+    final primaryToggles = useHeatmapFirst
+        ? PortfolioAnalyticsService.heatmapOnlyToggles
+        : featureToggles;
+
+    // Heatmap-first: await mosaic first; allocations run parallel and must not gate paint.
     final fullAnalyticsFuture = _analyticsService.getPortfolioAnalyticsWithDefaults(
-      requestId, 
+      requestId,
       timeFrame: timeFrame,
-      featureToggles: featureToggles,
+      featureToggles: primaryToggles,
       assetScope: assetScope,
     );
 
-    // Fast fetch for allocations (uses MongoDB / fast current market data, ~100ms)
-    try {
-      final allocations = await _analyticsService.getPortfolioAllocations(requestId);
-      fastSectorAllocation = allocations.sectorAllocation;
-      fastMarketCapAllocation = allocations.marketCapAllocation;
-      
-      if (!isClosed && gen == _loadGeneration) {
-        CommonLogger.debug(
-          '🔍 Fast allocations loaded, emitting partial state',
-          tag: 'PortfolioAnalyticsCubit',
-        );
-        emit(
-          PortfolioAnalyticsLoaded(
-            portfolioId: portfolioId,
-            sectorAllocation: fastSectorAllocation,
-            marketCapAllocation: fastMarketCapAllocation,
-            heatmap: sameBook ? priorLoaded?.heatmap : null,
-            movers: sameBook ? priorLoaded?.movers : null,
-            loadingTypes: const {
-              AnalyticsDataType.heatmap,
-              AnalyticsDataType.movers,
-            },
-          ),
-        );
-      }
-    } catch (e) {
-      CommonLogger.warning(
-        'Fast allocation fetch failed, waiting for full analytics: $e',
-        tag: 'PortfolioAnalyticsCubit',
-      );
-    }
+    final allocationsFuture = useHeatmapFirst
+        ? _analyticsService.getPortfolioAllocations(requestId)
+        : null;
 
-    // Wait for the slow features to complete
     try {
       CommonLogger.debug(
-        '🔍 Starting to await full analytics data',
+        '🔍 Starting to await heatmap-first analytics',
         tag: 'PortfolioAnalyticsCubit',
       );
 
@@ -264,6 +291,33 @@ class PortfolioAnalyticsCubit extends Cubit<PortfolioAnalyticsState> {
         const Duration(seconds: 90),
         onTimeout: () => throw TimeoutException('Full analytics timed out after 90s'),
       );
+
+      if (allocationsFuture != null) {
+        unawaited(allocationsFuture.then((allocations) {
+          if (isClosed || gen != _loadGeneration) return;
+          fastSectorAllocation = allocations.sectorAllocation;
+          fastMarketCapAllocation = allocations.marketCapAllocation;
+          final current = state;
+          if (current is PortfolioAnalyticsLoaded &&
+              current.portfolioId == portfolioId) {
+            emit(
+              current.copyWith(
+                sectorAllocation: preferNonEmptyAllocation(
+                  allocations.sectorAllocation,
+                  current.sectorAllocation,
+                ),
+                marketCapAllocation: allocations.marketCapAllocation ??
+                    current.marketCapAllocation,
+              ),
+            );
+          }
+        }).catchError((Object e) {
+          CommonLogger.warning(
+            'Fast allocation fetch failed after heatmap: $e',
+            tag: 'PortfolioAnalyticsCubit',
+          );
+        }));
+      }
 
       CommonLogger.debug(
         '🔍 Analytics service call completed, processing results',
@@ -303,7 +357,8 @@ class PortfolioAnalyticsCubit extends Cubit<PortfolioAnalyticsState> {
         ProductTelemetry.instance.emptyState('allocation_empty');
       }
       var resolvedMovers = analytics.analytics.movers;
-      if (moversEmpty) {
+      // Heatmap-first defers movers — do not await movers before mosaic emit.
+      if (moversEmpty && !useHeatmapFirst) {
         ProductTelemetry.instance.emptyState('portfolio_movers_empty');
         try {
           final retryMovers = await _analyticsService.getPortfolioMovers(
@@ -326,14 +381,23 @@ class PortfolioAnalyticsCubit extends Cubit<PortfolioAnalyticsState> {
             tag: 'PortfolioAnalyticsCubit',
           );
         }
+      } else if (moversEmpty) {
+        ProductTelemetry.instance.emptyState('portfolio_movers_empty');
       }
       final priorHeatmap = sameBook ? priorLoaded?.heatmap : null;
-      final mergedHeatmap = heatmapForPortfolio(
-        portfolioId: portfolioId,
-        priorPortfolioId: sameBook ? portfolioId : null,
-        incoming: analytics.analytics.heatmap,
-        prior: priorHeatmap,
-      );
+      // Live / 1D: always take fresh mosaic so quiet refresh cannot keep stale tile %.
+      final liveOneDay = timeFrame == null || timeFrame == TimeFrame.oneDay;
+      final incomingHeatmap = analytics.analytics.heatmap;
+      final mergedHeatmap = liveOneDay &&
+              incomingHeatmap != null &&
+              incomingHeatmap.sectors.isNotEmpty
+          ? incomingHeatmap
+          : heatmapForPortfolio(
+              portfolioId: portfolioId,
+              priorPortfolioId: sameBook ? portfolioId : null,
+              incoming: incomingHeatmap,
+              prior: priorHeatmap,
+            );
       if (mergedHeatmap == null || mergedHeatmap.sectors.isEmpty) {
         ProductTelemetry.instance.emptyState('heatmap_empty');
       }
@@ -350,12 +414,25 @@ class PortfolioAnalyticsCubit extends Cubit<PortfolioAnalyticsState> {
               fastMarketCapAllocation,
           heatmap: mergedHeatmap,
           movers: resolvedMovers,
+          loadingTypes: useHeatmapFirst
+              ? const {AnalyticsDataType.movers}
+              : const {},
         ),
       );
       CommonLogger.info(
         'Portfolio analytics loaded successfully',
         tag: 'PortfolioAnalyticsCubit',
       );
+
+      if (useHeatmapFirst && !isClosed && gen == _loadGeneration) {
+        unawaited(_deferMoversAndEnrichments(
+          portfolioId: portfolioId,
+          requestId: requestId,
+          timeFrame: timeFrame,
+          assetScope: assetScope,
+          gen: gen,
+        ));
+      }
 
       CommonLogger.methodExit('loadAnalytics', tag: 'PortfolioAnalyticsCubit');
     } catch (error) {
@@ -398,6 +475,65 @@ class PortfolioAnalyticsCubit extends Cubit<PortfolioAnalyticsState> {
         tag: 'PortfolioAnalyticsCubit',
         metadata: {'status': 'error'},
       );
+    }
+  }
+
+  /// After mosaic paints, fill movers without blocking heatmap UI.
+  Future<void> _deferMoversAndEnrichments({
+    required String portfolioId,
+    required String requestId,
+    TimeFrame? timeFrame,
+    String? assetScope,
+    required int gen,
+  }) async {
+    try {
+      Movers? movers = await _analyticsService.getPortfolioMovers(requestId);
+      if (movers == null ||
+          (movers.topGainers.isEmpty && movers.topLosers.isEmpty)) {
+        final enriched = await _analyticsService
+            .getPortfolioAnalyticsWithDefaults(
+          requestId,
+          timeFrame: timeFrame,
+          featureToggles: const FeatureToggles(
+            includeHeatmap: false,
+            includeMovers: true,
+            includeSectorAllocation: true,
+            includeMarketCapAllocation: true,
+          ),
+          assetScope: assetScope,
+        );
+        movers = enriched.analytics.movers ?? movers;
+        if (isClosed || gen != _loadGeneration) return;
+        final current = state;
+        if (current is! PortfolioAnalyticsLoaded) return;
+        emit(
+          current.copyWith(
+            movers: movers,
+            sectorAllocation: preferNonEmptyAllocation(
+              enriched.analytics.sectorAllocation,
+              current.sectorAllocation,
+            ),
+            marketCapAllocation: enriched.analytics.marketCapAllocation ??
+                current.marketCapAllocation,
+            loadingTypes: const {},
+          ),
+        );
+        return;
+      }
+      if (isClosed || gen != _loadGeneration) return;
+      final current = state;
+      if (current is! PortfolioAnalyticsLoaded) return;
+      emit(current.copyWith(movers: movers, loadingTypes: const {}));
+    } catch (e) {
+      CommonLogger.warning(
+        'Deferred movers enrichment failed: $e',
+        tag: 'PortfolioAnalyticsCubit',
+      );
+      if (isClosed || gen != _loadGeneration) return;
+      final current = state;
+      if (current is PortfolioAnalyticsLoaded) {
+        emit(current.copyWith(loadingTypes: const {}));
+      }
     }
   }
 

@@ -22,6 +22,13 @@ class PortfolioHeatmapCubit extends Cubit<PortfolioHeatmapState> {
   }
   final PortfolioAnalyticsCubit? _analyticsCubit;
 
+  /// Leave Initial immediately so the tab shows Loading, not the manual CTA.
+  void beginLoading() {
+    if (isClosed) return;
+    if (state is PortfolioHeatmapLoaded) return;
+    emit(const PortfolioHeatmapLoading(message: 'Loading portfolio heatmap...'));
+  }
+
   /// Load heatmap data for portfolio
   Future<void> loadHeatmapData({
     required String portfolioId,
@@ -32,6 +39,7 @@ class PortfolioHeatmapCubit extends Cubit<PortfolioHeatmapState> {
     HeatmapAssetFilter assetFilter = HeatmapAssetFilter.allAssets,
     HeatmapMfCategory mfCategory = HeatmapMfCategory.all,
     PortfolioAnalyticsCubit? analyticsCubit,
+    bool quiet = false,
   }) async {
     CommonLogger.info(
       'Loading heatmap data for portfolio: $portfolioId',
@@ -40,9 +48,11 @@ class PortfolioHeatmapCubit extends Cubit<PortfolioHeatmapState> {
 
     try {
       if (isClosed) return;
-      emit(
-        const PortfolioHeatmapLoading(message: 'Loading portfolio heatmap...'),
-      );
+      if (!quiet || state is! PortfolioHeatmapLoaded) {
+        emit(
+          const PortfolioHeatmapLoading(message: 'Loading portfolio heatmap...'),
+        );
+      }
 
       // Get analytics data from the analytics cubit or passed parameter
       final usedAnalyticsCubit = analyticsCubit ?? _analyticsCubit;
@@ -294,19 +304,7 @@ class PortfolioHeatmapCubit extends Cubit<PortfolioHeatmapState> {
   Future<void> updateAssetFilter(HeatmapAssetFilter assetFilter) async {
     final currentState = state;
     if (currentState is PortfolioHeatmapLoaded) {
-      final analytics = _analyticsCubit;
-      if (analytics != null) {
-        final rawId = currentState.portfolioId;
-        final pipe = rawId.indexOf('|');
-        final bookId = pipe > 0 ? rawId.substring(0, pipe) : rawId;
-        final persona = pipe > 0 ? rawId.substring(pipe + 1) : null;
-        await analytics.loadAnalytics(
-          bookId,
-          timeFrame: currentState.timeFrame,
-          persona: persona,
-          assetScope: assetFilter.apiAssetScope,
-        );
-      }
+      // ALL mosaic is cached once; Equity/ETF/MF switch is client-side only.
       await loadHeatmapData(
         portfolioId: currentState.portfolioId,
         timeFrame: currentState.timeFrame,
@@ -318,6 +316,7 @@ class PortfolioHeatmapCubit extends Cubit<PortfolioHeatmapState> {
             ? currentState.mfCategory
             : HeatmapMfCategory.all,
         analyticsCubit: _analyticsCubit,
+        quiet: true,
       );
     } else {
       CommonLogger.warning(

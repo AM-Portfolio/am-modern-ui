@@ -432,6 +432,7 @@ class _PortfolioOverviewWidgetState
                                 showStress: showStress,
                                 showWhatIf: showWhatIf,
                                 showAllocation: showAllocation,
+                                bookTotalValueInr: state.summary.totalValue,
                               )
                             else
                               ..._buildLegacyBody(
@@ -516,6 +517,7 @@ class _PortfolioOverviewWidgetState
     required bool showStress,
     required bool showWhatIf,
     required bool showAllocation,
+    double? bookTotalValueInr,
   }) {
     // Chart band: slightly tighter on web to reduce loading void risk.
     final chartH = isPhone ? 300.0 : (isTablet ? 320.0 : 340.0);
@@ -565,6 +567,7 @@ class _PortfolioOverviewWidgetState
             fillHeight: fillPeers,
             padding: peerPadding,
             readOnly: isAggregate,
+            bookTotalValueInr: isAggregate ? null : bookTotalValueInr,
           )
         : null;
     final stress = showStress

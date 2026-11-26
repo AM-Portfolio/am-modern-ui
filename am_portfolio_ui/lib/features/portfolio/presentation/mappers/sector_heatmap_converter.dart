@@ -80,6 +80,9 @@ class SectorHeatmapConverter {
         .toList();
 
     if (ranked.isEmpty) {
+      // Unknown-only mosaic: fall back to named allocation sectors when present.
+      final fromAlloc = _summaryFromAllocation(sectorAllocation);
+      if (fromAlloc != null) return fromAlloc;
       return (
         topSector: '--',
         topSectorChange: '',
@@ -91,6 +94,8 @@ class SectorHeatmapConverter {
     final nonFlat =
         ranked.where((tile) => tile.performance.abs() >= 0.01).toList();
     if (nonFlat.isEmpty) {
+      final fromAlloc = _summaryFromAllocation(sectorAllocation);
+      if (fromAlloc != null) return fromAlloc;
       return (
         topSector: '--',
         topSectorChange: '',
@@ -107,6 +112,36 @@ class SectorHeatmapConverter {
       topSectorChange: _formatChangePercent(top.performance),
       worstSector: worst.name,
       worstSectorChange: _formatChangePercent(worst.performance),
+    );
+  }
+
+  static ({
+    String topSector,
+    String topSectorChange,
+    String worstSector,
+    String worstSectorChange,
+  })? _summaryFromAllocation(SectorAllocation? sectorAllocation) {
+    if (sectorAllocation == null || sectorAllocation.sectorWeights.isEmpty) {
+      return null;
+    }
+    final named = sectorAllocation.sectorWeights
+        .where(
+          (w) =>
+              !isExcludedFromRanking(w.sectorName) && w.weightPercentage > 0,
+        )
+        .toList();
+    if (named.isEmpty) return null;
+    // No day% on allocation weights — rank by book weight so KPIs are not "--".
+    named.sort((a, b) => b.weightPercentage.compareTo(a.weightPercentage));
+    final top = named.first;
+    final worst = named.length > 1 ? named.last : null;
+    return (
+      topSector: top.sectorName,
+      topSectorChange: '${top.weightPercentage.toStringAsFixed(1)}% of book',
+      worstSector: worst?.sectorName ?? '--',
+      worstSectorChange: worst == null
+          ? ''
+          : '${worst.weightPercentage.toStringAsFixed(1)}% of book',
     );
   }
 

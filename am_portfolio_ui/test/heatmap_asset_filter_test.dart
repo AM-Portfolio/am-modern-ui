@@ -1,4 +1,5 @@
 import 'package:am_design_system/shared/models/heatmap/heatmap_tile_data.dart';
+import 'package:am_portfolio_ui/features/portfolio/presentation/mappers/sector_heatmap_converter.dart';
 import 'package:am_portfolio_ui/features/portfolio/presentation/models/heatmap_asset_filter.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -76,8 +77,11 @@ void main() {
 
     test('display names match product chrome', () {
       expect(HeatmapAssetFilter.equity.displayName, 'Equity');
+      expect(HeatmapAssetFilter.etfs.displayName, 'ETFs');
       expect(HeatmapAssetFilter.mutualFunds.displayName, 'Mutual Funds');
       expect(HeatmapAssetFilter.allAssets.displayName, 'All Assets');
+      expect(HeatmapAssetFilter.etfs.apiAssetScope, 'ETF');
+      expect(HeatmapAssetFilter.equity.apiAssetScope, 'EQUITY');
     });
 
     test('asset class marks a scheme even without an INF isin', () {
@@ -160,6 +164,144 @@ void main() {
       expect(largeCap.children!.single.displayName, 'Motilal Oswal Large Cap Fund');
       final debt = mf.children!.firstWhere((t) => t.displayName == 'Debt');
       expect(debt.children!.single.displayName, 'Liquid');
+    });
+
+    test('All Assets peels NIFTYBEES out of Financial Services into ETFs', () {
+      final tiles = filterHeatmapTilesByAsset(
+        [
+          _sector(
+            name: 'Financial Services',
+            value: 1620000,
+            children: [
+              _leaf(
+                name: 'NIFTYBEES',
+                symbol: 'NIFTYBEES',
+                displayName: 'NIPPON INDIA ETF NIFTY BEES',
+                value: 1299408,
+                sector: 'Financial Services',
+                assetClass: 'EQUITY',
+              ),
+              _leaf(
+                name: 'HDFCBANK',
+                symbol: 'HDFCBANK',
+                value: 320592,
+                sector: 'Financial Services',
+                assetClass: 'EQUITY',
+              ),
+            ],
+          ),
+          _sector(
+            name: 'Exchange Traded Funds (ETFs)',
+            value: 1307435,
+            children: [
+              _leaf(
+                name: 'MOSMALL250',
+                symbol: 'MOSMALL250',
+                value: 562221,
+                sector: 'Exchange Traded Funds (ETFs)',
+                assetClass: 'ETF',
+              ),
+              _leaf(
+                name: 'MIDCAPETF',
+                symbol: 'MIDCAPETF',
+                value: 745214,
+                sector: 'Exchange Traded Funds (ETFs)',
+                assetClass: 'ETF',
+              ),
+            ],
+          ),
+          _sector(
+            name: 'Mutual Funds',
+            value: 8928576,
+            children: [
+              _leaf(
+                name: 'INF247L01999',
+                symbol: 'INF247L01999',
+                displayName: 'Motilal Oswal Large Cap Fund',
+                value: 8928576,
+                assetClass: 'MUTUAL_FUND',
+              ),
+            ],
+          ),
+        ],
+        HeatmapAssetFilter.allAssets,
+      );
+
+      expect(tiles.map((t) => t.displayName), ['Mutual Funds', 'Stocks', 'ETFs']);
+      final stocks = tiles.firstWhere((t) => t.displayName == 'Stocks');
+      final etfs = tiles.firstWhere((t) => t.displayName == 'ETFs');
+      expect(stocks.value, closeTo(320592, 0.01));
+      expect(etfs.value, closeTo(1299408 + 1307435, 0.01));
+      expect(stocks.weightage, closeTo(320592 / (320592 + 1299408 + 1307435 + 8928576) * 100, 0.05));
+      expect(etfs.weightage, closeTo((1299408 + 1307435) / (320592 + 1299408 + 1307435 + 8928576) * 100, 0.05));
+      final stockSector = stocks.children!.single;
+      expect(stockSector.displayName, 'Financial Services');
+      expect(
+        stockSector.children!.map((c) => c.name),
+        ['HDFCBANK'],
+      );
+      final etfNames = etfs.children!
+          .expand((c) => c.children ?? const [])
+          .map((c) => c.name)
+          .toList();
+      expect(etfNames, containsAll(['NIFTYBEES', 'MOSMALL250', 'MIDCAPETF']));
+      expect(etfNames, isNot(contains('HDFCBANK')));
+    });
+
+    test('All Assets lifts ETFs beside Stocks and Mutual Funds', () {
+      final tiles = filterHeatmapTilesByAsset(
+        [
+          _sector(
+            name: 'Information Technology',
+            value: 500,
+            children: [
+              _leaf(name: 'TCS', symbol: 'TCS', value: 500, assetClass: 'EQUITY'),
+            ],
+          ),
+          _sector(
+            name: 'Exchange Traded Funds (ETFs)',
+            value: 300,
+            children: [
+              _leaf(
+                name: 'NIFTYBEES',
+                symbol: 'NIFTYBEES',
+                value: 300,
+                sector: 'Exchange Traded Funds (ETFs)',
+                assetClass: 'ETF',
+              ),
+            ],
+          ),
+          _sector(
+            name: 'Mutual Funds',
+            value: 200,
+            children: [
+              _leaf(
+                name: 'INF247L01999',
+                symbol: 'INF247L01999',
+                displayName: 'Motilal Oswal Large Cap Fund',
+                value: 200,
+                assetClass: 'MUTUAL_FUND',
+              ),
+            ],
+          ),
+        ],
+        HeatmapAssetFilter.allAssets,
+      );
+
+      expect(tiles.map((t) => t.displayName), ['Mutual Funds', 'Stocks', 'ETFs']);
+      final mf = tiles.firstWhere((t) => t.displayName == 'Mutual Funds');
+      final stocks = tiles.firstWhere((t) => t.displayName == 'Stocks');
+      final etfs = tiles.firstWhere((t) => t.displayName == 'ETFs');
+      expect(mf.weightage, closeTo(20, 0.01));
+      expect(stocks.weightage, closeTo(50, 0.01));
+      expect(etfs.weightage, closeTo(30, 0.01));
+      expect(stocks.children!.single.displayName, 'Information Technology');
+      expect(etfs.children!.single.displayName, 'Exchange Traded Funds (ETFs)');
+      expect(
+        stocks.children!
+            .any((c) => c.displayName.contains('Exchange Traded')),
+        isFalse,
+      );
     });
 
     test('Mutual Funds filter nests Equity|Debt|Hybrid then SEBI categories', () {
@@ -394,7 +536,7 @@ void main() {
       expect(gainers.single.value, closeTo(700, 0.01));
     });
 
-    test('ETF sector stays only under Equity with one combined value', () {
+    test('Equity drops ETF sector; ETFs filter keeps NIFTYBEES mosaic', () {
       final etfSector = _sector(
         name: 'Exchange Traded Funds (ETFs)',
         value: 1300000,
@@ -404,21 +546,39 @@ void main() {
             symbol: 'NIFTYBEES',
             value: 1254626,
             sector: 'Exchange Traded Funds (ETFs)',
-            assetClass: 'EQUITY',
+            assetClass: 'ETF',
           ),
           _leaf(
-            name: 'INF204KB17I5',
-            symbol: 'INF204KB17I5',
-            displayName: 'ICICI Prudential Gold ETF',
+            name: 'GOLDBEES',
+            symbol: 'GOLDBEES',
+            displayName: 'Nippon India ETF Gold BeES',
             value: 42533,
             sector: 'Exchange Traded Funds (ETFs)',
+            assetClass: 'ETF',
+          ),
+        ],
+      );
+      final itSector = _sector(
+        name: 'Information Technology',
+        value: 1000000,
+        children: [
+          _leaf(
+            name: 'TCS',
+            symbol: 'TCS',
+            value: 1000000,
+            sector: 'Information Technology',
+            assetClass: 'EQUITY',
           ),
         ],
       );
 
       final equity = filterHeatmapTilesByAsset(
-        [etfSector],
+        [etfSector, itSector],
         HeatmapAssetFilter.equity,
+      );
+      final etfs = filterHeatmapTilesByAsset(
+        [etfSector, itSector],
+        HeatmapAssetFilter.etfs,
       );
       final mf = filterHeatmapTilesByAsset(
         [etfSector],
@@ -427,9 +587,110 @@ void main() {
 
       expect(mf, isEmpty);
       expect(equity, hasLength(1));
-      expect(equity.single.name, 'Exchange Traded Funds (ETFs)');
-      expect(equity.single.children, hasLength(2));
-      expect(equity.single.value, closeTo(1297159, 0.01));
+      expect(equity.single.name, 'Information Technology');
+      expect(equity.single.children!.single.name, 'TCS');
+      expect(etfs, isNotEmpty);
+      final etfNames = etfs
+          .expand((s) => s.children ?? const <HeatmapTileData>[])
+          .map((c) => c.name)
+          .toList();
+      if (etfNames.isEmpty) {
+        expect(etfs.map((t) => t.name), anyOf(contains('NIFTYBEES'), contains('ETFs'),
+            contains('Exchange Traded Funds (ETFs)')));
+      } else {
+        expect(etfNames, containsAll(['NIFTYBEES', 'GOLDBEES']));
+        expect(etfNames, isNot(contains('TCS')));
+      }
+    });
+
+    test('Equity filter reweights to sleeve so Other(<3%) is not full-book NAV',
+        () {
+      // MF-heavy book: equity sectors are tiny % of total but large % of equity.
+      final mfSector = _sector(
+        name: 'Mutual Funds',
+        value: 9000000,
+        children: [
+          _leaf(
+            name: 'HDFC Flexi Cap',
+            symbol: 'INF179K01BE2',
+            value: 9000000,
+            assetClass: 'MUTUAL_FUND',
+            sector: 'Mutual Funds',
+          ),
+        ],
+      );
+      final it = _sector(
+        name: 'Information Technology',
+        value: 400000,
+        children: [
+          _leaf(
+            name: 'TCS',
+            symbol: 'TCS',
+            value: 400000,
+            assetClass: 'EQUITY',
+            sector: 'Information Technology',
+          ),
+        ],
+      );
+      final banks = _sector(
+        name: 'Financial Services',
+        value: 350000,
+        children: [
+          _leaf(
+            name: 'HDFCBANK',
+            symbol: 'HDFCBANK',
+            value: 350000,
+            assetClass: 'EQUITY',
+            sector: 'Financial Services',
+          ),
+        ],
+      );
+      final energy = _sector(
+        name: 'Energy',
+        value: 200000,
+        children: [
+          _leaf(
+            name: 'RELIANCE',
+            symbol: 'RELIANCE',
+            value: 200000,
+            assetClass: 'EQUITY',
+            sector: 'Energy',
+          ),
+        ],
+      );
+      final tiny = _sector(
+        name: 'Utilities',
+        value: 10000,
+        children: [
+          _leaf(
+            name: 'NTPC',
+            symbol: 'NTPC',
+            value: 10000,
+            assetClass: 'EQUITY',
+            sector: 'Utilities',
+          ),
+        ],
+      );
+
+      final equity = filterHeatmapTilesByAsset(
+        [mfSector, it, banks, energy, tiny],
+        HeatmapAssetFilter.equity,
+      );
+      expect(equity.map((t) => t.name), isNot(contains('Mutual Funds')));
+
+      // Sleeve total = 960k → banks ~36%, energy ~21%, utilities ~1%.
+      final banksTile = equity.firstWhere((t) => t.name == 'Financial Services');
+      expect(banksTile.weightage, greaterThan(30));
+      expect(banksTile.weightage, lessThan(40));
+
+      final merged =
+          SectorHeatmapConverter.mergeSmallWeightTilesForTreemap(equity);
+      final names = merged.map((t) => t.name).toSet();
+      expect(names, contains('Financial Services'));
+      expect(names, contains('Energy'));
+      expect(names, contains('Information Technology'));
+      expect(names, contains('Other (<3%)'));
+      expect(names, isNot(contains('Utilities')));
     });
   });
 }

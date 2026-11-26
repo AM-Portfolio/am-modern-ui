@@ -120,6 +120,7 @@ class _PortfolioHeatmapWidgetState
   final ValueNotifier<HeatmapTileData?> _inspectedTile =
       ValueNotifier<HeatmapTileData?>(null);
   Timer? _hoverClearTimer;
+  Timer? _liveRefreshTimer;
   int _heatmapLoadGeneration = 0;
   int _lookthroughGeneration = 0;
   bool _lookthroughLoading = false;
@@ -174,13 +175,24 @@ class _PortfolioHeatmapWidgetState
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _loadHeatmapData();
     });
+    _startLiveRefreshTimer();
   }
 
   @override
   void dispose() {
     _hoverClearTimer?.cancel();
+    _liveRefreshTimer?.cancel();
     _inspectedTile.dispose();
     super.dispose();
+  }
+
+  void _startLiveRefreshTimer() {
+    _liveRefreshTimer?.cancel();
+    _liveRefreshTimer = Timer.periodic(const Duration(seconds: 20), (_) {
+      if (!mounted) return;
+      if (_selectedAssetFilter == HeatmapAssetFilter.mutualFunds) return;
+      _loadHeatmapData(quiet: true);
+    });
   }
 
   void _handleTileHover(HeatmapTileData? tile) {
@@ -365,7 +377,7 @@ class _PortfolioHeatmapWidgetState
     }
   }
 
-  void _loadHeatmapData() {
+  void _loadHeatmapData({bool quiet = false}) {
     const timeFrame = TimeFrame.oneDay;
     final loadGen = ++_heatmapLoadGeneration;
     CommonLogger.methodEntry(
@@ -380,13 +392,19 @@ class _PortfolioHeatmapWidgetState
         'assetFilter': _selectedAssetFilter.name,
         'mfCategory': _selectedMfCategory.name,
         'loadGen': loadGen,
+        'quiet': quiet,
       },
     );
 
     final portfolioAnalyticsCubit = context.read<PortfolioAnalyticsCubit>();
     final portfolioHeatmapCubit = context.read<PortfolioHeatmapCubit>();
 
-    // Load analytics data first
+    // Leave Initial immediately so UI shows real Loading, not the manual CTA.
+    if (!quiet) {
+      portfolioHeatmapCubit.beginLoading();
+    }
+
+    // Always fetch ALL mosaic once; Equity/ETF/MF tabs filter client-side.
     final filterKey = ref.read(familyPortfolioFilterProvider);
     portfolioAnalyticsCubit
         .loadAnalytics(
@@ -395,6 +413,9 @@ class _PortfolioHeatmapWidgetState
           persona: widget.portfolioId == 'all'
               ? holdingsPersonaParam(filterKey)
               : null,
+          assetScope: HeatmapAssetFilter.allAssets.apiAssetScope,
+          forceRefresh: quiet,
+          heatmapFirst: true,
         )
         .then((_) {
           if (!mounted || loadGen != _heatmapLoadGeneration) return;
@@ -404,9 +425,11 @@ class _PortfolioHeatmapWidgetState
               'Analytics failed, skipping heatmap data load',
               tag: '${widget.config.logTag}.Data',
             );
-            portfolioHeatmapCubit.showError(
-              'Failed to load portfolio data. Please retry.',
-            );
+            if (!quiet) {
+              portfolioHeatmapCubit.showError(
+                'Failed to load portfolio data. Please retry.',
+              );
+            }
             return;
           }
 
@@ -424,6 +447,7 @@ class _PortfolioHeatmapWidgetState
             assetFilter: _selectedAssetFilter,
             mfCategory: _selectedMfCategory,
             analyticsCubit: portfolioAnalyticsCubit,
+            quiet: quiet,
           );
         })
         .catchError((error) {
@@ -443,6 +467,7 @@ class _PortfolioHeatmapWidgetState
             assetFilter: _selectedAssetFilter,
             mfCategory: _selectedMfCategory,
             analyticsCubit: portfolioAnalyticsCubit,
+            quiet: quiet,
           );
         });
 
@@ -452,15 +477,66 @@ class _PortfolioHeatmapWidgetState
     );
   }
 
+  /// Re-slice cached ALL heatmap — no analytics API round-trip.
+  void _applyClientHeatmapFilters({bool quiet = true}) {
+    const timeFrame = TimeFrame.oneDay;
+    context.read<PortfolioHeatmapCubit>().loadHeatmapData(
+          portfolioId: widget.portfolioId,
+          timeFrame: timeFrame,
+          metric: _selectedMetric,
+          sector: _selectedSector ?? SectorType.all,
+          marketCap: _selectedMarketCap ?? MarketCapType.all,
+          assetFilter: _selectedAssetFilter,
+          mfCategory: _selectedMfCategory,
+          analyticsCubit: context.read<PortfolioAnalyticsCubit>(),
+          quiet: quiet,
+        );
+  }
+
+  bool _hasCachedHeatmapMosaic() {
+    final analytics = context.read<PortfolioAnalyticsCubit>().state;
+    if (analytics is! PortfolioAnalyticsLoaded) return false;
+    final hasHeatmap =
+        analytics.heatmap != null && analytics.heatmap!.sectors.isNotEmpty;
+    final hasAllocation =
+        analytics.sectorAllocation?.sectorWeights.isNotEmpty ?? false;
+    return hasHeatmap || hasAllocation;
+  }
+
   @override
   Widget build(BuildContext context) {
     ref.listen<String>(familyPortfolioFilterProvider, (previous, next) {
       if (previous != next && widget.portfolioId == 'all') _loadHeatmapData();
     });
 
-    // Mobile: scroll KPIs away; pinned filters + mosaic fill one tab.
-    // Web: fill the tab (unchanged).
-    return LayoutBuilder(
+    // Heatmap-first often converts before allocation lands; reconvert when sectors arrive.
+    return BlocListener<PortfolioAnalyticsCubit, PortfolioAnalyticsState>(
+      listenWhen: (previous, current) {
+        if (current is! PortfolioAnalyticsLoaded) return false;
+        final prevAlloc = previous is PortfolioAnalyticsLoaded
+            ? previous.sectorAllocation
+            : null;
+        final nextAlloc = current.sectorAllocation;
+        final prevEmpty = prevAlloc == null || prevAlloc.sectorWeights.isEmpty;
+        final nextReady = nextAlloc != null && nextAlloc.sectorWeights.isNotEmpty;
+        return prevEmpty && nextReady;
+      },
+      listener: (context, state) {
+        final heatmapCubit = context.read<PortfolioHeatmapCubit>();
+        if (heatmapCubit.state is! PortfolioHeatmapLoaded) return;
+        heatmapCubit.loadHeatmapData(
+          portfolioId: widget.portfolioId,
+          timeFrame: TimeFrame.oneDay,
+          metric: _selectedMetric,
+          sector: _selectedSector ?? SectorType.all,
+          marketCap: _selectedMarketCap ?? MarketCapType.all,
+          assetFilter: _selectedAssetFilter,
+          mfCategory: _selectedMfCategory,
+          analyticsCubit: context.read<PortfolioAnalyticsCubit>(),
+          quiet: true,
+        );
+      },
+      child: LayoutBuilder(
       builder: (context, constraints) {
         final viewportH = constraints.maxHeight.isFinite
             ? constraints.maxHeight
@@ -495,6 +571,7 @@ class _PortfolioHeatmapWidgetState
           ),
         );
       },
+      ),
     );
   }
 
@@ -1037,8 +1114,13 @@ class _PortfolioHeatmapWidgetState
           totalValue = StringUtils.formatCurrencyExact(summary.totalValue);
           if (summary.hasTodayChange) {
             todayChange = StringUtils.formatCurrencyExact(summary.todayChange!);
-            todayChangePct = summary.todayChangePercentage ?? 0;
-            isTodayPositive = summary.isTodayPositive;
+            final dayInr = summary.todayChange!;
+            final priorValue = summary.totalValue - dayInr;
+            // Prefer implied % from Total + Today ₹ so stale socket % cannot show 40% on 0.2%.
+            todayChangePct = priorValue > 0
+                ? (dayInr / priorValue) * 100
+                : (summary.todayChangePercentage ?? 0);
+            isTodayPositive = dayInr >= 0;
           } else {
             todayChange = '—';
             todayChangePct = 0;
@@ -1055,8 +1137,13 @@ class _PortfolioHeatmapWidgetState
             String worstSectorChange = '';
 
             if (heatmapState is PortfolioHeatmapLoaded) {
+              final analyticsState = context.read<PortfolioAnalyticsCubit>().state;
+              final allocation = analyticsState is PortfolioAnalyticsLoaded
+                  ? analyticsState.sectorAllocation
+                  : null;
               final summary = SectorHeatmapConverter.resolveSectorSummary(
                 tiles: heatmapState.heatmapData.uiTiles,
+                sectorAllocation: allocation,
               );
               topSector = summary.topSector;
               topSectorChange = summary.topSectorChange;
@@ -1371,6 +1458,8 @@ class _PortfolioHeatmapWidgetState
     switch (filter) {
       case HeatmapAssetFilter.equity:
         return 'Equity';
+      case HeatmapAssetFilter.etfs:
+        return 'ETFs';
       case HeatmapAssetFilter.mutualFunds:
         return 'Funds';
       case HeatmapAssetFilter.allAssets:
@@ -1619,7 +1708,11 @@ class _PortfolioHeatmapWidgetState
         marketCap != null ||
         assetFilter != null ||
         mfCategory != null) {
-      _loadHeatmapData();
+      if (_hasCachedHeatmapMosaic()) {
+        _applyClientHeatmapFilters(quiet: true);
+      } else {
+        _loadHeatmapData();
+      }
     }
   }
 
