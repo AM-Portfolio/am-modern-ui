@@ -17,11 +17,13 @@ class EmailLoginFormWidget extends StatefulWidget {
     super.key,
     this.isCompact = false,
     this.isLoading = false,
+    this.isBusy = false,
     this.showTitle = true,
   });
 
   final bool isCompact;
   final bool isLoading;
+  final bool isBusy;
   final bool showTitle;
 
   @override
@@ -88,10 +90,13 @@ class _EmailLoginFormWidgetState extends State<EmailLoginFormWidget> {
               ],
               LiquidTextField(
                 controller: _emailController,
-                enabled: !widget.isLoading,
+                enabled: !(widget.isLoading || widget.isBusy),
                 keyboardType: TextInputType.emailAddress,
                 textInputAction: TextInputAction.next,
-                autofillHints: const [AutofillHints.email, AutofillHints.username],
+                autofillHints: const [
+                  AutofillHints.email,
+                  AutofillHints.username
+                ],
                 labelText: 'Email address',
                 hintText: 'Enter your email',
                 prefixIcon: Icons.email_outlined,
@@ -100,7 +105,7 @@ class _EmailLoginFormWidgetState extends State<EmailLoginFormWidget> {
               const SizedBox(height: 16),
               LiquidTextField(
                 controller: _passwordController,
-                enabled: !widget.isLoading,
+                enabled: !(widget.isLoading || widget.isBusy),
                 obscureText: _obscurePassword,
                 textInputAction: TextInputAction.done,
                 autofillHints: const [AutofillHints.password],
@@ -132,7 +137,7 @@ class _EmailLoginFormWidgetState extends State<EmailLoginFormWidget> {
                     child: Checkbox(
                       value: _rememberMe,
                       activeColor: primary,
-                      onChanged: widget.isLoading
+                      onChanged: widget.isLoading || widget.isBusy
                           ? null
                           : (value) =>
                               setState(() => _rememberMe = value ?? false),
@@ -149,7 +154,7 @@ class _EmailLoginFormWidgetState extends State<EmailLoginFormWidget> {
                     ),
                   ),
                   TextButton(
-                    onPressed: widget.isLoading
+                    onPressed: widget.isLoading || widget.isBusy
                         ? null
                         : () => context.push('/forgot-password'),
                     style: TextButton.styleFrom(
@@ -194,7 +199,8 @@ class _EmailLoginFormWidgetState extends State<EmailLoginFormWidget> {
                     ),
                   ),
                   child: ElevatedButton(
-                    onPressed: widget.isLoading ? null : _handleLogin,
+                    onPressed:
+                        widget.isLoading || widget.isBusy ? null : _handleLogin,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.transparent,
                       shadowColor: Colors.transparent,
@@ -293,8 +299,10 @@ class _LiquidTextFieldState extends State<LiquidTextField> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final baseBgColor = isDark
-        ? Colors.white.withValues(alpha: (_isHovering || _isFocused) ? 0.17 : 0.12)
-        : Colors.white.withValues(alpha: (_isHovering || _isFocused) ? 0.15 : 0.05);
+        ? Colors.white
+            .withValues(alpha: (_isHovering || _isFocused) ? 0.17 : 0.12)
+        : Colors.white
+            .withValues(alpha: (_isHovering || _isFocused) ? 0.15 : 0.05);
 
     final borderColor = isDark
         ? Colors.white.withValues(alpha: 0.35)

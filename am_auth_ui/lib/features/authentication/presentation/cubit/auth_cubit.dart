@@ -52,7 +52,7 @@ class AuthCubit extends Cubit<AuthState> {
     String email,
     String password,
   ) async {
-    emit(const AuthLoading());
+    emit(const AuthLoading(AuthLoadingMethod.email));
 
     final result = await _emailLoginUseCase(
       email: email,
@@ -76,7 +76,7 @@ class AuthCubit extends Cubit<AuthState> {
 
   /// Login with Google
   Future<void> loginWithGoogle() async {
-    emit(const AuthLoading());
+    emit(const AuthLoading(AuthLoadingMethod.google));
 
     final result = await _googleLoginUseCase();
 
@@ -87,7 +87,7 @@ class AuthCubit extends Cubit<AuthState> {
   }
 
   Future<void> loginWithApple() async {
-    emit(const AuthLoading());
+    emit(const AuthLoading(AuthLoadingMethod.apple));
     final result = await _authRepository.appleLogin();
     result.fold(
       (failure) => emit(AuthError(failure.message)),
@@ -97,7 +97,7 @@ class AuthCubit extends Cubit<AuthState> {
 
   /// Login with demo account
   Future<void> loginWithDemo() async {
-    emit(const AuthLoading());
+    emit(const AuthLoading(AuthLoadingMethod.demo));
 
     final result = await _demoLoginUseCase();
 

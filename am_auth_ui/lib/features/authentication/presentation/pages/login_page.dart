@@ -122,7 +122,8 @@ class _LoginPageState extends State<LoginPage> {
               final restoringSession = redirect != null &&
                   redirect.startsWith('/app') &&
                   (state is AuthInitial ||
-                      state is AuthLoading ||
+                      (state is AuthLoading &&
+                          state.method == AuthLoadingMethod.other) ||
                       state is AuthRestoreFailed);
               if (restoringSession) {
                 final failed = state is AuthRestoreFailed;
@@ -448,7 +449,9 @@ class _LoginPageState extends State<LoginPage> {
       ],
       EmailLoginFormWidget(
         isCompact: isCompact,
-        isLoading: state is AuthLoading,
+        isLoading:
+            state is AuthLoading && state.method == AuthLoadingMethod.email,
+        isBusy: state is AuthLoading,
         showTitle: showEmailTitle,
       ),
       SizedBox(height: isCompact ? 16 : 20),
@@ -470,10 +473,18 @@ class _LoginPageState extends State<LoginPage> {
         ],
       ),
       SizedBox(height: isCompact ? 16 : 20),
-      GoogleLoginButtonWidget(isLoading: state is AuthLoading),
+      GoogleLoginButtonWidget(
+        isLoading:
+            state is AuthLoading && state.method == AuthLoadingMethod.google,
+        isBusy: state is AuthLoading,
+      ),
       if (AppleLoginButton.isAvailable) ...[
         const SizedBox(height: 12),
-        AppleLoginButton(isLoading: state is AuthLoading),
+        AppleLoginButton(
+          isLoading:
+              state is AuthLoading && state.method == AuthLoadingMethod.apple,
+          isBusy: state is AuthLoading,
+        ),
       ],
       SizedBox(height: isCompact ? 16 : 20),
       Row(
