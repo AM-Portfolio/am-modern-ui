@@ -3,6 +3,7 @@ import 'package:am_dashboard_ui/presentation/layout/dashboard_layout_renderer.da
 import 'package:am_dashboard_ui/presentation/providers/dashboard_provider.dart';
 import 'package:am_dashboard_ui/presentation/providers/dashboard_timeframe_provider.dart';
 import 'package:am_dashboard_ui/presentation/providers/has_demo_portfolio_provider.dart';
+import 'package:am_dashboard_ui/presentation/widgets/dashboard_portfolio_selector.dart';
 import 'package:am_dashboard_ui/presentation/widgets/dashboard_toolbar.dart';
 import 'package:am_common/am_common.dart';
 import 'package:am_design_system/am_design_system.dart';
@@ -65,6 +66,7 @@ class _DashboardMobileScreenState extends ConsumerState<DashboardMobileScreen> {
     ref.invalidate(accountsHubProvider(id));
     ref.invalidate(portfolioOverviewsProvider(id));
     ref.invalidate(hasDemoPortfolioProvider);
+    ref.invalidate(dashboardPortfolioChoicesProvider);
     ref.invalidate(dashboardStreamProvider(id));
   }
 
@@ -151,6 +153,7 @@ class _DashboardMobileScreenState extends ConsumerState<DashboardMobileScreen> {
       ref.invalidate(accountsHubProvider(userId));
       ref.invalidate(portfolioOverviewsProvider(userId));
       ref.invalidate(hasDemoPortfolioProvider);
+      ref.invalidate(dashboardPortfolioChoicesProvider);
     }
 
     final showDemoBanner =
@@ -220,7 +223,7 @@ class _DashboardMobileScreenState extends ConsumerState<DashboardMobileScreen> {
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           if (showDemoBanner) ...[
-                            const _MobileDemoAccountCard(),
+                            const DemoAccountInlineBanner(),
                             const SizedBox(height: AppSpacing.md),
                           ],
                           DashboardLayoutRenderer(
@@ -237,70 +240,6 @@ class _DashboardMobileScreenState extends ConsumerState<DashboardMobileScreen> {
                         ],
                       ),
                     ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _MobileDemoAccountCard extends StatelessWidget {
-  const _MobileDemoAccountCard();
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    const accent = Color(0xFFE0B93A);
-    final accentText = isDark
-        ? const Color(0xFFF2D56B)
-        : const Color(0xFF765300);
-
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            accent.withValues(alpha: isDark ? 0.18 : 0.16),
-            accent.withValues(alpha: isDark ? 0.08 : 0.05),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(AppRadii.lg),
-        border: Border.all(color: accent.withValues(alpha: 0.55)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: accent.withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(AppRadii.sm),
-            ),
-            child: Icon(Icons.explore_outlined, color: accentText, size: 21),
-          ),
-          const SizedBox(width: AppSpacing.sm + 4),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Demo Account',
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    color: accentText,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Explore the sample portfolio above, or tap + to add your own.',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurface,
-                    height: 1.35,
                   ),
                 ),
               ],

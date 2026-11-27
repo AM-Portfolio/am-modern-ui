@@ -1108,6 +1108,7 @@ class PortfolioCubit extends Cubit<PortfolioState> {
     try {
       await _portfolioService.createPortfolio(request);
       await refreshPortfoliosList();
+      PortfolioDataRefresh.instance.notifyImported();
       // If no portfolio was loaded (or it was 'all'), we might want to reload
       if (_loadedPortfolioId == 'all' || _loadedPortfolioId == null) {
         loadPortfolioById('all');
@@ -1156,6 +1157,7 @@ class PortfolioCubit extends Cubit<PortfolioState> {
         deleteTrades: deleteTrades,
       );
       await refreshPortfoliosList();
+      PortfolioDataRefresh.instance.notifyImported();
       if (_loadedPortfolioId == portfolioId || _loadedPortfolioId == null) {
         // If we deleted the currently loaded portfolio, switch to 'all' or empty state
         loadPortfolioById('all');

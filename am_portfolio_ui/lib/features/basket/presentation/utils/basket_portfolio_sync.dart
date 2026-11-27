@@ -29,5 +29,6 @@ abstract final class BasketPortfolioSync {
         // Selection scope not available — fail open.
       }
     }
+    PortfolioDataRefresh.instance.notifyImported();
   }
 }
