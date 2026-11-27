@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:am_market_common/models/top_mover_stock.dart';
+import 'package:am_market_common/providers/market_provider.dart';
 import 'package:am_market_ui/features/market/widgets/market_colors.dart';
+import 'package:provider/provider.dart';
 
 /// Market-module adapter for [AmTopMoversPanel].
 ///
@@ -54,21 +56,42 @@ class TopMoversWidgetV2 extends StatelessWidget {
     final negativeColor = MarketColors.negative(context);
     final headerAccent = ModuleColors.market;
 
-    return AmTopMoversPanel(
-      gainers: gainers.map(_toAmItem).toList(),
-      losers: losers.map(_toAmItem).toList(),
-      isLoading: isLoading,
-      error: error,
-      positiveColor: positiveColor,
-      negativeColor: negativeColor,
-      headerAccent: headerAccent,
-      headerTrailing: headerTrailing,
-      scrollEmbedded: scrollEmbedded,
-      onItemTap:
-          onSymbolTap == null ? null : (item) => onSymbolTap!(item.symbol),
-      // Market fetches limit:5 — show all five (do not change DS default for Portfolio).
-      maxItemsPerColumn: 5,
+    return Consumer<MarketProvider>(
+      builder: (context, provider, child) => AmTopMoversPanel(
+        gainers: _mergeLive(gainers, provider).map(_toAmItem).toList(),
+        losers: _mergeLive(losers, provider).map(_toAmItem).toList(),
+        isLoading: isLoading,
+        error: error,
+        positiveColor: positiveColor,
+        negativeColor: negativeColor,
+        headerAccent: headerAccent,
+        headerTrailing: headerTrailing,
+        scrollEmbedded: scrollEmbedded,
+        onItemTap:
+            onSymbolTap == null ? null : (item) => onSymbolTap!(item.symbol),
+        // Market fetches limit:5 — show all five (do not change DS default for Portfolio).
+        maxItemsPerColumn: 5,
+      ),
     );
+  }
+
+  static List<TopMoverStock> _mergeLive(
+      List<TopMoverStock> stocks, MarketProvider provider) {
+    return stocks.map((stock) {
+      final live = provider.getPrice(stock.symbol);
+      final lastPrice = (live?['lastPrice'] as num?)?.toDouble();
+      final change = (live?['change'] as num?)?.toDouble();
+      final changePercent = (live?['changePercent'] as num?)?.toDouble();
+      if (lastPrice == null || change == null || changePercent == null) {
+        return stock;
+      }
+      return stock.copyWith(
+        lastPrice: lastPrice,
+        change: change,
+        changePercent: changePercent,
+        changeUnavailable: false,
+      );
+    }).toList(growable: false);
   }
 
   /// Maps [TopMoverStock] → [AmMoverItem].
