@@ -40,8 +40,7 @@ class DashboardMobileScreen extends ConsumerStatefulWidget {
       _DashboardMobileScreenState();
 }
 
-class _DashboardMobileScreenState
-    extends ConsumerState<DashboardMobileScreen> {
+class _DashboardMobileScreenState extends ConsumerState<DashboardMobileScreen> {
   late final PageController _pageController;
   bool _searchOpen = false;
 
@@ -77,7 +76,10 @@ class _DashboardMobileScreenState
       }
     }
 
-    ref.listen(dashboardStreamProvider(widget.userId), (_, next) => markIfReady(next));
+    ref.listen(
+      dashboardStreamProvider(widget.userId),
+      (_, next) => markIfReady(next),
+    );
     ref.listen(
       moversStreamProvider(widget.userId, timeFrame: tfCode),
       (_, next) => markIfReady(next),
@@ -86,13 +88,13 @@ class _DashboardMobileScreenState
       recentActivityProvider(widget.userId, page: 0, size: 10),
       (_, next) => markIfReady(next),
     );
-    ref.listen(portfolioOverviewsProvider(widget.userId), (_, next) => markIfReady(next));
+    ref.listen(
+      portfolioOverviewsProvider(widget.userId),
+      (_, next) => markIfReady(next),
+    );
   }
 
-  Widget _buildStickyHeader({
-    required Color onSurface,
-    required bool showDemoBadge,
-  }) {
+  Widget _buildStickyHeader({required Color onSurface}) {
     final scope = MobileSearchScope.maybeOf(context);
     final shellHandlesSearch = scope?.liveSearch != null;
     if (_searchOpen && !shellHandlesSearch) {
@@ -108,7 +110,6 @@ class _DashboardMobileScreenState
     return DashboardToolbar(
       userId: widget.userId,
       onSurface: onSurface,
-      showDemoBadge: showDemoBadge,
       brandLabel: widget.brandLabel,
       profileLeading: widget.profileLeading,
       onProfileTap: widget.onProfileTap,
@@ -199,10 +200,7 @@ class _DashboardMobileScreenState
             child: Column(
               children: [
                 // Sticky top: Sync / paper / timeframe
-                _buildStickyHeader(
-                  onSurface: onSurface,
-                  showDemoBadge: showDemoBanner,
-                ),
+                _buildStickyHeader(onSurface: onSurface),
                 Expanded(
                   child: RefreshIndicator(
                     onRefresh: refresh,
@@ -221,6 +219,10 @@ class _DashboardMobileScreenState
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
+                          if (showDemoBanner) ...[
+                            const _MobileDemoAccountCard(),
+                            const SizedBox(height: AppSpacing.md),
+                          ],
                           DashboardLayoutRenderer(
                             userId: userId,
                             layout: layout,
@@ -235,6 +237,70 @@ class _DashboardMobileScreenState
                         ],
                       ),
                     ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MobileDemoAccountCard extends StatelessWidget {
+  const _MobileDemoAccountCard();
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    const accent = Color(0xFFE0B93A);
+    final accentText = isDark
+        ? const Color(0xFFF2D56B)
+        : const Color(0xFF765300);
+
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            accent.withValues(alpha: isDark ? 0.18 : 0.16),
+            accent.withValues(alpha: isDark ? 0.08 : 0.05),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(AppRadii.lg),
+        border: Border.all(color: accent.withValues(alpha: 0.55)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: accent.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(AppRadii.sm),
+            ),
+            child: Icon(Icons.explore_outlined, color: accentText, size: 21),
+          ),
+          const SizedBox(width: AppSpacing.sm + 4),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Demo Account',
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    color: accentText,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Explore the sample portfolio above, or tap + to add your own.',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurface,
+                    height: 1.35,
                   ),
                 ),
               ],
