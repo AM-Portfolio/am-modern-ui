@@ -915,6 +915,13 @@ class _HoverTileState extends State<_HoverTile> {
   }
 
   void _handleTap(HeatmapInteractionScope? scope) {
+    final kids = widget.tile.children;
+    final hasHoldings = kids != null && kids.isNotEmpty;
+    // Flat leaf that still has children (e.g. sector inside Other) → expand.
+    if (hasHoldings && scope?.onSectorDrill != null) {
+      scope!.onSectorDrill!(widget.tile);
+      return;
+    }
     final isStock = widget.tile.metadata?['type'] == 'stock';
     if (isStock) {
       scope?.onTileSelect?.call(widget.tile);
@@ -1042,7 +1049,7 @@ class _HoverTileState extends State<_HoverTile> {
     final showAmount = value != null && value > 0 && w >= 56 && h >= 44;
     final showMonogram = solid && isStock && w >= 72 && h >= 72;
     final showWeight = !solid && h > 56;
-    final nameMaxLines = h > 70 ? 2 : 1;
+    final nameMaxLines = h > 110 ? 4 : (h > 70 ? 3 : (h > 48 ? 2 : 1));
 
     final nameFontSize = _adaptiveFontSize(w, h, _FontRole.name);
     final primaryFontSize = _adaptiveFontSize(w, h, _FontRole.primary);
@@ -1052,8 +1059,7 @@ class _HoverTileState extends State<_HoverTile> {
       return const SizedBox.expand();
     }
 
-    final pctText =
-        '${widget.tile.performance >= 0 ? '+' : ''}${widget.tile.performance.toStringAsFixed(2)}%';
+    final pctText = _dayChangeLabel(widget.tile);
     final amountText = value != null ? StringUtils.formatCurrency(value) : null;
 
     Widget content = Padding(
@@ -1092,9 +1098,12 @@ class _HoverTileState extends State<_HoverTile> {
                   fontSize: nameFontSize,
                   fontWeight: FontWeight.w700,
                   letterSpacing: -0.2,
+                  height: 1.15,
                 ),
                 textAlign: TextAlign.center,
+                softWrap: true,
                 maxLines: nameMaxLines,
+                overflow: TextOverflow.fade,
               ),
             if (showPct)
               Padding(
@@ -1144,6 +1153,19 @@ class _HoverTileState extends State<_HoverTile> {
 
     // Always clip — never report flex overflow outside the allocation cell.
     return ClipRect(child: SizedBox.expand(child: content));
+  }
+
+  /// Omit painted +0.00% when a scheme/stock has no prior close (no real 1D %).
+  static String _dayChangeLabel(HeatmapTileData tile) {
+    final meta = tile.metadata ?? const <String, dynamic>{};
+    final isStock = meta['type'] == 'stock';
+    final prev = meta['previousClose'];
+    final hasPrev = prev is num && prev > 0;
+    if (isStock && !hasPrev && tile.performance.abs() < 0.005) {
+      return '—';
+    }
+    final up = tile.performance >= 0;
+    return '${up ? '+' : ''}${tile.performance.toStringAsFixed(2)}%';
   }
 
   double _adaptiveFontSize(double w, double h, _FontRole role) {

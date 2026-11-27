@@ -65,11 +65,16 @@ class PortfolioCubit extends Cubit<PortfolioState> {
           currentState.portfolioId,
           _currentTimeFrame,
         );
-        // Day P&L is session-scoped — keep last good value when a longer interval omits it.
+        // Day P&L is session-scoped — keep last good pair when interval omits both.
+        final day = _mergeDayPnl(
+          incomingToday: summary.todayChange,
+          incomingPct: summary.todayChangePercentage,
+          priorToday: currentState.summary.todayChange,
+          priorPct: currentState.summary.todayChangePercentage,
+        );
         final merged = summary.copyWith(
-          todayChange: summary.todayChange ?? currentState.summary.todayChange,
-          todayChangePercentage: summary.todayChangePercentage ??
-              currentState.summary.todayChangePercentage,
+          todayChange: day.today,
+          todayChangePercentage: day.pct,
         );
         emit(currentState.copyWith(summary: merged, isRefreshing: false));
       } catch (e) {
@@ -1003,15 +1008,19 @@ class PortfolioCubit extends Cubit<PortfolioState> {
           }
         }
 
+        final day = _mergeDayPnl(
+          incomingToday: dto.todayGainLoss,
+          incomingPct: dto.todayGainLossPercentage,
+          priorToday: currentState.summary.todayChange,
+          priorPct: currentState.summary.todayChangePercentage,
+        );
         final updatedSummary = currentState.summary.copyWith(
           totalValue: dto.currentValue,
           investmentValue: dto.investmentValue,
           totalGainLoss: newTotalGainLoss,
           totalGainLossPercentage: newTotalGainLossPercentage,
-          // Preserve prior day P&L when socket omits unavailable baselines.
-          todayChange: dto.todayGainLoss ?? currentState.summary.todayChange,
-          todayChangePercentage:
-              dto.todayGainLossPercentage ?? currentState.summary.todayChangePercentage,
+          todayChange: day.today,
+          todayChangePercentage: day.pct,
           lastUpdated: DateTime.now(),
         );
 
@@ -1099,6 +1108,7 @@ class PortfolioCubit extends Cubit<PortfolioState> {
     try {
       await _portfolioService.createPortfolio(request);
       await refreshPortfoliosList();
+      PortfolioDataRefresh.instance.notifyImported();
       // If no portfolio was loaded (or it was 'all'), we might want to reload
       if (_loadedPortfolioId == 'all' || _loadedPortfolioId == null) {
         loadPortfolioById('all');
@@ -1147,6 +1157,7 @@ class PortfolioCubit extends Cubit<PortfolioState> {
         deleteTrades: deleteTrades,
       );
       await refreshPortfoliosList();
+      PortfolioDataRefresh.instance.notifyImported();
       if (_loadedPortfolioId == portfolioId || _loadedPortfolioId == null) {
         // If we deleted the currently loaded portfolio, switch to 'all' or empty state
         loadPortfolioById('all');
@@ -1176,5 +1187,18 @@ class PortfolioCubit extends Cubit<PortfolioState> {
       );
       if (!isClosed) emit(PortfolioError('Failed to restore demo portfolio'));
     }
+  }
+
+  /// Keep prior day ₹/% only when the payload omits both. Never mix fresh ₹ with stale %.
+  static ({double? today, double? pct}) _mergeDayPnl({
+    required double? incomingToday,
+    required double? incomingPct,
+    required double? priorToday,
+    required double? priorPct,
+  }) {
+    if (incomingToday == null && incomingPct == null) {
+      return (today: priorToday, pct: priorPct);
+    }
+    return (today: incomingToday, pct: incomingPct);
   }
 }

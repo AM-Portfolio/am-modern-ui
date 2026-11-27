@@ -7,6 +7,8 @@ export 'core/services/security_alert_service.dart';
 export 'core/services/step_up_service.dart';
 export 'core/services/token_refresh_service.dart';
 export 'core/utils/auth_redirect.dart';
+export 'core/utils/same_origin_navigation.dart';
+export 'core/utils/qa_portal_handoff.dart';
 export 'core/utils/pkce_utils.dart';
 
 // Core Network

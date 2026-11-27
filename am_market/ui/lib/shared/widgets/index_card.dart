@@ -21,9 +21,23 @@ class IndexCard extends StatelessWidget {
         final numberFormat = NumberFormat('#,##,###.##', 'en_IN');
 
         bool isLoading = false;
+        double displayLastPrice = data.lastPrice;
         double displayChange = data.change;
         double displayPChange = data.pChange;
         final liveQuote = provider.getPrice(data.indexSymbol);
+        final liveLastPrice = (liveQuote?['lastPrice'] as num?)?.toDouble();
+        final liveChange = (liveQuote?['change'] as num?)?.toDouble();
+        final liveChangePercent =
+            (liveQuote?['changePercent'] as num?)?.toDouble();
+        if (provider.selectedIndicesTimeframe == '1D') {
+          if (liveLastPrice != null && liveLastPrice > 0) {
+            displayLastPrice = liveLastPrice;
+          }
+          if (liveChange != null && liveChangePercent != null) {
+            displayChange = liveChange;
+            displayPChange = liveChangePercent;
+          }
+        }
         final liveChangeUnavailable =
             provider.selectedIndicesTimeframe == '1D' &&
                 liveQuote?['lastPrice'] != null &&
@@ -83,7 +97,7 @@ class IndexCard extends StatelessWidget {
 
               // Price
               Text(
-                numberFormat.format(data.lastPrice),
+                numberFormat.format(displayLastPrice),
                 style: TextStyle(
                   color: context.colors.textPrimary,
                   fontSize: 20,

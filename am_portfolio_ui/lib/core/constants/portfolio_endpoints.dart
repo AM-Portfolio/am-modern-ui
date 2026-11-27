@@ -15,6 +15,10 @@ class PortfolioEndpoints {
   static String advancedAnalytics(String portfolioId) =>
       '/v1/analytics/portfolio/$portfolioId/advanced';
 
+  /// Heatmap scheme lookthrough (fund → sector → stock)
+  static String heatmapLookthrough(String portfolioId) =>
+      '/v1/analytics/portfolio/$portfolioId/heatmap/lookthrough';
+
   /// Portfolio Intelligence (Health + Risk + X-Ray summary)
   static String intelligence(String portfolioId) =>
       '/v1/analytics/portfolio/$portfolioId/intelligence';

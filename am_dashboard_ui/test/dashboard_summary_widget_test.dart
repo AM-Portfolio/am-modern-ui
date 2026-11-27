@@ -114,4 +114,26 @@ void main() {
     expect(find.text('1D Price Change'), findsNothing);
     expect(find.text('Principal Capital'), findsOneWidget);
   });
+
+  testWidgets('absurd invested vs value hides Invested and Return',
+      (tester) async {
+    await _pump(
+      tester,
+      summary: const DashboardSummary(
+        totalValue: 13754930,
+        totalInvested: 854185,
+        totalGainLoss: 12900745,
+        totalGainLossPercentage: 1510.3,
+        dayChange: 23560,
+        dayChangePercentage: 0.18,
+        totalPortfolios: 1,
+        totalHoldings: 32,
+      ),
+    );
+
+    expect(find.text('Total Invested'), findsNothing);
+    expect(find.text('Total Return'), findsNothing);
+    expect(find.text('Total Holdings'), findsOneWidget);
+    expect(find.text('1D Price Change'), findsOneWidget);
+  });
 }

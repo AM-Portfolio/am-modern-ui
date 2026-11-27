@@ -15,6 +15,45 @@ class IdentityAuthRemoteDataSource implements AuthDataSource {
   IdentityAuthRemoteDataSource(this._dio);
   final Dio _dio;
 
+  Future<AuthResultModel> appleLogin(
+    String idToken, {
+    String? givenName,
+    String? familyName,
+  }) async {
+    try {
+      final response = await _dio.post(
+        AuthEndpoints.identityAppleLogin,
+        data: {
+          'id_token': idToken,
+          if (givenName != null) 'given_name': givenName,
+          if (familyName != null) 'family_name': familyName,
+        },
+        options: Options(headers: {'Content-Type': 'application/json'}),
+      );
+      final data = response.data as Map<String, dynamic>;
+      final accessToken = data['access_token'] as String;
+      return AuthResultModel(
+        user: _parseUserFromToken(accessToken, ''),
+        tokens: AuthTokensModel(
+          accessToken: accessToken,
+          refreshToken: data['refresh_token'] as String?,
+          expiresAt: DateTime.now().add(
+            Duration(seconds: data['expires_in'] as int? ?? 3600),
+          ),
+        ),
+      );
+    } on DioException catch (e) {
+      if (e.type == DioExceptionType.connectionError ||
+          e.type == DioExceptionType.connectionTimeout) {
+        throw NetworkException(AuthConstants.networkError);
+      }
+      throw ServerException(
+        _parseErrorMessage(e.response?.data),
+        statusCode: e.response?.statusCode ?? 500,
+      );
+    }
+  }
+
   UserModel _parseUserFromToken(String token, String defaultEmail) {
     try {
       final parts = token.split('.');
@@ -29,7 +68,10 @@ class IdentityAuthRemoteDataSource implements AuthDataSource {
 
       final userId = claims['sub'] ?? claims['user_id'] ?? claims['id'] ?? '';
       final email = claims['email'] ?? defaultEmail;
-      final name = claims['name'] ?? claims['preferred_username'] ?? claims['username'] ?? '';
+      final name = claims['name'] ??
+          claims['preferred_username'] ??
+          claims['username'] ??
+          '';
 
       return UserModel(
         id: userId.toString(),
@@ -135,7 +177,8 @@ class IdentityAuthRemoteDataSource implements AuthDataSource {
         final user = _parseUserFromToken(accessToken, email);
 
         if (user.id.isEmpty) {
-          AppLogger.error('🚨 CRITICAL: Decoded User ID is empty from access token!');
+          AppLogger.error(
+              '🚨 CRITICAL: Decoded User ID is empty from access token!');
         }
 
         final tokens = AuthTokensModel(
@@ -377,7 +420,8 @@ class IdentityAuthRemoteDataSource implements AuthDataSource {
     );
   }
 
-  Future<AuthResultModel> confirmVerifyEmail({String? token, String? code}) async {
+  Future<AuthResultModel> confirmVerifyEmail(
+      {String? token, String? code}) async {
     final body = <String, dynamic>{};
     final trimmedCode = code?.trim();
     final trimmedToken = token?.trim();
@@ -419,7 +463,8 @@ class IdentityAuthRemoteDataSource implements AuthDataSource {
         ),
       );
     } on DioException catch (e) {
-      AppLogger.error('Identity Verify Email Confirm Error: ${e.response?.data}');
+      AppLogger.error(
+          'Identity Verify Email Confirm Error: ${e.response?.data}');
       if (e.type == DioExceptionType.connectionError ||
           e.type == DioExceptionType.connectionTimeout) {
         throw NetworkException(AuthConstants.networkError);
@@ -549,7 +594,8 @@ class IdentityAuthRemoteDataSource implements AuthDataSource {
         );
       }
     } on DioException catch (e) {
-      AppLogger.error('Identity Request account deletion API Error: ${e.response?.data}');
+      AppLogger.error(
+          'Identity Request account deletion API Error: ${e.response?.data}');
       if (e.type == DioExceptionType.connectionError ||
           e.type == DioExceptionType.connectionTimeout) {
         throw NetworkException(AuthConstants.networkError);

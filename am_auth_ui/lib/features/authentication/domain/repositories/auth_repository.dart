@@ -14,6 +14,9 @@ abstract class AuthRepository {
   /// Login with Google
   Future<Either<Failure, AuthResultEntity>> googleLogin();
 
+  /// Sign in on iOS with a native Apple identity token.
+  Future<Either<Failure, AuthResultEntity>> appleLogin();
+
   /// Login with demo account
   Future<Either<Failure, AuthResultEntity>> demoLogin();
 

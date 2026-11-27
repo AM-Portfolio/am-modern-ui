@@ -15,8 +15,15 @@ final class AuthInitial extends AuthState {
 }
 
 /// Loading state
+enum AuthLoadingMethod { other, email, google, apple, demo }
+
 final class AuthLoading extends AuthState {
-  const AuthLoading();
+  const AuthLoading([this.method = AuthLoadingMethod.other]);
+
+  final AuthLoadingMethod method;
+
+  @override
+  List<Object?> get props => [method];
 }
 
 /// Authenticated state

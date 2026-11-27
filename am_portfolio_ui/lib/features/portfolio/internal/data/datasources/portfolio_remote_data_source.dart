@@ -18,6 +18,7 @@ import '../dtos/portfolio_create_request_dto.dart';
 import '../dtos/portfolio_update_request_dto.dart';
 import '../mappers/portfolio_analytics_mapper.dart';
 import '../mappers/portfolio_mapper.dart';
+import '../../domain/entities/heatmap_lookthrough.dart';
 import '../../domain/entities/portfolio_intelligence.dart';
 import 'portfolio_mock_data_helper.dart';
 
@@ -48,6 +49,13 @@ abstract class PortfolioRemoteDataSource {
 
   /// Portfolio Intelligence (Health + Risk + X-Ray)
   Future<PortfolioIntelligence> getPortfolioIntelligence(String portfolioId);
+
+  /// Heatmap fund/ETF lookthrough (fund → sector → stock).
+  Future<HeatmapLookthrough> getHeatmapLookthrough(
+    String portfolioId, {
+    required String schemeIsin,
+    double? schemeValue,
+  });
 
   /// Stress scenario estimates
   Future<StressResult> getPortfolioStress(
@@ -625,6 +633,34 @@ class PortfolioRemoteDataSourceImpl implements PortfolioRemoteDataSource {
         rethrow;
       }
     }
+  }
+
+  @override
+  Future<HeatmapLookthrough> getHeatmapLookthrough(
+    String portfolioId, {
+    required String schemeIsin,
+    double? schemeValue,
+  }) async {
+    final scope = _allScope(portfolioId);
+    final query = <String, String>{
+      'schemeIsin': schemeIsin,
+      if (schemeValue != null) 'schemeValue': schemeValue.toString(),
+    };
+    final baseUri = _buildUri(
+      _baseUrl,
+      PortfolioEndpoints.heatmapLookthrough(scope.id),
+    );
+    final withQuery = Uri.parse(baseUri).replace(queryParameters: {
+      ...Uri.parse(baseUri).queryParameters,
+      ...query,
+    }).toString();
+    final fullUri = _withPersona(withQuery, scope.persona);
+    return _apiClient.get<HeatmapLookthrough>(
+      fullUri,
+      parser: (data) => HeatmapLookthrough.fromJson(
+        Map<String, dynamic>.from(data! as Map),
+      ),
+    );
   }
 
   @override
