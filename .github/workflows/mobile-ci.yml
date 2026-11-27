@@ -43,22 +43,27 @@ on:
   workflow_dispatch:
     inputs:
       run_android:
-        description: "Run Android build / Play jobs"
+        description: "Enable Android for the selected manual release"
         required: false
         type: boolean
         default: true
       run_ios:
-        description: "Run iOS build / TestFlight / App Store jobs"
+        description: "Enable iOS for the selected manual release"
         required: false
         type: boolean
         default: true
       deploy_internal:
-        description: "Manual override for Play Internal + TestFlight on non-main branches (pushes deploy automatically)"
+        description: "Manual Play Internal + TestFlight release (no production)"
         required: false
         type: boolean
         default: false
       deploy_testflight:
-        description: "Manual TestFlight upload on non-main branches (pushes deploy automatically)"
+        description: "Manual iOS TestFlight release only (no production)"
+        required: false
+        type: boolean
+        default: false
+      deploy_production:
+        description: "Main only: Internal + TestFlight, then Play Production + App Store"
         required: false
         type: boolean
         default: false
@@ -89,6 +94,7 @@ jobs:
           EVENT="${{ github.event_name }}"
           DISPATCH_INTERNAL="${{ github.event.inputs.deploy_internal }}"
           DISPATCH_TF="${{ github.event.inputs.deploy_testflight }}"
+          DISPATCH_PRODUCTION="${{ github.event.inputs.deploy_production }}"
 
           RUN_ANDROID=true
           RUN_IOS=true
@@ -107,8 +113,13 @@ jobs:
           DEPLOY_IOS_TF=false
           DEPLOY_IOS_PRODUCTION=false
 
-          if [ "$REF" = "main" ]; then
-            # Full ladder: Internal → Production (Play + App Store)
+          if [ "$EVENT" = "workflow_dispatch" ] && [ "$DISPATCH_PRODUCTION" = "true" ] && [ "$REF" != "main" ]; then
+            echo "::error::Production deployment is available only from main"
+            exit 1
+          fi
+
+          if [ "$REF" = "main" ] && [ "$EVENT" = "push" ]; then
+            # Main pushes keep the full automatic release ladder.
             DEPLOY_ANDROID_INTERNAL=true
             DEPLOY_ANDROID_PRODUCTION=true
             DEPLOY_IOS_TF=true
@@ -118,13 +129,20 @@ jobs:
             DEPLOY_ANDROID_INTERNAL=true
             DEPLOY_IOS_TF=true
           else
-            # Manual non-main runs can request tester distribution, never production.
+            # Manual runs with no release option selected perform validation only.
+            # Production includes the tester gates.
             if [ "$DISPATCH_INTERNAL" = "true" ]; then
               DEPLOY_ANDROID_INTERNAL=true
               DEPLOY_IOS_TF=true
             fi
             if [ "$DISPATCH_TF" = "true" ]; then
               DEPLOY_IOS_TF=true
+            fi
+            if [ "$DISPATCH_PRODUCTION" = "true" ]; then
+              DEPLOY_ANDROID_INTERNAL=true
+              DEPLOY_ANDROID_PRODUCTION=true
+              DEPLOY_IOS_TF=true
+              DEPLOY_IOS_PRODUCTION=true
             fi
           fi
 
