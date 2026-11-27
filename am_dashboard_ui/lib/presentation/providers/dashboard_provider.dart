@@ -352,11 +352,21 @@ Stream<DashboardSummary> dashboardStream(Ref ref, String userId) async* {
   final resolvedUserId = await _requireDashboardUserId(ref, userId);
   // Same persona dependency as dashboardSummary — avoid stale day% from prior scope.
   ref.watch(familyPortfolioFilterProvider);
+  final portfolioId = ref.watch(dashboardPortfolioScopeProvider);
 
   final repository = await ref.watch(dashboardRepositoryProvider.future);
 
   final summary = await _resolveDashboardSummary(ref, repository, resolvedUserId);
   yield summary;
+
+  // Single-book KPIs must not be overwritten by unscoped analysis STOMP
+  // (that resurrected Invested/Return from another book).
+  final scopedBook = portfolioId != null &&
+      portfolioId.isNotEmpty &&
+      portfolioId != 'all';
+  if (scopedBook) {
+    return;
+  }
 
   _attachDashboardStreaming(ref, resolvedUserId);
   try {

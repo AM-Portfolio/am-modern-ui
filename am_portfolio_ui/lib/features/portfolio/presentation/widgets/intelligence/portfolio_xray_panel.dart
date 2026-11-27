@@ -107,12 +107,14 @@ String _normalizeAssetClassKey(String raw) {
     case 'SILVER':
       return 'COMMODITY';
     case 'MF':
-    case 'ETF':
     case 'MUTUAL':
     case 'MUTUAL_FUND':
     case 'MUTUAL_FUND_DEMAT':
     case 'MUTUAL_FUND_FOLIO':
       return 'MUTUAL_FUND';
+    case 'ETF':
+    case 'EXCHANGE_TRADED':
+      return 'ETF';
     case 'NPS':
       return 'NPS';
     default:
@@ -204,6 +206,7 @@ class PortfolioXrayPanel extends ConsumerStatefulWidget {
     this.padding = const EdgeInsets.all(20),
     this.readOnly = false,
     this.accentColor,
+    this.bookTotalValueInr,
     @visibleForTesting this.holdingsOverride,
     super.key,
   });
@@ -216,6 +219,9 @@ class PortfolioXrayPanel extends ConsumerStatefulWidget {
   /// When true (All Portfolios), Class write CTAs are hidden.
   final bool readOnly;
   final Color? accentColor;
+
+  /// Overview Total Balance for this book — Total Exposure must match this NAV.
+  final double? bookTotalValueInr;
 
   /// Test-only holdings injection when PortfolioCubit is unavailable.
   @visibleForTesting
@@ -328,7 +334,7 @@ class _PortfolioXrayPanelState extends ConsumerState<PortfolioXrayPanel>
     return xray;
   }
 
-  List<XrayWeight> _weightsForTab(PortfolioXray? xray) {
+  List<XrayWeight> _weightsForTab(PortfolioXray? xray, {double? scaleToTotal}) {
     if (xray == null) return const [];
     // Tabs: Sector(0), Industry(1), Cap(2), Class(3), By Portfolio(4).
     List<XrayWeight> raw = switch (_tab) {
@@ -340,13 +346,24 @@ class _PortfolioXrayPanelState extends ConsumerState<PortfolioXrayPanel>
     };
 
     // Class uses real assetClassWeights from intelligence — no EQUITY 100% fake.
-    final sorted = [...raw]
+    var sorted = [...raw]
       ..sort((a, b) {
         final aUnk = a.name.toLowerCase() == 'unknown';
         final bUnk = b.name.toLowerCase() == 'unknown';
         if (aUnk != bUnk) return aUnk ? 1 : -1;
         return b.weightPct.compareTo(a.weightPct);
       });
+    // Align slice ₹ with Overview NAV while keeping weightPct from intelligence.
+    if (scaleToTotal != null && scaleToTotal > 0) {
+      sorted = [
+        for (final w in sorted)
+          XrayWeight(
+            name: w.name,
+            weightPct: w.weightPct,
+            valueInr: scaleToTotal * (w.weightPct / 100.0),
+          ),
+      ];
+    }
     return sorted;
   }
 
@@ -603,11 +620,18 @@ class _PortfolioXrayPanelState extends ConsumerState<PortfolioXrayPanel>
       data: (intel) {
         final accent = widget.accentColor ?? ModuleColors.portfolio;
         final xray = _resolveXray(intel?.xray);
-        final weights = _weightsForTab(xray);
         final holdingsTotal = holdings == null || holdings.isEmpty
             ? null
             : holdings.fold<double>(0, (s, h) => s + h.currentValue);
-        final totalValue = xray?.totalValueInr ?? holdingsTotal;
+        // Prefer Overview book NAV so Total Exposure matches Total Balance.
+        final bookNav = widget.bookTotalValueInr;
+        final totalValue = (bookNav != null && bookNav > 0)
+            ? bookNav
+            : (xray?.totalValueInr ?? holdingsTotal);
+        final weights = _weightsForTab(
+          xray,
+          scaleToTotal: (bookNav != null && bookNav > 0) ? bookNav : null,
+        );
         final useFill = widget.fillHeight;
         // Phone Chart/List must stay exclusive. fillHeight only stretches the
         // active pane; do not force donut+list Row below the wide breakpoint.

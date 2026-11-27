@@ -5,6 +5,7 @@ import 'package:am_design_system/core/utils/string_utils.dart';
 
 import '../../../models/heatmap.dart';
 import '../../selectors/sector_selector.dart';
+import '../heatmap_interaction_scope.dart';
 
 /// Abstract base class for all heatmap layout builders
 /// Provides a common interface for different layout strategies
@@ -300,9 +301,8 @@ abstract class HeatmapLayoutBuilder {
       resultTiles = allChildren;
     } else {
       // Show matching parent sector tile(s) with children nested (no flatten).
-      final sectorName = selectedSector.displayName;
       resultTiles = rootTiles
-          .where((tile) => matchesSector(tile, sectorName))
+          .where((tile) => matchesSectorType(tile, selectedSector))
           .toList();
     }
 
@@ -364,9 +364,44 @@ abstract class HeatmapLayoutBuilder {
     if (hay == needle || hay.replaceAll(' ', '') == needle.replaceAll(' ', '')) {
       return true;
     }
+    if (_financeFamily(needle) && _financeFamily(hay)) return true;
+    if (_techFamily(needle) && _techFamily(hay)) return true;
     return tile.displayName.toLowerCase().contains(needle) ||
         tile.name.toLowerCase().contains(needle);
   }
+
+  /// Domain match by [SectorType] so Banking still finds Financial Services tiles.
+  bool matchesSectorType(HeatmapTileData tile, SectorType sector) {
+    if (sector == SectorType.all) return true;
+    final hay = '${tile.displayName} ${tile.name}'.toLowerCase();
+    switch (sector) {
+      case SectorType.finance:
+      case SectorType.banking:
+        return _financeFamily(hay);
+      case SectorType.technology:
+      case SectorType.it:
+        return _techFamily(hay);
+      case SectorType.healthcare:
+      case SectorType.pharma:
+        return hay.contains('health') ||
+            hay.contains('pharma') ||
+            hay.contains('biotech') ||
+            hay.contains('medical');
+      default:
+        return matchesSector(tile, sector.displayName);
+    }
+  }
+
+  static bool _financeFamily(String s) =>
+      s.contains('finance') ||
+      s.contains('financial') ||
+      s.contains('bank') ||
+      s.contains('insurance');
+
+  static bool _techFamily(String s) =>
+      s.contains('information technology') ||
+      s == 'it' ||
+      (s.contains('tech') && !s.contains('health') && !s.contains('bio'));
 
   /// Resolves [AppColorsTheme] from the active Theme (centralized tokens).
   AppColorsTheme themeColors(BuildContext context) {
@@ -477,7 +512,7 @@ abstract class HeatmapLayoutBuilder {
   }) {
     if (customTileBuilder != null) {
       return GestureDetector(
-        onTap: onTilePressed,
+        onTap: () => _handleExpandableTap(context, tile, onTilePressed),
         child: customTileBuilder(tile),
       );
     }
@@ -512,6 +547,23 @@ abstract class HeatmapLayoutBuilder {
           selectedMetric,
         );
     }
+  }
+
+  static bool _tileHasChildren(HeatmapTileData tile) =>
+      tile.children != null && tile.children!.isNotEmpty;
+
+  /// Sector shells expand via [HeatmapInteractionScope.onSectorDrill] (same as treemap).
+  static void _handleExpandableTap(
+    BuildContext context,
+    HeatmapTileData tile,
+    VoidCallback? onTilePressed,
+  ) {
+    final scope = HeatmapInteractionScope.maybeOf(context);
+    if (_tileHasChildren(tile) && scope?.onSectorDrill != null) {
+      scope!.onSectorDrill!(tile);
+      return;
+    }
+    (tile.onTap ?? onTilePressed)?.call();
   }
 
   /// Builds a card optimized for grid layout
@@ -569,32 +621,35 @@ abstract class HeatmapLayoutBuilder {
     final colors = themeColors(context);
     final hierarchyLevel = _calculateHierarchyLevel(tile, data);
 
-    return GestureDetector(
-      onTap: tile.onTap ?? onTilePressed,
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 2),
-        decoration: BoxDecoration(
-          color: tileColor,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: colors.border.withValues(alpha: 0.55)),
-          boxShadow: [
-            BoxShadow(
-              color: colors.textPrimary.withValues(alpha: 0.08),
-              blurRadius: 2,
-              offset: const Offset(0, 1),
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: () => _handleExpandableTap(context, tile, onTilePressed),
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 2),
+          decoration: BoxDecoration(
+            color: tileColor,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: colors.border.withValues(alpha: 0.55)),
+            boxShadow: [
+              BoxShadow(
+                color: colors.textPrimary.withValues(alpha: 0.08),
+                blurRadius: 2,
+                offset: const Offset(0, 1),
+              ),
+            ],
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: _buildListCardContent(
+              context,
+              tile,
+              data,
+              width ?? 0,
+              height ?? 60,
+              textColor,
+              hierarchyLevel,
             ),
-          ],
-        ),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          child: _buildListCardContent(
-            context,
-            tile,
-            data,
-            width ?? 0,
-            height ?? 60,
-            textColor,
-            hierarchyLevel,
           ),
         ),
       ),
@@ -782,7 +837,9 @@ abstract class HeatmapLayoutBuilder {
                       ),
                     Expanded(
                       child: Text(
-                        tile.name,
+                        tile.displayName.trim().isNotEmpty
+                            ? tile.displayName
+                            : tile.name,
                         style: TextStyle(
                           color: textColor,
                           fontSize: dynamicFontSize,
@@ -792,6 +849,15 @@ abstract class HeatmapLayoutBuilder {
                         maxLines: 1,
                       ),
                     ),
+                    if (_tileHasChildren(tile) && !isTightHeight)
+                      Padding(
+                        padding: const EdgeInsets.only(left: 4),
+                        child: Icon(
+                          Icons.chevron_right_rounded,
+                          size: 18,
+                          color: textColor.withValues(alpha: 0.85),
+                        ),
+                      ),
                   ],
                 ),
 

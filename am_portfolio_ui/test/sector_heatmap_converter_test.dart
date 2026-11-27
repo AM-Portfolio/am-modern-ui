@@ -636,8 +636,129 @@ void main() {
         showSubCards: false,
       );
       final names = data.tiles.map((t) => t.name).toSet();
-      expect(names.contains('Unknown'), isTrue);
+      // Single-stock Unknown buckets use the holding symbol as the tile label;
+      // metadata.sectorName stays Unknown (never fold into Other).
       expect(names.contains('Other'), isFalse);
+      final unknownish = data.tiles.firstWhere(
+        (t) => t.id == 'sector_unknown' || t.metadata?['sectorName'] == 'Unknown',
+      );
+      expect(unknownish.name, 'FOO');
+      expect(unknownish.metadata?['sectorName'], 'Unknown');
+    });
+
+    test('treemap merge keeps SEBI MF category shells under 3%', () {
+      final tiles = [
+        HeatmapTileData(
+          id: 'sector_big',
+          name: 'Financial Services',
+          displayName: 'Finance',
+          weightage: 40,
+          performance: 1.0,
+          value: 40000,
+        ),
+        HeatmapTileData(
+          id: 'sector_mf_liquid',
+          name: 'Liquid',
+          displayName: 'Liquid',
+          weightage: 1.2,
+          performance: 0.1,
+          value: 1200,
+          metadata: const {
+            'type': 'sector',
+            'mfCategory': 'liquid',
+            'schemeCategory': 'Liquid',
+          },
+        ),
+        HeatmapTileData(
+          id: 'sector_tiny',
+          name: 'Utilities',
+          displayName: 'Utilities',
+          weightage: 1.5,
+          performance: -1.0,
+          value: 1500,
+        ),
+      ];
+      final merged =
+          SectorHeatmapConverter.mergeSmallWeightTilesForTreemap(tiles);
+      final names = merged.map((t) => t.name).toSet();
+      expect(names.contains('Liquid'), isTrue);
+      expect(names.contains('Utilities'), isFalse);
+      expect(names.contains('Other (<3%)'), isTrue);
+    });
+
+    test('compact budget on MF drill keeps category shells and schemes', () {
+      HeatmapTileData scheme(String id, String name, double value) =>
+          HeatmapTileData(
+            id: 'stock_$id',
+            name: id,
+            displayName: name,
+            weightage: value,
+            performance: -0.5,
+            value: value,
+            metadata: const {'type': 'stock', 'assetClass': 'MUTUAL_FUND'},
+          );
+
+      final equity = HeatmapTileData(
+        id: 'sector_mf_broad_equity',
+        name: 'Equity',
+        displayName: 'Equity',
+        weightage: 70,
+        performance: -0.8,
+        value: 70000,
+        metadata: const {
+          'type': 'sector',
+          'mfBroadGroup': 'equity',
+        },
+        children: [
+          HeatmapTileData(
+            id: 'sector_mf_flexiCap',
+            name: 'Flexi Cap',
+            displayName: 'Flexi Cap',
+            weightage: 60,
+            performance: -1.2,
+            value: 42000,
+            metadata: const {
+              'type': 'sector',
+              'mfCategory': 'flexiCap',
+              'schemeCategory': 'Flexi Cap',
+            },
+            children: [
+              scheme('INF1', 'Franklin India Flexi Cap Fund', 25000),
+              scheme('INF2', 'Parag Parikh Flexi Cap Fund', 17000),
+            ],
+          ),
+          HeatmapTileData(
+            id: 'sector_mf_smallCap',
+            name: 'Small Cap',
+            displayName: 'Small Cap',
+            weightage: 40,
+            performance: -0.7,
+            value: 28000,
+            metadata: const {
+              'type': 'sector',
+              'mfCategory': 'smallCap',
+              'schemeCategory': 'Small Cap',
+            },
+            children: [
+              scheme('INF3', 'Motilal Oswal Small Cap Fund', 28000),
+            ],
+          ),
+        ],
+      );
+
+      final budgeted = SectorHeatmapConverter.applyCompactTreemapBudget(
+        [equity],
+        maxStocksPerSector: 2,
+      );
+      expect(budgeted, hasLength(1));
+      final cats = budgeted.single.children!;
+      expect(cats.map((c) => c.displayName), ['Flexi Cap', 'Small Cap']);
+      expect(cats.first.children!.map((c) => c.displayName), [
+        'Franklin India Flexi Cap Fund',
+        'Parag Parikh Flexi Cap Fund',
+      ]);
+      expect(cats.last.children!.single.displayName,
+          'Motilal Oswal Small Cap Fund');
     });
 
     test('treemap merge folds sub-3% sectors into Other (<3%)', () {
@@ -682,6 +803,63 @@ void main() {
       expect(names.contains('Utilities'), isFalse);
       expect(names.contains('Services'), isFalse);
       expect(names.contains('Financial Services'), isTrue);
+    });
+
+    test('Other (<3%) keeps sector holdings for drill-in', () {
+      final tiles = [
+        HeatmapTileData(
+          id: 'sector_big',
+          name: 'Financial Services',
+          displayName: 'Finance',
+          weightage: 40,
+          performance: 1.0,
+          value: 40000,
+          metadata: const {'type': 'sector'},
+          children: [
+            HeatmapTileData(
+              id: 's1',
+              name: 'HDFCBANK',
+              displayName: 'HDFC Bank',
+              weightage: 40,
+              performance: 1.0,
+              value: 40000,
+              metadata: const {'type': 'stock'},
+            ),
+          ],
+        ),
+        HeatmapTileData(
+          id: 'sector_tiny',
+          name: 'Utilities',
+          displayName: 'Utilities',
+          weightage: 2,
+          performance: -1.0,
+          value: 2000,
+          metadata: const {'type': 'sector'},
+          children: [
+            HeatmapTileData(
+              id: 'u1',
+              name: 'NTPC',
+              displayName: 'NTPC',
+              weightage: 2,
+              performance: -1.0,
+              value: 2000,
+              metadata: const {'type': 'stock'},
+            ),
+          ],
+        ),
+      ];
+      final merged =
+          SectorHeatmapConverter.mergeSmallWeightTilesForTreemap(tiles);
+      final other = merged.firstWhere(
+        (t) => t.name == SectorHeatmapConverter.otherSmallWeightName,
+      );
+      expect(other.children, isNotNull);
+      expect(other.children!.length, 1);
+      final util = other.children!.first;
+      expect(util.name, 'Utilities');
+      expect(util.metadata?['type'], 'sector');
+      expect(util.children, isNotNull);
+      expect(util.children!.single.name, 'NTPC');
     });
 
     test('compact budget merges small sectors and caps stocks per sector', () {
@@ -805,6 +983,98 @@ void main() {
       final summary = SectorHeatmapConverter.resolveSectorSummary(tiles: tiles);
       expect(summary.topSector, 'Financial Services');
       expect(summary.worstSector, 'Energy');
+    });
+
+    test('INF scheme tiles prefer companyName over truncated ISIN', () {
+      final heatmap = Heatmap(
+        sectors: [
+          _sector(
+            name: 'Mutual Funds',
+            changePercent: 0.38,
+            totalValue: 100000,
+            stocks: [
+              Stock(
+                symbol: 'INF247L01999',
+                companyName: 'Motilal Oswal Large and Midcap Fund',
+                lastPrice: 40.67,
+                changeAmount: 0.15,
+                changePercent: 0.38,
+                sector: 'Mutual Funds',
+                marketValue: 100000,
+                quantity: 2460,
+                previousClose: 40.52,
+              ),
+            ],
+          ),
+        ],
+      );
+
+      final data = SectorHeatmapConverter.convertToHeatmapData(
+        heatmap: heatmap,
+        showSubCards: true,
+      );
+      final mf = data.tiles.firstWhere((t) => t.name == 'Mutual Funds');
+      final child = mf.children!.first;
+      expect(
+        child.displayName,
+        'Motilal Oswal Large and Midcap Fund',
+      );
+      expect(child.displayName.contains('INF247'), isFalse);
+      expect(child.displayName.contains('…'), isFalse);
+      expect(child.performance, closeTo(0.38, 0.001));
+    });
+
+    test('equity and ETF tiles use trading symbols not legal names', () {
+      final heatmap = Heatmap(
+        sectors: [
+          _sector(
+            name: 'Information Technology',
+            changePercent: 1.4,
+            totalValue: 100000,
+            stocks: [
+              Stock(
+                symbol: 'TCS',
+                companyName:
+                    'TATA CONSULTANCY SERVICES LIMITED EQUITY SHARES WITH FACE VALUE RS. 1/- AFTER SUB-DIVISION',
+                lastPrice: 2400,
+                changeAmount: 30,
+                changePercent: 1.4,
+                sector: 'Information Technology',
+                marketValue: 88000,
+                quantity: 413,
+              ),
+            ],
+          ),
+          _sector(
+            name: 'Exchange Traded Funds (ETFs)',
+            changePercent: 0.4,
+            totalValue: 50000,
+            stocks: [
+              Stock(
+                symbol: 'NIFTYBEES',
+                companyName: 'NIPPON INDIA ETF NIFTY BEES',
+                lastPrice: 288,
+                changeAmount: 1,
+                changePercent: 0.4,
+                sector: 'Exchange Traded Funds (ETFs)',
+                marketValue: 50000,
+                quantity: 4497,
+              ),
+            ],
+          ),
+        ],
+      );
+
+      final data = SectorHeatmapConverter.convertToHeatmapData(
+        heatmap: heatmap,
+        showSubCards: true,
+      );
+      final it = data.tiles.firstWhere((t) => t.name == 'Information Technology');
+      final etf = data.tiles.firstWhere(
+        (t) => t.name.contains('Exchange Traded Funds'),
+      );
+      expect(it.children!.first.displayName, 'TCS');
+      expect(etf.children!.first.displayName, 'NIFTYBEES');
     });
 
     test('keeps full Consumer Discretionary label and sector holdings meta', () {

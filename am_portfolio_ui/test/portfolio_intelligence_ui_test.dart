@@ -212,6 +212,7 @@ void main() {
     expect(xrayDisplayName('COMMODITY'), 'Precious Metal');
     expect(xrayDisplayName('CASH'), 'Cash');
     expect(xrayDisplayName('MUTUAL_FUND'), 'Mutual Fund');
+    expect(xrayDisplayName('ETF'), 'ETF');
     expect(xrayDisplayName('UNKNOWN'), 'Unknown');
     expect(xrayDisplayName(''), 'Unknown');
     expect(xrayDisplayName('Financial Services'), 'Financial Services');
