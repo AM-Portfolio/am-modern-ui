@@ -5,7 +5,7 @@
 #   main → one prod-backed build per platform, promoted through testing and production
 #   Codemagic: no auto builds — use codemagic-fallback.yml (approval) only
 #
-# Pipelines ref: AM-Portfolio/am-pipelines@fix/mobile-env-build-versioning (until merged to main)
+# Pipelines ref: AM-Portfolio/am-pipelines@main
 
 name: Mobile CI
 
@@ -162,8 +162,7 @@ jobs:
     if: ${{ (needs.resolve.outputs.run_android == 'true' || needs.resolve.outputs.run_ios == 'true') && needs.resolve.outputs.skip_validate != 'true' }}
     permissions:
       contents: read
-    # Use the follow-up pipeline branch until its iOS build-number support merges.
-    uses: AM-Portfolio/am-pipelines/.github/workflows/central-mobile-validate.yml@fix/mobile-env-build-versioning
+    uses: AM-Portfolio/am-pipelines/.github/workflows/central-mobile-validate.yml@main
     with:
       working_directory: am_app
       flutter_version: "3.44.0"
@@ -174,7 +173,7 @@ jobs:
     if: ${{ always() && !cancelled() && needs.resolve.outputs.run_android == 'true' && (needs.resolve.outputs.deploy_android_internal == 'true' || needs.resolve.outputs.deploy_android_production == 'true') && (needs.validate.result == 'success' || needs.validate.result == 'skipped') }}
     permissions:
       contents: read
-    uses: AM-Portfolio/am-pipelines/.github/workflows/central-mobile-android.yml@fix/mobile-env-build-versioning
+    uses: AM-Portfolio/am-pipelines/.github/workflows/central-mobile-android.yml@main
     with:
       working_directory: am_app
       build_mode: release
@@ -200,7 +199,7 @@ jobs:
     permissions:
       contents: read
       actions: read
-    uses: AM-Portfolio/am-pipelines/.github/workflows/central-mobile-ios.yml@fix/mobile-env-build-versioning
+    uses: AM-Portfolio/am-pipelines/.github/workflows/central-mobile-ios.yml@main
     with:
       working_directory: am_app
       build_mode: release
