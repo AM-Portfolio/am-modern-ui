@@ -1,8 +1,8 @@
 # Mobile CI — Android + iOS (parallel), GitHub-owned store ladder
 #
 # Branch policy:
-#   every branch push → Play Internal + TestFlight (dev backend)
-#   main only → separate production builds for Play + App Store (prod backend)
+#   non-main branch push → Play Internal + TestFlight (dev backend)
+#   main → one prod-backed build per platform, promoted through testing and production
 #   Codemagic: no auto builds — use codemagic-fallback.yml (approval) only
 #
 # Pipelines ref: AM-Portfolio/am-pipelines@fix/mobile-env-build-versioning (until merged to main)
@@ -79,10 +79,7 @@ jobs:
       deploy_android_production: ${{ steps.p.outputs.deploy_android_production }}
       deploy_ios_testflight: ${{ steps.p.outputs.deploy_ios_testflight }}
       deploy_ios_production: ${{ steps.p.outputs.deploy_ios_production }}
-      android_test_version_offset: ${{ steps.p.outputs.android_test_version_offset }}
-      android_prod_version_offset: ${{ steps.p.outputs.android_prod_version_offset }}
-      ios_test_version_offset: ${{ steps.p.outputs.ios_test_version_offset }}
-      ios_prod_version_offset: ${{ steps.p.outputs.ios_prod_version_offset }}
+      version_code_offset: ${{ steps.p.outputs.version_code_offset }}
       skip_validate: ${{ steps.p.outputs.skip_validate }}
     steps:
       - id: p
@@ -144,11 +141,8 @@ jobs:
             DEPLOY_ANDROID_PRODUCTION=false
           fi
 
-          # Test and production binaries need distinct, monotonically increasing store build numbers.
-          ANDROID_TEST_VERSION_OFFSET="$GITHUB_RUN_NUMBER"
-          ANDROID_PROD_VERSION_OFFSET=$((GITHUB_RUN_NUMBER + 1))
-          IOS_TEST_VERSION_OFFSET="$GITHUB_RUN_NUMBER"
-          IOS_PROD_VERSION_OFFSET=$((GITHUB_RUN_NUMBER + 1))
+          # Internal testing and production promote the same versioned binary.
+          VERSION_CODE_OFFSET="$GITHUB_RUN_NUMBER"
 
           {
             echo "run_android=$RUN_ANDROID"
@@ -157,13 +151,10 @@ jobs:
             echo "deploy_android_production=$DEPLOY_ANDROID_PRODUCTION"
             echo "deploy_ios_testflight=$DEPLOY_IOS_TF"
             echo "deploy_ios_production=$DEPLOY_IOS_PRODUCTION"
-            echo "android_test_version_offset=$ANDROID_TEST_VERSION_OFFSET"
-            echo "android_prod_version_offset=$ANDROID_PROD_VERSION_OFFSET"
-            echo "ios_test_version_offset=$IOS_TEST_VERSION_OFFSET"
-            echo "ios_prod_version_offset=$IOS_PROD_VERSION_OFFSET"
+            echo "version_code_offset=$VERSION_CODE_OFFSET"
             echo "skip_validate=$SKIP_VALIDATE"
           } >> "$GITHUB_OUTPUT"
-          echo "Branch=$REF run_android=$RUN_ANDROID run_ios=$RUN_IOS android_internal=$DEPLOY_ANDROID_INTERNAL android_prod=$DEPLOY_ANDROID_PRODUCTION ios_tf=$DEPLOY_IOS_TF ios_prod=$DEPLOY_IOS_PRODUCTION android_offsets=$ANDROID_TEST_VERSION_OFFSET/$ANDROID_PROD_VERSION_OFFSET ios_offsets=$IOS_TEST_VERSION_OFFSET/$IOS_PROD_VERSION_OFFSET skip_validate=$SKIP_VALIDATE"
+          echo "Branch=$REF run_android=$RUN_ANDROID run_ios=$RUN_IOS android_internal=$DEPLOY_ANDROID_INTERNAL android_prod=$DEPLOY_ANDROID_PRODUCTION ios_tf=$DEPLOY_IOS_TF ios_prod=$DEPLOY_IOS_PRODUCTION version_offset=$VERSION_CODE_OFFSET skip_validate=$SKIP_VALIDATE"
 
   validate:
     name: Common Validation
@@ -177,10 +168,10 @@ jobs:
       working_directory: am_app
       flutter_version: "3.44.0"
 
-  android-internal:
-    name: Android -> Play Internal (dev backend)
+  android:
+    name: Android -> Build and release
     needs: [resolve, validate]
-    if: ${{ always() && !cancelled() && needs.resolve.outputs.run_android == 'true' && needs.resolve.outputs.deploy_android_internal == 'true' && (needs.validate.result == 'success' || needs.validate.result == 'skipped') }}
+    if: ${{ always() && !cancelled() && needs.resolve.outputs.run_android == 'true' && (needs.resolve.outputs.deploy_android_internal == 'true' || needs.resolve.outputs.deploy_android_production == 'true') && (needs.validate.result == 'success' || needs.validate.result == 'skipped') }}
     permissions:
       contents: read
     uses: AM-Portfolio/am-pipelines/.github/workflows/central-mobile-android.yml@fix/mobile-env-build-versioning
@@ -192,45 +183,20 @@ jobs:
       run_tests: false
       upload_artifact: true
       package_name: com.asrax.aminvestment
-      am_domain: am-dev.asrax.in
-      am_env: dev
-      version_code_offset: ${{ fromJSON(needs.resolve.outputs.android_test_version_offset) }}
-      deploy_internal: true
-      deploy_production: false
+      am_domain: ${{ github.ref_name == 'main' && 'am.asrax.in' || 'am-dev.asrax.in' }}
+      am_env: ${{ github.ref_name == 'main' && 'prod' || 'dev' }}
+      version_code_offset: ${{ fromJSON(needs.resolve.outputs.version_code_offset) }}
+      deploy_internal: ${{ needs.resolve.outputs.deploy_android_internal == 'true' }}
+      deploy_production: ${{ needs.resolve.outputs.deploy_android_production == 'true' }}
       gh_env_preprod: android-internal
       gh_env_prod: android-prod
       flutter_version: "3.44.0"
     secrets: inherit
 
-  android-production:
-    name: Android -> Play Production (prod backend)
-    needs: [resolve, validate, android-internal]
-    if: ${{ always() && !cancelled() && needs.resolve.outputs.run_android == 'true' && needs.resolve.outputs.deploy_android_production == 'true' && needs.android-internal.result == 'success' && (needs.validate.result == 'success' || needs.validate.result == 'skipped') }}
-    permissions:
-      contents: read
-    uses: AM-Portfolio/am-pipelines/.github/workflows/central-mobile-android.yml@fix/mobile-env-build-versioning
-    with:
-      working_directory: am_app
-      build_mode: release
-      artifact_type: appbundle
-      run_analyze: false
-      run_tests: false
-      upload_artifact: true
-      package_name: com.asrax.aminvestment
-      am_domain: am.asrax.in
-      am_env: prod
-      version_code_offset: ${{ fromJSON(needs.resolve.outputs.android_prod_version_offset) }}
-      deploy_internal: false
-      deploy_production: true
-      gh_env_preprod: android-internal
-      gh_env_prod: android-prod
-      flutter_version: "3.44.0"
-    secrets: inherit
-
-  ios-testflight:
-    name: iOS -> TestFlight (dev backend)
+  ios:
+    name: iOS -> Build and release
     needs: [resolve, validate]
-    if: ${{ always() && !cancelled() && needs.resolve.outputs.run_ios == 'true' && needs.resolve.outputs.deploy_ios_testflight == 'true' && (needs.validate.result == 'success' || needs.validate.result == 'skipped') }}
+    if: ${{ always() && !cancelled() && needs.resolve.outputs.run_ios == 'true' && (needs.resolve.outputs.deploy_ios_testflight == 'true' || needs.resolve.outputs.deploy_ios_production == 'true') && (needs.validate.result == 'success' || needs.validate.result == 'skipped') }}
     permissions:
       contents: read
       actions: read
@@ -243,37 +209,11 @@ jobs:
       upload_artifact: true
       keep_artifact: true
       bundle_id: com.asrax.aminvestment
-      am_domain: am-dev.asrax.in
-      am_env: dev
-      version_code_offset: ${{ fromJSON(needs.resolve.outputs.ios_test_version_offset) }}
-      deploy_internal: true
-      deploy_production: false
-      gh_env_internal: ios-internal
-      gh_env_prod: ios-prod
-      flutter_version: "3.44.0"
-    secrets: inherit
-
-  ios-production:
-    name: iOS -> App Store (prod backend)
-    needs: [resolve, validate, ios-testflight]
-    if: ${{ always() && !cancelled() && needs.resolve.outputs.run_ios == 'true' && needs.resolve.outputs.deploy_ios_production == 'true' && needs.ios-testflight.result == 'success' && (needs.validate.result == 'success' || needs.validate.result == 'skipped') }}
-    permissions:
-      contents: read
-      actions: read
-    uses: AM-Portfolio/am-pipelines/.github/workflows/central-mobile-ios.yml@fix/mobile-env-build-versioning
-    with:
-      working_directory: am_app
-      build_mode: release
-      run_analyze: false
-      run_tests: false
-      upload_artifact: true
-      keep_artifact: true
-      bundle_id: com.asrax.aminvestment
-      am_domain: am.asrax.in
-      am_env: prod
-      version_code_offset: ${{ fromJSON(needs.resolve.outputs.ios_prod_version_offset) }}
-      deploy_internal: false
-      deploy_production: true
+      am_domain: ${{ github.ref_name == 'main' && 'am.asrax.in' || 'am-dev.asrax.in' }}
+      am_env: ${{ github.ref_name == 'main' && 'prod' || 'dev' }}
+      version_code_offset: ${{ fromJSON(needs.resolve.outputs.version_code_offset) }}
+      deploy_internal: ${{ needs.resolve.outputs.deploy_ios_testflight == 'true' }}
+      deploy_production: ${{ needs.resolve.outputs.deploy_ios_production == 'true' }}
       gh_env_internal: ios-internal
       gh_env_prod: ios-prod
       flutter_version: "3.44.0"
