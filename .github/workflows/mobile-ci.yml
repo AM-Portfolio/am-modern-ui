@@ -299,17 +299,4 @@ jobs:
       reuse_version_name: ${{ needs.resolve.outputs.reuse_version_name }}
       reuse_version_code: ${{ needs.resolve.outputs.reuse_version_code }}
       flutter_version: "3.44.0"
-    # The repository's stored profile predates the Apple sign-in entitlement.
-    # Let the signing helper fetch the active profile from App Store Connect.
-    secrets:
-      IOS_CERTIFICATE_BASE64: ${{ secrets.IOS_CERTIFICATE_BASE64 }}
-      IOS_CERTIFICATE_PASSWORD: ${{ secrets.IOS_CERTIFICATE_PASSWORD }}
-      IOS_PROVISIONING_PROFILE_BASE64: ${{ '' }}
-      IOS_KEYCHAIN_PASSWORD: ${{ secrets.IOS_KEYCHAIN_PASSWORD }}
-      CERTIFICATE_PRIVATE_KEY: ${{ secrets.CERTIFICATE_PRIVATE_KEY }}
-      APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
-      APP_STORE_CONNECT_API_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_ISSUER_ID }}
-      APP_STORE_CONNECT_API_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_API_KEY_BASE64 }}
-      GOOGLE_WEB_CLIENT_ID: ${{ secrets.GOOGLE_WEB_CLIENT_ID }}
-      GOOGLE_IOS_CLIENT_ID: ${{ secrets.GOOGLE_IOS_CLIENT_ID }}
-      GROWTHBOOK_CLIENT_KEY: ${{ secrets.GROWTHBOOK_CLIENT_KEY }}
+    secrets: inherit
