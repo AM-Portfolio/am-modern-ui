@@ -29,9 +29,23 @@ class IndexCard extends StatelessWidget {
       builder: (context, provider, child) {
         bool isLoading = false;
         // Keep last known 1D change while non-1D base prices load — never force zeros.
+        double displayLastPrice = data.lastPrice;
         double displayChange = data.change;
         double displayPChange = data.pChange;
         final liveQuote = provider.getPrice(data.indexSymbol);
+        final liveLastPrice = (liveQuote?['lastPrice'] as num?)?.toDouble();
+        final liveChange = (liveQuote?['change'] as num?)?.toDouble();
+        final liveChangePercent =
+            (liveQuote?['changePercent'] as num?)?.toDouble();
+        if (provider.selectedIndicesTimeframe == '1D') {
+          if (liveLastPrice != null && liveLastPrice > 0) {
+            displayLastPrice = liveLastPrice;
+          }
+          if (liveChange != null && liveChangePercent != null) {
+            displayChange = liveChange;
+            displayPChange = liveChangePercent;
+          }
+        }
         final liveChangeUnavailable =
             provider.selectedIndicesTimeframe == '1D' &&
                 liveQuote?['lastPrice'] != null &&
@@ -125,7 +139,7 @@ class IndexCard extends StatelessWidget {
                               ? '...'
                               : (isGlobalWithoutPrice
                                   ? '—'
-                                  : numberFormat.format(data.lastPrice)),
+                                  : numberFormat.format(displayLastPrice)),
                           style: TextStyle(
                             fontSize: isMobile ? 14 : 16,
                             color: MarketColors.textPrimary(context),

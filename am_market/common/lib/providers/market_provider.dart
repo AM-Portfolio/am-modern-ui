@@ -70,6 +70,11 @@ class MarketProvider with ChangeNotifier {
   List<StockIndicesMarketData> _globalIndicesData = [];
   IndicesRegion _indicesRegion = IndicesRegion.indian;
 
+  // Metadata is requested by more than one market surface during its first
+  // frame. Share an active request instead of issuing identical HTTP calls.
+  Future<void>? _indicesLoadInFlight;
+  Future<void>? _globalIndicesLoadInFlight;
+
   String? _selectedIndex;
   bool _isLoading = false;
   String? _error;
@@ -776,7 +781,21 @@ class MarketProvider with ChangeNotifier {
     super.dispose();
   }
 
-  Future<void> loadIndices() async {
+  Future<void> loadIndices() {
+    final inFlight = _indicesLoadInFlight;
+    if (inFlight != null) return inFlight;
+
+    late final Future<void> request;
+    request = _loadIndices().whenComplete(() {
+      if (identical(_indicesLoadInFlight, request)) {
+        _indicesLoadInFlight = null;
+      }
+    });
+    _indicesLoadInFlight = request;
+    return request;
+  }
+
+  Future<void> _loadIndices() async {
     _isLoading = true;
     _error = null;
     notifyListeners();
@@ -909,18 +928,9 @@ class MarketProvider with ChangeNotifier {
     try {
       // STEP 1: Fetch available indices first if not already loaded
       if (_availableIndices == null) {
-        final indian = await _apiService.fetchAvailableIndices();
-        final global =
-            await _apiService.fetchAvailableGlobalIndices().catchError((e) {
-          CommonLogger.warning(
-            "Global available indices unavailable: $e",
-            tag: "MarketProvider.loadAllIndicesData",
-          );
-          return <String>[];
-        });
-        _availableIndices = indian.copyWith(globalIndices: global);
-        CommonLogger.info("Fetched available indices",
-            tag: "MarketProvider.loadAllIndicesData");
+        // MarketPage owns initial metadata loading. If another current surface
+        // reaches here first, join that request rather than making raw calls.
+        await loadIndices();
       } else if (_availableIndices!.globalIndices.isEmpty) {
         final global = await _apiService
             .fetchAvailableGlobalIndices()
@@ -955,11 +965,6 @@ class MarketProvider with ChangeNotifier {
           "Successfully loaded ${_allIndicesData.length} Indian indices with timeframe $_selectedIndicesTimeframe",
           tag: "MarketProvider.loadAllIndicesData");
 
-      // Warm once; it is not needed to render the Indian indices currently on screen.
-      if (_globalIndicesData.isEmpty) {
-        unawaited(loadGlobalIndicesData());
-      }
-
       _syncWithPriceService();
     } catch (e) {
       CommonLogger.error("Error loading all indices",
@@ -975,7 +980,21 @@ class MarketProvider with ChangeNotifier {
     }
   }
 
-  Future<void> loadGlobalIndicesData() async {
+  Future<void> loadGlobalIndicesData() {
+    final inFlight = _globalIndicesLoadInFlight;
+    if (inFlight != null) return inFlight;
+
+    late final Future<void> request;
+    request = _loadGlobalIndicesData().whenComplete(() {
+      if (identical(_globalIndicesLoadInFlight, request)) {
+        _globalIndicesLoadInFlight = null;
+      }
+    });
+    _globalIndicesLoadInFlight = request;
+    return request;
+  }
+
+  Future<void> _loadGlobalIndicesData() async {
     try {
       if (_availableIndices == null ||
           _availableIndices!.globalIndices.isEmpty) {
@@ -1090,10 +1109,34 @@ class MarketProvider with ChangeNotifier {
   }
 
   int _heatmapLoadId = 0;
+  final Map<String, Future<List<MapEntry<String, double>>>>
+      _dashboardHeatmapLoadsInFlight = {};
+  final Map<String, Future<Map<String, double>>> _heatmapLoadsInFlight = {};
+
+  String _heatmapRequestKey(String symbol, String timeframe) =>
+      '${symbol.trim().toUpperCase()}|${timeframe.trim().toUpperCase()}';
 
   /// Dashboard heatmap: prefer full index constituents (NIFTY 500 ≈ 500 tiles),
   /// enrich % from analysis heatmap when present, else stock batch pChange.
   Future<List<MapEntry<String, double>>> loadDashboardIndexHeatmap(
+    String symbol,
+    String timeframe,
+  ) {
+    final key = _heatmapRequestKey(symbol, timeframe);
+    final inFlight = _dashboardHeatmapLoadsInFlight[key];
+    if (inFlight != null) return inFlight;
+
+    late final Future<List<MapEntry<String, double>>> request;
+    request = _loadDashboardIndexHeatmap(symbol, timeframe).whenComplete(() {
+      if (identical(_dashboardHeatmapLoadsInFlight[key], request)) {
+        _dashboardHeatmapLoadsInFlight.remove(key);
+      }
+    });
+    _dashboardHeatmapLoadsInFlight[key] = request;
+    return request;
+  }
+
+  Future<List<MapEntry<String, double>>> _loadDashboardIndexHeatmap(
     String symbol,
     String timeframe,
   ) async {
@@ -1139,7 +1182,22 @@ class MarketProvider with ChangeNotifier {
 
   /// Loads heatmap for [symbol]. Always returns the fetched map for the caller
   /// (dashboard must not rely on shared [heatmapValues], which Analysis can race).
-  Future<Map<String, double>> loadHeatmap(
+  Future<Map<String, double>> loadHeatmap(String symbol, String timeframe) {
+    final key = _heatmapRequestKey(symbol, timeframe);
+    final inFlight = _heatmapLoadsInFlight[key];
+    if (inFlight != null) return inFlight;
+
+    late final Future<Map<String, double>> request;
+    request = _loadHeatmap(symbol, timeframe).whenComplete(() {
+      if (identical(_heatmapLoadsInFlight[key], request)) {
+        _heatmapLoadsInFlight.remove(key);
+      }
+    });
+    _heatmapLoadsInFlight[key] = request;
+    return request;
+  }
+
+  Future<Map<String, double>> _loadHeatmap(
       String symbol, String timeframe) async {
     final loadId = ++_heatmapLoadId;
     CommonLogger.info("Loading heatmap for $symbol ($timeframe)",
