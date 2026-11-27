@@ -2,6 +2,8 @@ import 'package:equatable/equatable.dart';
 import 'package:am_design_system/shared/models/heatmap/heatmap_ui_data.dart';
 import 'package:am_design_system/am_design_system.dart';
 
+import '../models/heatmap_asset_filter.dart';
+
 /// Base class for all portfolio heatmap states
 abstract class PortfolioHeatmapState extends Equatable {
   const PortfolioHeatmapState();
@@ -32,12 +34,16 @@ class PortfolioHeatmapLoaded extends PortfolioHeatmapState {
     required this.lastUpdated,
     this.sector,
     this.marketCap,
+    this.assetFilter = HeatmapAssetFilter.allAssets,
+    this.mfCategory = HeatmapMfCategory.all,
   });
   final HeatmapData heatmapData;
   final TimeFrame timeFrame;
   final MetricType metric;
   final SectorType? sector;
   final MarketCapType? marketCap;
+  final HeatmapAssetFilter assetFilter;
+  final HeatmapMfCategory mfCategory;
   final String portfolioId;
   final DateTime lastUpdated;
 
@@ -48,6 +54,8 @@ class PortfolioHeatmapLoaded extends PortfolioHeatmapState {
     metric,
     sector,
     marketCap,
+    assetFilter,
+    mfCategory,
     portfolioId,
     lastUpdated,
   ];
@@ -59,6 +67,8 @@ class PortfolioHeatmapLoaded extends PortfolioHeatmapState {
     MetricType? metric,
     SectorType? sector,
     MarketCapType? marketCap,
+    HeatmapAssetFilter? assetFilter,
+    HeatmapMfCategory? mfCategory,
     String? portfolioId,
     DateTime? lastUpdated,
   }) => PortfolioHeatmapLoaded(
@@ -67,6 +77,8 @@ class PortfolioHeatmapLoaded extends PortfolioHeatmapState {
     metric: metric ?? this.metric,
     sector: sector ?? this.sector,
     marketCap: marketCap ?? this.marketCap,
+    assetFilter: assetFilter ?? this.assetFilter,
+    mfCategory: mfCategory ?? this.mfCategory,
     portfolioId: portfolioId ?? this.portfolioId,
     lastUpdated: lastUpdated ?? this.lastUpdated,
   );
@@ -81,6 +93,7 @@ class PortfolioHeatmapError extends PortfolioHeatmapState {
     this.metric,
     this.sector,
     this.marketCap,
+    this.assetFilter,
   });
   final String message;
   final String? details;
@@ -88,6 +101,7 @@ class PortfolioHeatmapError extends PortfolioHeatmapState {
   final MetricType? metric;
   final SectorType? sector;
   final MarketCapType? marketCap;
+  final HeatmapAssetFilter? assetFilter;
 
   @override
   List<Object?> get props => [
@@ -97,6 +111,7 @@ class PortfolioHeatmapError extends PortfolioHeatmapState {
     metric,
     sector,
     marketCap,
+    assetFilter,
   ];
 }
 

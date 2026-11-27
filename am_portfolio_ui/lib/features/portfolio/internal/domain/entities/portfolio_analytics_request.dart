@@ -8,6 +8,7 @@ class PortfolioAnalyticsRequest {
     this.fromDate,
     this.toDate,
     this.timeFrame,
+    this.assetScope,
   });
   final CoreIdentifiers coreIdentifiers;
   final FeatureToggles featureToggles;
@@ -16,6 +17,8 @@ class PortfolioAnalyticsRequest {
   final String? fromDate;
   final String? toDate;
   final String? timeFrame;
+  /// Heatmap mosaic: ALL | EQUITY | MUTUAL_FUND.
+  final String? assetScope;
 }
 
 /// Core identifiers for analytics request

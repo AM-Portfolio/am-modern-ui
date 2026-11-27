@@ -67,7 +67,12 @@ class PortfolioHoldingsMapper {
 
     return PortfolioHolding(
       id: apiHolding.isin,
-      symbol: apiHolding.symbol,
+      // Never surface INF* scheme ISINs in the Symbol column — use scheme label.
+      symbol: displayHoldingSymbol(
+        symbol: apiHolding.symbol,
+        name: displayName,
+        assetClass: apiHolding.assetClass,
+      ),
       name: displayName,
       companyName: displayName,
       sector: apiHolding.sector,
@@ -137,6 +142,45 @@ class PortfolioHoldingsMapper {
     // This could be enhanced with a mapping service or API call
     // For now, return symbol as placeholder
     return symbol;
+  }
+
+  /// Equity/ETF keep trading tickers. MF rows with INF* ISINs get a scheme label.
+  static String displayHoldingSymbol({
+    required String symbol,
+    required String name,
+    String? assetClass,
+  }) {
+    final raw = symbol.trim();
+    final scheme = name.trim();
+    final cls = (assetClass ?? '').trim().toUpperCase().replaceAll(
+          RegExp(r'[\s-]+'),
+          '_',
+        );
+    final isMfClass = cls == 'MF' || cls.contains('MUTUAL');
+    final looksLikeIsin =
+        RegExp(r'^INF[A-Z0-9]{8,10}$').hasMatch(raw.toUpperCase());
+    if ((looksLikeIsin || isMfClass) && scheme.isNotEmpty && !_looksLikeIsin(scheme)) {
+      return _schemeSymbolLabel(scheme);
+    }
+    return raw.isNotEmpty ? raw : scheme;
+  }
+
+  static bool _looksLikeIsin(String value) =>
+      RegExp(r'^INF[A-Z0-9]{8,10}$').hasMatch(value.trim().toUpperCase());
+
+  /// "Quant Small Cap Fund" → "Quant Small Cap" for the Symbol column.
+  static String _schemeSymbolLabel(String name) {
+    final cleaned = name
+        .replaceAll(
+          RegExp(
+            r'\s+(fund of funds|fof|fund)\s*$',
+            caseSensitive: false,
+          ),
+          '',
+        )
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
+    return cleaned.isNotEmpty ? cleaned : name.trim();
   }
 
   /// Helper to format broker names consistently

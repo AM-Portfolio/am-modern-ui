@@ -80,6 +80,9 @@ class SectorHeatmapConverter {
         .toList();
 
     if (ranked.isEmpty) {
+      // Unknown-only mosaic: fall back to named allocation sectors when present.
+      final fromAlloc = _summaryFromAllocation(sectorAllocation);
+      if (fromAlloc != null) return fromAlloc;
       return (
         topSector: '--',
         topSectorChange: '',
@@ -91,6 +94,8 @@ class SectorHeatmapConverter {
     final nonFlat =
         ranked.where((tile) => tile.performance.abs() >= 0.01).toList();
     if (nonFlat.isEmpty) {
+      final fromAlloc = _summaryFromAllocation(sectorAllocation);
+      if (fromAlloc != null) return fromAlloc;
       return (
         topSector: '--',
         topSectorChange: '',
@@ -107,6 +112,36 @@ class SectorHeatmapConverter {
       topSectorChange: _formatChangePercent(top.performance),
       worstSector: worst.name,
       worstSectorChange: _formatChangePercent(worst.performance),
+    );
+  }
+
+  static ({
+    String topSector,
+    String topSectorChange,
+    String worstSector,
+    String worstSectorChange,
+  })? _summaryFromAllocation(SectorAllocation? sectorAllocation) {
+    if (sectorAllocation == null || sectorAllocation.sectorWeights.isEmpty) {
+      return null;
+    }
+    final named = sectorAllocation.sectorWeights
+        .where(
+          (w) =>
+              !isExcludedFromRanking(w.sectorName) && w.weightPercentage > 0,
+        )
+        .toList();
+    if (named.isEmpty) return null;
+    // No day% on allocation weights — rank by book weight so KPIs are not "--".
+    named.sort((a, b) => b.weightPercentage.compareTo(a.weightPercentage));
+    final top = named.first;
+    final worst = named.length > 1 ? named.last : null;
+    return (
+      topSector: top.sectorName,
+      topSectorChange: '${top.weightPercentage.toStringAsFixed(1)}% of book',
+      worstSector: worst?.sectorName ?? '--',
+      worstSectorChange: worst == null
+          ? ''
+          : '${worst.weightPercentage.toStringAsFixed(1)}% of book',
     );
   }
 
@@ -787,15 +822,49 @@ class SectorHeatmapConverter {
 
   /// Compact nested overview only: small-sector merge + per-sector stock cap.
   /// Drill-down / list / grid should keep the unbudgeted tile list.
+  ///
+  /// All Assets roots (`asset_mutual_funds` / `asset_stocks`): merge small equity
+  /// sectors inside Stocks only; MF SEBI categories stay visible under Mutual Funds.
   static List<HeatmapTileData> applyCompactTreemapBudget(
     List<HeatmapTileData> source, {
     int maxStocksPerSector = compactMaxStocksPerSector,
   }) {
-    final merged = mergeSmallWeightTilesForTreemap(source);
-    if (maxStocksPerSector <= 0) return merged;
-    return merged
-        .map((sector) => _limitSectorChildren(sector, maxStocksPerSector))
-        .toList();
+    final atRoot = mergeSmallWeightTilesForTreemap(source);
+    return atRoot.map((tile) {
+      final root = tile.metadata?['assetClassRoot']?.toString();
+      final isStocksRoot =
+          tile.id == 'asset_stocks' || root == 'EQUITY';
+      final isMfRoot =
+          tile.id == 'asset_mutual_funds' || root == 'MUTUAL_FUND';
+
+      if (isStocksRoot && tile.children != null && tile.children!.isNotEmpty) {
+        final kids = tile.children!
+            .map((c) => c is HeatmapTileData ? c : HeatmapTileData.fromEntity(c))
+            .toList();
+        final mergedKids = mergeSmallWeightTilesForTreemap(kids);
+        final limited = maxStocksPerSector <= 0
+            ? mergedKids
+            : mergedKids
+                .map((s) => _limitSectorChildren(s, maxStocksPerSector))
+                .toList();
+        return tile.copyWith(children: limited);
+      }
+
+      if (isMfRoot && tile.children != null && tile.children!.isNotEmpty) {
+        final kids = tile.children!
+            .map((c) => c is HeatmapTileData ? c : HeatmapTileData.fromEntity(c))
+            .toList();
+        final limited = maxStocksPerSector <= 0
+            ? kids
+            : kids
+                .map((s) => _limitSectorChildren(s, maxStocksPerSector))
+                .toList();
+        return tile.copyWith(children: limited);
+      }
+
+      if (maxStocksPerSector <= 0) return tile;
+      return _limitSectorChildren(tile, maxStocksPerSector);
+    }).toList();
   }
 
   static HeatmapTileData _limitSectorChildren(
@@ -803,16 +872,40 @@ class SectorHeatmapConverter {
     int maxStocksPerSector,
   ) {
     final raw = sector.children;
-    if (raw == null || raw.length <= maxStocksPerSector) return sector;
+    if (raw == null || raw.isEmpty) return sector;
 
     final children = raw
         .map((c) => c is HeatmapTileData ? c : HeatmapTileData.fromEntity(c))
         .toList()
       ..sort((a, b) => b.weightage.compareTo(a.weightage));
 
-    final keep = children.take(maxStocksPerSector).toList();
-    final rest = children.skip(maxStocksPerSector).toList();
-    if (rest.isEmpty) return sector;
+    // SEBI / broad-group shells keep their own nested headers — never fold them
+    // into a flat "Other stocks" leaf (that hid Flexi Cap / Liquid on drill-in).
+    // Always recurse nestable so Equity → Flexi Cap → schemes stay capped deep.
+    final nestable = <HeatmapTileData>[];
+    final leaves = <HeatmapTileData>[];
+    for (final child in children) {
+      final hasKids = child.children != null && child.children!.isNotEmpty;
+      if (hasKids || _isMfCategoryShell(child)) {
+        nestable.add(_limitSectorChildren(child, maxStocksPerSector));
+      } else {
+        leaves.add(child);
+      }
+    }
+
+    if (leaves.length <= maxStocksPerSector) {
+      // Prefer copyWith when we recursed so callers see updated nested kids.
+      if (nestable.isEmpty && leaves.length == children.length) {
+        return sector;
+      }
+      return sector.copyWith(children: [...nestable, ...leaves]);
+    }
+
+    final keepLeaves = leaves.take(maxStocksPerSector).toList();
+    final rest = leaves.skip(maxStocksPerSector).toList();
+    if (rest.isEmpty) {
+      return sector.copyWith(children: [...nestable, ...keepLeaves]);
+    }
 
     final combinedWeight = rest.fold<double>(0, (s, t) => s + t.weightage);
     final combinedValue = rest.fold<double>(0, (s, t) => s + (t.value ?? 0));
@@ -822,7 +915,7 @@ class SectorHeatmapConverter {
         : 0.0;
 
     // Leaf tile (no children) so nested mode does not spawn another sector panel.
-    keep.add(
+    keepLeaves.add(
       HeatmapTileData(
         id: '${sector.id}_other_stocks',
         name: otherStocksName,
@@ -847,7 +940,7 @@ class SectorHeatmapConverter {
       performance: sector.performance,
       value: sector.value,
       metadata: sector.metadata,
-      children: keep,
+      children: [...nestable, ...keepLeaves],
       customColor: sector.customColor,
       icon: sector.icon,
       imageUrl: sector.imageUrl,
@@ -856,15 +949,25 @@ class SectorHeatmapConverter {
     );
   }
 
+  /// SEBI MF broad groups / category parents — never fold into Other (<3%).
+  static bool _isMfCategoryShell(HeatmapTileData tile) {
+    if (tile.id.startsWith('sector_mf_')) return true;
+    if (tile.metadata?['mfBroadGroup'] != null) return true;
+    return tile.metadata?['mfCategory'] != null;
+  }
+
   /// Merges sectors under [smallWeightThresholdPercent] into Other (<3%).
   /// Use for treemap display only; List/Grid keep the full sector list.
+  ///
+  /// MF SEBI category shells stay visible (same idea as equity sectors) even when
+  /// each is a small % of the full All Assets book.
   static List<HeatmapTileData> mergeSmallWeightTilesForTreemap(
     List<HeatmapTileData> source,
   ) {
     final keep = <HeatmapTileData>[];
     final small = <HeatmapTileData>[];
     for (final tile in source) {
-      if (tile.name == unknownTileName) {
+      if (tile.name == unknownTileName || _isMfCategoryShell(tile)) {
         keep.add(tile);
       } else if (tile.weightage < smallWeightThresholdPercent) {
         small.add(tile);
@@ -885,21 +988,32 @@ class SectorHeatmapConverter {
             combinedWeight
         : 0.0;
 
+    // Keep each small sector's holdings so drill into Other → sector still works.
     final children = small
         .map(
-          (t) => HeatmapTileData(
-            id: t.id,
-            name: t.name,
-            displayName: t.displayName,
-            weightage: t.weightage,
-            performance: t.performance,
-            value: t.value,
-            children: null,
-            metadata: {
-              ...?t.metadata,
-              'type': 'stock',
-            },
-          ),
+          (t) {
+            final hasHoldings =
+                t.children != null && t.children!.isNotEmpty;
+            final wasSector = t.metadata?['type'] == 'sector' ||
+                t.id.startsWith('sector_') ||
+                hasHoldings;
+            return HeatmapTileData(
+              id: t.id,
+              name: t.name,
+              displayName: t.displayName,
+              weightage: t.weightage,
+              performance: t.performance,
+              value: t.value,
+              children: t.children,
+              metadata: {
+                ...?t.metadata,
+                'type': wasSector ? 'sector' : (t.metadata?['type'] ?? 'stock'),
+                if (hasHoldings) 'holdingsCount': t.children!.length,
+              },
+              customColor: t.customColor,
+              icon: t.icon,
+            );
+          },
         )
         .toList();
 
@@ -1029,6 +1143,8 @@ class SectorHeatmapConverter {
       metadata: {
         'type': 'stock',
         'symbol': stock.symbol,
+        if (stock.isin != null && stock.isin!.trim().isNotEmpty)
+          'isin': stock.isin!.trim().toUpperCase(),
         'parentSector': sector.sectorName,
         'quantity': stock.quantity,
         'avgPrice': stock.avgPrice,
@@ -1038,6 +1154,10 @@ class SectorHeatmapConverter {
         'changePercent': stock.changePercent,
         'weightPortfolioPct': portfolioWeightage.toDouble(),
         'weightSectorPct': stockSectorWeightage.toDouble(),
+        if (stock.previousClose != null && stock.previousClose! > 0)
+          'previousClose': stock.previousClose,
+        if (stock.priceSource != null && stock.priceSource!.trim().isNotEmpty)
+          'priceSource': stock.priceSource!.trim(),
       },
     );
   }
@@ -1256,14 +1376,31 @@ class SectorHeatmapConverter {
     return stock.lastPrice;
   }
 
-  /// Get display name for a stock (symbol with optional company name shortening)
+  /// Mosaic cell label:
+  /// - Mutual-fund schemes (INF* / Mutual Funds sector): full fund name
+  /// - Listed equity / ETF: trading symbol (TCS, NIFTYBEES), not legal name
   static String _getStockDisplayName(Stock stock) {
-    // For most stocks, the symbol is sufficient
-    // But for very long symbols or when we want to show company name, we can modify this
-    if (stock.symbol.length > 6) {
-      return stock.symbol.substring(0, 6);
+    final company = stock.companyName.trim();
+    final symbol = stock.symbol.trim();
+    final upperSymbol = symbol.toUpperCase();
+    final sector = stock.sector.trim().toLowerCase();
+    final looksLikeIsin =
+        RegExp(r'^INF[A-Z0-9]{9}$').hasMatch(upperSymbol);
+    final isMfSector = sector.contains('mutual fund');
+    final usableCompany = company.isNotEmpty &&
+        company.toLowerCase() != 'unknown company' &&
+        company.toUpperCase() != upperSymbol;
+
+    if ((looksLikeIsin || isMfSector) && usableCompany) {
+      return company;
     }
-    return stock.symbol;
+    if (symbol.isNotEmpty && !looksLikeIsin) {
+      return upperSymbol;
+    }
+    if (usableCompany) {
+      return company;
+    }
+    return symbol;
   }
 
   /// Calculate sector performance (prefer sector aggregate when stocks are flat).

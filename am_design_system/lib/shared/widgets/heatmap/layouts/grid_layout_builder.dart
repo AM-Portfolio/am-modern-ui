@@ -1,10 +1,12 @@
 
 import 'package:flutter/material.dart';
 import 'package:am_common/am_common.dart';
+import 'package:am_design_system/core/utils/string_utils.dart';
 
 import '../../../models/heatmap.dart';
 import '../../../../core/utils/common_logger.dart';
 import '../../selectors/sector_selector.dart';
+import '../heatmap_interaction_scope.dart';
 import 'heatmap_layout_builder.dart';
 
 /// Grid layout builder that arranges heatmap tiles in a responsive grid
@@ -39,6 +41,23 @@ class GridLayoutBuilder extends HeatmapLayoutBuilder {
       onTilePressed: onTilePressed,
       customTileBuilder: customTileBuilder,
     );
+  }
+
+  static bool _hasChildren(HeatmapTileData tile) =>
+      tile.children != null && tile.children!.isNotEmpty;
+
+  /// Same drill path as treemap: sector shell → expand; else tile/host tap.
+  static void _handleTileTap(
+    BuildContext context,
+    HeatmapTileData tile,
+    VoidCallback? onTilePressed,
+  ) {
+    final scope = HeatmapInteractionScope.maybeOf(context);
+    if (_hasChildren(tile) && scope?.onSectorDrill != null) {
+      scope!.onSectorDrill!(tile);
+      return;
+    }
+    (tile.onTap ?? onTilePressed)?.call();
   }
 
   /// Builds a weightage-based grid that ensures all cards fit within the viewport
@@ -112,16 +131,31 @@ class GridLayoutBuilder extends HeatmapLayoutBuilder {
     VoidCallback? onTilePressed,
     Widget Function(HeatmapTileData tile)? customTileBuilder,
   }) {
+    if (customTileBuilder != null) {
+      return MouseRegion(
+        cursor: SystemMouseCursors.click,
+        child: GestureDetector(
+          onTap: () => _handleTileTap(context, tile, onTilePressed),
+          child: customTileBuilder(tile),
+        ),
+      );
+    }
+
     // Get tile color for consistent background
     final tileColor = getTileColor(context, tile, data);
     final textColor = getTextColor(context, tileColor);
     final colors = themeColors(context);
+    final expandable = _hasChildren(tile);
+    final label =
+        tile.displayName.trim().isNotEmpty ? tile.displayName : tile.name;
+    final valueLabel =
+        tile.value != null ? StringUtils.formatCurrency(tile.value!) : null;
 
     return Container(
       margin: const EdgeInsets.all(1), // Minimal margin for visual separation
       decoration: BoxDecoration(
         color: tileColor, // Use consistent tile color as background
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(
           color: colors.border.withValues(alpha: 0.45),
           width: 0.5,
@@ -137,65 +171,92 @@ class GridLayoutBuilder extends HeatmapLayoutBuilder {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: onTilePressed,
-          borderRadius: BorderRadius.circular(6),
-          child: Container(
-            padding: const EdgeInsets.all(8),
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Tile name - always visible
-                  Flexible(
-                    child: Text(
-                      tile.name,
-                      style: TextStyle(
-                        color: textColor,
-                        fontSize: calculateFontSize(
-                          120,
-                          false,
-                        ), // Consistent font size
-                        fontWeight: FontWeight.w600,
-                      ),
-                      textAlign: TextAlign.center,
-                      overflow: TextOverflow.ellipsis,
-                      maxLines: 2,
+          onTap: () => _handleTileTap(context, tile, onTilePressed),
+          borderRadius: BorderRadius.circular(8),
+          child: MouseRegion(
+            cursor: SystemMouseCursors.click,
+            child: Stack(
+              children: [
+                if (expandable)
+                  Positioned(
+                    top: 6,
+                    right: 6,
+                    child: Icon(
+                      Icons.open_in_full_rounded,
+                      size: 12,
+                      color: textColor.withValues(alpha: 0.75),
                     ),
                   ),
-
-                  const SizedBox(height: 4),
-
-                  // Weightage - always show for grid layout
-                  Text(
-                    '${tile.weightage.toStringAsFixed(1)}%',
-                    style: TextStyle(
-                      color: textColor.withOpacity(0.8),
-                      fontSize: calculateFontSize(
-                        120,
-                        false,
-                        isSecondary: true,
-                      ),
-                      fontWeight: FontWeight.w500,
+                Padding(
+                  padding: const EdgeInsets.all(10),
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Flexible(
+                          child: Text(
+                            label,
+                            style: TextStyle(
+                              color: textColor,
+                              fontSize: calculateFontSize(120, false),
+                              fontWeight: FontWeight.w700,
+                            ),
+                            textAlign: TextAlign.center,
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 2,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '${tile.weightage.toStringAsFixed(1)}%',
+                          style: TextStyle(
+                            color: textColor.withValues(alpha: 0.85),
+                            fontSize: calculateFontSize(
+                              120,
+                              false,
+                              isSecondary: true,
+                            ),
+                            fontWeight: FontWeight.w500,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        if (valueLabel != null) ...[
+                          const SizedBox(height: 2),
+                          Text(
+                            valueLabel,
+                            style: TextStyle(
+                              color: textColor.withValues(alpha: 0.8),
+                              fontSize: calculateFontSize(
+                                120,
+                                false,
+                                isSmall: true,
+                              ),
+                              fontWeight: FontWeight.w500,
+                            ),
+                            textAlign: TextAlign.center,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                        if (data.configuration.showPerformance) ...[
+                          const SizedBox(height: 2),
+                          Text(
+                            '${tile.performance >= 0 ? '+' : ''}${tile.performance.toStringAsFixed(1)}%',
+                            style: TextStyle(
+                              color: textColor.withValues(alpha: 0.95),
+                              fontSize:
+                                  calculateFontSize(120, false, isSmall: true),
+                              fontWeight: FontWeight.w700,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ],
                     ),
-                    textAlign: TextAlign.center,
                   ),
-
-                  // Performance if available
-                  if (data.configuration.showPerformance) ...[
-                    const SizedBox(height: 2),
-                    Text(
-                      '${tile.performance >= 0 ? '+' : ''}${tile.performance.toStringAsFixed(1)}%',
-                      style: TextStyle(
-                        color: textColor.withOpacity(0.9),
-                        fontSize: calculateFontSize(120, false, isSmall: true),
-                        fontWeight: FontWeight.w600,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),
