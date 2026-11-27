@@ -14,6 +14,7 @@ class DashboardPortfolioChoice {
     required this.name,
     this.hasHoldings = true,
     this.assetCount,
+    this.isDemo = false,
     this.isPaper = false,
     this.brokerType,
     this.externalId,
@@ -25,6 +26,7 @@ class DashboardPortfolioChoice {
   final String name;
   final bool hasHoldings;
   final int? assetCount;
+  final bool isDemo;
   final bool isPaper;
   final String? brokerType;
 
@@ -34,7 +36,7 @@ class DashboardPortfolioChoice {
   final String? familyMemberId;
   final String? familyMemberName;
 
-  bool get isSelectable => id == 'all' || isPaper || hasHoldings;
+  bool get isSelectable => id == 'all' || isDemo || isPaper || hasHoldings;
 
   DashboardPortfolioChoice copyWith({
     String? name,
@@ -46,6 +48,7 @@ class DashboardPortfolioChoice {
       name: name ?? this.name,
       hasHoldings: hasHoldings,
       assetCount: assetCount,
+      isDemo: isDemo,
       isPaper: isPaper,
       brokerType: brokerType,
       externalId: externalId ?? this.externalId,
@@ -55,20 +58,16 @@ class DashboardPortfolioChoice {
   }
 }
 
-bool _isCdslChoice({
-  required String name,
-  String? brokerType,
-  String? kind,
-}) {
+bool _isCdslChoice({required String name, String? brokerType, String? kind}) {
   final broker = (brokerType ?? '').toUpperCase();
   if (broker == 'CAS_DEMAT') return false;
   if (broker == 'CDSL') return true;
   final n = name.toLowerCase().trim();
-  if (n == 'cdsl'
-      || n == 'cas'
-      || n == 'cdsl cas'
-      || n == 'cas aggregator'
-      || n.contains('cdsl')) {
+  if (n == 'cdsl' ||
+      n == 'cas' ||
+      n == 'cdsl cas' ||
+      n == 'cas aggregator' ||
+      n.contains('cdsl')) {
     return true;
   }
   final k = (kind ?? '').toUpperCase();
@@ -78,13 +77,13 @@ bool _isCdslChoice({
 
 final dashboardPortfolioChoicesProvider =
     FutureProvider<List<DashboardPortfolioChoice>>((ref) async {
-  final client = await ref.watch(portfolioApiClientProvider.future);
-  final data = await client.get<dynamic>(
-    '/v1/portfolios/list',
-    parser: (raw) => raw,
-  );
-  return parseDashboardPortfolioChoices(data);
-});
+      final client = await ref.watch(portfolioApiClientProvider.future);
+      final data = await client.get<dynamic>(
+        '/v1/portfolios/list',
+        parser: (raw) => raw,
+      );
+      return parseDashboardPortfolioChoices(data);
+    });
 
 List<DashboardPortfolioChoice> parseDashboardPortfolioChoices(dynamic data) {
   final List<dynamic> items;
@@ -97,6 +96,7 @@ List<DashboardPortfolioChoice> parseDashboardPortfolioChoices(dynamic data) {
   }
   final pending = <_PendingDashboardChoice>[];
   var hasRealBroker = false;
+  var hasRealPortfolio = false;
   for (final raw in items) {
     if (raw is! Map) continue;
     final map = Map<String, dynamic>.from(raw);
@@ -105,19 +105,27 @@ List<DashboardPortfolioChoice> parseDashboardPortfolioChoices(dynamic data) {
     final id = (map['portfolioId'] ?? map['id'])?.toString() ?? '';
     if (id.isEmpty) continue;
     final name = (map['portfolioName'] ?? map['name'])?.toString() ?? id;
-    final brokerType =
-        (map['brokerType'] ?? map['broker'])?.toString();
-    final isCdsl =
-        _isCdslChoice(name: name, brokerType: brokerType, kind: kind);
+    final brokerType = (map['brokerType'] ?? map['broker'])?.toString();
+    final isCdsl = _isCdslChoice(
+      name: name,
+      brokerType: brokerType,
+      kind: kind,
+    );
     final isDemo = isDemoPortfolioEntry(
       kind: kind,
       name: name,
       isDummy: map['isDummy'] == true || map['dummy'] == true,
     );
-    final isPaper = map['isDummy'] == true ||
+    final isPaper =
+        map['isDummy'] == true ||
         map['dummy'] == true ||
         kind == 'PAPER' ||
         name.toLowerCase() == 'paper';
+    hasRealPortfolio |= isRealPortfolioEntry(
+      kind: kind,
+      name: name,
+      isDummy: map['isDummy'] == true || map['dummy'] == true,
+    );
     if (!isCdsl &&
         !isDemo &&
         !isPaper &&
@@ -133,7 +141,8 @@ List<DashboardPortfolioChoice> parseDashboardPortfolioChoices(dynamic data) {
     if (serverHasHoldings != null) {
       hasHoldings = serverHasHoldings;
     } else if (assetCount != null || totalValue != null) {
-      hasHoldings = (assetCount != null && assetCount > 0) ||
+      hasHoldings =
+          (assetCount != null && assetCount > 0) ||
           (totalValue != null && totalValue > 0) ||
           (invested != null && invested > 0);
     } else if (invested != null || current != null) {
@@ -141,14 +150,13 @@ List<DashboardPortfolioChoice> parseDashboardPortfolioChoices(dynamic data) {
     } else {
       hasHoldings = true;
     }
-    final externalId = (map['clientId'] ??
-            map['boid'] ??
-            map['externalId'] ??
-            map['pran'])
-        ?.toString();
+    final externalId =
+        (map['clientId'] ?? map['boid'] ?? map['externalId'] ?? map['pran'])
+            ?.toString();
     final familyMemberId = (map['familyMemberId'] as String?)?.trim();
     final familyMemberName = (map['familyMemberName'] as String?)?.trim();
-    final baseName = (name.isEmpty || name == id) &&
+    final baseName =
+        (name.isEmpty || name == id) &&
             brokerType != null &&
             brokerType.isNotEmpty
         ? brokerType
@@ -160,28 +168,37 @@ List<DashboardPortfolioChoice> parseDashboardPortfolioChoices(dynamic data) {
         choice: DashboardPortfolioChoice(
           id: id,
           name: stripPortfolioFamilySuffix(baseName),
-          hasHoldings: isPaper ? true : hasHoldings,
+          hasHoldings: isDemo || isPaper ? true : hasHoldings,
           assetCount: assetCount,
+          isDemo: isDemo,
           isPaper: isPaper,
           brokerType: brokerType,
           externalId: externalId,
-          familyMemberId:
-              familyMemberId?.isEmpty == true ? null : familyMemberId,
-          familyMemberName:
-              familyMemberName?.isEmpty == true ? null : familyMemberName,
+          familyMemberId: familyMemberId?.isEmpty == true
+              ? null
+              : familyMemberId,
+          familyMemberName: familyMemberName?.isEmpty == true
+              ? null
+              : familyMemberName,
         ),
       ),
     );
   }
   final choices = <DashboardPortfolioChoice>[
     for (final p in pending)
-      if (!hasRealBroker || !p.isCdsl) p.choice,
+      if ((!hasRealBroker || !p.isCdsl) && (!hasRealPortfolio || !p.isDemo))
+        p.choice,
   ];
-  // Once any real (non-CDSL) broker book is present, Demo must leave the dropdown.
-  if (hasRealBroker) {
-    choices.removeWhere((c) => isDemoPortfolioEntry(name: c.name));
-  }
   return choices;
+}
+
+/// Select the seeded demo only when the shell has no portfolio selection yet.
+DashboardPortfolioChoice? initialDashboardDemoChoice({
+  required String? selectedPortfolioId,
+  required List<DashboardPortfolioChoice> choices,
+}) {
+  if (selectedPortfolioId != null) return null;
+  return choices.where((choice) => choice.isDemo).firstOrNull;
 }
 
 class _PendingDashboardChoice {
@@ -246,14 +263,16 @@ DashboardPortfolioChoice _enrichOneChoice(
   required String? pran,
 }) {
   final famId = c.familyMemberId?.trim();
-  final needsName = famId != null &&
+  final needsName =
+      famId != null &&
       famId.isNotEmpty &&
       (c.familyMemberName == null || c.familyMemberName!.trim().isEmpty);
   final resolvedName = needsName ? memberNameById[famId] : c.familyMemberName;
   return c.copyWith(
     name: stripPortfolioFamilySuffix(c.name),
     familyMemberName: resolvedName,
-    externalId: c.externalId ??
+    externalId:
+        c.externalId ??
         byPortfolio[c.id] ??
         byBroker[(c.brokerType ?? '').toUpperCase()] ??
         (((c.brokerType ?? c.name).toUpperCase().contains('NPS'))
@@ -297,9 +316,8 @@ class DashboardPortfolioSelector extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final inherited = context.selectedPortfolioId;
     final scoped = ref.watch(dashboardPortfolioScopeProvider);
-    final normalized = (inherited == null ||
-            inherited.isEmpty ||
-            inherited == 'all')
+    final normalized =
+        (inherited == null || inherited.isEmpty || inherited == 'all')
         ? null
         : inherited;
     if (normalized != scoped) {
@@ -322,9 +340,12 @@ class DashboardPortfolioSelector extends ConsumerWidget {
     final members = <({String id, String name})>[
       for (final m in hub?.familyMembers ?? const <FamilyMemberRow>[])
         if ((m.id?.trim().isNotEmpty ?? false))
-          (id: m.id!.trim(), name: (m.name?.trim().isNotEmpty ?? false)
-              ? m.name!.trim()
-              : m.id!.trim()),
+          (
+            id: m.id!.trim(),
+            name: (m.name?.trim().isNotEmpty ?? false)
+                ? m.name!.trim()
+                : m.id!.trim(),
+          ),
     ];
     final showFamily = showFamilyPortfolioFilter(
       members.map((m) => (id: m.id, name: m.name)),
@@ -340,21 +361,45 @@ class DashboardPortfolioSelector extends ConsumerWidget {
       ...filteredBooks,
     ];
 
-    var currentId = normalized ?? 'all';
-    final known = portfolios.any((c) => c.id == currentId);
-    if (!known && currentId != 'all') {
-      currentId = 'all';
+    final initialDemo = choices.hasValue
+        ? initialDashboardDemoChoice(
+            selectedPortfolioId: inherited,
+            choices: filteredBooks,
+          )
+        : null;
+    if (initialDemo != null) {
       final selectPortfolio = context.selectPortfolio;
       Future.microtask(() {
-        selectPortfolio('all', 'All Portfolios');
-        ref.read(dashboardPortfolioScopeProvider.notifier).select(null);
+        selectPortfolio(initialDemo.id, initialDemo.name);
+        ref
+            .read(dashboardPortfolioScopeProvider.notifier)
+            .select(initialDemo.id);
         ref
             .read(dashboardOverlayProvider(userId).notifier)
-            .setPreferredPortfolioId(null);
+            .setPreferredPortfolioId(initialDemo.id);
       });
     }
 
-    final currentName = portfolios
+    var currentId = initialDemo?.id ?? normalized ?? 'all';
+    final known = portfolios.any((c) => c.id == currentId);
+    if (choices.hasValue && !known && currentId != 'all') {
+      final replacement = initialDashboardDemoChoice(
+        selectedPortfolioId: null,
+        choices: filteredBooks,
+      );
+      currentId = replacement?.id ?? 'all';
+      final selectPortfolio = context.selectPortfolio;
+      Future.microtask(() {
+        selectPortfolio(currentId, replacement?.name ?? 'All Portfolios');
+        ref.read(dashboardPortfolioScopeProvider.notifier).select(currentId);
+        ref
+            .read(dashboardOverlayProvider(userId).notifier)
+            .setPreferredPortfolioId(currentId);
+      });
+    }
+
+    final currentName =
+        portfolios
             .where((choice) => choice.id == currentId)
             .map((choice) => choice.name)
             .firstOrNull ??

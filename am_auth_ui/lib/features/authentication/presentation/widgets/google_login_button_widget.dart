@@ -7,14 +7,17 @@ import '../cubit/auth_cubit.dart';
 /// Google login button widget matching image (1).png
 class GoogleLoginButtonWidget extends StatefulWidget {
   final bool isLoading;
+  final bool isBusy;
 
   const GoogleLoginButtonWidget({
     super.key,
     this.isLoading = false,
+    this.isBusy = false,
   });
 
   @override
-  State<GoogleLoginButtonWidget> createState() => _GoogleLoginButtonWidgetState();
+  State<GoogleLoginButtonWidget> createState() =>
+      _GoogleLoginButtonWidgetState();
 }
 
 class _GoogleLoginButtonWidgetState extends State<GoogleLoginButtonWidget> {
@@ -22,7 +25,7 @@ class _GoogleLoginButtonWidgetState extends State<GoogleLoginButtonWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final enabled = !widget.isLoading;
+    final enabled = !(widget.isLoading || widget.isBusy);
 
     final baseBgColor = context.colors.surface;
     final borderColor = context.colors.border;
@@ -71,7 +74,8 @@ class _GoogleLoginButtonWidgetState extends State<GoogleLoginButtonWidget> {
                           height: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(textColor),
+                            valueColor:
+                                AlwaysStoppedAnimation<Color>(textColor),
                           ),
                         )
                       else
@@ -145,7 +149,8 @@ class _GoogleGLogoPainter extends CustomPainter {
       ..color = const Color(0xFF4285F4)
       ..style = PaintingStyle.fill;
     canvas.drawRect(
-      Rect.fromLTRB(center.dx, center.dy - (strokeW / 2), center.dx + (radius * 0.8), center.dy + (strokeW / 2)),
+      Rect.fromLTRB(center.dx, center.dy - (strokeW / 2),
+          center.dx + (radius * 0.8), center.dy + (strokeW / 2)),
       barPaint,
     );
   }

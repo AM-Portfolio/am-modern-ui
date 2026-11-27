@@ -8,10 +8,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/utils/auth_redirect.dart';
+import '../../../../core/utils/qa_portal_handoff.dart';
 import '../../../../di/auth_providers.dart';
 import '../cubit/auth_cubit.dart';
 import '../cubit/auth_state.dart';
 import '../widgets/auth_method_pill_tabs.dart';
+import '../widgets/apple_login_button.dart';
 import '../widgets/auth_page_background.dart';
 import '../widgets/dev_section_widget.dart';
 import '../widgets/email_login_form_widget.dart';
@@ -79,6 +81,10 @@ class _LoginPageState extends State<LoginPage> {
                 final target = AuthRedirect.postLoginLocation(
                   GoRouterState.of(context).uri,
                 );
+                if (kIsWeb && AuthRedirect.isQaPortalTarget(target)) {
+                  unawaited(handoffToQaPortalAfterLogin(target));
+                  return;
+                }
                 context.go(target);
               } else {
                 Navigator.of(context).pushReplacementNamed('/home');
@@ -116,7 +122,8 @@ class _LoginPageState extends State<LoginPage> {
               final restoringSession = redirect != null &&
                   redirect.startsWith('/app') &&
                   (state is AuthInitial ||
-                      state is AuthLoading ||
+                      (state is AuthLoading &&
+                          state.method == AuthLoadingMethod.other) ||
                       state is AuthRestoreFailed);
               if (restoringSession) {
                 final failed = state is AuthRestoreFailed;
@@ -431,7 +438,7 @@ class _LoginPageState extends State<LoginPage> {
     return [
       if (showPaneBlurb) ...[
         Text(
-          'Sign in with your email and password, or continue with Google.',
+          'Sign in with your email and password, or continue with ${AppleLoginButton.isAvailable ? 'Google or Apple' : 'Google'}.',
           textAlign: TextAlign.center,
           style: context.text.bodyMuted(compact: true).copyWith(
                 color: context.colors.textSecondary,
@@ -442,7 +449,9 @@ class _LoginPageState extends State<LoginPage> {
       ],
       EmailLoginFormWidget(
         isCompact: isCompact,
-        isLoading: state is AuthLoading,
+        isLoading:
+            state is AuthLoading && state.method == AuthLoadingMethod.email,
+        isBusy: state is AuthLoading,
         showTitle: showEmailTitle,
       ),
       SizedBox(height: isCompact ? 16 : 20),
@@ -464,7 +473,19 @@ class _LoginPageState extends State<LoginPage> {
         ],
       ),
       SizedBox(height: isCompact ? 16 : 20),
-      GoogleLoginButtonWidget(isLoading: state is AuthLoading),
+      GoogleLoginButtonWidget(
+        isLoading:
+            state is AuthLoading && state.method == AuthLoadingMethod.google,
+        isBusy: state is AuthLoading,
+      ),
+      if (AppleLoginButton.isAvailable) ...[
+        const SizedBox(height: 12),
+        AppleLoginButton(
+          isLoading:
+              state is AuthLoading && state.method == AuthLoadingMethod.apple,
+          isBusy: state is AuthLoading,
+        ),
+      ],
       SizedBox(height: isCompact ? 16 : 20),
       Row(
         mainAxisAlignment: MainAxisAlignment.center,

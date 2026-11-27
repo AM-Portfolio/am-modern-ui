@@ -6,6 +6,7 @@ import '../cubit/auth_cubit.dart';
 import '../cubit/auth_state.dart';
 import '../widgets/developer_controls_panel.dart';
 import '../widgets/google_signin_button.dart';
+import '../widgets/apple_login_button.dart';
 
 class LoginForm extends StatefulWidget {
   const LoginForm({
@@ -57,7 +58,7 @@ class _LoginFormState extends State<LoginForm> {
       listener: (context, state) {
         // Debug logging for state changes
         print('🔵 LoginForm: State changed to ${state.runtimeType}');
-        
+
         if (state is AuthError) {
           print('❌ LoginForm: AuthError received - ${state.message}');
           ScaffoldMessenger.of(context).showSnackBar(
@@ -67,7 +68,7 @@ class _LoginFormState extends State<LoginForm> {
             ),
           );
         }
-        
+
         if (state is AuthLoading) {
           print('⏳ LoginForm: AuthLoading state');
         }
@@ -121,7 +122,9 @@ class _LoginFormState extends State<LoginForm> {
                 onFieldSubmitted: (_) => !isLoading ? _handleLogin() : null,
                 suffixIcon: IconButton(
                   icon: Icon(
-                    _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                    _obscurePassword
+                        ? Icons.visibility_outlined
+                        : Icons.visibility_off_outlined,
                     color: Colors.black54,
                   ),
                   onPressed: () {
@@ -146,12 +149,14 @@ class _LoginFormState extends State<LoginForm> {
                     backgroundColor: Theme.of(context).primaryColor,
                     foregroundColor: Colors.white,
                     elevation: 5,
-                    shadowColor: Theme.of(context).primaryColor.withValues(alpha: 0.4),
+                    shadowColor:
+                        Theme.of(context).primaryColor.withValues(alpha: 0.4),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),
                   ),
-                  child: isLoading
+                  child: state is AuthLoading &&
+                          state.method == AuthLoadingMethod.email
                       ? const SizedBox(
                           height: 20,
                           width: 20,
@@ -212,7 +217,17 @@ class _LoginFormState extends State<LoginForm> {
               ],
               GoogleSignInButton(
                 onPressed: isLoading ? null : _handleGoogleSignIn,
+                isLoading: state is AuthLoading &&
+                    state.method == AuthLoadingMethod.google,
               ),
+              if (AppleLoginButton.isAvailable) ...[
+                const SizedBox(height: 12),
+                AppleLoginButton(
+                  isLoading: state is AuthLoading &&
+                      state.method == AuthLoadingMethod.apple,
+                  isBusy: isLoading,
+                ),
+              ],
               const SizedBox(height: 24),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,

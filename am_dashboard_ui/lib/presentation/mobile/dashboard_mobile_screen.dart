@@ -3,6 +3,7 @@ import 'package:am_dashboard_ui/presentation/layout/dashboard_layout_renderer.da
 import 'package:am_dashboard_ui/presentation/providers/dashboard_provider.dart';
 import 'package:am_dashboard_ui/presentation/providers/dashboard_timeframe_provider.dart';
 import 'package:am_dashboard_ui/presentation/providers/has_demo_portfolio_provider.dart';
+import 'package:am_dashboard_ui/presentation/widgets/dashboard_portfolio_selector.dart';
 import 'package:am_dashboard_ui/presentation/widgets/dashboard_toolbar.dart';
 import 'package:am_common/am_common.dart';
 import 'package:am_design_system/am_design_system.dart';
@@ -40,8 +41,7 @@ class DashboardMobileScreen extends ConsumerStatefulWidget {
       _DashboardMobileScreenState();
 }
 
-class _DashboardMobileScreenState
-    extends ConsumerState<DashboardMobileScreen> {
+class _DashboardMobileScreenState extends ConsumerState<DashboardMobileScreen> {
   late final PageController _pageController;
   bool _searchOpen = false;
 
@@ -66,6 +66,7 @@ class _DashboardMobileScreenState
     ref.invalidate(accountsHubProvider(id));
     ref.invalidate(portfolioOverviewsProvider(id));
     ref.invalidate(hasDemoPortfolioProvider);
+    ref.invalidate(dashboardPortfolioChoicesProvider);
     ref.invalidate(dashboardStreamProvider(id));
   }
 
@@ -77,7 +78,10 @@ class _DashboardMobileScreenState
       }
     }
 
-    ref.listen(dashboardStreamProvider(widget.userId), (_, next) => markIfReady(next));
+    ref.listen(
+      dashboardStreamProvider(widget.userId),
+      (_, next) => markIfReady(next),
+    );
     ref.listen(
       moversStreamProvider(widget.userId, timeFrame: tfCode),
       (_, next) => markIfReady(next),
@@ -86,13 +90,13 @@ class _DashboardMobileScreenState
       recentActivityProvider(widget.userId, page: 0, size: 10),
       (_, next) => markIfReady(next),
     );
-    ref.listen(portfolioOverviewsProvider(widget.userId), (_, next) => markIfReady(next));
+    ref.listen(
+      portfolioOverviewsProvider(widget.userId),
+      (_, next) => markIfReady(next),
+    );
   }
 
-  Widget _buildStickyHeader({
-    required Color onSurface,
-    required bool showDemoBadge,
-  }) {
+  Widget _buildStickyHeader({required Color onSurface}) {
     final scope = MobileSearchScope.maybeOf(context);
     final shellHandlesSearch = scope?.liveSearch != null;
     if (_searchOpen && !shellHandlesSearch) {
@@ -108,7 +112,6 @@ class _DashboardMobileScreenState
     return DashboardToolbar(
       userId: widget.userId,
       onSurface: onSurface,
-      showDemoBadge: showDemoBadge,
       brandLabel: widget.brandLabel,
       profileLeading: widget.profileLeading,
       onProfileTap: widget.onProfileTap,
@@ -150,6 +153,7 @@ class _DashboardMobileScreenState
       ref.invalidate(accountsHubProvider(userId));
       ref.invalidate(portfolioOverviewsProvider(userId));
       ref.invalidate(hasDemoPortfolioProvider);
+      ref.invalidate(dashboardPortfolioChoicesProvider);
     }
 
     final showDemoBanner =
@@ -199,10 +203,7 @@ class _DashboardMobileScreenState
             child: Column(
               children: [
                 // Sticky top: Sync / paper / timeframe
-                _buildStickyHeader(
-                  onSurface: onSurface,
-                  showDemoBadge: showDemoBanner,
-                ),
+                _buildStickyHeader(onSurface: onSurface),
                 Expanded(
                   child: RefreshIndicator(
                     onRefresh: refresh,
@@ -221,6 +222,10 @@ class _DashboardMobileScreenState
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
+                          if (showDemoBanner) ...[
+                            const DemoAccountInlineBanner(),
+                            const SizedBox(height: AppSpacing.md),
+                          ],
                           DashboardLayoutRenderer(
                             userId: userId,
                             layout: layout,

@@ -4,12 +4,14 @@ import 'package:am_design_system/am_design_system.dart';
 import 'package:am_common/am_common.dart';
 
 import 'package:dartz/dartz.dart';
+import 'package:flutter/foundation.dart'
+    show kIsWeb, defaultTargetPlatform, TargetPlatform;
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 import 'package:am_design_system/core/config/feature_flags.dart';
 import 'package:am_design_system/core/errors/exceptions.dart';
 import 'package:am_design_system/core/errors/failures.dart';
 import 'package:am_auth_ui/core/services/secure_storage_service.dart';
-import 'package:am_common/am_common.dart';
 import '../../domain/entities/auth_result_entity.dart';
 import '../../domain/entities/auth_tokens_entity.dart';
 import '../../domain/entities/user_entity.dart';
@@ -39,6 +41,46 @@ class AuthRepositoryImpl implements AuthRepository {
   final GoogleSignInService _googleSignInService;
   final FeatureFlags _featureFlags = FeatureFlags();
 
+  @override
+  Future<Either<Failure, AuthResultEntity>> appleLogin() async {
+    if (kIsWeb ||
+        defaultTargetPlatform != TargetPlatform.iOS ||
+        !_featureFlags.useRealBackendAPI) {
+      return const Left(
+          AuthFailure('Apple sign-in is available in the iOS app'));
+    }
+    try {
+      final credential = await SignInWithApple.getAppleIDCredential(
+        scopes: [
+          AppleIDAuthorizationScopes.email,
+          AppleIDAuthorizationScopes.fullName,
+        ],
+      );
+      final token = credential.identityToken;
+      if (token == null || token.isEmpty) {
+        return const Left(
+            AuthFailure('Apple did not return an identity token'));
+      }
+      final result = await _identityDataSource.appleLogin(
+        token,
+        givenName: credential.givenName,
+        familyName: credential.familyName,
+      );
+      return await _persistAuthResult(result);
+    } on SignInWithAppleAuthorizationException catch (e) {
+      if (e.code == AuthorizationErrorCode.canceled) {
+        return const Left(AuthFailure('Apple sign-in was cancelled'));
+      }
+      return const Left(AuthFailure('Apple sign-in failed'));
+    } on NetworkException catch (e) {
+      return Left(NetworkFailure(e.message));
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message, code: e.statusCode.toString()));
+    } catch (_) {
+      return const Left(AuthFailure('Apple sign-in failed'));
+    }
+  }
+
   /// Get the appropriate data source based on feature flags
   AuthDataSource get _dataSource {
     if (!_featureFlags.useRealBackendAPI) {
@@ -58,7 +100,8 @@ class AuthRepositoryImpl implements AuthRepository {
     String? phone,
   }) async {
     try {
-      final attribution = await ReferralInstallStore.instance.signupAttribution();
+      final attribution =
+          await ReferralInstallStore.instance.signupAttribution();
       final result = await _dataSource.register(
         name: name,
         email: email,
@@ -157,7 +200,8 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<Either<Failure, AuthResultEntity>> googleLogin() async {
     try {
-      CommonLogger.info('🟢 [GOOGLE OAUTH] Step 1: Starting Google Sign-In flow');
+      CommonLogger.info(
+          '🟢 [GOOGLE OAUTH] Step 1: Starting Google Sign-In flow');
 
       // Step 1: Get Google account and authentication
       CommonLogger.info(
@@ -201,7 +245,8 @@ class AuthRepositoryImpl implements AuthRepository {
         '🟢 [GOOGLE OAUTH] Backend URL: ${_dataSource.runtimeType}',
       );
 
-      final attribution = await ReferralInstallStore.instance.signupAttribution();
+      final attribution =
+          await ReferralInstallStore.instance.signupAttribution();
       var result = await _dataSource.googleLogin(
         idToken,
         referralCode: attribution.referralCode,
@@ -249,7 +294,8 @@ class AuthRepositoryImpl implements AuthRepository {
       }
       await _storageService.saveTokenExpiry(result.tokens.expiresAt);
 
-      CommonLogger.info('🟢 [GOOGLE OAUTH] Step 9: All tokens saved successfully');
+      CommonLogger.info(
+          '🟢 [GOOGLE OAUTH] Step 9: All tokens saved successfully');
       await ReferralInstallStore.instance.clearPendingReferralCode();
       CommonLogger.info(
         '🟢 [GOOGLE OAUTH] ✅ GOOGLE SIGN-IN COMPLETE! Returning success.',
@@ -348,7 +394,8 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<Either<Failure, bool>> checkAuthStatus() async {
     try {
-      final accessToken = await _storageService.getAccessToken(checkExpiry: false);
+      final accessToken =
+          await _storageService.getAccessToken(checkExpiry: false);
       if (accessToken == null) return const Right(false);
 
       final isExpired = await _storageService.isTokenExpired();
@@ -362,7 +409,8 @@ class AuthRepositoryImpl implements AuthRepository {
           (failure) {
             // Invalid or expired session — treat as logged out.
             if (failure is AuthFailure) return const Right(false);
-            if (failure is ServerFailure && _isInvalidSessionStatus(failure.code)) {
+            if (failure is ServerFailure &&
+                _isInvalidSessionStatus(failure.code)) {
               return const Right(false);
             }
             // Transient network/5xx — propagate so UI can retry without login flash.
@@ -409,21 +457,9 @@ class AuthRepositoryImpl implements AuthRepository {
           accessToken.isEmpty ||
           expiry == null) {
         CommonLogger.warning(
-          '⚠️ Validation failed - userId: ${userId == null
-              ? 'NULL'
-              : userId.isEmpty
-              ? 'EMPTY'
-              : 'OK'}, '
-          'email: ${email == null
-              ? 'NULL'
-              : email.isEmpty
-              ? 'EMPTY'
-              : 'OK'}, '
-          'accessToken: ${accessToken == null
-              ? 'NULL'
-              : accessToken.isEmpty
-              ? 'EMPTY'
-              : 'OK'}',
+          '⚠️ Validation failed - userId: ${userId == null ? 'NULL' : userId.isEmpty ? 'EMPTY' : 'OK'}, '
+          'email: ${email == null ? 'NULL' : email.isEmpty ? 'EMPTY' : 'OK'}, '
+          'accessToken: ${accessToken == null ? 'NULL' : accessToken.isEmpty ? 'EMPTY' : 'OK'}',
           tag: 'AuthRepository',
         );
 
@@ -651,7 +687,7 @@ class AuthRepositoryImpl implements AuthRepository {
         await Future<void>.delayed(const Duration(milliseconds: 400));
         return const Right(null);
       }
-      
+
       final token = await _storageService.getAccessToken(checkExpiry: false);
       if (token == null) {
         return const Left(AuthFailure('Not authenticated'));
@@ -661,7 +697,7 @@ class AuthRepositoryImpl implements AuthRepository {
         token: token,
         feedback: feedback,
       );
-      
+
       return const Right(null);
     } on NetworkException catch (e) {
       return Left(NetworkFailure(e.message));
@@ -717,7 +753,8 @@ class AuthRepositoryImpl implements AuthRepository {
         refreshToken: refreshToken,
         expiresAt: expiresAt,
       );
-      final authResult = AuthResultEntity(user: userEntity, tokens: tokensEntity);
+      final authResult =
+          AuthResultEntity(user: userEntity, tokens: tokensEntity);
 
       UserContext.instance.populate(
         accessToken: resolvedAccessToken,
@@ -731,4 +768,3 @@ class AuthRepositoryImpl implements AuthRepository {
     }
   }
 }
-

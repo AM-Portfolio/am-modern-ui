@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:am_common/am_common.dart';
 import 'package:am_dashboard_ui/presentation/providers/dashboard_provider.dart';
 import 'package:am_dashboard_ui/presentation/providers/has_demo_portfolio_provider.dart';
+import 'package:am_dashboard_ui/presentation/widgets/dashboard_portfolio_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -47,6 +48,7 @@ class _DashboardPortfolioRefreshBinderState
     ref.invalidate(accountsHubProvider(id));
     ref.invalidate(portfolioOverviewsProvider(id));
     ref.invalidate(hasDemoPortfolioProvider);
+    ref.invalidate(dashboardPortfolioChoicesProvider);
     ref.invalidate(dashboardStreamProvider(id));
     ref.invalidate(npsSchemesProvider);
   }
