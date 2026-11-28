@@ -20,7 +20,10 @@ class MfApiClient {
         baseUrl: baseUrl.replaceAll(RegExp(r'/+$'), ''),
         connectTimeout: const Duration(seconds: 30),
         receiveTimeout: const Duration(seconds: 60),
-        headers: const {'Content-Type': 'application/json'},
+        // Do NOT set Content-Type globally — on Flutter web that forces a CORS
+        // preflight even for GETs. Dio still sets application/json when a Map body
+        // is posted.
+        headers: const {'Accept': 'application/json'},
       ),
     );
     AuthProviders.attachAuthInterceptor(dio);
@@ -159,6 +162,21 @@ class MfApiClient {
   Future<MfMeta> getMeta() async {
     final response = await _dio.get<Map<String, dynamic>>(MfEndpoints.meta);
     return MfMeta.fromJson(response.data ?? const {});
+  }
+
+  Future<MfOnboardingStatus> getOnboardingStatus() async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        MfEndpoints.onboardingStatus,
+      );
+      return MfOnboardingStatus.fromJson(response.data ?? const {});
+    } on DioException catch (e) {
+      // Older dig BFF images lack this route — treat as unbound, not a hard error.
+      if (e.response?.statusCode == 404) {
+        return const MfOnboardingStatus();
+      }
+      rethrow;
+    }
   }
 
   Future<MfDistributorOp> submitUcc(Map<String, dynamic> body) async {

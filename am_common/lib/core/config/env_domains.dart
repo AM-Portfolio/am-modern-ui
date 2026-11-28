@@ -70,8 +70,15 @@ class EnvDomains {
   static String get news => ConfigService.override('news') ?? '$apiBase/news';
 
   /// Mutual-fund BFF. Dig uses Traefik `/router/am/mf` (not `/mutual-fund`).
-  static String get mutualFund =>
-      ConfigService.override('mutualFund') ?? '$apiBase/router/am/mf';
+  ///
+  /// Local `run:app:dev` may inject [AM_MF_PROXY_BASE] (CORS-aware proxy on
+  /// 127.0.0.1) so Flutter web can call dig with Authorization without browser
+  /// preflight failures against api-gateway.
+  static String get mutualFund {
+    const proxy = String.fromEnvironment('AM_MF_PROXY_BASE');
+    if (proxy.isNotEmpty) return proxy;
+    return ConfigService.override('mutualFund') ?? '$apiBase/router/am/mf';
+  }
 
   // WebSocket — all real-time UI uses am-gateway STOMP
   static String get wsStream =>

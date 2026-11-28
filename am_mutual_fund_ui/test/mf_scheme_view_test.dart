@@ -270,4 +270,41 @@ void main() {
     expect(MfExploreOptionFilter.growth.matches(view), isTrue);
     expect(MfExploreOptionFilter.idcw.matches(view), isFalse);
   });
+
+  test('normalizeRiskLevel maps riskometer labels to bands', () {
+    expect(normalizeRiskLevel('LOW'), MfRiskBand.low);
+    expect(normalizeRiskLevel('Moderately Low'), MfRiskBand.moderatelyLow);
+    expect(normalizeRiskLevel('MODERATE'), MfRiskBand.moderate);
+    expect(normalizeRiskLevel('moderately_high'), MfRiskBand.moderatelyHigh);
+    expect(normalizeRiskLevel('VERY HIGH'), MfRiskBand.high);
+    expect(normalizeRiskLevel('HIGH'), MfRiskBand.high);
+    expect(normalizeRiskLevel(''), MfRiskBand.moderate);
+    expect(riskMeterFill(MfRiskBand.low), 1);
+    expect(riskMeterFill(MfRiskBand.high), 5);
+  });
+
+  test('MfExploreRiskFilter matches normalized bands', () {
+    final high = MfSchemeView.fromSummary(
+      MfSchemeSummary.fromJson({
+        'isin': 'INFHIGH00001',
+        'schemeName': 'RISKY EQUITY - GROWTH',
+        'category': 'Equity',
+        'riskometer': 'Very High',
+        'source': 'nse-master',
+      }),
+    );
+    final low = MfSchemeView.fromSummary(
+      MfSchemeSummary.fromJson({
+        'isin': 'INFLOW000001',
+        'schemeName': 'SAFE DEBT - GROWTH',
+        'category': 'Debt',
+        'riskLevel': 'Low',
+        'source': 'nse-master',
+      }),
+    );
+    expect(MfExploreRiskFilter.all.matches(high), isTrue);
+    expect(MfExploreRiskFilter.high.matches(high), isTrue);
+    expect(MfExploreRiskFilter.low.matches(high), isFalse);
+    expect(MfExploreRiskFilter.low.matches(low), isTrue);
+  });
 }

@@ -126,29 +126,41 @@ class MfLoadingBlock extends StatelessWidget {
 }
 
 class MfQuietNote extends StatelessWidget {
-  const MfQuietNote({required this.message, super.key});
+  const MfQuietNote({required this.message, this.compact = false, super.key});
 
   final String message;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(bottom: AppSpacing.md),
-      padding: const EdgeInsets.all(AppSpacing.md),
+      margin: EdgeInsets.only(bottom: compact ? AppSpacing.sm : AppSpacing.md),
+      padding: EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: compact ? AppSpacing.sm : AppSpacing.md,
+      ),
       decoration: BoxDecoration(
-        color: context.surfaceColor,
+        color: context.cardColor,
         borderRadius: BorderRadius.circular(AppRadii.md),
-        border: Border.all(color: context.borderColor),
+        border: Border.all(
+          color: context.borderColor.withValues(alpha: 0.85),
+        ),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.info_outline, size: 18, color: context.textSecondary),
-          const SizedBox(width: 10),
+          Icon(
+            Icons.info_outline,
+            size: compact ? 16 : 18,
+            color: context.textSecondary,
+          ),
+          const SizedBox(width: 8),
           Expanded(
             child: Text(
               message,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              style: context.text.caption().copyWith(
                     color: context.textSecondary,
+                    height: 1.35,
                   ),
             ),
           ),

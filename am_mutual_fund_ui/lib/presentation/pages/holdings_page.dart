@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../data/mf_dto.dart';
+import '../../data/mf_error_message.dart';
 import '../../providers/mf_providers.dart';
 import '../widgets/mf_empty_state.dart';
 import '../widgets/mf_page_header.dart';
@@ -31,7 +32,7 @@ class MfHoldingsPage extends ConsumerWidget {
         async.when(
           loading: () => const MfLoadingBlock(),
           error: (e, _) => MfErrorBanner(
-            message: e.toString(),
+            message: mfErrorMessage(e),
             onRetry: () => ref.invalidate(mfHoldingsProvider),
           ),
           data: (lots) {

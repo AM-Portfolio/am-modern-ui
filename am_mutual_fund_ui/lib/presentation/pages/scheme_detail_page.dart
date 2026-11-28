@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../data/mf_dto.dart';
+import '../../data/mf_error_message.dart';
 import '../../data/mf_scheme_view.dart';
 import '../../providers/mf_providers.dart';
 import '../widgets/mf_empty_state.dart';
@@ -35,7 +36,14 @@ class MfSchemeDetailPage extends ConsumerWidget {
               onPressed: () => context.go('/app/mutual-funds'),
             ),
           ),
-          MfErrorBanner(message: e.toString()),
+          MfErrorBanner(
+            message: mfErrorMessage(e),
+            onRetry: () {
+              ref.invalidate(mfSchemeDetailProvider(isin));
+              ref.invalidate(mfSchemeNavProvider(isin));
+              ref.invalidate(mfSchemePerformanceProvider(isin));
+            },
+          ),
         ],
       ),
       data: (scheme) {
@@ -84,7 +92,10 @@ class MfSchemeDetailPage extends ConsumerWidget {
             const SizedBox(height: AppSpacing.sm),
             perfAsync.when(
               loading: () => const MfLoadingBlock(),
-              error: (e, _) => MfQuietNote(message: e.toString()),
+              error: (e, _) => MfQuietNote(
+                compact: true,
+                message: mfErrorMessage(e, fallback: 'Returns unavailable'),
+              ),
               data: (perf) => _ReturnsCard(perf: perf),
             ),
             const SizedBox(height: AppSpacing.lg),
@@ -105,8 +116,10 @@ class MfSchemeDetailPage extends ConsumerWidget {
                   child: Center(child: CircularProgressIndicator()),
                 ),
                 error: (e, _) => Text(
-                  e.toString(),
-                  style: TextStyle(color: context.textSecondary),
+                  mfErrorMessage(e, fallback: 'NAV history unavailable'),
+                  style: context.text.caption().copyWith(
+                        color: context.textSecondary,
+                      ),
                 ),
                 data: (points) => MfNavChart(points: points),
               ),

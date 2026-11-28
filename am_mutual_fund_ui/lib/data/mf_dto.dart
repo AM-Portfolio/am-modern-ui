@@ -20,6 +20,70 @@ class MfMeta {
   }
 }
 
+/// Persisted onboarding bind from BFF `GET /v1/mf/onboarding/status`.
+class MfOnboardingStatus {
+  const MfOnboardingStatus({
+    this.bound = false,
+    this.pan = '',
+    this.clientCode = '',
+    this.name = '',
+    this.dob = '',
+    this.email = '',
+    this.mobile = '',
+    this.bankAccountNo = '',
+    this.bankIfsc = '',
+    this.accountType = '',
+    this.countryOfBirth = '',
+    this.citizenship = '',
+    this.taxStatus = '',
+    this.uccOk = false,
+    this.fatcaOk = false,
+    this.bankOk = false,
+    this.complete = false,
+  });
+
+  final bool bound;
+  final String pan;
+  final String clientCode;
+  final String name;
+  final String dob;
+  final String email;
+  final String mobile;
+  final String bankAccountNo;
+  final String bankIfsc;
+  final String accountType;
+  final String countryOfBirth;
+  final String citizenship;
+  final String taxStatus;
+  final bool uccOk;
+  final bool fatcaOk;
+  final bool bankOk;
+  final bool complete;
+
+  factory MfOnboardingStatus.fromJson(Map<String, dynamic> json) {
+    String s(Object? v) => v?.toString().trim() ?? '';
+    return MfOnboardingStatus(
+      bound: json['bound'] == true,
+      pan: s(json['pan']).toUpperCase(),
+      clientCode: s(json['client_code']),
+      name: s(json['name']),
+      dob: s(json['dob']),
+      email: s(json['email']),
+      mobile: s(json['mobile']),
+      bankAccountNo: s(json['bank_account_no']),
+      bankIfsc: s(json['bank_ifsc']).toUpperCase(),
+      accountType: s(json['account_type']),
+      countryOfBirth: s(json['country_of_birth']).toUpperCase(),
+      citizenship: s(json['citizenship']).toUpperCase(),
+      taxStatus: s(json['tax_status']),
+      uccOk: json['ucc_ok'] == true,
+      fatcaOk: json['fatca_ok'] == true,
+      bankOk: json['bank_ok'] == true,
+      complete: json['complete'] == true,
+    );
+  }
+}
+
 class MfDistributorOp {
   const MfDistributorOp({
     required this.ok,

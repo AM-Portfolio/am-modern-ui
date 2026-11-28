@@ -18,8 +18,47 @@ class _MfOnboardingWizardPageState
     extends ConsumerState<MfOnboardingWizardPage> {
   int _step = 0;
   bool _busy = false;
+  bool _hydrating = true;
   String? _kycMessage;
   String? _ekycMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _hydrateFromServer());
+  }
+
+  Future<void> _hydrateFromServer() async {
+    try {
+      final status = await ref.read(mfApiClientProvider).getOnboardingStatus();
+      if (!mounted) return;
+      ref.read(mfOnboardingDraftProvider.notifier).hydrateFromStatus(status);
+      // Jump stepper to first incomplete step (or Bank when done).
+      var step = 0;
+      if (status.uccOk) step = 2;
+      if (status.fatcaOk) step = 3;
+      if (status.complete) step = 3;
+      setState(() {
+        _step = step;
+        _hydrating = false;
+        if (status.uccOk) {
+          _kycMessage = 'KYC/UCC already bound for this dig user';
+        }
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _hydrating = false);
+      // Dig without status route yet → 404; keep wizard usable, no stack dump.
+      final msg = e.toString();
+      final soft = msg.contains('404')
+          ? 'Onboarding status API not on dig yet (404). '
+              'Finish UCC/FATCA/Bank once; after MF BFF deploy, reopen to see saved state.'
+          : 'Could not load onboarding status: $e';
+      ref.read(mfOnboardingDraftProvider.notifier).patch(
+            (d) => d.copyWith(lastMessage: soft),
+          );
+    }
+  }
 
   Future<void> _run(Future<void> Function() action) async {
     setState(() => _busy = true);
@@ -62,6 +101,13 @@ class _MfOnboardingWizardPageState
     final metaAsync = ref.watch(mfMetaProvider);
     final strict = metaAsync.asData?.value.onboardingStrict ?? false;
 
+    if (_hydrating) {
+      return const Padding(
+        padding: EdgeInsets.all(AppSpacing.lg),
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return ListView(
       padding: const EdgeInsets.all(AppSpacing.lg),
       children: [
@@ -75,6 +121,22 @@ class _MfOnboardingWizardPageState
               ? const MfStatusChip(status: 'ok')
               : null,
         ),
+        if (draft.uccOk && draft.fatcaOk && draft.bankOk) ...[
+          Card(
+            child: ListTile(
+              leading: Icon(Icons.verified, color: context.marketPositive),
+              title: const Text('Onboarding complete for this dig user'),
+              subtitle: Text(
+                [
+                  if (draft.pan.isNotEmpty) 'PAN ${draft.pan}',
+                  if (draft.clientCode.isNotEmpty) 'UCC ${draft.clientCode}',
+                  'FATCA ok · Bank ok',
+                ].join(' · '),
+              ),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+        ],
         Stepper(
           currentStep: _step,
           onStepTapped: (i) {
@@ -87,6 +149,7 @@ class _MfOnboardingWizardPageState
             Step(
               title: const Text('KYC check'),
               isActive: _step == 0,
+              state: draft.uccOk ? StepState.complete : StepState.indexed,
               content: _KycStep(
                 draft: draft,
                 busy: _busy,

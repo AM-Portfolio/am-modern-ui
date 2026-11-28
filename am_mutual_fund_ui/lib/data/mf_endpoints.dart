@@ -9,6 +9,7 @@ class MfEndpoints {
       '/v1/mf/schemes/$isin/performance';
 
   static const meta = '/v1/mf/meta';
+  static const onboardingStatus = '/v1/mf/onboarding/status';
   static const kyc = '/v1/mf/kyc';
   static const ekycStart = '/v1/mf/kyc/ekyc/start';
   static const ucc = '/v1/mf/onboarding/ucc';

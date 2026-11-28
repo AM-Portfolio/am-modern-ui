@@ -1,7 +1,8 @@
 # New user — Mutual Funds journey (dig / desk UAT)
 
 How a **new** Asrax user uses MF from first login through buy, sell, SIP pause.  
-Dig BFF: `https://am-dev.asrax.in/router/am/mf` · UI: Mutual Funds module.
+Dig BFF: `https://am-dev.asrax.in/router/am/mf` · UI: Mutual Funds module.  
+Local UI (`npm run run:app:dev`): MF calls go through `scripts/dev_mf_proxy.py` (`AM_MF_PROXY_BASE` → `http://127.0.0.1:9011/router/am/mf`) to avoid browser CORS against dig api-gateway.
 
 **Latest live run (API):** [NEW-USER-RUN-LOG-2026-11-23.md](./NEW-USER-RUN-LOG-2026-11-23.md) — user `kumargyan89@gmail.com`, UCC ok → purchase submitted → pay rejected (trust) → mandate pending → XSIP 409.
 

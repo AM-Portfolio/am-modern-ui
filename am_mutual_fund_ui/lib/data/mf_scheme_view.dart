@@ -479,6 +479,65 @@ double? _asDouble(Object? value) {
 
 enum MfExploreCategoryFilter { all, equity, hybrid, debt, indexFunds }
 
+/// Risk filter for Explore (matches catalog riskometer labels).
+enum MfExploreRiskFilter { all, low, moderatelyLow, moderate, moderatelyHigh, high }
+
+extension MfExploreRiskFilterX on MfExploreRiskFilter {
+  String get label => switch (this) {
+        MfExploreRiskFilter.all => 'All risk',
+        MfExploreRiskFilter.low => 'Low',
+        MfExploreRiskFilter.moderatelyLow => 'Moderately Low',
+        MfExploreRiskFilter.moderate => 'Moderate',
+        MfExploreRiskFilter.moderatelyHigh => 'Moderately High',
+        MfExploreRiskFilter.high => 'High',
+      };
+
+  bool matches(MfSchemeView fund) {
+    if (this == MfExploreRiskFilter.all) return true;
+    final n = normalizeRiskLevel(fund.riskLevel);
+    return switch (this) {
+      MfExploreRiskFilter.all => true,
+      MfExploreRiskFilter.low => n == MfRiskBand.low,
+      MfExploreRiskFilter.moderatelyLow => n == MfRiskBand.moderatelyLow,
+      MfExploreRiskFilter.moderate => n == MfRiskBand.moderate,
+      MfExploreRiskFilter.moderatelyHigh => n == MfRiskBand.moderatelyHigh,
+      MfExploreRiskFilter.high => n == MfRiskBand.high,
+    };
+  }
+}
+
+/// Normalized risk bands for meters / filters.
+enum MfRiskBand { low, moderatelyLow, moderate, moderatelyHigh, high }
+
+/// Map free-text riskometer → band (defaults moderate when unknown).
+MfRiskBand normalizeRiskLevel(String raw) {
+  final u = raw.trim().toUpperCase().replaceAll('_', ' ').replaceAll('-', ' ');
+  if (u.contains('VERY HIGH') || u == 'VERYHIGH') return MfRiskBand.high;
+  if (u.contains('MODERATELY HIGH') ||
+      u.contains('MODERATE HIGH') ||
+      u.contains('MOD HIGH')) {
+    return MfRiskBand.moderatelyHigh;
+  }
+  if (u.contains('MODERATELY LOW') ||
+      u.contains('MODERATE LOW') ||
+      u.contains('MOD LOW') ||
+      u.contains('LOW TO MODERATE')) {
+    return MfRiskBand.moderatelyLow;
+  }
+  if (u.contains('LOW')) return MfRiskBand.low;
+  if (u.contains('HIGH')) return MfRiskBand.high;
+  return MfRiskBand.moderate;
+}
+
+/// 0–4 fill steps for risk meter UI.
+int riskMeterFill(MfRiskBand band) => switch (band) {
+      MfRiskBand.low => 1,
+      MfRiskBand.moderatelyLow => 2,
+      MfRiskBand.moderate => 3,
+      MfRiskBand.moderatelyHigh => 4,
+      MfRiskBand.high => 5,
+    };
+
 /// Explore option chip: default Growth (retail-like).
 enum MfExploreOptionFilter { growth, idcw, all }
 

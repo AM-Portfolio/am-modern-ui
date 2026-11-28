@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../data/mf_scheme_view.dart';
+import 'mf_risk_meter.dart';
 
 class MfFundCard extends StatelessWidget {
   const MfFundCard({
@@ -11,6 +12,7 @@ class MfFundCard extends StatelessWidget {
     required this.onTap,
     this.onInvest,
     this.onSip,
+    this.compact = false,
     super.key,
   });
 
@@ -19,6 +21,7 @@ class MfFundCard extends StatelessWidget {
   final VoidCallback onTap;
   final VoidCallback? onInvest;
   final VoidCallback? onSip;
+  final bool compact;
 
   Color _accent(BuildContext context) =>
       ModuleColorProvider.maybeOf(context) ?? ModuleColors.mutualFund;
@@ -43,9 +46,11 @@ class MfFundCard extends StatelessWidget {
     final avatarLabel =
         fund.amcLabel.isNotEmpty ? fund.amcLabel : fund.category;
 
+    final pad = compact ? AppSpacing.sm : AppSpacing.md;
+
     return GlassCard(
       onTap: onTap,
-      padding: const EdgeInsets.all(AppSpacing.md),
+      padding: EdgeInsets.all(pad),
       borderRadius: AppRadii.lg,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -53,61 +58,103 @@ class MfFundCard extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _AmcAvatar(label: avatarLabel, accent: accent),
-              const SizedBox(width: AppSpacing.md),
+              _AmcAvatar(
+                label: avatarLabel,
+                accent: accent,
+                size: compact ? 36 : 44,
+              ),
+              SizedBox(width: compact ? AppSpacing.sm : AppSpacing.md),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       fund.shortName,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w700,
-                            color: context.textPrimary,
-                            height: 1.25,
-                          ),
-                      maxLines: 2,
+                      style: (compact
+                              ? context.text.label()
+                              : Theme.of(context).textTheme.titleMedium)
+                          ?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: context.textPrimary,
+                        height: 1.25,
+                      ),
+                      maxLines: compact ? 2 : 2,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 2),
                     Text(
                       fund.metaLine,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      style: context.text.caption().copyWith(
                             color: context.textSecondary,
                           ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
+                    const SizedBox(height: 6),
+                    SizedBox(
+                      width: compact ? double.infinity : 120,
+                      child: MfRiskMeter(
+                        riskLevel: fund.riskLevel,
+                        height: 5,
+                        showLabel: !compact,
+                      ),
+                    ),
                   ],
                 ),
               ),
-              const SizedBox(width: AppSpacing.sm),
-              // Right rail: return when known, else EOD NAV (honest dig surface).
-              if (showReturn)
-                _RightStat(
-                  value: pctFmt.format(ret / 100),
-                  label: '${period.label} return',
-                  valueColor: retUp
-                      ? context.marketPositive
-                      : context.marketNegative,
-                )
-              else
-                _RightStat(
-                  value: fund.nav != null
-                      ? '₹${navFmt.format(fund.nav)}'
-                      : '—',
-                  label: fund.metricsIllustrative ? 'NAV' : 'EOD NAV',
-                  valueColor: context.textPrimary,
-                  subValue: fund.navChangePercent == null
-                      ? null
-                      : pctFmt.format(fund.navChangePercent! / 100),
-                  subColor: navUp
-                      ? context.marketPositive
-                      : context.marketNegative,
-                ),
+              if (!compact) ...[
+                const SizedBox(width: AppSpacing.sm),
+                if (showReturn)
+                  _RightStat(
+                    value: pctFmt.format(ret / 100),
+                    label: '${period.label} return',
+                    valueColor: retUp
+                        ? context.marketPositive
+                        : context.marketNegative,
+                  )
+                else
+                  _RightStat(
+                    value: fund.nav != null
+                        ? '₹${navFmt.format(fund.nav)}'
+                        : '—',
+                    label: fund.metricsIllustrative ? 'NAV' : 'EOD NAV',
+                    valueColor: context.textPrimary,
+                    subValue: fund.navChangePercent == null
+                        ? null
+                        : pctFmt.format(fund.navChangePercent! / 100),
+                    subColor: navUp
+                        ? context.marketPositive
+                        : context.marketNegative,
+                  ),
+              ],
             ],
           ),
-          if (showMetricsRow) ...[
+          if (compact) ...[
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              showReturn
+                  ? pctFmt.format(ret! / 100)
+                  : (fund.nav != null
+                      ? '₹${navFmt.format(fund.nav)}'
+                      : '—'),
+              style: context.text.sectionTitle().copyWith(
+                    color: showReturn
+                        ? (retUp
+                            ? context.marketPositive
+                            : context.marketNegative)
+                        : context.textPrimary,
+                  ),
+            ),
+            Text(
+              showReturn
+                  ? '${period.label} return'
+                  : (fund.metricsIllustrative ? 'NAV' : 'EOD NAV'),
+              style: context.text.caption().copyWith(
+                    color: context.textSecondary,
+                  ),
+            ),
+          ],
+          if (showMetricsRow && !compact) ...[
             const SizedBox(height: AppSpacing.md),
             Container(
               width: double.infinity,
@@ -116,7 +163,7 @@ class MfFundCard extends StatelessWidget {
                 vertical: AppSpacing.sm,
               ),
               decoration: BoxDecoration(
-                color: context.surfaceColor,
+                color: context.cardColor,
                 borderRadius: BorderRadius.circular(AppRadii.md),
                 border: Border.all(color: context.borderColor),
               ),
@@ -157,7 +204,7 @@ class MfFundCard extends StatelessWidget {
               ),
             ),
           ],
-          if (fund.returns.isNotEmpty) ...[
+          if (fund.returns.isNotEmpty && !compact) ...[
             const SizedBox(height: AppSpacing.sm),
             _ReturnsStrip(
               returns: fund.returns,
@@ -165,30 +212,40 @@ class MfFundCard extends StatelessWidget {
               accent: accent,
             ),
           ],
-          const SizedBox(height: AppSpacing.md),
+          const SizedBox(height: AppSpacing.sm),
           Row(
             children: [
-              Expanded(
-                child: Text(
-                  [
-                    if (fund.amcLabel.isNotEmpty) fund.amcLabel,
-                    fund.isin,
-                    if (!fund.digPurchaseEnabled)
-                      'Browse only'
-                    else if (fund.navStale)
-                      'EOD stale'
-                    else if (fund.navCaption.isNotEmpty)
-                      fund.navCaption,
-                  ].join(' · '),
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: context.textSecondary,
-                      ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
+              if (!compact)
+                Expanded(
+                  child: Text(
+                    [
+                      if (fund.amcLabel.isNotEmpty) fund.amcLabel,
+                      fund.isin,
+                      if (!fund.digPurchaseEnabled)
+                        'Browse only'
+                      else if (fund.navStale)
+                        'EOD stale'
+                      else if (fund.navCaption.isNotEmpty)
+                        fund.navCaption,
+                    ].join(' · '),
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: context.textSecondary,
+                        ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                )
+              else
+                const Spacer(),
               if (onSip != null)
-                TextButton(onPressed: onSip, child: const Text('SIP')),
+                TextButton(
+                  onPressed: onSip,
+                  style: TextButton.styleFrom(
+                    foregroundColor: accent,
+                    visualDensity: VisualDensity.compact,
+                  ),
+                  child: const Text('SIP'),
+                ),
               if (onInvest != null) ...[
                 const SizedBox(width: 4),
                 FilledButton(
@@ -255,16 +312,21 @@ class _RightStat extends StatelessWidget {
 }
 
 class _AmcAvatar extends StatelessWidget {
-  const _AmcAvatar({required this.label, required this.accent});
+  const _AmcAvatar({
+    required this.label,
+    required this.accent,
+    this.size = 44,
+  });
   final String label;
   final Color accent;
+  final double size;
 
   @override
   Widget build(BuildContext context) {
     final letter = label.trim().isEmpty ? 'F' : label.trim()[0].toUpperCase();
     return Container(
-      width: 44,
-      height: 44,
+      width: size,
+      height: size,
       alignment: Alignment.center,
       decoration: BoxDecoration(
         color: accent.withValues(alpha: 0.15),
@@ -276,7 +338,7 @@ class _AmcAvatar extends StatelessWidget {
         style: TextStyle(
           color: accent,
           fontWeight: FontWeight.w800,
-          fontSize: 18,
+          fontSize: size * 0.4,
         ),
       ),
     );

@@ -23,13 +23,42 @@ String mfErrorMessage(Object error, {String fallback = 'Request failed'}) {
       DioExceptionType.sendTimeout ||
       DioExceptionType.receiveTimeout =>
         'Timed out talking to MF BFF',
-      DioExceptionType.connectionError => 'Cannot reach MF BFF',
-      _ => error.message?.isNotEmpty == true ? error.message! : fallback,
+      DioExceptionType.connectionError => _connectionCopy(error),
+      _ => _shortDioMessage(error.message) ?? fallback,
     };
   }
   final s = error.toString();
   if (s.startsWith('Exception: ')) return s.substring(11);
-  return s;
+  return _looksLikeCorsDump(s)
+      ? 'Cannot reach MF BFF (browser blocked the request — check dig proxy / CORS)'
+      : s;
+}
+
+String _connectionCopy(DioException error) {
+  final raw = '${error.message ?? ''} ${error.error ?? ''}';
+  if (_looksLikeCorsDump(raw)) {
+    return 'Cannot reach MF BFF (browser blocked the request — check dig proxy / CORS)';
+  }
+  return 'Cannot reach MF BFF';
+}
+
+bool _looksLikeCorsDump(String raw) {
+  final u = raw.toLowerCase();
+  return u.contains('xmlhttprequest') ||
+      u.contains('cors') ||
+      u.contains('cross-origin') ||
+      u.contains('preflight');
+}
+
+String? _shortDioMessage(String? message) {
+  if (message == null || message.trim().isEmpty) return null;
+  if (_looksLikeCorsDump(message)) {
+    return 'Cannot reach MF BFF (browser blocked the request — check dig proxy / CORS)';
+  }
+  // Avoid dumping multi-paragraph Dio essays into the desk UI.
+  final oneLine = message.replaceAll(RegExp(r'\s+'), ' ').trim();
+  if (oneLine.length > 160) return '${oneLine.substring(0, 157)}…';
+  return oneLine;
 }
 
 String? _fromBody(Object? data) {

@@ -95,7 +95,13 @@ final mfMandatesHistoryProvider = FutureProvider<List<MfMandate>>((ref) async {
   return client.listMandates();
 });
 
-/// Draft onboarding fields kept in-memory until BFF status API (Ship B).
+final mfOnboardingStatusProvider =
+    FutureProvider.autoDispose<MfOnboardingStatus>((ref) async {
+  final client = ref.watch(mfApiClientProvider);
+  return client.getOnboardingStatus();
+});
+
+/// Draft onboarding fields; hydrated from BFF `/v1/mf/onboarding/status` on open.
 class MfOnboardingDraft {
   const MfOnboardingDraft({
     this.pan = '',
@@ -189,6 +195,36 @@ class MfOnboardingDraftNotifier extends Notifier<MfOnboardingDraft> {
   }
 
   void reset() => state = const MfOnboardingDraft();
+
+  /// Apply persisted bind flags/fields from BFF status (does not wipe local edits
+  /// when status is unbound).
+  void hydrateFromStatus(MfOnboardingStatus s) {
+    if (!s.bound && !s.uccOk) return;
+    state = state.copyWith(
+      pan: s.pan.isNotEmpty ? s.pan : null,
+      clientCode: s.clientCode.isNotEmpty ? s.clientCode : null,
+      name: s.name.isNotEmpty ? s.name : null,
+      dob: s.dob.isNotEmpty ? s.dob : null,
+      email: s.email.isNotEmpty ? s.email : null,
+      mobile: s.mobile.isNotEmpty ? s.mobile : null,
+      bankAccountNo: s.bankAccountNo.isNotEmpty ? s.bankAccountNo : null,
+      bankIfsc: s.bankIfsc.isNotEmpty ? s.bankIfsc : null,
+      accountType: s.accountType.isNotEmpty ? s.accountType : null,
+      countryOfBirth:
+          s.countryOfBirth.isNotEmpty ? s.countryOfBirth : null,
+      citizenship: s.citizenship.isNotEmpty ? s.citizenship : null,
+      taxStatus: s.taxStatus.isNotEmpty ? s.taxStatus : null,
+      fatcaAttested: s.fatcaOk ? true : null,
+      uccOk: s.uccOk,
+      fatcaOk: s.fatcaOk,
+      bankOk: s.bankOk,
+      lastMessage: s.complete
+          ? 'Onboarding complete (loaded from dig profile)'
+          : (s.bound
+              ? 'Loaded dig profile — finish remaining steps'
+              : null),
+    );
+  }
 }
 
 final mfOnboardingDraftProvider =
