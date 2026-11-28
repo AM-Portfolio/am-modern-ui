@@ -106,6 +106,7 @@ class ModuleColors {
   static const Color _market = Color(0xFF06b6d4); // Cyan
   static const Color _trade = Color(0xFF8b5cf6); // Purple
   static const Color _portfolio = Color(0xFFec4899); // Pink
+  static const Color _mutualFund = Color(0xFF0D9488); // Teal
   static const Color _dashboard = Color(0xFF3b82f6); // Blue
   static const Color _analytics = Color(0xFF10b981); // Green
   static const Color _reports = Color(0xFFf59e0b); // Amber
@@ -114,6 +115,7 @@ class ModuleColors {
   static Color market = _market;
   static Color trade = _trade;
   static Color portfolio = _portfolio;
+  static Color mutualFund = _mutualFund;
   static Color dashboard = _dashboard;
   static Color analytics = _analytics;
   static Color reports = _reports;
@@ -131,6 +133,7 @@ class ModuleColors {
       market = _market;
       trade = _trade;
       portfolio = _portfolio;
+      mutualFund = _mutualFund;
       dashboard = _dashboard;
       analytics = _analytics;
       reports = _reports;
@@ -140,6 +143,7 @@ class ModuleColors {
       market = brand;
       trade = brand;
       portfolio = brand;
+      mutualFund = brand;
       dashboard = brand;
       analytics = Color.lerp(brand, Colors.white, 0.12)!;
       reports = Color.lerp(brand, Colors.black, 0.08)!;
@@ -151,6 +155,7 @@ class ModuleColors {
       trade: trade,
       portfolio: portfolio,
       dashboard: dashboard,
+      mutualFund: mutualFund,
     );
   }
 }

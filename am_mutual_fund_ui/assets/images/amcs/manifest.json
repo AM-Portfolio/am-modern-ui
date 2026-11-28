@@ -1,0 +1,526 @@
+{
+  "total_amcs": 58,
+  "downloaded": 57,
+  "missing": [
+    {
+      "mf_id": "92",
+      "mf_name": "Marcellus Mutual Fund",
+      "amc_name": "Marcellus Asset Management Private Limited"
+    }
+  ],
+  "logos": [
+    {
+      "mf_id": "62",
+      "mf_name": "360 ONE Mutual Fund",
+      "amc_name": "360 ONE Asset Management Limited",
+      "filename": "360_one.png",
+      "format": "png",
+      "bytes": 980,
+      "source_url": "https://www.amfiindia.com/uploads/360_ONE_Asset_64x64_8c6857d60a.png"
+    },
+    {
+      "mf_id": "85",
+      "mf_name": "Abakkus Mutual Fund",
+      "amc_name": "Abakkus Investment Managers Private Limited",
+      "filename": "abakkus.png",
+      "format": "png",
+      "bytes": 10970,
+      "source_url": "https://www.amfiindia.com/uploads/AMC_Logo_Abakkus_mutual_fund_64x64_3d984fbdc8.png"
+    },
+    {
+      "mf_id": "3",
+      "mf_name": "Aditya Birla Sun Life Mutual Fund",
+      "amc_name": "Aditya Birla Sun Life AMC Limited",
+      "filename": "aditya_birla_sun_life.png",
+      "format": "png",
+      "bytes": 21971,
+      "source_url": "https://www.amfiindia.com/uploads/ABSLAMC_Square_Logo_10255de021.png"
+    },
+    {
+      "mf_id": "86",
+      "mf_name": "AlphaGrep Mutual Fund",
+      "amc_name": "AlphaGrep Investment Management Private Limited",
+      "filename": "alphagrep.svg",
+      "format": "svg",
+      "bytes": 20567,
+      "source_url": "https://www.amfiindia.com/uploads/AG_MF_86_cf724bde11.svg"
+    },
+    {
+      "mf_id": "80",
+      "mf_name": "Angel One Mutual Fund",
+      "amc_name": "Angel One Asset Management Company Limited",
+      "filename": "angel_one.svg",
+      "format": "svg",
+      "bytes": 1301,
+      "source_url": "https://www.amfiindia.com/uploads/Angel_One_AMC_Logo_64x64_e5f294c893.svg"
+    },
+    {
+      "mf_id": "87",
+      "mf_name": "ASK MUTUAL FUND",
+      "amc_name": "ASK ASSET MANAGEMENT PRIVATE LIMITED",
+      "filename": "ask.svg",
+      "format": "svg",
+      "bytes": 47254,
+      "source_url": "https://www.amfiindia.com/uploads/logo87_c854aea357.svg"
+    },
+    {
+      "mf_id": "53",
+      "mf_name": "Axis Mutual Fund",
+      "amc_name": "Axis Asset Management Co. Ltd.",
+      "filename": "axis.svg",
+      "format": "svg",
+      "bytes": 7006,
+      "source_url": "https://www.amfiindia.com/uploads/AMC_64x64_white_1_6dbd1dd65f.svg"
+    },
+    {
+      "mf_id": "75",
+      "mf_name": "Bajaj Finserv Mutual Fund",
+      "amc_name": "Bajaj Finserv Asset Management Limited",
+      "filename": "bajaj_finserv.svg",
+      "format": "svg",
+      "bytes": 3978,
+      "source_url": "https://www.amfiindia.com/uploads/Bajaj_AMC_Logo_64x64px_11_436bd53a58.svg"
+    },
+    {
+      "mf_id": "48",
+      "mf_name": "Bandhan Mutual Fund",
+      "amc_name": "Bandhan AMC Limited",
+      "filename": "bandhan.svg",
+      "format": "svg",
+      "bytes": 12484,
+      "source_url": "https://www.amfiindia.com/uploads/Bandhan_MF_logo_64x64_05_adee562cbf.svg"
+    },
+    {
+      "mf_id": "46",
+      "mf_name": "Bank of India Mutual Fund",
+      "amc_name": "Bank of India Investment Managers Private Limited",
+      "filename": "bank_of_india.svg",
+      "format": "svg",
+      "bytes": 135394,
+      "source_url": "https://www.amfiindia.com/uploads/BOI_Logo_64_X64_8aa4182ca0.svg"
+    },
+    {
+      "mf_id": "4",
+      "mf_name": "Baroda BNP Paribas Mutual Fund",
+      "amc_name": "Baroda BNP Paribas Asset Management India Private Limited",
+      "filename": "baroda_bnp_paribas.svg",
+      "format": "svg",
+      "bytes": 13431,
+      "source_url": "https://www.amfiindia.com/uploads/Baroda_BNP_Logo_01_ed9fd8364b.svg"
+    },
+    {
+      "mf_id": "32",
+      "mf_name": "Canara Robeco Mutual Fund",
+      "amc_name": "Canara Robeco Asset Management Company Limited",
+      "filename": "canara_robeco.svg",
+      "format": "svg",
+      "bytes": 5523,
+      "source_url": "https://www.amfiindia.com/uploads/CR_Logo_64px_12aeb5ac0b.svg"
+    },
+    {
+      "mf_id": "81",
+      "mf_name": "Capitalmind Mutual Fund",
+      "amc_name": "Capitalmind Asset Management Private Limited",
+      "filename": "capitalmind.svg",
+      "format": "svg",
+      "bytes": 5409,
+      "source_url": "https://www.amfiindia.com/uploads/Capitalmind_Logo_Square_bf759e2153.svg"
+    },
+    {
+      "mf_id": "91",
+      "mf_name": "Carnelian Mutual Fund",
+      "amc_name": "Carnelian Investment Managers Private Limited",
+      "filename": "carnelian.svg",
+      "format": "svg",
+      "bytes": 199974,
+      "source_url": "https://www.amfiindia.com/uploads/MF_91_ce2dea0c14.svg"
+    },
+    {
+      "mf_id": "84",
+      "mf_name": "Choice Mutual Fund",
+      "amc_name": "Choice AMC Private Limited",
+      "filename": "choice.png",
+      "format": "png",
+      "bytes": 27701,
+      "source_url": "https://www.amfiindia.com/uploads/AMC_Logo_Choice_mutual_fund_64x64_553b04baab.png"
+    },
+    {
+      "mf_id": "6",
+      "mf_name": "DSP Mutual Fund",
+      "amc_name": "DSP Asset Managers Private Limited",
+      "filename": "dsp.svg",
+      "format": "svg",
+      "bytes": 3888,
+      "source_url": "https://www.amfiindia.com/uploads/DSPMF_64_x_64_3_768ae79808.svg"
+    },
+    {
+      "mf_id": "47",
+      "mf_name": "Edelweiss Mutual Fund",
+      "amc_name": "Edelweiss Asset Management Limited",
+      "filename": "edelweiss.svg",
+      "format": "svg",
+      "bytes": 16762,
+      "source_url": "https://www.amfiindia.com/uploads/EAMC_Final_Logo_2025_64x64_ee0ce899ff.svg"
+    },
+    {
+      "mf_id": "27",
+      "mf_name": "Franklin Templeton Mutual Fund",
+      "amc_name": "Franklin Templeton Asset Management (India) Private Limited",
+      "filename": "franklin_templeton.svg",
+      "format": "svg",
+      "bytes": 1208278,
+      "source_url": "https://www.amfiindia.com/uploads/FT_230_x_60_b6da89a992.svg"
+    },
+    {
+      "mf_id": "63",
+      "mf_name": "Groww Mutual Fund",
+      "amc_name": "Groww Asset Management Limited",
+      "filename": "groww.svg",
+      "format": "svg",
+      "bytes": 116592,
+      "source_url": "https://www.amfiindia.com/uploads/Light_BG_64_x_64_16b6f119d0.svg"
+    },
+    {
+      "mf_id": "9",
+      "mf_name": "HDFC Mutual Fund",
+      "amc_name": "HDFC Asset Management Company Limited",
+      "filename": "hdfc.svg",
+      "format": "svg",
+      "bytes": 6155,
+      "source_url": "https://www.amfiindia.com/uploads/64_X_64_px_HDFC_MF_Logo_without_Bharosa_e5f2e608f0.svg"
+    },
+    {
+      "mf_id": "76",
+      "mf_name": "Helios Mutual Fund",
+      "amc_name": "Helios Capital Asset Management (India) Pvt. Ltd.",
+      "filename": "helios.svg",
+      "format": "svg",
+      "bytes": 17046,
+      "source_url": "https://www.amfiindia.com/uploads/Helios_AMFI_logo_64x64_383c6cdecc.svg"
+    },
+    {
+      "mf_id": "37",
+      "mf_name": "HSBC Mutual Fund",
+      "amc_name": "HSBC Asset Management (India) Private Ltd.",
+      "filename": "hsbc.jpg",
+      "format": "jpg",
+      "bytes": 14525,
+      "source_url": "https://www.amfiindia.com/uploads/HSBC_Mutual_Fund_Logo_768x137_8ca1a3a5e8.jpg"
+    },
+    {
+      "mf_id": "20",
+      "mf_name": "ICICI Prudential Mutual Fund",
+      "amc_name": "ICICI Prudential Asset Management Company Limited",
+      "filename": "icici_prudential.png",
+      "format": "png",
+      "bytes": 10614,
+      "source_url": "https://www.amfiindia.com/uploads/icici_64x64_341f3899da.png"
+    },
+    {
+      "mf_id": "65",
+      "mf_name": "IL&FS Mutual Fund (IDF)",
+      "amc_name": "IL&FS Infra Asset Management Limited",
+      "filename": "ilandfs_idf.svg",
+      "format": "svg",
+      "bytes": 9709,
+      "source_url": "https://www.amfiindia.com/uploads/64_x_64_pixels_IL_and_FS_LOGO_971ff18f91.svg"
+    },
+    {
+      "mf_id": "42",
+      "mf_name": "Invesco Mutual Fund",
+      "amc_name": "Invesco Asset Management (India) Private Limited",
+      "filename": "invesco.svg",
+      "format": "svg",
+      "bytes": 4694,
+      "source_url": "https://www.amfiindia.com/uploads/logo_64x64_01_5b2401d46d.svg"
+    },
+    {
+      "mf_id": "70",
+      "mf_name": "ITI Mutual Fund",
+      "amc_name": "ITI Asset Management Limited",
+      "filename": "iti.svg",
+      "format": "svg",
+      "bytes": 10849,
+      "source_url": "https://www.amfiindia.com/uploads/ITI_Logo_64_X_64_6cfe168cbd.svg"
+    },
+    {
+      "mf_id": "82",
+      "mf_name": "Jio BlackRock Mutual Fund",
+      "amc_name": "Jio BlackRock Asset Management Private Limited",
+      "filename": "jio_blackrock.svg",
+      "format": "svg",
+      "bytes": 3863,
+      "source_url": "https://www.amfiindia.com/uploads/Black_Rock_64x64_Logo_9429a25011.svg"
+    },
+    {
+      "mf_id": "16",
+      "mf_name": "JM Financial Mutual Fund",
+      "amc_name": "JM Financial Asset Management Limited",
+      "filename": "jm_financial.svg",
+      "format": "svg",
+      "bytes": 3733,
+      "source_url": "https://www.amfiindia.com/uploads/JM_AMC_Logo_f4312722b3.svg"
+    },
+    {
+      "mf_id": "17",
+      "mf_name": "Kotak Mahindra Mutual Fund",
+      "amc_name": "Kotak Mahindra Asset Management Company Limited.",
+      "filename": "kotak_mahindra.svg",
+      "format": "svg",
+      "bytes": 4653,
+      "source_url": "https://www.amfiindia.com/uploads/Kotak_MF_Logo_01_bfa3f48692.svg"
+    },
+    {
+      "mf_id": "88",
+      "mf_name": "Lakshya Mutual Fund",
+      "amc_name": "Lakshya Asset Management Private Limited",
+      "filename": "lakshya.svg",
+      "format": "svg",
+      "bytes": 35073,
+      "source_url": "https://www.amfiindia.com/uploads/MF_88_10e4e3cc16.svg"
+    },
+    {
+      "mf_id": "18",
+      "mf_name": "LIC Mutual Fund",
+      "amc_name": "LIC Mutual Fund Asset Management Limited",
+      "filename": "lic.svg",
+      "format": "svg",
+      "bytes": 8805,
+      "source_url": "https://www.amfiindia.com/uploads/LIC_64_x_64_svg_f3a55f95e5.svg"
+    },
+    {
+      "mf_id": "69",
+      "mf_name": "Mahindra Manulife Mutual Fund",
+      "amc_name": "Mahindra Manulife Investment Management Pvt Ltd",
+      "filename": "mahindra_manulife.svg",
+      "format": "svg",
+      "bytes": 6326,
+      "source_url": "https://www.amfiindia.com/uploads/MMIMPL_Logo_64_x_64_pixels_31526dec35.svg"
+    },
+    {
+      "mf_id": "45",
+      "mf_name": "Mirae Asset Mutual Fund",
+      "amc_name": "Mirae Asset Investment Managers (India) Pvt. Ltd",
+      "filename": "mirae_asset.svg",
+      "format": "svg",
+      "bytes": 5125,
+      "source_url": "https://www.amfiindia.com/uploads/mirae_64x64_7525dff0bf.svg"
+    },
+    {
+      "mf_id": "89",
+      "mf_name": "Monarch Mutual Fund",
+      "amc_name": "Monarch Networth Asset Management Private Limited",
+      "filename": "monarch.svg",
+      "format": "svg",
+      "bytes": 124125,
+      "source_url": "https://www.amfiindia.com/uploads/MF_89_0d038deb88.svg"
+    },
+    {
+      "mf_id": "55",
+      "mf_name": "Motilal Oswal Mutual Fund",
+      "amc_name": "Motilal Oswal Asset Management Company Limited",
+      "filename": "motilal_oswal.svg",
+      "format": "svg",
+      "bytes": 11737,
+      "source_url": "https://www.amfiindia.com/uploads/AMC_Logo_64x64_52256f8f48.svg"
+    },
+    {
+      "mf_id": "54",
+      "mf_name": "Navi Mutual Fund",
+      "amc_name": "Navi AMC Limited",
+      "filename": "navi.png",
+      "format": "png",
+      "bytes": 3953,
+      "source_url": "https://www.amfiindia.com/uploads/navi_mutual_fund_e9abf3d287.png"
+    },
+    {
+      "mf_id": "21",
+      "mf_name": "Nippon India Mutual Fund",
+      "amc_name": "Nippon Life India Asset Management Limited",
+      "filename": "nippon_india.png",
+      "format": "png",
+      "bytes": 23126,
+      "source_url": "https://www.amfiindia.com/uploads/Nippon_64x64_ff4317ea03.png"
+    },
+    {
+      "mf_id": "73",
+      "mf_name": "NJ Mutual Fund",
+      "amc_name": "NJ Asset Management Private Limited",
+      "filename": "nj.svg",
+      "format": "svg",
+      "bytes": 4749,
+      "source_url": "https://www.amfiindia.com/uploads/NJ_AMC_Logo_64x64_2a9cce8071.svg"
+    },
+    {
+      "mf_id": "90",
+      "mf_name": "Nuvama Mutual Fund",
+      "amc_name": "Nuvama Asset Management Limited",
+      "filename": "nuvama.svg",
+      "format": "svg",
+      "bytes": 51201,
+      "source_url": "https://www.amfiindia.com/uploads/MF_90_a971a17b28.svg"
+    },
+    {
+      "mf_id": "78",
+      "mf_name": "Old Bridge Mutual Fund",
+      "amc_name": "Old Bridge Asset Management Private Limited",
+      "filename": "old_bridge.jpg",
+      "format": "jpg",
+      "bytes": 8788,
+      "source_url": "https://www.amfiindia.com/uploads/Old_Bridge_Logo_64_X_64_c231b13b0d.jpg"
+    },
+    {
+      "mf_id": "58",
+      "mf_name": "PGIM India Mutual Fund",
+      "amc_name": "PGIM India Asset Management Private Limite",
+      "filename": "pgim_india.svg",
+      "format": "svg",
+      "bytes": 8534,
+      "source_url": "https://www.amfiindia.com/uploads/PGIM_AMC_Logo_colour_42a6b47b93.svg"
+    },
+    {
+      "mf_id": "64",
+      "mf_name": "PPFAS Mutual Fund",
+      "amc_name": "PPFAS Asset Management Pvt. Ltd.",
+      "filename": "ppfas.png",
+      "format": "png",
+      "bytes": 6057,
+      "source_url": "https://www.amfiindia.com/uploads/PPFAS_Mutual_Fund_Logo_64x64px_06a477542c.png"
+    },
+    {
+      "mf_id": "13",
+      "mf_name": "quant Mutual Fund",
+      "amc_name": "quant Money Managers Limited",
+      "filename": "quant.svg",
+      "format": "svg",
+      "bytes": 14840,
+      "source_url": "https://www.amfiindia.com/uploads/64_X64_Pix_5ce888b399.svg"
+    },
+    {
+      "mf_id": "41",
+      "mf_name": "Quantum Mutual Fund",
+      "amc_name": "Quantum Asset Management Company Private Limited",
+      "filename": "quantum.svg",
+      "format": "svg",
+      "bytes": 13902,
+      "source_url": "https://www.amfiindia.com/uploads/Quantum_Logo_64x64px_9438d04f60.svg"
+    },
+    {
+      "mf_id": "74",
+      "mf_name": "Samco Mutual Fund",
+      "amc_name": "Samco Asset Management Private Limited",
+      "filename": "samco.svg",
+      "format": "svg",
+      "bytes": 1237,
+      "source_url": "https://www.amfiindia.com/uploads/Samco_MF_Logo_Icon_ff0b72d387.svg"
+    },
+    {
+      "mf_id": "22",
+      "mf_name": "SBI Mutual Fund",
+      "amc_name": "SBI Funds Management Limited",
+      "filename": "sbi.svg",
+      "format": "svg",
+      "bytes": 973,
+      "source_url": "https://www.amfiindia.com/uploads/SBIMF_Tree_Logo_64x64_a57ab888e5.svg"
+    },
+    {
+      "mf_id": "67",
+      "mf_name": "Shriram Mutual Fund",
+      "amc_name": "Shriram Asset Management Co. Ltd.",
+      "filename": "shriram.svg",
+      "format": "svg",
+      "bytes": 39456,
+      "source_url": "https://www.amfiindia.com/uploads/Shriram_AMC_Logo_64x64_pixel_89e720203c.svg"
+    },
+    {
+      "mf_id": "33",
+      "mf_name": "Sundaram Mutual Fund",
+      "amc_name": "Sundaram Asset Management Company Ltd",
+      "filename": "sundaram.svg",
+      "format": "svg",
+      "bytes": 25521,
+      "source_url": "https://www.amfiindia.com/uploads/Sundaram_Mutual_Square_Logo_Size_64_64_Pixels_01_36e4fbd8f1.svg"
+    },
+    {
+      "mf_id": "25",
+      "mf_name": "Tata Mutual Fund",
+      "amc_name": "Tata Asset Management Private Limited",
+      "filename": "tata.svg",
+      "format": "svg",
+      "bytes": 35844,
+      "source_url": "https://www.amfiindia.com/uploads/TMF_Logo_64_X_64_SVG_41bdee868b.svg"
+    },
+    {
+      "mf_id": "26",
+      "mf_name": "Taurus Mutual Fund",
+      "amc_name": "Taurus Asset Management Company Limited",
+      "filename": "taurus.svg",
+      "format": "svg",
+      "bytes": 6275,
+      "source_url": "https://www.amfiindia.com/uploads/Taurus_Logo_Trademark_64_X_64_4b0d027c24.svg"
+    },
+    {
+      "mf_id": "72",
+      "mf_name": "Trust Mutual Fund",
+      "amc_name": "Trust Asset Management Private Limited",
+      "filename": "trust.svg",
+      "format": "svg",
+      "bytes": 32190,
+      "source_url": "https://www.amfiindia.com/uploads/Trust_MF_Logo_64_X_64_Pix_03_d9f2cdc6a8.svg"
+    },
+    {
+      "mf_id": "79",
+      "mf_name": "Unifi Mutual Fund",
+      "amc_name": "Unifi Asset Management Private Limited",
+      "filename": "unifi.svg",
+      "format": "svg",
+      "bytes": 5989,
+      "source_url": "https://www.amfiindia.com/uploads/Unifi_MF_Logo_Square_05e78a34ed.svg"
+    },
+    {
+      "mf_id": "61",
+      "mf_name": "Union Mutual Fund",
+      "amc_name": "Union Asset Management Company Private Limited",
+      "filename": "union.svg",
+      "format": "svg",
+      "bytes": 12475,
+      "source_url": "https://www.amfiindia.com/uploads/AMC_Logo_230_X60_4277f98897.svg"
+    },
+    {
+      "mf_id": "28",
+      "mf_name": "UTI Mutual Fund",
+      "amc_name": "UTI Asset Mgmt. Co. Ltd.",
+      "filename": "uti.svg",
+      "format": "svg",
+      "bytes": 4659,
+      "source_url": "https://www.amfiindia.com/uploads/64x64_16e2eae610.svg"
+    },
+    {
+      "mf_id": "83",
+      "mf_name": "The Wealth Company Mutual Fund",
+      "amc_name": "Wealth Company Asset Management Holdings Private Limited",
+      "filename": "the_wealth_company.png",
+      "format": "png",
+      "bytes": 8809,
+      "source_url": "https://www.amfiindia.com/uploads/AMC_Logo_the_wealth_company_mutual_fund_64x64_b2c35bc102.png"
+    },
+    {
+      "mf_id": "71",
+      "mf_name": "WhiteOak Capital Mutual Fund",
+      "amc_name": "WhiteOak Capital Asset Management Limited",
+      "filename": "whiteoak_capital.svg",
+      "format": "svg",
+      "bytes": 31974,
+      "source_url": "https://www.amfiindia.com/uploads/whiteoak_64x64_f0d117bfc6.svg"
+    },
+    {
+      "mf_id": "77",
+      "mf_name": "Zerodha CASE Mutual Fund",
+      "amc_name": "Zerodha CASE Asset Management Private Limited",
+      "filename": "zerodha_case.svg",
+      "format": "svg",
+      "bytes": 11943,
+      "source_url": "https://www.amfiindia.com/uploads/logo77_e07cc3e63a.svg"
+    }
+  ]
+}

@@ -15,6 +15,7 @@ import 'package:am_market_ui/features/dashboard/presentation/pages/dashboard_pag
 import 'package:am_market_ui/features/market_analysis/services/market_analysis_service.dart'
     deferred as market_deps;
 import 'package:am_paper_ui/am_paper_ui.dart' deferred as paper_ui;
+import 'package:am_mutual_fund_ui/am_mutual_fund_ui.dart' deferred as mf_ui;
 import 'package:am_portfolio_ui/features/portfolio/presentation/pages/portfolio_screen.dart'
     deferred as portfolio_pages;
 import 'package:am_portfolio_ui/features/portfolio/presentation/widgets/global_portfolio_wrapper.dart'
@@ -186,6 +187,137 @@ Future<void> _loadDiagnostic() => diagnostic_ui.loadLibrary().timeout(
         'Diagnostic module failed to load within 25s. Please check connection.',
       ),
     );
+
+Future<void> _loadMutualFunds() => mf_ui.loadLibrary().timeout(
+      _kModuleLoadTimeout,
+      onTimeout: () => throw TimeoutException(
+        'Mutual Funds module failed to load within 25s. Please check connection.',
+      ),
+    );
+
+Widget buildMutualFundsExploreRoute() {
+  return DeferredModuleLoader(
+    load: _loadMutualFunds,
+    skeleton: const GenericModuleSkeleton(),
+    loadingMessage: 'Loading Mutual Funds…',
+    builder: () => mf_ui.MfShell(child: mf_ui.MfExplorePage()),
+  );
+}
+
+Widget buildMutualFundsSchemeRoute(String isin) {
+  return DeferredModuleLoader(
+    load: _loadMutualFunds,
+    skeleton: const GenericModuleSkeleton(),
+    loadingMessage: 'Loading Mutual Funds…',
+    builder: () => mf_ui.MfShell(child: mf_ui.MfSchemeDetailPage(isin: isin)),
+  );
+}
+
+Widget buildMutualFundsOnboardingRoute() {
+  return DeferredModuleLoader(
+    load: _loadMutualFunds,
+    skeleton: const GenericModuleSkeleton(),
+    loadingMessage: 'Loading Mutual Funds…',
+    builder: () => mf_ui.MfShell(child: mf_ui.MfOnboardingWizardPage()),
+  );
+}
+
+Widget buildMutualFundsInvestRoute(String isin) {
+  return DeferredModuleLoader(
+    load: _loadMutualFunds,
+    skeleton: const GenericModuleSkeleton(),
+    loadingMessage: 'Loading Mutual Funds…',
+    builder: () => mf_ui.MfShell(child: mf_ui.MfInvestPage(isin: isin)),
+  );
+}
+
+Widget buildMutualFundsOrderRoute(String orderId) {
+  return DeferredModuleLoader(
+    load: _loadMutualFunds,
+    skeleton: const GenericModuleSkeleton(),
+    loadingMessage: 'Loading Mutual Funds…',
+    builder: () =>
+        mf_ui.MfShell(child: mf_ui.MfOrderDetailPage(orderId: orderId)),
+  );
+}
+
+Widget buildMutualFundsSystematicRoute({String? isin}) {
+  return DeferredModuleLoader(
+    load: _loadMutualFunds,
+    skeleton: const GenericModuleSkeleton(),
+    loadingMessage: 'Loading Mutual Funds…',
+    builder: () => mf_ui.MfShell(
+      child: mf_ui.MfMandateSipPage(initialIsin: isin),
+    ),
+  );
+}
+
+Widget buildMutualFundsHoldingsRoute() {
+  return DeferredModuleLoader(
+    load: _loadMutualFunds,
+    skeleton: const GenericModuleSkeleton(),
+    loadingMessage: 'Loading Mutual Funds…',
+    builder: () => mf_ui.MfShell(child: mf_ui.MfHoldingsPage()),
+  );
+}
+
+Widget buildMutualFundsHistoryRoute() {
+  return DeferredModuleLoader(
+    load: _loadMutualFunds,
+    skeleton: const GenericModuleSkeleton(),
+    loadingMessage: 'Loading Mutual Funds…',
+    builder: () => mf_ui.MfShell(child: mf_ui.MfHistoryPage()),
+  );
+}
+
+Widget buildMutualFundsStpSwpRoute({String? isin}) {
+  return DeferredModuleLoader(
+    load: _loadMutualFunds,
+    skeleton: const GenericModuleSkeleton(),
+    loadingMessage: 'Loading Mutual Funds…',
+    builder: () => mf_ui.MfShell(
+      child: mf_ui.MfStpSwpPage(initialIsin: isin),
+    ),
+  );
+}
+
+Widget buildMutualFundsRedeemRoute(
+  String isin, {
+  double? units,
+  String? folio,
+}) {
+  return DeferredModuleLoader(
+    load: _loadMutualFunds,
+    skeleton: const GenericModuleSkeleton(),
+    loadingMessage: 'Loading Mutual Funds…',
+    builder: () => mf_ui.MfShell(
+      child: mf_ui.MfRedeemPage(
+        isin: isin,
+        initialUnits: units,
+        initialFolio: folio,
+      ),
+    ),
+  );
+}
+
+Widget buildMutualFundsSwitchRoute(
+  String fromIsin, {
+  double? units,
+  String? folio,
+}) {
+  return DeferredModuleLoader(
+    load: _loadMutualFunds,
+    skeleton: const GenericModuleSkeleton(),
+    loadingMessage: 'Loading Mutual Funds…',
+    builder: () => mf_ui.MfShell(
+      child: mf_ui.MfSwitchPage(
+        fromIsin: fromIsin,
+        initialUnits: units,
+        initialFolio: folio,
+      ),
+    ),
+  );
+}
 
 Widget buildPortfolioRoute({
   required String? portfolioId,

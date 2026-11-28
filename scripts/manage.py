@@ -1,9 +1,14 @@
 import sys
 import os
+import socket
 import subprocess
+import time
 
 # Get absolute path to the workspace root (am-modern-ui)
 workspace_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+# Local MF CORS proxy (Flutter web → dig /router/am/mf)
+DEFAULT_MF_PROXY_PORT = "9011"
 
 ALIAS_MAP = {
     "app": "am_app",
@@ -20,6 +25,8 @@ ALIAS_MAP = {
     "doc": "am_doc_intelligence_ui",
     "market": "am_market/ui",
     "subscription": "am_subscription_ui",
+    "mf": "am_mutual_fund_ui",
+    "mutual-fund": "am_mutual_fund_ui",
     "market-sdk": "am_market/sdk",
     "market-common": "am_market/common",
     "market-dev": "am_market/dev",
@@ -51,6 +58,7 @@ ALL_PACKAGES = [
     "am_ai_ui",
     "am_doc_intelligence_ui",
     "am_subscription_ui",
+    "am_mutual_fund_ui",
     "am_user_ui",
     "am_market/sdk",
     "am_market/common",
@@ -225,6 +233,71 @@ def construct_dart_defines(env_vars, boot_trace):
     defines.append(f"--dart-define=AM_BOOT_TRACE={'true' if boot_trace else 'false'}")
     return defines
 
+
+def _port_open(host, port):
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.settimeout(0.35)
+        return s.connect_ex((host, int(port))) == 0
+
+
+def ensure_mf_cors_proxy(env_vars, env_name):
+    """Start local MF CORS proxy for dig when running Flutter web on localhost.
+
+    Returns proxy base URL (…/router/am/mf) or None when skipped.
+    """
+    if env_vars.get("AM_MF_PROXY", "").strip().lower() in ("0", "false", "no", "off"):
+        print("[mf-proxy] Skipped (AM_MF_PROXY=off)")
+        return None
+    # Local UI → dig BFF needs proxy; hosted dig is same-origin.
+    if env_name not in ("dev", "local", ""):
+        return None
+
+    port = env_vars.get("MF_PROXY_PORT", DEFAULT_MF_PROXY_PORT)
+    domain = env_vars.get("AM_DOMAIN", "am-dev.asrax.in")
+    base = f"http://127.0.0.1:{port}/router/am/mf"
+
+    if _port_open("127.0.0.1", port):
+        print(f"[mf-proxy] Reusing http://127.0.0.1:{port} → https://{domain}/router/am/mf")
+        return base
+
+    script = os.path.join(workspace_root, "scripts", "dev_mf_proxy.py")
+    if not os.path.exists(script):
+        print(f"[mf-proxy] Missing {script} — MF CORS bypass unavailable")
+        return None
+
+    child_env = dict(os.environ)
+    child_env.update(env_vars)
+    child_env["AM_DOMAIN"] = domain
+    child_env["MF_PROXY_PORT"] = str(port)
+
+    creationflags = 0
+    if os.name == "nt":
+        creationflags = subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.DETACHED_PROCESS
+
+    try:
+        subprocess.Popen(
+            [sys.executable, script],
+            cwd=workspace_root,
+            env=child_env,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            creationflags=creationflags,
+            start_new_session=(os.name != "nt"),
+        )
+    except Exception as exc:
+        print(f"[mf-proxy] Failed to start: {exc}")
+        return None
+
+    for _ in range(20):
+        if _port_open("127.0.0.1", port):
+            print(f"[mf-proxy] http://127.0.0.1:{port}/router/am/mf → https://{domain}/router/am/mf (CORS bypass)")
+            return base
+        time.sleep(0.1)
+
+    print("[mf-proxy] Started but port not open yet — UI may need a refresh")
+    return base
+
+
 def get_web_port(package, env_vars):
     if "FLUTTER_WEB_PORT" in env_vars:
         return env_vars["FLUTTER_WEB_PORT"]
@@ -235,6 +308,13 @@ def handle_run(pkg, env_name, flags):
     package = resolve_package(pkg)
     env_vars = load_env(env_name)
     env_vars['AM_ENV'] = env_name
+
+    # Local Flutter web → dig MF BFF: proxy so Authorization GETs are not CORS-blocked.
+    if package in ("am_app",) or package.endswith("am_app"):
+        proxy_base = ensure_mf_cors_proxy(env_vars, env_name)
+        if proxy_base:
+            env_vars["AM_MF_PROXY_BASE"] = proxy_base
+
     boot_trace = resolve_boot_trace(env_vars, flags, action="run")
     defines = construct_dart_defines(env_vars, boot_trace)
 

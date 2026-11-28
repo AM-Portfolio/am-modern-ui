@@ -13,10 +13,23 @@ mixin ShellNav on State<AppShell> {
     return AppRoutes.activeNavTitleForLocation(location);
   }
 
+  bool get _mutualFundsEnabled {
+    if (!GetIt.instance.isRegistered<common.FeatureFlagService>()) {
+      return true;
+    }
+    return GetIt.instance<common.FeatureFlagService>().isOn(
+          common.FeatureFlagKeys.mutualFundsEnabled,
+          defaultValue: true,
+        );
+  }
+
   List<SidebarItem> _sidebarItemsFor({required bool isAdmin}) => [
         const SidebarItem(title: 'Dashboard', icon: Icons.dashboard_rounded),
         const SidebarItem(
             title: 'Portfolio', icon: Icons.account_balance_wallet_rounded),
+        if (_mutualFundsEnabled)
+          const SidebarItem(
+              title: 'Mutual Funds', icon: Icons.account_balance_rounded),
         const SidebarItem(title: 'Trade', icon: Icons.swap_horiz_rounded),
         const SidebarItem(title: 'Market', icon: Icons.show_chart_rounded),
         const SidebarItem(title: 'AI Chat', icon: Icons.auto_awesome_rounded),
@@ -30,6 +43,8 @@ mixin ShellNav on State<AppShell> {
         return ModuleColors.dashboard;
       case 'portfolio':
         return ModuleColors.portfolio;
+      case 'mutual funds':
+        return ModuleColors.mutualFund;
       case 'trade':
         return ModuleColors.trade;
       case 'market':
@@ -50,6 +65,8 @@ mixin ShellNav on State<AppShell> {
         return ModuleType.dashboard;
       case 'portfolio':
         return ModuleType.portfolio;
+      case 'mutual funds':
+        return ModuleType.mutualFund;
       case 'trade':
         return ModuleType.trade;
       case 'market':

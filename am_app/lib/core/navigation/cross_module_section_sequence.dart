@@ -125,6 +125,9 @@ class CrossModuleSectionSequence {
       if (i >= 0) return i;
       return steps.indexWhere((s) => s.startsWith(AppRoutes.market));
     }
+    if (normalized.startsWith(AppRoutes.mutualFunds)) {
+      return steps.indexWhere((s) => s == AppRoutes.mutualFunds);
+    }
     if (normalized.startsWith(AppRoutes.aiChat)) {
       return steps.indexWhere((s) => s == AppRoutes.aiChat);
     }
@@ -146,6 +149,7 @@ class CrossModuleSectionSequence {
         AppRoutes.dashboard,
         for (final tab in portfolioSwipeTabs)
           portfolioStepPath(portfolioId, tab),
+        AppRoutes.mutualFunds,
         for (final tab in tradeSwipeTabs) tradeStepPath(portfolioId, tab),
         for (final tab in marketSwipeTabs) marketStepPath(tab),
         AppRoutes.aiChat,

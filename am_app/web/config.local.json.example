@@ -1,5 +1,6 @@
 {
   "_comment": "Copy to config.local.json (gitignored). Put real Google / GrowthBook client values here for local runs — never commit config.local.json.",
+  "_comment_mf": "Local MF CORS: npm run run:app:dev auto-starts scripts/dev_mf_proxy.py and injects AM_MF_PROXY_BASE (http://127.0.0.1:9011/router/am/mf). Do not set services.mutualFund to https://am-dev… from localhost unless you use Chrome with --disable-web-security. Set AM_MF_PROXY=off to skip the proxy.",
   "domain": "am-dev.asrax.in",
   "services": {
     "wsStream": "ws://localhost:8091/v1/streams"

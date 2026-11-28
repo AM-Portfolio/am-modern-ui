@@ -1,8 +1,10 @@
 {
-  "_comment": "Cluster dig/dev — empty services uses https://{domain}/<service> paths.",
+  "_comment": "Cluster dig/dev — empty services uses https://{domain}/<service> paths. MF must override: dig router is /router/am/mf not /mutual-fund.",
   "domain": "am-dev.asrax.in",
   "env": "dev",
-  "services": {},
+  "services": {
+    "mutualFund": "https://am-dev.asrax.in/router/am/mf"
+  },
   "google": {
     "webClientId": "307768822337-ad7tee4d82cc0b4flgrfs157e5e6rc0g.apps.googleusercontent.com",
     "iosClientId": "307768822337-082220ndhdik3b6utgac7t8hun23dqns.apps.googleusercontent.com",

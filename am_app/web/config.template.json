@@ -2,6 +2,7 @@
   "_comment": "Shared template only — no env host. Client IDs / GrowthBook keys come from CI secrets or gitignored config.local.json.",
   "domain": "",
   "services": {},
+  "_comment_mutualFund": "Dig override services.mutualFund = https://{domain}/router/am/mf (not /mutual-fund)",
   "google": {
     "webClientId": "",
     "iosClientId": "",

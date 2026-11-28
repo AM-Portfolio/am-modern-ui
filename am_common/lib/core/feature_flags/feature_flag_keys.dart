@@ -6,6 +6,10 @@ class FeatureFlagKeys {
 
   /// Journal hub Weekly Review tab (web + mobile). Default OFF until ready.
   static const journalWeeklyReviewEnabled = 'journal-weekly-review-enabled';
+
+  /// Mutual Funds shell module. Default ON when GB missing (dig GB often disabled).
+  static const mutualFundsEnabled = 'mutual-funds-enabled';
+
   static const offlineReadsV1 = 'offline_reads_v1';
   static const offlineWritesV1 = 'offline_writes_v1';
   static const securityAlertBannerEnabled = 'security-alert-banner-enabled';
